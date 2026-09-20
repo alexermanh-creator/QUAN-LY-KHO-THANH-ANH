@@ -1,4 +1,5 @@
-﻿dist/
+.tools/
+dist/
 archive_tests/
 scratch/
 scratch_test_code.ps1

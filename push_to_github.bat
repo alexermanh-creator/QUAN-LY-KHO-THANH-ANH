@@ -1,16 +1,16 @@
 @echo off
 chcp 65001 >nul
 echo ========================================================
-echo   DANG DAY CODE LEN GITHUB: alexermanh-creator...
+echo   DANG DONG BO LEN GITHUB: alexermanh-creator...
 echo ========================================================
 git push -u origin main
+git push -u origin main:master
 echo.
 if %errorlevel% equ 0 (
     echo ========================================================
     echo   DA DAY CODE LEN GITHUB THANH CONG!
-    echo   Ban hay vao Apps Script va bam nut PULL.
     echo ========================================================
 ) else (
-    echo [!] Co loi xay ra khi day code. Vui long kiem tra dang nhap GitHub.
+    echo [!] Kiem tra lai ket noi hoac xac thuc GitHub.
 )
 pause
