@@ -1,0 +1,113 @@
+<!-- ==========================================
+     PHÂN HỆ 3: TẠO PHIẾU NHẬP KHO ĐA THIẾT BỊ (V4)
+     ========================================== -->
+<div class="container-fluid p-0">
+  <div class="row mb-3">
+    <div class="col-md-12">
+      <h3 class="fw-bold text-dark"><i class="fa-solid fa-file-arrow-down text-primary"></i> Tạo Phiếu Nhập Kho Đa Thiết Bị</h3>
+      <p class="text-muted mb-0">Hỗ trợ 1 Nhà cung cấp giao nhiều chủng loại Model máy khác nhau trong cùng 1 phiếu nhập.</p>
+    </div>
+  </div>
+
+  <div class="row">
+    <!-- CỘT TRÁI: THÔNG TIN LÔ HÀNG -->
+    <div class="col-md-4">
+      <div class="card shadow-sm border-0 mb-3 bg-white">
+        <div class="card-header bg-white fw-bold py-3 text-primary">1. THÔNG TIN CHUNG ĐỢT NHẬP</div>
+        <div class="card-body">
+          <div class="mb-2">
+            <label class="form-label small fw-bold">Mã phiếu nhập</label>
+            <input type="text" id="nk-maphieu" class="form-control form-control-sm bg-light" readonly>
+          </div>
+          <div class="mb-2">
+            <label class="form-label small fw-bold">Ngày nhập</label>
+            <input type="date" id="nk-ngay" class="form-control form-control-sm">
+          </div>
+          <div class="mb-2">
+            <label class="form-label small fw-bold">Nhà cung cấp (*)</label>
+            <select id="nk-ncc" class="form-select form-select-sm"></select>
+          </div>
+          <div class="mb-2">
+            <label class="form-label small fw-bold">Vị trí nhập kho (*)</label>
+            <select id="nk-kho" class="form-select form-select-sm"></select>
+          </div>
+          <div class="mb-2">
+            <label class="form-label small fw-bold">Loại hàng</label>
+            <select id="nk-loaihang" class="form-select form-select-sm"></select>
+          </div>
+          <div class="mb-2">
+            <label class="form-label small fw-bold">Số hóa đơn / Ghi chú</label>
+            <input type="text" id="nk-ghichu" class="form-control form-control-sm" placeholder="Số hóa đơn GTGT, HĐ giao hàng...">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CỘT PHẢI: MẶT HÀNG & SERIAL -->
+    <div class="col-md-8">
+      <div class="card shadow-sm border-0 mb-3 bg-white">
+        <div class="card-header bg-white fw-bold py-3 text-success d-flex justify-content-between align-items-center">
+          <span>2. DANH SÁCH MẶT HÀNG TRONG PHIẾU</span>
+          <span id="nk-total-summary-badge" class="badge bg-primary fs-6">0 chủng loại | 0 máy</span>
+        </div>
+        <div class="card-body">
+          <!-- KHUNG THÊM 1 MẶT HÀNG -->
+          <div class="bg-light p-3 rounded border mb-3">
+            <div class="row g-2 mb-2">
+              <div class="col-md-4 position-relative">
+                <label class="form-label small fw-bold">Chọn Model máy (*)</label>
+                <input type="text" id="nk-model-input" class="form-control form-control-sm" placeholder="Gõ tìm Model..." oninput="filterModelSuggest(this.value)" autocomplete="off">
+                <ul id="model-suggest-list" class="list-group position-absolute w-100 shadow-lg d-none" style="z-index: 1050; max-height: 180px; overflow-y: auto;"></ul>
+              </div>
+              <div class="col-md-5">
+                <label class="form-label small fw-bold">Tên hàng hóa</label>
+                <input type="text" id="nk-tenhang" class="form-control form-control-sm bg-white" readonly placeholder="Tự điền">
+                <input type="hidden" id="nk-nhomhang">
+              </div>
+              <div class="col-md-3 d-flex align-items-end">
+                <div class="d-flex gap-1 w-100">
+                  <input type="number" id="auto-count" class="form-control form-control-sm text-center" style="width: 60px;" value="1" min="1" max="50">
+                  <button type="button" class="btn btn-sm btn-outline-warning text-dark fw-bold text-nowrap" onclick="generateAutoSerialBtn()"><i class="fa-solid fa-bolt"></i> Tự sinh</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-2">
+              <label class="form-label small fw-bold">Dán danh sách Serial (Mỗi dòng 1 mã):</label>
+              <textarea id="nk-item-serials" class="form-control font-monospace form-control-sm" rows="3" placeholder="Dán hoặc quét mã vạch Serial cho model trên..."></textarea>
+            </div>
+
+            <div class="text-end">
+              <button type="button" class="btn btn-success btn-sm fw-bold px-3" onclick="addItemToDraftReceipt()">
+                <i class="fa-solid fa-plus"></i> + Thêm mặt hàng này vào phiếu
+              </button>
+            </div>
+          </div>
+
+          <!-- BẢNG TỔNG HỢP MẶT HÀNG TRONG LÔ -->
+          <div class="table-responsive mb-3">
+            <table class="table table-bordered table-sm small align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th width="5%" class="text-center">STT</th>
+                  <th width="20%">Model</th>
+                  <th width="35%">Tên hàng hóa</th>
+                  <th width="10%" class="text-center">Số lượng</th>
+                  <th width="22%">Danh sách Serial</th>
+                  <th width="8%" class="text-center">Xóa</th>
+                </tr>
+              </thead>
+              <tbody id="nk-draft-table-body">
+                <tr><td colspan="6" class="text-center text-muted py-3">Chưa có mặt hàng nào. Thêm ở khung trên.</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <button id="btn-submit-nhap" class="btn btn-primary w-100 fw-bold py-2" onclick="submitNhapKhoMultiBtn()" disabled>
+            <i class="fa-solid fa-cloud-arrow-up me-1"></i> XÁC NHẬN LƯU TOÀN BỘ PHIẾU NHẬP
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

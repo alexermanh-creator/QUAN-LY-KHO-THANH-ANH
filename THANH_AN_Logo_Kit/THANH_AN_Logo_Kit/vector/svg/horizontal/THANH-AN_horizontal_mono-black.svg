@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2360" height="800" viewBox="0 0 2360 800">
+<title>THANH AN - horizontal - mono-black</title>
+<path id="T" fill="#000000" fill-rule="evenodd" transform="translate(0 25) scale(0.88 0.88)" d="M 204 70 L 678 70 L 633 178 L 501 178 L 461 563 L 306 633 L 351 178 L 191 178 Z"/>
+<path id="A-upper" fill="#000000" fill-rule="evenodd" transform="translate(0 25) scale(0.88 0.88)" d="M 541 529 L 730 79 Q 733 70 743 70 L 911 70 L 1004 303 L 891 358 L 824 197 L 722 442 Z"/>
+<path id="A-lower" fill="#000000" fill-rule="evenodd" transform="translate(0 25) scale(0.88 0.88)" d="M 824 609 L 1059 442 L 1177 736 L 1011 736 L 960 609 Z"/>
+<path id="swoosh-blue" fill="#000000" fill-rule="evenodd" transform="translate(0 25) scale(0.88 0.88)" d="M 78 762 C 394 644 667 509 974 356 C 1089 299 1179 233 1226 163 C 1172 277 1040 372 894 453 C 631 597 349 724 78 762 Z"/>
+<path id="swoosh-yellow" fill="#000000" fill-rule="evenodd" transform="translate(0 25) scale(0.88 0.88)" d="M 432 742 C 624 632 826 514 1005 394 C 1102 329 1176 266 1212 211 C 1158 328 1080 403 974 482 L 662 709 C 644 724 519 736 432 742 Z"/>
+<path id="T0" fill="#000000" fill-rule="evenodd" transform="translate(1160.0 340) scale(0.9 0.9)" d="M0 0 H136 V32 H88 V153 H47 V32 H0 Z"/>
+<path id="H1" fill="#000000" fill-rule="evenodd" transform="translate(1298.6 340) scale(0.9 0.9)" d="M0 0 H42 V60 H103 V0 H145 V153 H103 V94 H42 V153 H0 Z"/>
+<path id="A2" fill="#000000" fill-rule="evenodd" transform="translate(1443.5 340) scale(0.9 0.9)" d="M0 153 L65 0 H111 L176 153 H130 L116 121 H56 L42 153 Z M67 91 H108 L87 40 Z"/>
+<path id="N3" fill="#000000" fill-rule="evenodd" transform="translate(1613.6 340) scale(0.9 0.9)" d="M0 153 V0 H37 L107 87 V0 H148 V153 H111 L41 65 V153 Z"/>
+<path id="H4" fill="#000000" fill-rule="evenodd" transform="translate(1773.8000000000002 340) scale(0.9 0.9)" d="M0 0 H42 V60 H103 V0 H145 V153 H103 V94 H42 V153 H0 Z"/>
+<path id="A5" fill="#000000" fill-rule="evenodd" transform="translate(1966.4 340) scale(0.9 0.9)" d="M0 153 L65 0 H111 L176 153 H130 L116 121 H56 L42 153 Z M67 91 H108 L87 40 Z"/>
+<path id="N6" fill="#000000" fill-rule="evenodd" transform="translate(2135.6 340) scale(0.9 0.9)" d="M0 153 V0 H37 L107 87 V0 H148 V153 H111 L41 65 V153 Z"/>
+</svg>

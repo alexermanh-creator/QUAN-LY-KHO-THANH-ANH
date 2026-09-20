@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cẩm Nang Hướng Dẫn Sử Dụng - Hệ Thống Quản Lý Kho Thành An</title>
+  
+  <!-- BOOTSTRAP 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- FONT AWESOME 6 -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+  <!-- GOOGLE FONTS (INTER) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --primary-navy: #101f3a;
+      --accent-blue: #0d6efd;
+      --accent-cyan: #0dcaf0;
+      --accent-amber: #f59e0b;
+      --accent-green: #10b981;
+      --accent-red: #ef4444;
+      --bg-light: #f8fafc;
+      --border-color: #e2e8f0;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-light);
+      color: var(--text-main);
+      line-height: 1.65;
+      font-size: 0.95rem;
+    }
+
+    /* HEADER BANNER */
+    .doc-header {
+      background: linear-gradient(135deg, #101f3a 0%, #1e3a8a 100%);
+      color: #ffffff;
+      padding: 2.5rem 0 2rem 0;
+      border-bottom: 4px solid #3b82f6;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    }
+    .doc-logo-svg {
+      height: 48px;
+      width: auto;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+    }
+
+    /* STICKY SIDEBAR NAVIGATION */
+    .sidebar-toc {
+      position: sticky;
+      top: 1.5rem;
+      max-height: calc(100vh - 3rem);
+      overflow-y: auto;
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 1.25rem 1rem;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+    }
+    .sidebar-toc::-webkit-scrollbar {
+      width: 5px;
+    }
+    .sidebar-toc::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    .toc-link {
+      display: flex;
+      align-items: center;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.85rem;
+      color: #475569;
+      text-decoration: none;
+      border-radius: 6px;
+      transition: all 0.15s ease-in-out;
+      font-weight: 500;
+      margin-bottom: 2px;
+    }
+    .toc-link i {
+      width: 22px;
+      font-size: 0.9rem;
+      color: #94a3b8;
+      transition: color 0.15s ease-in-out;
+    }
+    .toc-link:hover {
+      background-color: #f1f5f9;
+      color: #1d4ed8;
+    }
+    .toc-link:hover i {
+      color: #1d4ed8;
+    }
+    .toc-link.active {
+      background-color: #eff6ff;
+      color: #1d4ed8;
+      font-weight: 700;
+      border-left: 3px solid #2563eb;
+    }
+
+    /* MAIN CONTENT SECTIONS */
+    .doc-card {
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 2rem 2.25rem;
+      margin-bottom: 2rem;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+      scroll-margin-top: 2rem;
+    }
+    .section-title {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--primary-navy);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 2px solid #f1f5f9;
+    }
+    .section-title i {
+      color: #2563eb;
+      background: #eff6ff;
+      padding: 0.5rem;
+      border-radius: 8px;
+      font-size: 1.1rem;
+    }
+
+    /* CALLOUT BOXES */
+    .callout {
+      border-left: 4px solid;
+      padding: 1rem 1.25rem;
+      border-radius: 0 8px 8px 0;
+      margin: 1.25rem 0;
+      font-size: 0.92rem;
+    }
+    .callout-tip {
+      background: #ecfdf5;
+      border-color: #10b981;
+      color: #065f46;
+    }
+    .callout-info {
+      background: #eff6ff;
+      border-color: #3b82f6;
+      color: #1e40af;
+    }
+    .callout-warning {
+      background: #fffbeb;
+      border-color: #f59e0b;
+      color: #92400e;
+    }
+    .callout-danger {
+      background: #fef2f2;
+      border-color: #ef4444;
+      color: #991b1b;
+    }
+
+    /* STEP WORKFLOW CARDS */
+    .step-badge {
+      width: 28px;
+      height: 28px;
+      background: #2563eb;
+      color: white;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.85rem;
+      margin-right: 0.5rem;
+    }
+    .step-flow-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+    }
+
+    /* CODE & MONO */
+    code, .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.88em;
+      background: #f1f5f9;
+      color: #be185d;
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+    }
+
+    /* BACK TO TOP BUTTON */
+    .btn-back-top {
+      position: fixed;
+      bottom: 25px;
+      right: 25px;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: #1e3a8a;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+      transition: all 0.2s;
+      z-index: 999;
+      text-decoration: none;
+    }
+    .btn-back-top:hover {
+      background: #2563eb;
+      color: #fff;
+      transform: translateY(-3px);
+    }
+
+    /* PRINT STYLES */
+    @media print {
+      .doc-header { padding: 1rem 0; background: #fff !important; color: #000 !important; border-bottom: 2px solid #000; }
+      .sidebar-toc, .btn-back-top, .no-print { display: none !important; }
+      .doc-card { box-shadow: none !important; border: 1px solid #ccc !important; page-break-inside: avoid; }
+      body { background: #fff !important; font-size: 10pt; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER BANNER -->
+  <header class="doc-header">
+    <div class="container-fluid px-lg-5">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div class="d-flex align-items-center gap-3">
+          <!-- LOGO VECTOR THÀNH AN CHÍNH GỐC -->
+          <svg class="doc-logo-svg" viewBox="0 0 1782 522" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <g id="THANH-AN_horizontal_dark-background">
+              <path id="Vector" d="M129.509 375.454C118.816 357.26 108.318 339.296 97.4334 321.328C88.2917 306.286 78.9669 291.353 69.824 276.315C63.2628 265.529 61.597 253.69 64.9126 241.45C68.1743 229.412 75.9863 220.89 87.2731 214.935C104.99 205.597 122.997 196.818 141.036 188.083C223.109 148.337 309.431 123.633 400.648 120.354C434.908 119.123 469.117 120.942 503.208 124.629C521.849 126.645 539.115 133.023 551.498 147.674C560.75 158.621 563.856 171.393 560.895 185.343C558.077 198.618 550.052 208.106 538.163 214.398C461.355 255.034 380.702 284.972 297.027 306.94C242.062 321.369 186.294 332.227 130.407 342.348C127.355 342.901 124.162 342.756 119.467 343.327C124.288 351.42 128.539 358.497 132.709 365.62C133.518 367.001 134.341 368.49 134.453 370.026C134.981 377.29 133.308 382.474 129.509 375.454Z" fill="#EE2C34"/>
+              <path id="Vector_2" d="M373.197 400.999C350.294 400.993 328.026 397.683 306.666 388.946C291.688 382.82 277.625 374.835 264.444 365.267C261.261 362.956 260.672 360.596 262.775 357.172C269.458 346.297 276.108 335.395 282.827 324.542C284.922 321.157 287.498 320.125 291.246 321.905C330.134 340.384 371.492 348.601 414.475 348.337C449.191 348.125 483.473 342.665 516.897 333.15C519.866 332.304 522.614 332.906 525.044 334.618C536.818 342.898 548.643 351.109 560.485 359.297C564.12 361.811 564.551 364.593 561.761 368.106C553.302 378.756 542.81 386.994 530.732 393.003C507.039 404.789 481.42 409.843 455.083 411.39C427.765 412.995 400.481 411.776 373.197 400.999Z" fill="#EE2C34"/>
+              <path id="Vector_3" d="M578.188 304.577C577.295 304.887 576.84 305.158 576.471 305.289C537.495 319.124 497.525 328.983 456.634 334.509C423.829 338.943 390.871 340.231 357.777 338.742C331.424 337.557 305.474 333.376 280.207 325.263C277.625 324.434 275.601 324.785 273.743 326.837C263.668 337.962 253.513 349.014 243.344 360.051C241.603 361.941 241.528 363.633 243.087 365.626C247.939 371.826 253.58 377.304 259.839 382.167C272.766 392.214 287.16 399.721 302.593 405.347C328.71 414.869 355.666 418.597 383.336 417.818C417.534 416.855 451.059 411.517 483.663 400.835C508.825 392.591 531.768 380.449 550.984 362.839C556.786 357.521 561.859 351.455 566.216 344.819C571.493 336.782 576.471 328.536 581.442 320.285C583.568 316.758 583.189 314.73 579.914 312.399C572.765 307.311 565.629 302.203 558.465 297.135C555.518 295.056 553.076 295.426 550.569 297.747C545.98 301.996 540.854 305.519 535.405 308.618C502.825 327.147 466.974 336.793 429.626 339.296C395.733 341.571 362.247 338.455 329.475 329.135C313.275 324.529 297.433 318.497 282.261 310.871C278.435 308.947 276.574 309.771 274.654 313.435C268.468 325.244 262.196 337.009 255.918 348.771C254.673 351.103 254.896 352.684 256.972 354.498C265.513 361.945 275.055 367.794 285.342 372.484C312.449 384.842 341.077 390.412 370.742 391.073C402.767 391.787 434.256 388.082 464.935 378.895C487.892 372.022 509.309 361.933 528.026 347.16C537.168 339.944 544.757 331.332 550.835 321.439C558.118 309.585 565.419 297.74 572.802 285.945C574.619 283.037 576.812 282.689 579.791 284.152C590.285 289.314 600.865 294.316 611.397 299.414C614.939 301.127 615.111 303.498 612.474 306.471C607.72 311.83 602.834 317.078 597.585 321.954C576.495 341.547 551.722 355.334 524.368 364.55C492.385 375.325 459.351 380.607 425.594 381.168C393.208 381.706 361.353 377.106 330.347 367.433C313.435 362.155 297.228 355.08 281.995 346.069C278.691 344.114 276.545 344.594 274.577 348.064C268.396 358.956 262.146 369.807 255.885 380.655C254.455 383.136 254.512 384.819 256.762 386.901C268.084 397.382 280.932 405.485 295.059 411.455C321.439 422.607 349.006 427.697 377.375 427.685C412.355 427.671 446.577 422.399 479.791 411.378C504.646 403.13 527.426 391.228 547.195 374.457C561.187 362.585 572.587 348.497 581.654 332.551C584.218 328.037 586.842 323.553 589.475 319.074C590.287 317.695 590.315 316.516 588.948 315.344C585.578 312.449 582.029 309.771 578.188 304.577Z" fill="#EE2C34"/>
+              <path id="Vector_4" d="M129.509 375.454C133.308 382.474 134.981 377.29 134.453 370.026C134.341 368.49 133.518 367.001 132.709 365.62C128.539 358.497 124.288 351.42 119.467 343.327C124.162 342.756 127.355 342.901 130.407 342.348C186.294 332.227 242.062 321.369 297.027 306.94C380.702 284.972 461.355 255.034 538.163 214.398C550.052 208.106 558.077 198.618 560.895 185.343C563.856 171.393 560.75 158.621 551.498 147.674C539.115 133.023 521.849 126.645 503.208 124.629C469.117 120.942 434.908 119.123 400.648 120.354C309.431 123.633 223.109 148.337 141.036 188.083C122.997 196.818 104.99 205.597 87.2731 214.935C75.9863 220.89 68.1743 229.412 64.9126 241.45C61.597 253.69 63.2628 265.529 69.824 276.315C78.9669 291.353 88.2917 306.286 97.4334 321.328C108.318 339.296 118.816 357.26 129.509 375.454Z" fill="#1C3F7A"/>
+              <text x="640" y="320" fill="#FFFFFF" font-family="'Inter', sans-serif" font-weight="900" font-size="210" letter-spacing="4">THÀNH AN</text>
+              <text x="645" y="415" fill="#94A3B8" font-family="'Inter', sans-serif" font-weight="600" font-size="64" letter-spacing="12">OFFICE EQUIPMENT ERP</text>
+            </g>
+          </svg>
+          <div>
+            <h3 class="fw-bold mb-1 text-white">CẨM NANG HƯỚNG DẪN SỬ DỤNG HỆ THỐNG</h3>
+            <p class="mb-0 text-white-50 small">Tài liệu chuẩn vận hành: Quản Trị Kho, Serial 360°, Bảo Hành Kỹ Thuật & Phân Quyền</p>
+          </div>
+        </div>
+        <div class="d-flex gap-2 no-print">
+          <button class="btn btn-outline-light btn-sm px-3 fw-semibold shadow-sm" onclick="window.print()">
+            <i class="fa-solid fa-print me-1"></i> In / Xuất PDF
+          </button>
+          <a href="demo_quan_ly_kho.html" target="_blank" class="btn btn-warning btn-sm px-3 fw-bold text-dark shadow-sm">
+            <i class="fa-solid fa-arrow-up-right-from-square me-1"></i> Mở Phần Mềm Kho
+          </a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- BODY CONTENT WRAPPER -->
+  <div class="container-fluid px-lg-5 py-4">
+    <div class="row g-4">
+      
+      <!-- STICKY TABLE OF CONTENTS (COL-3) -->
+      <div class="col-lg-3 d-none d-lg-block">
+        <nav class="sidebar-toc" id="docTOC">
+          <h6 class="text-uppercase fw-bold text-muted small mb-3 pb-2 border-bottom">
+            <i class="fa-solid fa-list-ul me-2 text-primary"></i> Mục Lục 14 Chương
+          </h6>
+          <div class="nav flex-column">
+            <a class="toc-link" href="#sec-1"><i class="fa-solid fa-user-shield"></i> 1. Vai trò người dùng (RBAC)</a>
+            <a class="toc-link" href="#sec-2"><i class="fa-solid fa-magnifying-glass"></i> 2. Tìm kiếm Spotlight (Ctrl+K)</a>
+            <a class="toc-link" href="#sec-3"><i class="fa-solid fa-chart-line"></i> 3. Bảng điều khiển KPI</a>
+            <a class="toc-link" href="#sec-4"><i class="fa-solid fa-boxes-stacked"></i> 4. Quản lý Tồn kho 2 chế độ</a>
+            <a class="toc-link" href="#sec-5"><i class="fa-solid fa-dolly"></i> 5. Quy trình Nhập kho</a>
+            <a class="toc-link" href="#sec-6"><i class="fa-solid fa-truck-ramp-box"></i> 6. Quy trình Xuất kho & BH</a>
+            <a class="toc-link" href="#sec-7"><i class="fa-solid fa-fingerprint"></i> 7. Hồ sơ Serial 360°</a>
+            <a class="toc-link" href="#sec-8"><i class="fa-solid fa-warehouse"></i> 8. Nghiệp vụ kho & Kiểm kê</a>
+            <a class="toc-link" href="#sec-9"><i class="fa-solid fa-wrench"></i> 9. Quản lý Ca Bảo Hành</a>
+            <a class="toc-link" href="#sec-10"><i class="fa-solid fa-pen-to-square"></i> 10. Sửa phiếu & Hủy phiếu</a>
+            <a class="toc-link" href="#sec-11"><i class="fa-solid fa-clock-rotate-left"></i> 11. Nhật ký kiểm toán (Audit)</a>
+            <a class="toc-link" href="#sec-12"><i class="fa-solid fa-folder-tree"></i> 12. Quản trị 6 Danh mục</a>
+            <a class="toc-link" href="#sec-13"><i class="fa-solid fa-gear"></i> 13. Phân quyền & Sao lưu</a>
+            <a class="toc-link" href="#sec-14"><i class="fa-solid fa-key"></i> 14. Đổi mật khẩu Admin</a>
+          </div>
+        </nav>
+      </div>
+
+      <!-- MAIN DOCUMENTATION BODY (COL-9) -->
+      <div class="col-lg-9 col-12">
+        
+        <!-- SECTION 1 -->
+        <section id="sec-1" class="doc-card">
+          <h2 class="section-title">
+            <i class="fa-solid fa-user-shield"></i>
+            <span>1. TỔNG QUAN GIAO DIỆN & VAI TRÒ NGƯỜI DÙNG (RBAC)</span>
+          </h2>
+          <p>Hệ thống Quản trị kho Thành An được xây dựng theo chuẩn mực bảo mật doanh nghiệp hiện đại với ma trận phân quyền 20 chức năng độc lập. Mọi hành vi được kiểm soát nghiêm ngặt theo vai trò của từng nhân sự.</p>
+          
+          <h5 class="fw-bold mt-4 mb-3 text-secondary">Bốn Vai Trò Người Dùng Trong Hệ Thống:</h5>
+          <div class="table-responsive">
+            <table class="table table-bordered table-hover align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th style="width: 20%;">Vai Trò</th>
+                  <th style="width: 22%;">Tài khoản mẫu</th>
+                  <th style="width: 43%;">Phạm vi quyền hạn nghiệp vụ</th>
+                  <th style="width: 15%;">Màu nhận diện</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="fw-bold text-danger"><i class="fa-solid fa-crown me-1"></i> ADMIN</td>
+                  <td><code>admin</code> (Khổng Mạnh Cường)</td>
+                  <td>Toàn quyền hệ thống: Quản trị tài khoản nhân sự, phân quyền 20 chức năng, đổi mật khẩu Admin, sao lưu dữ liệu và reset kho.</td>
+                  <td><span class="badge bg-danger">Đỏ (Tối cao)</span></td>
+                </tr>
+                <tr>
+                  <td class="fw-bold text-info"><i class="fa-solid fa-user-tie me-1"></i> QUẢN LÝ</td>
+                  <td><code>QL01</code> (Lê Tuấn Cường)</td>
+                  <td>Toàn bộ quyền thủ kho + Quyền <b>Sửa phiếu, Hủy phiếu hoàn nguyên</b>, khóa phiên kiểm kê, điều chuyển kho, xem Nhật ký Audit và quản lý danh mục.</td>
+                  <td><span class="badge bg-info text-dark">Xanh lơ</span></td>
+                </tr>
+                <tr>
+                  <td class="fw-bold text-primary"><i class="fa-solid fa-cart-shopping me-1"></i> THỦ KHO</td>
+                  <td><code>KHO1</code> (Khổng Minh Quân)</td>
+                  <td>Chuyên trách tạo phiếu Nhập, phiếu Xuất, tra cứu tồn kho, dùng Camera quét mã vạch và tham gia phiên quét kiểm kê thực tế.</td>
+                  <td><span class="badge bg-primary">Xanh dương</span></td>
+                </tr>
+                <tr>
+                  <td class="fw-bold text-warning"><i class="fa-solid fa-wrench me-1"></i> BẢO HÀNH</td>
+                  <td><code>BH01</code> (Trần Văn Kỹ Thuật)</td>
+                  <td>Tiếp nhận ca sửa chữa mới, tra cứu lý lịch Serial 360°, cập nhật tiến độ (Đang sửa/Gửi hãng/Hoàn tất) và tạo phiếu hoàn nhập từ khách.</td>
+                  <td><span class="badge bg-warning text-dark">Vàng cam</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="callout callout-info">
+            <i class="fa-solid fa-circle-info me-2"></i>
+            <b>Cách chuyển đổi vai trò test nhanh:</b> Nhấp chuột vào tên người đăng nhập ở góc trên bên phải màn hình Topbar (mặc định là <i>Khổng Mạnh Cường</i>) -> Chọn vai trò mong muốn để hệ thống tự động đổi quyền hạn tức thì.
+          </div>
+        </section>
+
+        <!-- SECTION 2 -->
+        <section id="sec-2" class="doc-card">
+          <h2 class="section-title">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <span>2. THANH TÌM KIẾM THÔNG MINH SPOTLIGHT (CTRL + K)</span>
+          </h2>
+          <p>Thanh Spotlight là công cụ đắc lực nhất giúp nhân viên tìm kiếm bất kỳ thông tin nào trong kho <b>chỉ trong 1 giây</b> mà không cần phải bấm qua nhiều menu.</p>
+          
+          <div class="row g-3 my-2">
+            <div class="col-md-6">
+              <div class="p-3 bg-light rounded border h-100">
+                <h6 class="fw-bold text-primary"><i class="fa-solid fa-keyboard me-2"></i>Phím tắt mở nhanh</h6>
+                <p class="small text-muted mb-0">Bấm tổ hợp phím <code>Ctrl + K</code> ở bất kỳ màn hình nào (hoặc nhấp trực tiếp vào ô tìm kiếm trên thanh Topbar).</p>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="p-3 bg-light rounded border h-100">
+                <h6 class="fw-bold text-success"><i class="fa-solid fa-camera me-2"></i>Nút Quét mã Camera tích hợp</h6>
+                <p class="small text-muted mb-0">Bấm nút <b>Scan</b> ngay cạnh ô tìm kiếm để bật camera điện thoại/laptop quét mã vạch trên vỏ máy cần tra cứu.</p>
+              </div>
+            </div>
+          </div>
+
+          <h6 class="fw-bold mt-3 mb-2">Hỗ trợ tìm kiếm không giới hạn dữ liệu:</h6>
+          <ul>
+            <li><b>Số Serial máy của hãng:</b> Ví dụ <code>CN29-998811</code>, <code>RC-5054-9901</code>.</li>
+            <li><b>Mã tem nội bộ Thành An:</b> Ví dụ <code>TA-260920-000101</code>.</li>
+            <li><b>Tên Model máy:</b> Ví dụ <code>Canon 2900</code>, <code>Ricoh 5054</code>, <code>HP LaserJet</code>.</li>
+            <li><b>Tên Khách hàng hoặc SĐT:</b> Ví dụ <code>Hòa Bình</code>, <code>0903123456</code>.</li>
+            <li><b>Số phiếu kho:</b> Ví dụ <code>NK-2609-001</code>, <code>XK-2609-001</code>.</li>
+          </ul>
+        </section>
+
+        <!-- SECTION 3 -->
+        <section id="sec-3" class="doc-card">
+          <h2 class="section-title">
+            <i class="fa-solid fa-chart-line"></i>
+            <span>3. BẢNG ĐIỀU KHIỂN KPI & BÁO CÁO QUẢN TRỊ (DASHBOARD)</span>
+          </h2>
+          <p>Màn hình trung tâm điều hành cung cấp góc nhìn toàn cảnh về tình trạng hàng hóa, lưu lượng xuất nhập và các cảnh báo rủi ro:</p>
+
+          <div class="row g-2 mb-4">
+            <div class="col-md">
+              <div class="card border-0 bg-primary bg-opacity-10 text-primary p-3 rounded-3 text-center h-100">
+                <i class="fa-solid fa-cube fs-4 mb-1"></i>
+                <div class="fw-bold fs-5">Tổng tồn hiện tại</div>
+                <small class="text-muted">thiết bị · model</small>
+                <div class="small text-success mt-1 fw-bold">↑ 3.2% so với ngày trước</div>
+              </div>
+            </div>
+            <div class="col-md">
+              <div class="card border-0 bg-success bg-opacity-10 text-success p-3 rounded-3 text-center h-100">
+                <i class="fa-solid fa-arrow-down fs-4 mb-1"></i>
+                <div class="fw-bold fs-5">Nhập trong kỳ</div>
+                <small class="text-muted">thiết bị</small>
+                <div class="small text-success mt-1 fw-bold">↑ 12% so với kỳ trước</div>
+              </div>
+            </div>
+            <div class="col-md">
+              <div class="card border-0 bg-warning bg-opacity-10 text-dark p-3 rounded-3 text-center h-100">
+                <i class="fa-solid fa-arrow-up fs-4 mb-1 text-danger"></i>
+                <div class="fw-bold fs-5">Xuất trong kỳ</div>
+                <small class="text-muted">thiết bị</small>
+                <div class="small text-danger mt-1 fw-bold">↑ 5% so với kỳ trước</div>
+              </div>
+            </div>
+            <div class="col-md">
+              <div class="card border-0 p-3 rounded-3 text-center h-100" style="background: rgba(139, 92, 246, 0.12);">
+                <i class="fa-solid fa-chart-simple fs-4 mb-1 text-purple" style="color: #7c3aed;"></i>
+                <div class="fw-bold fs-5 text-purple" style="color: #7c3aed;">Biến động tồn</div>
+                <small class="text-muted">thiết bị (Nhập - Xuất)</small>
+                <div class="small text-success mt-1 fw-bold">↑ 14.6% so với kỳ trước</div>
+              </div>
+            </div>
+            <div class="col-md">
+              <div class="card border-0 bg-light p-2 rounded-3 h-100 d-flex flex-column justify-content-center">
+                <div class="d-flex justify-content-between align-items-center py-1 small border-bottom">
+                  <span><i class="fa-solid fa-shield-halved text-primary me-1"></i> Bảo hành</span>
+                  <span class="fw-bold">8 &gt;</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center py-1 small border-bottom">
+                  <span><i class="fa-solid fa-circle-exclamation text-warning me-1"></i> Tồn lâu</span>
+                  <span class="fw-bold">3 &gt;</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center py-1 small">
+                  <span><i class="fa-solid fa-file-lines text-secondary me-1"></i> Phiếu nhập</span>
+                  <span class="fw-bold">5 &gt;</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <h6 class="fw-bold mb-2">Hệ thống biểu đồ phân tích thông minh:</h6>
+          <ol>
+            <li><b>Biểu đồ kép Cột & Đường (Nhập - Xuất theo thời gian):</b> Biểu đồ cột biểu thị lượng máy nhập, đường line màu xanh biểu thị lượng máy xuất qua các mốc thời gian. Hỗ trợ bộ lọc nhanh: <i>Hôm nay, 7 ngày qua, Tháng này, 3 tháng</i> hoặc <i>Tùy chọn khoảng ngày</i>.</li>
+            <li><b>Biểu đồ Cơ cấu Hàng hóa (Doughnut chart):</b> Thể hiện tỷ lệ phần trăm giữa Máy in, Máy photocopy, Laptop, Máy scan...</li>
+            <li><b>Biểu đồ Tuổi tồn kho (Aging Distribution):</b> Thống kê số lượng máy tồn theo dải ngày: <code>&lt; 30 ngày</code>, <code>30-60 ngày</code>, <code>60-90 ngày</code> và <code>&gt; 90 ngày</code> để ưu tiên đẩy hàng tồn lâu.</li>
+          </ol>
+        </section>
+
+        <!-- SECTION 4 -->
+        <section id="sec-4" class="doc-card">
+          <h2 class="section-title">
+            <i class="fa-solid fa-boxes-stacked"></i>
+            <span>4. QUẢN LÝ TỒN KHO 2 CHẾ ĐỘ (MODEL VÀ SERIAL)</span>
+          </h2>
+          <p>Đáp ứng đồng thời cả nhu cầu kinh doanh (xem số lượng tổng) và kỹ thuật thủ kho (xem chi tiết từng con máy vật lý):</p>
+
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="border rounded p-3 h-100 bg-white">
+                <h6 class="fw-bold text-primary"><i class="fa-solid fa-table-cells me-2"></i>Chế độ 1: Xem theo Model (Bán hàng & Quản lý)</h6>
+                <p class="small text-muted">Gom nhóm toàn bộ thiết bị theo từng mã Model. Giúp nhân viên kinh doanh biết ngay:</p>
+                <ul class="small mb-2">
+                  <li>Tồn tại <b>Kho VP</b> là bao nhiêu con?</li>
+                  <li>Tồn tại <b>Kho Chi Nhánh</b> là bao nhiêu con?</li>
+                  <li>Tồn tại <b>Kho Cách Ly (máy lỗi)</b> là bao nhiêu con?</li>
+                  <li>Tổng tồn toàn công ty có đủ giao cho dự án không?</li>
+                </ul>
+                <div class="small bg-light p-2 rounded">Có nút <b>"Chi tiết (x SN)"</b> để mở bung danh sách toàn bộ số Serial của model đó.</div>
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <div class="border rounded p-3 h-100 bg-white">
+                <h6 class="fw-bold text-success"><i class="fa-solid fa-barcode me-2"></i>Chế độ 2: Xem theo Serial (Thủ kho & Kỹ thuật)</h6>
+                <p class="small text-muted">Mỗi dòng là 1 thiết bị vật lý duy nhất với đầy đủ căn cước công dân:</p>
+                <ul class="small mb-2">
+                  <li><b>Serial Hãng (Mfg SN)</b> & <b>Mã nội bộ Thành An (TA-...)</b>.</li>
+                  <li>Vị trí kho và Ngày nhập kho chính xác.</li>
+                  <li><b>Huy hiệu tuổi tồn (Aging Badge):</b>
+                    <span class="badge bg-success">&lt;30N</span>
+                    <span class="badge bg-warning text-dark">30-60N</span>
+                    <span class="badge bg-danger">&gt;90N</span>
+                  </li>
+                </ul>
+                <div class="small bg-light p-2 rounded">Có nút <b>"360°"</b> để tra cứu trọn vẹn toàn bộ lý lịch nhập - xuất - sửa chữa của con máy này.</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION 5 -->
+        <section id="sec-5" class="doc-card">
+          <h2 class="section-title">
+            <i class="fa-solid fa-dolly"></i>
+            <span>5. QUY TRÌNH NHẬP KHO CHI TIẾT & CẤP MÃ THÀNH AN</span>
+          </h2>
+          <p>Quy trình nhập kho khép kín đảm bảo 100% thiết bị nhập về đều có số Serial được kiểm soát chặt chẽ, chống trùng lặp tuyệt đối:</p>
+
+          <div class="step-flow-box">
+            <div class="d-flex align-items-center mb-2">
+              <span class="step-badge">1</span>
+              <h6 class="fw-bold mb-0 text-primary">Bước 1: Điền thông tin chung phiếu nhập</h6>
+            </div>
+            <p class="small mb-0 text-muted ms-4 ps-2">Chọn <b>Nhà cung cấp</b> (nếu là đối tác mới, bấm nút <code>+ NCC</code> để tạo nhanh không cần chuyển trang), chọn <b>Kho nhận hàng</b> (mặc định Kho VP), chọn ngày lập phiếu.</p>
+          </div>
+
+          <div class="step-flow-box">
+            <div class="d-flex align-items-center mb-2">
+              <span class="step-badge">2</span>
+              <h6 class="fw-bold mb-0 text-primary">Bước 2: Chọn Model thiết bị</h6>
+            </div>
+            <p class="small mb-0 text-muted ms-4 ps-2">Chọn mã Model máy trong danh mục. Hệ thống tự động điền Hãng sản xuất và Thời hạn bảo hành tiêu chuẩn.</p>
+          </div>
+
+          <div class="step-flow-box">
+            <div class="d-flex align-items-center mb-2">
+              <span class="step-badge">3</span>
+              <h6 class="fw-bold mb-0 text-primary">Bước 3: Nhập số Serial thiết bị bằng 3 phương thức</h6>
+            </div>
+            <div class="ms-4 ps-2 small text-muted">
+              <ul>
+                <li><b>Cách 1 (Súng quét Barcode cắm cổng USB):</b> Đặt con trỏ chuột vào ô Serial và bóp cò súng quét mã vạch trên thân máy/thùng carton.</li>
+                <li><b>Cách 2 (Quét Camera):</b> Bấm nút <b>"Camera Scan"</b> để camera tự động nhận diện liên tục không cần chạm tay.</li>
+                <li><b>Cách 3 (Dán danh sách lô hàng):</b> Dán một cột danh sách nhiều số Serial từ file Excel của nhà cung cấp gửi (mỗi dòng 1 mã SN).</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="step-flow-box">
+            <div class="d-flex align-items-center mb-2">
+              <span class="step-badge">4</span>
+              <h6 class="fw-bold mb-0 text-primary">Bước 4: Cấp mã tem nội bộ Thành An</h6>
+            </div>
+            <p class="small mb-0 text-muted ms-4 ps-2">Bấm nút <b>"Cấp mã nội bộ Thành An"</b>. Hệ thống tự động sinh mã định danh liên tiếp chuẩn doanh nghiệp: <code>TA-YYMMDD-000101</code>, <code>TA-YYMMDD-000102</code>... dùng để dán tem bảo hành nội bộ.</p>
+          </div>
+
+          <div class="step-flow-box">
+            <div class="d-flex align-items-center mb-2">
+              <span class="step-badge">5</span>
+              <h6 class="fw-bold mb-0 text-primary">Bước 5: Kiểm tra & Bấm Lưu Phiếu</h6>
+            </div>
+            <p class="small mb-0 text-muted ms-4 ps-2">Bấm <b>"+ Thêm vào phiếu"</b> để máy xuống bảng tạm. Kiểm tra lại số lượng. Sau đó bấm nút <b>"Lưu Phiếu Nhập Kho"</b>. Hệ thống sinh số phiếu <code>NK-YYMM-XXXX</code>, tăng số lượng tồn kho và sẵn sàng in phiếu.</p>
+          </div>
+
+          <div class="callout callout-warning">
+            <i class="fa-solid fa-shield-halved me-2"></i>
+            <b>Cơ chế chống trùng lặp 3 tầng:</b> Hệ thống sẽ lập tức chặn lại và báo động nếu số Serial quét vào: (1) Trùng với dòng vừa quét phía trên; (2) Đã có trong kho dữ liệu toàn hệ thống; hoặc (3) Đang nằm trong một phiếu Draft của thủ kho khác chưa lưu.
+          </div>
+        </section>
+
+        <!-- SECTION 6 -->
+        <section id="sec-6" class="doc-card">
+          <h2 class="section-title">
+            <i class="fa-solid fa-truck-ramp-box"></i>
+            <span>6. QUY TRÌNH XUẤT KHO & KÍCH HOẠT BẢO HÀNH ĐIỆN TỬ</span>
+          </h2>
+          <p>Mỗi lần xuất kho, hệ thống tự động gắn chặt số Serial máy với Khách hàng và khởi động bộ đếm bảo hành:</p>
+
+          <ol class="ps-3">
+            <li class="mb-2"><b>Chọn Khách hàng:</b> Chọn tên khách hàng/đối tác (hoặc bấm <code>+ KH</code> để thêm khách dự án mới).</li>
+            <li class="mb-2"><b>Quét số Serial xuất:</b> Quét số Serial của thiết bị lấy từ trên kệ kho.
+              <br><small class="text-danger"><i>* Kiểm soát an toàn: Nếu quét phải máy không có trong kho hoặc máy đang hỏng ở Kho Cách Ly, hệ thống sẽ từ chối và phát chuông cảnh báo ngay lập tức.</i></small>
+            </li>
+            <li class="mb-2"><b>Chọn gói bảo hành riêng cho từng máy:</b> Có thể gán linh hoạt: <code>0 tháng</code>, <code>3 tháng</code>, <code>6 tháng</code>, <code>12 tháng</code>, <code>24 tháng</code> hoặc <code>36 tháng</code> tùy theo hợp đồng kinh doanh.</li>
+            <li class="mb-2"><b>Lưu phiếu xuất:</b> Bấm <b>"Lưu Phiếu Xuất Kho"</b>. Máy lập tức được trừ khỏi tồn kho, trạng thái chuyển sang <code>EXPORTED</code> và ngày hết hạn bảo hành bắt đầu được tính chính xác từ ngày xuất này.</li>
+          </ol>
+        </section>
+
+        <!-- SECTION 7 -->
+        <section id="sec-7" class="doc-card">
+          <h2 class="section-title">
+            <i class="fa-solid fa-fingerprint"></i>
+            <span>7. TRA CỨU HỒ SƠ THIẾT BỊ SERIAL 360°</span>
+          </h2>
+          <p>Khi khách hàng gọi điện kiểm tra hoặc đem máy đến văn phòng bảo hành, nhân viên mở menu <b>Hồ sơ Serial 360°</b> và quét/gõ số Serial. Màn hình hiển thị toàn bộ lịch sử vòng đời:</p>
+
+          <div class="row g-3">
+            <div class="col-md-4">
+              <div class="p-3 bg-light border rounded text-center">
+                <i class="fa-solid fa-shield-heart text-success fs-3 mb-2"></i>
+                <h6 class="fw-bold">Thời Hạn Bảo Hành</h6>
+                <p class="small text-muted mb-0">Báo rõ Còn hạn (còn x ngày) kèm thanh tiến trình trực quan, hoặc thông báo Đã hết hạn bảo hành.</p>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="p-3 bg-light border rounded text-center">
+                <i class="fa-solid fa-receipt text-primary fs-3 mb-2"></i>
+                <h6 class="fw-bold">Nguồn Gốc Nhập Hàng</h6>
+                <p class="small text-muted mb-0">Nhập từ nhà cung cấp nào, ngày nhập nào, số phiếu nhập gốc là gì, giá nhập đầu vào.</p>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="p-3 bg-light border rounded text-center">
+                <i class="fa-solid fa-user-check text-info fs-3 mb-2"></i>
+                <h6 class="fw-bold">Lịch Sử Xuất Bán</h6>
+                <p class="small text-muted mb-0">Xuất bán cho khách hàng nào, số điện thoại, địa chỉ lắp đặt và số phiếu xuất giao hàng.</p>
+              </div>
+            </div>
+          </div>
+          <div class="mt-3 p-3 bg-white border rounded">
+            <h6 class="fw-bold text-secondary"><i class="fa-solid fa-timeline me-2"></i>Dòng thời gian sự kiện (Audit Timeline):</h6>
+            <p class="small text-muted mb-0">Ghi lại tường tận từng sự kiện: Ngày nhập kho -> Ngày xuất bán -> Các lần chuyển kho -> Các ca tiếp nhận sửa chữa bảo hành.</p>
+          </div>
+        </section>
+
+        <!-- SECTION 8 -->
+        <section id="sec-8" class="doc-card">
+          <h2 class="section-title">
+            <i class="fa-solid fa-warehouse"></i>
+            <span>8. CÁC NGHIỆP VỤ KHO NÂNG CAO & KIỂM KÊ DI ĐỘNG</span>
+          </h2>
+          <p>Nằm trong phân hệ <b>Nghiệp vụ kho</b>:</p>
+
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="p-3 border rounded h-100">
+                <h6 class="fw-bold text-primary"><i class="fa-solid fa-rotate-left me-2"></i>Hoàn nhập từ Khách (Customer Return)</h6>
+                <p class="small text-muted mb-0">Áp dụng khi khách trả máy do thừa hoặc đổi model. Quét Serial, hệ thống đối soát đúng lịch sử khách đã mua mới cho hoàn nhập lại vào kho.</p>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="p-3 border rounded h-100">
+                <h6 class="fw-bold text-danger"><i class="fa-solid fa-truck-fast me-2"></i>Trả hàng Nhà cung cấp (Supplier Return)</h6>
+                <p class="small text-muted mb-0">Áp dụng cho thiết bị lỗi ở Kho Cách Ly được hãng đồng ý thu hồi đổi mới. Quét Serial để xuất trả NCC và giải phóng máy.</p>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="p-3 border rounded h-100">
+                <h6 class="fw-bold text-info"><i class="fa-solid fa-arrows-split-up-and-left me-2"></i>Chuyển kho nội bộ (Stock Transfer)</h6>
+                <p class="small text-muted mb-0">Điều chuyển thiết bị giữa Kho VP và Kho Chi Nhánh. Quét danh sách Serial cần chuyển và bấm xác nhận, vị trí kho được cập nhật tự động.</p>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="p-3 border rounded h-100">
+                <h6 class="fw-bold text-success"><i class="fa-solid fa-clipboard-check me-2"></i>Kiểm kê kho thực tế (Stocktake)</h6>
+                <p class="small text-muted mb-0">Tạo phiên kiểm kê -> Cầm điện thoại đi dọc các kệ quét toàn bộ mã máy -> Hệ thống đối soát ra 3 danh sách: <b>Khớp (Xanh)</b>, <b>Thiếu (Đỏ)</b>, <b>Thừa (Vàng)</b>.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION 9 -->
+        <section id="sec-9" class="doc-card">
+          <h2 class="section-title">
+            <i class="fa-solid fa-wrench"></i>
+            <span>9. QUẢN LÝ CA BẢO HÀNH & DỊCH VỤ SỬA CHỮA</span>
+          </h2>
+          <p>Quy trình tiếp nhận và theo dõi sửa chữa thiết bị văn phòng chuyên nghiệp:</p>
+
+          <ol class="ps-3">
+            <li class="mb-2"><b>Mở ca tiếp nhận:</b> Vào menu <b>Bảo hành</b> -> Bấm <b>"+ Tiếp nhận ca mới"</b>.</li>
+            <li class="mb-2"><b>Quét Serial máy lỗi:</b> Hệ thống tự điền tên khách hàng, tên model máy và báo rõ máy còn trong hạn bảo hành hay không.</li>
+            <li class="mb-2"><b>Nhập mô tả triệu chứng:</b> Ghi rõ tình trạng lỗi (kẹt giấy, đen bản in, lỗi mainboard, không lên nguồn...).</li>
+            <li class="mb-2"><b>Cập nhật 5 trạng thái tiến độ:</b>
+              <div class="d-flex flex-wrap gap-2 mt-1">
+                <span class="badge bg-secondary">TIẾP NHẬN</span>
+                <span class="badge bg-warning text-dark">ĐANG SỬA</span>
+                <span class="badge bg-info text-dark">GỬI HÃNG</span>
+                <span class="badge bg-success">HOÀN TẤT</span>
+                <span class="badge bg-danger">ĐỔI MÁY MỚI</span>
+              </div>
+            </li>
+          </ol>
+        </section>
+
+        <!-- SECTION 10 -->
+        <section id="sec-10" class="doc-card">
+          <h2 class="section-title">
+            <i class="fa-solid fa-pen-to-square"></i>
+            <span>10. LỊCH SỬ GIAO DỊCH & XỬ LÝ KHI NHẬP/XUẤT NHẦM THÔNG TIN</span>
+          </h2>
+          <p>Khi nhân viên nhập hoặc xuất nhầm thông tin, hãy vào phân hệ <b>"Lịch sử giao dịch"</b> để xử lý theo đúng kịch bản:</p>
+
+          <div class="table-responsive">
+            <table class="table table-bordered table-hover align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th style="width: 25%;">Tình huống xảy ra</th>
+                  <th style="width: 20%;">Chức năng sử dụng</th>
+                  <th style="width: 55%;">Cách thức xử lý & Cơ chế an toàn</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="fw-bold text-dark">
+                    <i class="fa-solid fa-file-pen text-warning me-1"></i>
+                    Nhầm Nhà cung cấp, nhầm Khách hàng, nhầm Kho nhận, sai Địa chỉ hoặc gói bảo hành
+                  </td>
+                  <td>
+                    <span class="badge bg-warning text-dark"><i class="fa-solid fa-pen-to-square me-1"></i> SỬA PHIẾU</span>
+                    <br><small class="text-muted">(Icon cây bút vàng)</small>
+                  </td>
+                  <td class="small">
+                    Bấm vào icon <b>Cây bút vàng</b> tại dòng phiếu cần sửa -> Chọn lại Nhà cung cấp hoặc Khách hàng chính xác -> Nhập lý do thay đổi -> Bấm <b>Lưu Thay Đổi</b>.
+                    <br><i>* Hệ thống tự động cập nhật lại cho tất cả máy trong phiếu và lưu vết vào Nhật ký kiểm toán.</i>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="fw-bold text-danger">
+                    <i class="fa-solid fa-triangle-exclamation me-1"></i>
+                    Nhầm số Serial máy (quét nhầm máy khác, quét nhầm lô)
+                  </td>
+                  <td>
+                    <span class="badge bg-danger"><i class="fa-solid fa-ban me-1"></i> HỦY PHIẾU</span>
+                    <br><small class="text-muted">(Icon dấu cấm đỏ)</small>
+                  </td>
+                  <td class="small">
+                    Bấm vào icon <b>Dấu cấm đỏ</b> -> Nhập lý do hủy phiếu -> Bấm <b>Xác nhận Hủy</b>.
+                    <br><b>Cơ chế hoàn nguyên an toàn 100%:</b>
+                    <ul class="mb-1 ps-3">
+                      <li>Nếu là phiếu Nhập: Tự động xóa các số Serial sai ra khỏi kho và trừ lùi tồn kho về nguyên trạng.</li>
+                      <li>Nếu là phiếu Xuất: Tự động đưa các máy đó trở lại trạng thái tồn kho (<code>IN_STOCK</code>).</li>
+                    </ul>
+                    Sau đó, thủ kho chỉ việc lập lại phiếu mới với số Serial chuẩn.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- SECTION 11 -->
+        <section id="sec-11" class="doc-card">
+          <h2 class="section-title">
+            <i class="fa-solid fa-clock-rotate-left"></i>
+            <span>11. NHẬT KÝ KIỂM TOÁN HỆ THỐNG (AUDIT TRAIL)</span>
+          </h2>
+          <p>Audit Trail là tấm khiên minh bạch bảo vệ doanh nghiệp, chống thất thoát tài sản:</p>
+          <ul>
+            <li>Ghi nhận <b>100% mọi hành động</b>: Ai đăng nhập, ai thêm máy, ai xuất hàng, ai sửa phiếu, ai hủy phiếu, lúc mấy giờ mấy phút.</li>
+            <li>Ghi nhận chi tiết: Giá trị CŨ là gì $\rightarrow$ Giá trị MỚI là gì, lý do can thiệp là gì.</li>
+            <li>Nhật ký được lưu trữ bất biến (Immutable), không một tài khoản nào có quyền xóa hay chỉnh sửa nhật ký này.</li>
+          </ul>
+        </section>
+
+        <!-- SECTION 12 -->
+        <section id="sec-12" class="doc-card">
+          <h2 class="section-title">
+            <i class="fa-solid fa-folder-tree"></i>
+            <span>12. QUẢN TRỊ 6 DANH MỤC HỆ THỐNG</span>
+          </h2>
+          <p>Phân hệ chuẩn hóa cấu trúc dữ liệu toàn diện bao gồm 6 bảng danh mục:</p>
+          <div class="row g-2">
+            <div class="col-md-4"><div class="p-2 border rounded bg-light small fw-bold"><i class="fa-solid fa-print text-primary me-2"></i>1. Danh mục Model Sản phẩm</div></div>
+            <div class="col-md-4"><div class="p-2 border rounded bg-light small fw-bold"><i class="fa-solid fa-truck text-success me-2"></i>2. Danh mục Nhà cung cấp</div></div>
+            <div class="col-md-4"><div class="p-2 border rounded bg-light small fw-bold"><i class="fa-solid fa-users text-info me-2"></i>3. Danh mục Khách hàng</div></div>
+            <div class="col-md-4"><div class="p-2 border rounded bg-light small fw-bold"><i class="fa-solid fa-warehouse text-warning me-2"></i>4. Danh mục Kho hàng</div></div>
+            <div class="col-md-4"><div class="p-2 border rounded bg-light small fw-bold"><i class="fa-solid fa-copyright text-secondary me-2"></i>5. Danh mục Hãng sản xuất</div></div>
+            <div class="col-md-4"><div class="p-2 border rounded bg-light small fw-bold"><i class="fa-solid fa-tags text-danger me-2"></i>6. Danh mục Nhóm hàng hóa</div></div>
+          </div>
+          <div class="callout callout-tip mt-3 mb-0">
+            <i class="fa-solid fa-lightbulb me-2"></i>
+            <b>Nguyên tắc an toàn dữ liệu:</b> Khi một Model hoặc Nhà cung cấp đã có giao dịch, hệ thống sẽ bảo vệ không cho phép xóa vĩnh viễn mà chuyển sang trạng thái <i>Ngừng hoạt động (Inactive)</i> để bảo toàn số liệu kế toán.
+          </div>
+        </section>
+
+        <!-- SECTION 13 -->
+        <section id="sec-13" class="doc-card">
+          <h2 class="section-title">
+            <i class="fa-solid fa-gear"></i>
+            <span>13. PHÂN QUYỀN, CẤU HÌNH MỞ RỘNG, SAO LƯU & RESET KHO</span>
+          </h2>
+          <p>Phân hệ dành riêng cho Quản trị viên cấp cao:</p>
+          <ol>
+            <li class="mb-2"><b>Quản lý Tài khoản & Ma trận 20 Quyền:</b> Tự do phân định quyền hạn chi tiết cho từng cá nhân và phòng ban.</li>
+            <li class="mb-2"><b>Trường dữ liệu tùy chỉnh (Custom Fields):</b> Tự thêm các trường thông tin riêng của doanh nghiệp (như <i>Số hợp đồng PO, Màu sắc máy, Mã tài sản của khách</i>) mà không phải can thiệp code.</li>
+            <li class="mb-2"><b>Sao lưu dữ liệu dự phòng (Backup & Restore):</b> Bấm nút <i>Tạo bản sao lưu ngay</i> để chụp lại toàn bộ dữ liệu hệ thống. Khi xảy ra sự cố có thể bấm <i>Phục hồi</i> để quay lại mốc an toàn.</li>
+            <li class="mb-2"><b>Reset kho an toàn 5 lớp:</b> Cơ chế kiểm soát kép yêu cầu gõ đúng cụm từ <code>RESET-THANHAN</code> và xác thực mật khẩu Admin để tránh thao tác nhầm.</li>
+          </ol>
+        </section>
+
+        <!-- SECTION 14 -->
+        <section id="sec-14" class="doc-card">
+          <h2 class="section-title">
+            <i class="fa-solid fa-key"></i>
+            <span>14. ĐỔI MẬT KHẨU QUẢN TRỊ VIÊN (ADMIN)</span>
+          </h2>
+          <p>Mật khẩu Quản trị viên là chìa khóa bảo mật cao nhất của toàn hệ thống, bảo vệ các hành động sống còn: <i>sửa/hủy phiếu, sao lưu phục hồi dữ liệu, reset kho và phân quyền nhân sự</i>.</p>
+
+          <h6 class="fw-bold text-primary mb-2">Vị trí mở chức năng Đổi Mật Khẩu:</h6>
+          <ul>
+            <li><b>Cách 1 (Nhanh nhất):</b> Bấm vào tên người đăng nhập (<b>Khổng Mạnh Cường</b>) ở góc trên bên phải màn hình Topbar -> Chọn mục <b>"Đổi mật khẩu Admin"</b> (icon chìa khóa vàng).</li>
+            <li><b>Cách 2:</b> Vào menu <b>Cài đặt hệ thống</b> -> Tab <b>"2. Tài Khoản Nhân Viên (RBAC)"</b> -> Tại dòng tài khoản <code>admin</code>, bấm vào nút <b>icon chìa khóa</b> ở cột Thao tác.</li>
+          </ul>
+
+          <h6 class="fw-bold text-primary mb-2">Các bước thao tác đổi mật khẩu:</h6>
+          <div class="step-flow-box">
+            <div class="row g-3">
+              <div class="col-md-4">
+                <span class="badge bg-secondary mb-1">Bước 1</span>
+                <div class="fw-bold small">Mật khẩu hiện tại</div>
+                <div class="small text-muted">Nhập mật khẩu Admin đang dùng (mật khẩu mặc định hệ thống ban đầu là <code>admin123</code>).</div>
+              </div>
+              <div class="col-md-4">
+                <span class="badge bg-primary mb-1">Bước 2</span>
+                <div class="fw-bold small">Mật khẩu mới</div>
+                <div class="small text-muted">Nhập mật khẩu mới từ <b>6 ký tự trở lên</b>, nên kết hợp cả chữ và số để tăng độ an toàn.</div>
+              </div>
+              <div class="col-md-4">
+                <span class="badge bg-success mb-1">Bước 3</span>
+                <div class="fw-bold small">Xác nhận mật khẩu</div>
+                <div class="small text-muted">Nhập lại chính xác mật khẩu mới. Có icon con mắt để bật/tắt xem mật khẩu tránh gõ nhầm.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="callout callout-tip mb-0">
+            <i class="fa-solid fa-shield-check me-2"></i>
+            <b>Hiệu lực tức thì:</b> Sau khi đổi thành công, hệ thống tự động lưu mật khẩu mới và ghi nhận nhật ký vào <b>Audit Trail</b>. Các chức năng xác thực nhạy cảm sau đó (như khi bấm <i>Sao lưu dữ liệu</i> hoặc <i>Reset kho</i>) sẽ lập tức yêu cầu nhập mật khẩu mới này.
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- BACK TO TOP BUTTON -->
+  <a href="#" class="btn-back-top" title="Lên đầu trang">
+    <i class="fa-solid fa-arrow-up"></i>
+  </a>
+
+  <!-- BOOTSTRAP 5 JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <script>
+    // XỬ LÝ ACTIVE STATE CHO SIDEBAR TOC KHI CUỘN TRANG
+    window.addEventListener('DOMContentLoaded', () => {
+      const sections = document.querySelectorAll('section.doc-card');
+      const navLinks = document.querySelectorAll('.sidebar-toc .toc-link');
+
+      window.addEventListener('scroll', () => {
+        let current = '';
+        sections.forEach(section => {
+          const sectionTop = section.offsetTop;
+          if (pageYOffset >= sectionTop - 150) {
+            current = section.getAttribute('id');
+          }
+        });
+
+        navLinks.forEach(link => {
+          link.classList.remove('active');
+          if (link.getAttribute('href') === '#' + current) {
+            link.classList.add('active');
+          }
+        });
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1300" height="850" viewBox="0 0 1300 850">
+<title>THANH AN - icon - color-transparent</title>
+<path id="T" fill="#0152CF" fill-rule="evenodd" transform="translate(-2 -5) scale(1 1)" d="M 204 70 L 678 70 L 633 178 L 501 178 L 461 563 L 306 633 L 351 178 L 191 178 Z"/>
+<path id="A-upper" fill="#0152CF" fill-rule="evenodd" transform="translate(-2 -5) scale(1 1)" d="M 541 529 L 730 79 Q 733 70 743 70 L 911 70 L 1004 303 L 891 358 L 824 197 L 722 442 Z"/>
+<path id="A-lower" fill="#0152CF" fill-rule="evenodd" transform="translate(-2 -5) scale(1 1)" d="M 824 609 L 1059 442 L 1177 736 L 1011 736 L 960 609 Z"/>
+<path id="swoosh-blue" fill="#0152CF" fill-rule="evenodd" transform="translate(-2 -5) scale(1 1)" d="M 78 762 C 394 644 667 509 974 356 C 1089 299 1179 233 1226 163 C 1172 277 1040 372 894 453 C 631 597 349 724 78 762 Z"/>
+<path id="swoosh-yellow" fill="#FFC420" fill-rule="evenodd" transform="translate(-2 -5) scale(1 1)" d="M 432 742 C 624 632 826 514 1005 394 C 1102 329 1176 266 1212 211 C 1158 328 1080 403 974 482 L 662 709 C 644 724 519 736 432 742 Z"/>
+</svg>

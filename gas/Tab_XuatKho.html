@@ -1,0 +1,119 @@
+<!-- ==========================================
+     PHÂN HỆ 4: TẠO PHIẾU XUẤT KHO & BẢO HÀNH (V4)
+     ========================================== -->
+<div class="container-fluid p-0">
+  <div class="row mb-3">
+    <div class="col-md-12">
+      <h3 class="fw-bold text-dark"><i class="fa-solid fa-file-arrow-up text-danger"></i> Tạo Phiếu Xuất Kho & Bảo Hành</h3>
+      <p class="text-muted mb-0">Xuất bán hai chiều linh hoạt: Bắn Serial tự nhận diện máy HOẶC Chọn Model để tích chọn Serial tồn kho.</p>
+    </div>
+  </div>
+
+  <div class="row">
+    <!-- CỘT TRÁI: THÔNG TIN KHÁCH HÀNG & BẢO HÀNH -->
+    <div class="col-md-5">
+      <div class="card shadow-sm border-0 mb-3 bg-white">
+        <div class="card-header bg-white fw-bold py-3 text-danger">1. THÔNG TIN XUẤT BÁN</div>
+        <div class="card-body">
+          <div class="mb-2">
+            <label class="form-label small fw-bold">Mã phiếu xuất</label>
+            <input type="text" id="xk-maphieu" class="form-control form-control-sm bg-light" readonly>
+          </div>
+          <div class="mb-2">
+            <label class="form-label small fw-bold">Ngày xuất</label>
+            <input type="date" id="xk-ngay" class="form-control form-control-sm" onchange="calculateBaoHanhExp()">
+          </div>
+
+          <!-- TÌM KHÁCH HÀNG THÔNG MINH -->
+          <div class="mb-2 position-relative">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <label class="form-label small fw-bold mb-0">Khách hàng (*)</label>
+              <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none fw-bold" onclick="openQuickAddKhModal()">
+                <i class="fa-solid fa-user-plus"></i> + Thêm nhanh
+              </button>
+            </div>
+            <input type="text" id="xk-kh-input" class="form-control form-control-sm" placeholder="Gõ tên hoặc SĐT khách..." oninput="filterKhSuggest(this.value)" autocomplete="off">
+            <ul id="kh-suggest-list" class="list-group position-absolute w-100 shadow-lg d-none" style="z-index: 1050; max-height: 180px; overflow-y: auto;"></ul>
+          </div>
+
+          <div class="row g-2 mb-2">
+            <div class="col-md-6">
+              <label class="form-label small fw-bold">Số điện thoại (*)</label>
+              <input type="text" id="xk-sdt" class="form-control form-control-sm" placeholder="VD: 090..." inputmode="tel" onblur="normalizePhoneInput(this)">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-bold">Địa chỉ nhận hàng</label>
+              <input type="text" id="xk-diachi" class="form-control form-control-sm" placeholder="Địa chỉ giao...">
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-success">Gói Bảo Hành Kèm Theo (*)</label>
+            <div class="input-group input-group-sm">
+              <select id="xk-goibh" class="form-select fw-bold text-success" onchange="calculateBaoHanhExp()"></select>
+              <span class="input-group-text bg-light text-muted small" id="xk-hanbh-preview">Hết hạn: --/--/----</span>
+            </div>
+          </div>
+
+          <div class="mb-2">
+            <label class="form-label small fw-bold">Ghi chú xuất hàng</label>
+            <textarea id="xk-ghichu" class="form-control form-control-sm" rows="2" placeholder="Ghi chú thêm..."></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CỘT PHẢI: CHỌN MÁY TỒN KHO ĐỂ XUẤT -->
+    <div class="col-md-7">
+      <div class="card shadow-sm border-0 mb-3 bg-white">
+        <div class="card-header bg-white fw-bold py-3 text-primary d-flex justify-content-between align-items-center">
+          <span>2. DANH SÁCH MÁY CHỌN XUẤT</span>
+          <span id="xk-selected-count" class="badge bg-danger fs-6">Đã chọn: 0 máy</span>
+        </div>
+        <div class="card-body">
+          <div class="p-3 bg-light rounded border mb-3">
+            <div class="mb-2">
+              <label class="form-label small fw-bold text-dark">
+                <i class="fa-solid fa-filter text-primary"></i> Cách 1: Lọc nhanh Serial đang tồn theo Model
+              </label>
+              <select id="xk-filter-model" class="form-select form-select-sm mb-2" onchange="renderSerialCheckboxes(this.value)">
+                <option value="">-- Chọn Model để hiển thị danh sách Serial đang tồn --</option>
+              </select>
+              <div id="xk-serial-checkbox-container" class="d-flex flex-wrap gap-2" style="max-height: 120px; overflow-y: auto;">
+                <span class="text-muted small">Hãy chọn 1 Model ở trên để tích chọn các máy đang nằm trong kho.</span>
+              </div>
+            </div>
+
+            <div class="mb-0">
+              <label class="form-label small fw-bold text-dark">
+                <i class="fa-solid fa-barcode text-success"></i> Cách 2: Bắn máy quét hoặc dán mã Serial trực tiếp (Mỗi dòng 1 mã):
+              </label>
+              <textarea id="xk-serials-input" class="form-control font-monospace form-control-sm" rows="3" placeholder="Dán hoặc quét mã vạch Serial vào đây..." oninput="onManualSerialsInput()"></textarea>
+            </div>
+          </div>
+
+          <!-- BẢNG NHẬN DIỆN THIẾT BỊ HỢP LỆ -->
+          <div class="table-responsive mb-3" style="max-height: 250px; overflow-y: auto;">
+            <table class="table table-bordered table-sm small align-middle mb-0">
+              <thead class="table-light sticky-top">
+                <tr>
+                  <th width="30%">Mã Serial</th>
+                  <th width="35%">Model Máy</th>
+                  <th width="20%">Vị trí kho</th>
+                  <th width="15%" class="text-center">Trạng thái</th>
+                </tr>
+              </thead>
+              <tbody id="xk-recognized-body">
+                <tr><td colspan="4" class="text-center text-muted py-3">Chưa có máy nào được chọn.</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <button id="btn-submit-xuat" class="btn btn-danger w-100 fw-bold py-2" onclick="submitXuatKhoBtn()" disabled>
+            <i class="fa-solid fa-cloud-arrow-up me-1"></i> XÁC NHẬN XUẤT KHO & KÍCH HOẠT BẢO HÀNH
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

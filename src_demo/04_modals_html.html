@@ -1,0 +1,934 @@
+  <!-- ==================================================== -->
+  <!-- MODAL: CAMERA SCANNER (YÊU CẦU I & 11) -->
+  <!-- ==================================================== -->
+  <div class="modal fade" id="scannerModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-dark text-white py-2">
+          <h6 class="modal-title d-flex align-items-center gap-2">
+            <i class="fa-solid fa-camera text-success"></i>
+            <span id="scanner-modal-title">Camera Quét Barcode / QR Code</span>
+          </h6>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" onclick="stopScannerCamera()"></button>
+        </div>
+        <div class="modal-body p-3">
+          <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded border">
+            <div>
+              <span class="fw-bold small d-block">Chế độ quét liên tục (Continuous Scan)</span>
+              <small class="text-muted" style="font-size: 0.72rem;">Không đóng camera sau mỗi mã, tự động bíp & thêm vào danh sách</small>
+            </div>
+            <div class="form-check form-switch m-0">
+              <input class="form-check-input" type="checkbox" id="scanner-continuous-toggle" checked style="cursor: pointer;">
+            </div>
+          </div>
+
+          <div id="scanner-video-wrapper">
+            <div id="html5-qr-reader" style="width: 100%;"></div>
+            <div class="scanner-laser" id="scanner-laser-line"></div>
+          </div>
+
+          <div id="scanner-feedback-box" class="mt-2 p-2 rounded small text-center fw-semibold bg-light text-muted">
+            <i class="fa-solid fa-circle-notch fa-spin me-1"></i> Đang hướng camera vào mã vạch / QR tem thiết bị...
+          </div>
+
+          <div id="scanner-recent-container" class="mt-2" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span class="small fw-bold text-muted">Đã quét trong phiên này:</span>
+              <span class="badge bg-success" id="scanner-scanned-count">0 mã</span>
+            </div>
+            <div id="scanner-scanned-list" class="d-flex flex-wrap gap-1 p-2 bg-light border rounded" style="max-height: 80px; overflow-y: auto;">
+            </div>
+          </div>
+
+          <div class="mt-3 pt-2 border-top">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <small class="fw-bold text-secondary">Mô phỏng máy quét (Dùng test nhanh trên máy tính):</small>
+            </div>
+            <div class="input-group input-group-sm">
+              <select id="mock-scanner-select" class="form-select">
+              </select>
+              <button class="btn btn-outline-success" onclick="triggerMockScan()">
+                <i class="fa-solid fa-bolt"></i> Quét mã này
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer py-2 d-flex justify-content-between">
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal" onclick="stopScannerCamera()">Đóng</button>
+          <button type="button" class="btn btn-sm btn-success" data-bs-dismiss="modal" onclick="stopScannerCamera()">
+            <i class="fa-solid fa-check"></i> Hoàn Tất Quét
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- MODAL: PREVIEW XUẤT KHO TRƯỚC KHI CONFIRM (YÊU CẦU C2) -->
+  <!-- ==================================================== -->
+  <div class="modal fade" id="previewXuatModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white py-2">
+          <h6 class="modal-title d-flex align-items-center gap-2">
+            <i class="fa-solid fa-clipboard-check"></i>
+            <span>Xem Trước & Xác Nhận Xuất Kho (Preview)</span>
+          </h6>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-3">
+          <div class="p-3 bg-light rounded border mb-3">
+            <div class="row g-2 small">
+              <div class="col-6 col-md-4"><strong>Khách hàng:</strong> <span id="prev-xuat-khach">--</span></div>
+              <div class="col-6 col-md-4"><strong>Số điện thoại:</strong> <span id="prev-xuat-sdt" class="font-monospace text-primary fw-bold">--</span></div>
+              <div class="col-6 col-md-4"><strong>Kho xuất:</strong> <span id="prev-xuat-kho">--</span></div>
+              <div class="col-6 col-md-4"><strong>Ngày xuất:</strong> <span id="prev-xuat-ngay">--</span></div>
+              <div class="col-12 col-md-8"><strong>Địa chỉ giao:</strong> <span id="prev-xuat-diachi">--</span></div>
+            </div>
+          </div>
+
+          <h6 class="fw-bold mb-2 small text-primary"><i class="fa-solid fa-boxes-stacked me-1"></i> Danh Sách Thiết Bị Xuất & Bảo Hành Riêng</h6>
+          <div class="table-responsive">
+            <table class="table table-sm table-bordered align-middle mb-2">
+              <thead class="table-light small">
+                <tr>
+                  <th>#</th>
+                  <th>Model</th>
+                  <th>Serial Hãng</th>
+                  <th>Mã Nội Bộ</th>
+                  <th>Gói Bảo Hành</th>
+                  <th>Hạn Bảo Hành</th>
+                  <th>Kiểm Tra</th>
+                </tr>
+              </thead>
+              <tbody id="prev-xuat-table-body" class="small">
+              </tbody>
+            </table>
+          </div>
+
+          <div id="prev-xuat-alert-box">
+          </div>
+        </div>
+        <div class="modal-footer py-2">
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Quay lại sửa</button>
+          <button type="button" class="btn btn-sm btn-success" id="btn-final-confirm-xuat" onclick="executeConfirmXuatVoucher()">
+            <i class="fa-solid fa-check-double"></i> Xác Nhận Xuất Kho Chính Thức
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- MODAL: PREVIEW NHẬP NHANH EXCEL (YÊU CẦU B2 & B3) -->
+  <!-- ==================================================== -->
+  <div class="modal fade" id="previewExcelNhapModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-success text-white py-2">
+          <h6 class="modal-title d-flex align-items-center gap-2">
+            <i class="fa-solid fa-file-circle-check"></i>
+            <span>Kết Quả Phân Tích & Đối Soát Nhập Nhanh Từ Excel</span>
+          </h6>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-3">
+          <div class="row g-2 mb-3 text-center" id="excel-summary-stats-box">
+          </div>
+
+          <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+            <table class="table table-sm table-hover align-middle mb-0">
+              <thead class="table-light small sticky-top">
+                <tr>
+                  <th>Dòng</th>
+                  <th>Model Nhận Diện</th>
+                  <th>Serial Hãng (Mfg SN)</th>
+                  <th>Mã Nội Bộ</th>
+                  <th>Trạng Thái Đối Soát</th>
+                </tr>
+              </thead>
+              <tbody id="excel-preview-table-body" class="small">
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer py-2 d-flex justify-content-between">
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Đóng & Điều chỉnh lại</button>
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-sm btn-outline-primary" onclick="applyExcelParsedToDraft(false)">
+              <i class="fa-solid fa-arrow-down"></i> Đưa vào Draft
+            </button>
+            <button type="button" class="btn btn-sm btn-success" id="btn-excel-direct-confirm" onclick="applyExcelParsedToDraft(true)">
+              <i class="fa-solid fa-circle-check"></i> Xác Nhận Nhập Kho Ngay
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- MODAL: NÂNG CẤP CHI TIẾT PHIẾU HIỆN TẠI (YÊU CẦU 2) -->
+  <!-- ==================================================== -->
+  <div class="modal fade" id="viewVoucherModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-light py-2">
+          <h6 class="modal-title fw-bold" id="view-voucher-title">Hồ Sơ Chi Tiết Phiếu</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-3">
+          <!-- Thông tin tiêu đề phiếu mở rộng (Yêu cầu 2: Thời gian tạo, người sửa gần nhất, thời gian sửa) -->
+          <div id="view-voucher-header-info" class="p-3 bg-light rounded border mb-3 small">
+          </div>
+
+          <!-- Tabs: Danh Sách Thiết Bị vs Lịch Sử Thay Đổi (Yêu cầu 2 & 7.3) -->
+          <ul class="nav nav-tabs mb-3" id="viewVoucherTabs" role="tablist">
+            <li class="nav-item">
+              <button class="nav-link active small fw-bold" id="tab-voucher-items-btn" data-bs-toggle="tab" data-bs-target="#tab-voucher-items" type="button">
+                <i class="fa-solid fa-boxes-stacked me-1"></i> Danh Sách Thiết Bị Trong Phiếu
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link small fw-bold text-danger" id="tab-voucher-history-btn" data-bs-toggle="tab" data-bs-target="#tab-voucher-history" type="button">
+                <i class="fa-solid fa-clock-rotate-left me-1"></i> Lịch Sử Thay Đổi (Audit)
+              </button>
+            </li>
+          </ul>
+
+          <div class="tab-content" id="viewVoucherTabsContent">
+            <!-- TAB 1: DANH SÁCH THIẾT BỊ TRONG PHIẾU (Serial clickable -> mở 360 - Yêu cầu 2) -->
+            <div class="tab-pane fade show active" id="tab-voucher-items">
+              <div class="table-responsive">
+                <table class="table table-sm table-bordered align-middle mb-0">
+                  <thead class="table-light small">
+                    <tr id="view-voucher-table-header-row">
+                      <th>#</th>
+                      <th>Model</th>
+                      <th>Serial Hãng (Click mở 360°)</th>
+                      <th>Mã Nội Bộ</th>
+                      <th>Vị Trí / Kho Hiện Tại</th>
+                      <th>Bảo Hành</th>
+                      <th>Trạng Thái & Vết Nghiệp Vụ Sau Phiếu</th>
+                    </tr>
+                  </thead>
+                  <tbody id="view-voucher-items-body" class="small">
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- TAB 2: LỊCH SỬ THAY ĐỔI (AUDIT TIMELINE CHO PHIẾU - YÊU CẦU 2 & 7.3) -->
+            <div class="tab-pane fade" id="tab-voucher-history">
+              <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle mb-0">
+                  <thead class="table-light small">
+                    <tr>
+                      <th>Thời Gian</th>
+                      <th>Người Thực Hiện</th>
+                      <th>Hành Động</th>
+                      <th>Chi Tiết Thay Đổi (Field-Level)</th>
+                      <th>Lý Do</th>
+                    </tr>
+                  </thead>
+                  <tbody id="view-voucher-history-body" class="small">
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer py-2 d-flex justify-content-between">
+          <div id="view-voucher-footer-left">
+          </div>
+          <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Đóng</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- MODAL: SỬA PHIẾU NHẬP / XUẤT (YÊU CẦU 3) -->
+  <!-- ==================================================== -->
+  <div class="modal fade" id="editVoucherModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-warning py-2 text-dark">
+          <h6 class="modal-title fw-bold" id="edit-voucher-modal-title">
+            <i class="fa-solid fa-pen-to-square me-1"></i> Chỉnh Sửa Thông Tin Phiếu (Manager / Admin)
+          </h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-3">
+          <input type="hidden" id="edit-voucher-type">
+          <input type="hidden" id="edit-voucher-code">
+
+          <div class="p-2 bg-light rounded border mb-3 small">
+            Mã phiếu: <strong id="edit-voucher-code-label" class="font-monospace text-primary">--</strong> | 
+            Trạng thái: <span class="badge bg-success" id="edit-voucher-status-label">CONFIRMED</span>
+          </div>
+
+          <!-- Các trường cho phép sửa -->
+          <div id="edit-voucher-fields-container" class="row g-3">
+          </div>
+
+          <hr class="my-3">
+
+          <div class="mb-2">
+            <label class="form-label small fw-bold text-danger mb-1">Lý do điều chỉnh / sửa phiếu (*) (Bắt buộc ghi nhận Audit)</label>
+            <input type="text" id="edit-voucher-reason" class="form-control form-control-sm" placeholder="Ví dụ: Khách hàng xác nhận cập nhật SĐT và gia hạn BH thêm 12 tháng...">
+          </div>
+
+          <!-- Cảnh báo dependency nếu có -->
+          <div id="edit-voucher-dependency-alert" class="small mt-2" style="display: none;"></div>
+        </div>
+        <div class="modal-footer py-2 d-flex justify-content-between">
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Hủy bỏ</button>
+          <button type="button" class="btn btn-sm btn-warning text-dark fw-bold" id="btn-submit-edit-voucher" onclick="submitEditVoucher()">
+            <i class="fa-solid fa-floppy-disk me-1"></i> Lưu Thay Đổi & Ghi Audit
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- MODAL: THÊM KHÁCH HÀNG NHANH TẠI XUẤT KHO (YÊU CẦU 4.3) -->
+  <!-- ==================================================== -->
+  <div class="modal fade" id="quickAddCustomerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-light py-2">
+          <h6 class="modal-title fw-bold"><i class="fa-solid fa-user-plus text-primary me-1"></i> Thêm Khách Hàng Nhanh</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-3">
+          <div class="mb-2">
+            <label class="form-label small fw-semibold text-muted mb-1">Tên khách hàng / Đơn vị (*)</label>
+            <input type="text" id="quick-cust-name" class="form-control form-control-sm" placeholder="Ví dụ: Cty CP Giải Pháp Số">
+          </div>
+          <div class="mb-2">
+            <label class="form-label small fw-semibold text-muted mb-1">Số điện thoại (* Bảo lưu số 0)</label>
+            <input type="text" id="quick-cust-phone" class="form-control form-control-sm" placeholder="0909888777">
+          </div>
+          <div class="mb-2">
+            <label class="form-label small fw-semibold text-muted mb-1">Địa chỉ giao nhận hàng</label>
+            <input type="text" id="quick-cust-address" class="form-control form-control-sm" placeholder="Địa chỉ cơ quan...">
+          </div>
+          <div class="mb-2">
+            <label class="form-label small fw-semibold text-muted mb-1">Người liên hệ</label>
+            <input type="text" id="quick-cust-contact" class="form-control form-control-sm" placeholder="Tên anh/chị nhận máy...">
+          </div>
+        </div>
+        <div class="modal-footer py-2">
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
+          <button type="button" class="btn btn-sm btn-primary" onclick="submitQuickAddCustomer()">
+            <i class="fa-solid fa-save me-1"></i> Lưu & Chọn Khách Này
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- MODAL: THÊM MODEL NHANH (YÊU CẦU B5 & 4.1) -->
+  <!-- ==================================================== -->
+  <div class="modal fade" id="quickAddModelModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-light py-2">
+          <h6 class="modal-title fw-bold"><i class="fa-solid fa-plus-circle text-primary me-1"></i> Thêm Model Sản Phẩm</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-3">
+          <div class="mb-2">
+            <label class="form-label small fw-semibold text-muted mb-1">Mã Model (*)</label>
+            <input type="text" id="quick-model-name" class="form-control form-control-sm" placeholder="Ví dụ: Canon LBP 6030w">
+          </div>
+          <div class="mb-2">
+            <label class="form-label small fw-semibold text-muted mb-1">Tên Sản Phẩm Đầy Đủ (*)</label>
+            <input type="text" id="quick-model-desc" class="form-control form-control-sm" placeholder="Ví dụ: Máy in laser Wifi Canon 6030w">
+          </div>
+          <div class="row g-2 mb-2">
+            <div class="col-6">
+              <label class="form-label small fw-semibold text-muted mb-1">Hãng sản xuất (*)</label>
+              <select id="quick-model-brand" class="form-select form-select-sm">
+              </select>
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-semibold text-muted mb-1">Nhóm hàng (*)</label>
+              <select id="quick-model-category" class="form-select form-select-sm">
+              </select>
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-semibold text-muted mb-1">BH mặc định (tháng)</label>
+              <input type="number" id="quick-model-warranty" class="form-control form-control-sm" value="12" min="0">
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-semibold text-muted mb-1">Quản lý Serial</label>
+              <select id="quick-model-serial-track" class="form-select form-select-sm">
+                <option value="true">Có (Bắt buộc Serial)</option>
+                <option value="false">Không (Hàng không serial)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer py-2">
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
+          <button type="button" class="btn btn-sm btn-primary" onclick="submitQuickAddModel()">
+            <i class="fa-solid fa-save me-1"></i> Lưu Model
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- MODAL: THÊM NCC NHANH (YÊU CẦU B5 & 4.2) -->
+  <!-- ==================================================== -->
+  <div class="modal fade" id="quickAddSupplierModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-light py-2">
+          <h6 class="modal-title fw-bold"><i class="fa-solid fa-plus-circle text-success me-1"></i> Thêm Nhà Cung Cấp</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-3">
+          <div class="mb-2">
+            <label class="form-label small fw-semibold text-muted mb-1">Mã Viết Tắt (*)</label>
+            <input type="text" id="quick-ncc-code" class="form-control form-control-sm" placeholder="Ví dụ: SYNNEX_FPT">
+          </div>
+          <div class="mb-2">
+            <label class="form-label small fw-semibold text-muted mb-1">Tên Đầy Đủ NCC (*)</label>
+            <input type="text" id="quick-ncc-name" class="form-control form-control-sm" placeholder="Ví dụ: Công ty CP Phân Phối Synnex FPT">
+          </div>
+          <div class="row g-2 mb-2">
+            <div class="col-6">
+              <label class="form-label small fw-semibold text-muted mb-1">Số Điện Thoại</label>
+              <input type="text" id="quick-ncc-phone" class="form-control form-control-sm" placeholder="024.73006666">
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-semibold text-muted mb-1">Email</label>
+              <input type="email" id="quick-ncc-email" class="form-control form-control-sm" placeholder="contact@supplier.vn">
+            </div>
+          </div>
+          <div class="mb-2">
+            <label class="form-label small fw-semibold text-muted mb-1">Địa chỉ</label>
+            <input type="text" id="quick-ncc-address" class="form-control form-control-sm" placeholder="Trụ sở nhà cung cấp...">
+          </div>
+        </div>
+        <div class="modal-footer py-2">
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
+          <button type="button" class="btn btn-sm btn-success" onclick="submitQuickAddSupplier()">
+            <i class="fa-solid fa-save me-1"></i> Lưu Nhà Cung Cấp
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- MODAL: QUẢN LÝ / TẠO CUSTOM FIELD (YÊU CẦU 5) -->
+  <!-- ==================================================== -->
+  <div class="modal fade" id="customFieldModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-light py-2">
+          <h6 class="modal-title fw-bold" id="customFieldModalTitle"><i class="fa-solid fa-sliders text-primary me-1"></i> Tạo Trường Dữ Liệu Tùy Chỉnh (Custom Field)</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-3">
+          <input type="hidden" id="cf-id">
+          <div class="mb-2">
+            <label class="form-label small fw-semibold text-muted mb-1">Tên hiển thị trường (*)</label>
+            <input type="text" id="cf-name" class="form-control form-control-sm" placeholder="Ví dụ: Màu sắc, Số PO, Mã dự án...">
+          </div>
+          <div class="mb-2">
+            <label class="form-label small fw-semibold text-muted mb-1">Mã trường (Field Code - không dấu) (*)</label>
+            <input type="text" id="cf-code" class="form-control form-control-sm font-monospace" placeholder="Ví dụ: color, project_po, cust_tag...">
+          </div>
+          <div class="row g-2 mb-2">
+            <div class="col-6">
+              <label class="form-label small fw-semibold text-muted mb-1">Module áp dụng (*)</label>
+              <select id="cf-module" class="form-select form-select-sm">
+                <option value="Model">Model / Sản phẩm</option>
+                <option value="Serial">Serial thiết bị</option>
+                <option value="NhapKho">Phiếu nhập kho</option>
+                <option value="XuatKho">Phiếu xuất kho</option>
+                <option value="KhachHang">Khách hàng</option>
+                <option value="NCC">Nhà cung cấp</option>
+                <option value="Warranty">Ca bảo hành</option>
+                <option value="KiemKe">Phiên kiểm kê</option>
+              </select>
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-semibold text-muted mb-1">Kiểu dữ liệu (*)</label>
+              <select id="cf-type" class="form-select form-select-sm" onchange="toggleCustomFieldOptions(this.value)">
+                <option value="Text">Văn bản (Text)</option>
+                <option value="Number">Số (Number)</option>
+                <option value="Date">Ngày tháng (Date)</option>
+                <option value="Dropdown">Danh sách chọn (Dropdown)</option>
+                <option value="YesNo">Có / Không (Yes / No)</option>
+                <option value="LongText">Đoạn văn (Long Text)</option>
+              </select>
+            </div>
+          </div>
+          <div class="mb-2" id="cf-options-container" style="display: none;">
+            <label class="form-label small fw-semibold text-muted mb-1">Các tùy chọn Dropdown (ngăn cách bằng dấu phẩy hoặc xuống dòng)</label>
+            <textarea id="cf-options" class="form-control form-control-sm" rows="2" placeholder="Trắng, Đen, Bạc, Xám..."></textarea>
+          </div>
+          <div class="row g-2 mb-2">
+            <div class="col-8">
+              <label class="form-label small fw-semibold text-muted mb-1">Giá trị mặc định</label>
+              <input type="text" id="cf-default-val" class="form-control form-control-sm" placeholder="Để trống nếu không có">
+            </div>
+            <div class="col-4">
+              <label class="form-label small fw-semibold text-muted mb-1">Thứ tự hiển thị</label>
+              <input type="number" id="cf-order" class="form-control form-control-sm text-center" value="1" min="1">
+            </div>
+          </div>
+          <div class="row g-2 pt-2 border-top">
+            <div class="col-6">
+              <div class="form-check form-switch small">
+                <input class="form-check-input" type="checkbox" id="cf-required">
+                <label class="form-check-label" for="cf-required">Bắt buộc nhập</label>
+              </div>
+              <div class="form-check form-switch small mt-1">
+                <input class="form-check-input" type="checkbox" id="cf-show-form" checked>
+                <label class="form-check-label" for="cf-show-form">Hiển thị trên Form</label>
+              </div>
+              <div class="form-check form-switch small mt-1">
+                <input class="form-check-input" type="checkbox" id="cf-show-table" checked>
+                <label class="form-check-label" for="cf-show-table">Hiển thị trên Bảng</label>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="form-check form-switch small">
+                <input class="form-check-input" type="checkbox" id="cf-searchable" checked>
+                <label class="form-check-label" for="cf-searchable">Cho phép tìm kiếm</label>
+              </div>
+              <div class="form-check form-switch small mt-1">
+                <input class="form-check-input" type="checkbox" id="cf-filterable">
+                <label class="form-check-label" for="cf-filterable">Cho phép lọc (Filter)</label>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer py-2">
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
+          <button type="button" class="btn btn-sm btn-primary" onclick="submitCustomField()">
+            <i class="fa-solid fa-save me-1"></i> Lưu Trường Tùy Chỉnh
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- MODALS: TÓM TẮT THÔNG TIN GLOBAL SEARCH (YÊU CẦU 8) -->
+  <!-- ==================================================== -->
+
+  <!-- Modal Tóm Tắt Khách Hàng (Yêu cầu 8.3) -->
+  <div class="modal fade" id="customerSummaryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-info text-dark py-2">
+          <h6 class="modal-title fw-bold"><i class="fa-solid fa-user-tie me-1"></i> Hồ Sơ Tóm Tắt Khách Hàng</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-3" id="customerSummaryModalBody">
+          <div id="cust-summary-header-info" class="p-3 bg-light rounded border mb-3 small">
+          </div>
+          <h6 class="small fw-bold text-primary mb-2">Danh Sách Thiết Bị Đã Xuất Bán Cho Khách Này</h6>
+          <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
+            <table class="table table-sm table-hover align-middle mb-0">
+              <thead class="table-light small sticky-top">
+                <tr>
+                  <th>Model</th>
+                  <th>Serial Hãng</th>
+                  <th>Phiếu Xuất</th>
+                  <th>Ngày Xuất</th>
+                  <th>Hạn Bảo Hành</th>
+                  <th class="text-end">360°</th>
+                </tr>
+              </thead>
+              <tbody id="cust-summary-machines-body" class="small">
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer py-2 d-flex justify-content-between">
+          <button type="button" class="btn btn-sm btn-outline-primary" onclick="startExportForThisCustomer()">
+            <i class="fa-solid fa-truck-fast me-1"></i> Tạo Phiếu Xuất Cho Khách Này
+          </button>
+          <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Đóng</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Tóm Tắt Nhà Cung Cấp (Yêu cầu 8.6) -->
+  <div class="modal fade" id="supplierSummaryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-success text-white py-2">
+          <h6 class="modal-title fw-bold"><i class="fa-solid fa-building me-1"></i> Thông Tin Tóm Tắt Nhà Cung Cấp</h6>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-3" id="supplierSummaryModalBody">
+          <div id="supp-summary-header-info" class="p-3 bg-light rounded border mb-3 small">
+          </div>
+          <h6 class="small fw-bold text-success mb-2">Lịch Sử Nhập Hàng Gần Đây Từ NCC Này</h6>
+          <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
+            <table class="table table-sm table-hover align-middle mb-0">
+              <thead class="table-light small sticky-top">
+                <tr>
+                  <th>Số Phiếu</th>
+                  <th>Ngày Nhập</th>
+                  <th>Kho Nhận</th>
+                  <th>Số Lượng Thiết Bị</th>
+                  <th>Trạng Thái</th>
+                  <th class="text-end">Chi Tiết</th>
+                </tr>
+              </thead>
+              <tbody id="supp-summary-vouchers-body" class="small">
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer py-2 d-flex justify-content-between">
+          <button type="button" class="btn btn-sm btn-outline-success" onclick="switchTab('DanhMuc')">
+            <i class="fa-solid fa-tags me-1"></i> Mở Danh Mục NCC
+          </button>
+          <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Đóng</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Chi Tiết Ca Bảo Hành (Yêu cầu 8.5) -->
+  <div class="modal fade" id="warrantyDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-warning py-2 text-dark">
+          <h6 class="modal-title fw-bold" id="warrantyDetailModalTitle"><i class="fa-solid fa-shield-halved me-1"></i> <span id="wdetail-title">Chi Tiết Ca Bảo Hành</span></h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-3" id="warrantyDetailModalBody">
+          <div id="wdetail-content" class="small">
+          </div>
+        </div>
+        <div class="modal-footer py-2 d-flex justify-content-between">
+          <button type="button" class="btn btn-sm btn-outline-primary" onclick="closeAndOpenWarrantyModule()">
+            <i class="fa-solid fa-list-check me-1"></i> Mở Module Bảo Hành
+          </button>
+          <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Đóng</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- CÁC MODAL TIẾP NHẬN BẢO HÀNH & PHIÊN KIỂM KÊ (GIỮ NGUYÊN) -->
+  <!-- ==================================================== -->
+  <div class="modal fade" id="warrantyCaseModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-warning py-2 text-dark">
+          <h6 class="modal-title fw-bold" id="warranty-case-modal-title"><i class="fa-solid fa-shield-halved me-1"></i> Tiếp Nhận Ca Bảo Hành</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-3">
+          <div class="mb-2">
+            <label class="form-label small fw-semibold text-muted mb-1">Serial Hãng hoặc Mã Nội Bộ (*)</label>
+            <div class="input-group input-group-sm">
+              <input type="text" id="case-serial" class="form-control" placeholder="Nhập Serial cần bảo hành..." onchange="onWarrantySerialChange(this.value)">
+              <button class="btn btn-cam" onclick="openScannerModal('WARRANTY_CASE')">📷 Quét</button>
+            </div>
+            <div id="case-serial-verify-info" class="mt-1 small">
+            </div>
+          </div>
+
+          <div class="mb-2">
+            <label class="form-label small fw-semibold text-muted mb-1">Mô Tả Lỗi Gặp Phải (*)</label>
+            <input type="text" id="case-issue" class="form-control form-control-sm" placeholder="Kẹt giấy, không lên nguồn, sọc mực...">
+          </div>
+
+          <div class="mb-2">
+            <label class="form-label small fw-semibold text-muted mb-1">Phụ Kiện / Linh Kiện Khách Gửi Kèm</label>
+            <input type="text" id="case-accessories" class="form-control form-control-sm" placeholder="Dây nguồn, Adapter, Hộp mực, Khay...">
+          </div>
+
+          <div class="row g-2 mb-2">
+            <div class="col-6">
+              <label class="form-label small fw-semibold text-muted mb-1">Người Tiếp Nhận</label>
+              <input type="text" id="case-receiver" class="form-control form-control-sm" value="NV Kho Thành An">
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-semibold text-muted mb-1">Kỹ Thuật Phụ Trách</label>
+              <input type="text" id="case-technician" class="form-control form-control-sm" placeholder="Tên kỹ thuật viên...">
+            </div>
+          </div>
+
+          <div class="row g-2 mb-2">
+            <div class="col-6">
+              <label class="form-label small fw-semibold text-muted mb-1">NCC / Hãng Nhận BH</label>
+              <input type="text" id="case-brand" class="form-control form-control-sm" placeholder="Canon LBM / TTBH Dell...">
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-semibold text-muted mb-1">Mã RMA / Phiếu Hãng</label>
+              <input type="text" id="case-rma" class="form-control form-control-sm" placeholder="RMA-12345...">
+            </div>
+          </div>
+
+          <div class="row g-2 mb-2">
+            <div class="col-6">
+              <label class="form-label small fw-semibold text-muted mb-1">Ngày Hẹn Trả Khách</label>
+              <input type="date" id="case-promised-date" class="form-control form-control-sm">
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-semibold text-muted mb-1">Trạng Thái Ban Đầu</label>
+              <select id="case-initial-status" class="form-select form-select-sm">
+                <option value="TIẾP NHẬN">1. TIẾP NHẬN</option>
+                <option value="ĐANG KIỂM TRA">2. ĐANG KIỂM TRA</option>
+                <option value="GỬI HÃNG/NCC">3. GỬI HÃNG/NCC</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer py-2">
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
+          <button type="button" class="btn btn-sm btn-warning text-dark fw-bold" onclick="submitCreateWarrantyCase()">
+            <i class="fa-solid fa-save me-1"></i> Tạo Hồ Sơ Ca Bảo Hành
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="inventorySessionModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-success text-white py-2">
+          <h6 class="modal-title fw-bold" id="inv-session-modal-title"><i class="fa-solid fa-clipboard-check me-1"></i> Phiên Kiểm Kê Kho Thực Tế</h6>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-3">
+          <div class="d-flex justify-content-between align-items-center mb-3 p-2 bg-light rounded border flex-wrap gap-2">
+            <div>
+              <span class="fw-bold" id="inv-session-code">KK-2609-01</span> - Kho: <strong id="inv-session-kho">Kho VP</strong>
+              <div class="small text-muted">Bắt đầu: <span id="inv-session-date">--</span> | Người kiểm: <span id="inv-session-user">--</span></div>
+            </div>
+            <div id="inv-session-status-badge">
+              <span class="badge bg-primary">OPEN</span>
+            </div>
+          </div>
+
+          <div class="row g-2 align-items-center mb-3" id="inv-scanner-controls">
+            <div class="col-12 col-sm-8">
+              <div class="input-group">
+                <input type="text" id="inv-scan-input" class="form-control" placeholder="Quét hoặc nhập Serial để đối soát..." onkeydown="if(event.key==='Enter') addSerialToInventorySession(this.value)">
+                <button class="btn btn-success" onclick="addSerialToInventorySession(document.getElementById('inv-scan-input').value)">
+                  <i class="fa-solid fa-plus"></i> Đếm
+                </button>
+                <button class="btn btn-cam" onclick="openScannerModal('INVENTORY_SESSION')">
+                  <i class="fa-solid fa-camera"></i> Scan liên tục
+                </button>
+              </div>
+            </div>
+            <div class="col-12 col-sm-4 text-sm-end">
+              <small class="text-muted">Tổng quét: <strong id="inv-scanned-count" class="text-success fs-6">0</strong> máy</small>
+            </div>
+          </div>
+
+          <div class="row g-2 text-center mb-3">
+            <div class="col-3">
+              <div class="p-2 border rounded bg-light">
+                <small class="text-muted d-block">Tồn Hệ Thống</small>
+                <span class="fw-bold fs-6 text-dark" id="inv-stat-system">0</span>
+              </div>
+            </div>
+            <div class="col-3">
+              <div class="p-2 border rounded bg-success-subtle">
+                <small class="text-success fw-bold d-block">Khớp Đủ</small>
+                <span class="fw-bold fs-6 text-success" id="inv-stat-matched">0</span>
+              </div>
+            </div>
+            <div class="col-3">
+              <div class="p-2 border rounded bg-warning-subtle">
+                <small class="text-warning fw-bold d-block">Thiếu Chưa Quét</small>
+                <span class="fw-bold fs-6 text-warning" id="inv-stat-missing">0</span>
+              </div>
+            </div>
+            <div class="col-3">
+              <div class="p-2 border rounded bg-danger-subtle">
+                <small class="text-danger fw-bold d-block">Serial Lạ / Thừa</small>
+                <span class="fw-bold fs-6 text-danger" id="inv-stat-extra">0</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
+            <table class="table table-sm table-hover align-middle mb-0">
+              <thead class="table-light small sticky-top">
+                <tr>
+                  <th>Serial Hãng</th>
+                  <th>Mã Nội Bộ</th>
+                  <th>Model</th>
+                  <th>Tồn Sổ Sách</th>
+                  <th>Quét Thực Tế</th>
+                  <th>Kết Quả Đối Soát</th>
+                </tr>
+              </thead>
+              <tbody id="inv-session-details-body" class="small">
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer py-2 d-flex justify-content-between">
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Đóng</button>
+          <button type="button" class="btn btn-sm btn-danger" id="btn-close-inventory-session" onclick="closeInventorySession()">
+            <i class="fa-solid fa-lock"></i> Khóa & Đóng Phiên Kiểm Kê
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="modelSerialsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-light py-2">
+          <h6 class="modal-title fw-bold" id="model-serials-modal-title">Danh Sách Serial Tồn Thuộc Model</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-3">
+          <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0">
+              <thead class="table-light small">
+                <tr>
+                  <th>#</th>
+                  <th>Serial Hãng (Mfg SN)</th>
+                  <th>Mã Nội Bộ Thành An</th>
+                  <th>Kho Hàng</th>
+                  <th>Ngày Nhập</th>
+                  <th>Tuổi Tồn</th>
+                  <th>Trạng Thái</th>
+                  <th class="text-end">Xem 360°</th>
+                </tr>
+              </thead>
+              <tbody id="model-serials-table-body" class="small">
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer py-2">
+          <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Đóng</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL XÁC THỰC LẠI MẬT KHẨU ADMIN (RE-AUTH) -->
+  <div class="modal fade" id="modalAdminReauth" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-header bg-danger text-white py-2">
+          <h6 class="modal-title fw-bold"><i class="fa-solid fa-user-shield me-2"></i><span id="reauth-action-title">Xác thực quyền Quản trị viên</span></h6>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-4">
+          <div class="alert alert-warning py-2 small mb-3">
+            <i class="fa-solid fa-triangle-exclamation me-1"></i>
+            <span id="reauth-action-desc">Đây là thao tác nhạy cảm của hệ thống. Vui lòng xác nhận danh tính Quản trị viên.</span>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-dark">Mật khẩu Admin (*)</label>
+            <div class="input-group">
+              <span class="input-group-text bg-light"><i class="fa-solid fa-key"></i></span>
+              <input type="password" id="reauth-admin-pass" class="form-control" placeholder="Nhập mật khẩu tài khoản Admin..." onkeypress="if(event.key === 'Enter') submitAdminReauth();">
+            </div>
+          </div>
+          <div id="reauth-error-msg" class="alert alert-danger small py-2 d-none"></div>
+        </div>
+        <div class="modal-footer py-2 bg-light">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Hủy bỏ</button>
+          <button type="button" class="btn btn-danger btn-sm fw-bold px-3" id="btn-submit-reauth" onclick="submitAdminReauth()">
+            <i class="fa-solid fa-shield-check me-2"></i> Xác Nhận
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL ĐỔI MẬT KHẨU ADMIN -->
+  <div class="modal fade" id="modalChangePassword" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-header bg-dark text-white py-3">
+          <h6 class="modal-title fw-bold d-flex align-items-center gap-2">
+            <i class="fa-solid fa-key text-warning"></i>
+            <span>Đổi Mật Khẩu Quản Trị Viên (Admin)</span>
+          </h6>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4">
+          <div class="alert alert-info py-2 small mb-3 border-0 bg-opacity-10 bg-info">
+            <i class="fa-solid fa-circle-info text-info me-1"></i>
+            <span>Mật khẩu Admin bảo vệ các chức năng tối cao: <b>sửa/hủy phiếu, reset hệ thống, sao lưu dữ liệu và cấu hình phân quyền</b>. Mật khẩu mới cần tối thiểu 6 ký tự.</span>
+          </div>
+
+          <form id="formChangePassword" onsubmit="event.preventDefault(); submitChangePassword();">
+            <!-- MẬT KHẨU HIỆN TẠI -->
+            <div class="mb-3">
+              <label class="form-label small fw-bold text-secondary mb-1">Mật khẩu hiện tại (*)</label>
+              <div class="input-group">
+                <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-lock"></i></span>
+                <input type="password" id="cp-current-password" class="form-control form-control-sm" placeholder="Nhập mật khẩu Admin đang sử dụng..." required autocomplete="current-password">
+                <button class="btn btn-outline-secondary btn-sm" type="button" onclick="togglePasswordVisibility('cp-current-password', 'cp-toggle-icon-1')" title="Hiện/ẩn mật khẩu">
+                  <i class="fa-solid fa-eye" id="cp-toggle-icon-1"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- MẬT KHẨU MỚI -->
+            <div class="mb-3">
+              <label class="form-label small fw-bold text-secondary mb-1">Mật khẩu mới (*)</label>
+              <div class="input-group">
+                <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-key"></i></span>
+                <input type="password" id="cp-new-password" class="form-control form-control-sm" placeholder="Mật khẩu mới (tối thiểu 6 ký tự)..." required autocomplete="new-password">
+                <button class="btn btn-outline-secondary btn-sm" type="button" onclick="togglePasswordVisibility('cp-new-password', 'cp-toggle-icon-2')" title="Hiện/ẩn mật khẩu">
+                  <i class="fa-solid fa-eye" id="cp-toggle-icon-2"></i>
+                </button>
+              </div>
+              <small class="text-muted" style="font-size: 0.72rem;">Nên kết hợp chữ cái, chữ số để tăng độ bảo mật.</small>
+            </div>
+
+            <!-- XÁC NHẬN MẬT KHẨU MỚI -->
+            <div class="mb-3">
+              <label class="form-label small fw-bold text-secondary mb-1">Xác nhận mật khẩu mới (*)</label>
+              <div class="input-group">
+                <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-shield-halved"></i></span>
+                <input type="password" id="cp-confirm-password" class="form-control form-control-sm" placeholder="Nhập lại mật khẩu mới..." required autocomplete="new-password">
+                <button class="btn btn-outline-secondary btn-sm" type="button" onclick="togglePasswordVisibility('cp-confirm-password', 'cp-toggle-icon-3')" title="Hiện/ẩn mật khẩu">
+                  <i class="fa-solid fa-eye" id="cp-toggle-icon-3"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- THÔNG BÁO LỖI -->
+            <div id="cp-error-msg" class="alert alert-danger small py-2 d-none"></div>
+
+            <div class="d-flex justify-content-end gap-2 mt-4 pt-2 border-top">
+              <button type="button" class="btn btn-light btn-sm px-3" data-bs-dismiss="modal">Hủy bỏ</button>
+              <button type="submit" class="btn btn-primary btn-sm px-4 fw-bold" id="btn-submit-change-pass">
+                <i class="fa-solid fa-floppy-disk me-1"></i> Lưu Mật Khẩu
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+

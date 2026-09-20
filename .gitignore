@@ -1,0 +1,9 @@
+﻿dist/
+archive_tests/
+scratch/
+scratch_test_code.ps1
+test_dashboard_calc.ps1
+bundle_apps_script.ps1
+copy_backend.bat
+copy_frontend.bat
+*.zip

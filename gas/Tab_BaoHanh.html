@@ -1,0 +1,61 @@
+<!-- ==========================================
+     PHÂN HỆ 6: TRA CỨU & QUẢN LÝ BẢO HÀNH (V4)
+     ========================================== -->
+<div class="container-fluid p-0">
+  <div class="row mb-3">
+    <div class="col-md-12">
+      <h3 class="fw-bold text-dark"><i class="fa-solid fa-shield-halved text-success"></i> Tra Cứu & Quản Lý Bảo Hành</h3>
+      <p class="text-muted mb-0">Tra cứu tức thì hồ sơ máy theo Serial hoặc SĐT Khách hàng. Giám sát hạn BH theo Đèn tín hiệu giao thông.</p>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0 mb-3 bg-white">
+    <div class="card-body">
+      <div class="row g-2">
+        <div class="col-md-6">
+          <div class="input-group">
+            <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-primary"></i></span>
+            <input type="text" id="bh-search" class="form-control" placeholder="Gõ Serial máy, SĐT hoặc Tên khách..." oninput="filterBaoHanhList()">
+          </div>
+        </div>
+        <div class="col-md-3">
+          <select id="bh-filter-status" class="form-select" onchange="filterBaoHanhList()">
+            <option value="">-- Tất cả trạng thái Đèn --</option>
+            <option value="GREEN">🟢 Đèn Xanh (Còn hạn &gt; 30 ngày)</option>
+            <option value="YELLOW">🟡 Đèn Vàng (Sắp hết hạn &le; 30 ngày)</option>
+            <option value="RED">🔴 Đèn Đỏ (Đã hết hạn)</option>
+          </select>
+        </div>
+        <div class="col-md-3 text-end">
+          <span class="badge bg-success fs-6 p-2 w-100" id="bh-total-badge">0 máy xuất</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0 bg-white">
+    <div class="table-responsive">
+      <table class="table table-hover table-striped table-sm align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th width="15%">Mã Serial</th>
+            <th width="15%">Model</th>
+            <th width="20%">Khách Hàng</th>
+            <th width="12%">Số Điện Thoại</th>
+            <th width="10%">Ngày Xuất</th>
+            <th width="10%">Hạn Bảo Hành</th>
+            <th width="13%" class="text-center">Đèn Tín Hiệu</th>
+            <th width="5%" class="text-center">Hồ sơ 360°</th>
+          </tr>
+        </thead>
+        <tbody id="bh-table-body">
+          <tr><td colspan="8" class="text-center text-muted py-4">Đang tải dữ liệu bảo hành...</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card-footer bg-light py-2 d-flex justify-content-between align-items-center">
+      <small class="text-muted" id="bh-page-info">Trang 1 / 1 (0 máy)</small>
+      <div class="btn-group btn-group-sm" id="bh-pagination"></div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,128 @@
+[
+  {
+    "name": "THANH-AN_vertical_color-transparent",
+    "layout": "vertical",
+    "style": "color-transparent",
+    "width": 1352,
+    "height": 1092
+  },
+  {
+    "name": "THANH-AN_vertical_color-white",
+    "layout": "vertical",
+    "style": "color-white",
+    "width": 1352,
+    "height": 1092
+  },
+  {
+    "name": "THANH-AN_vertical_dark-background",
+    "layout": "vertical",
+    "style": "dark-background",
+    "width": 1352,
+    "height": 1092
+  },
+  {
+    "name": "THANH-AN_vertical_mono-blue",
+    "layout": "vertical",
+    "style": "mono-blue",
+    "width": 1352,
+    "height": 1092
+  },
+  {
+    "name": "THANH-AN_vertical_mono-black",
+    "layout": "vertical",
+    "style": "mono-black",
+    "width": 1352,
+    "height": 1092
+  },
+  {
+    "name": "THANH-AN_vertical_mono-white",
+    "layout": "vertical",
+    "style": "mono-white",
+    "width": 1352,
+    "height": 1092
+  },
+  {
+    "name": "THANH-AN_horizontal_color-transparent",
+    "layout": "horizontal",
+    "style": "color-transparent",
+    "width": 2360,
+    "height": 800
+  },
+  {
+    "name": "THANH-AN_horizontal_color-white",
+    "layout": "horizontal",
+    "style": "color-white",
+    "width": 2360,
+    "height": 800
+  },
+  {
+    "name": "THANH-AN_horizontal_dark-background",
+    "layout": "horizontal",
+    "style": "dark-background",
+    "width": 2360,
+    "height": 800
+  },
+  {
+    "name": "THANH-AN_horizontal_mono-blue",
+    "layout": "horizontal",
+    "style": "mono-blue",
+    "width": 2360,
+    "height": 800
+  },
+  {
+    "name": "THANH-AN_horizontal_mono-black",
+    "layout": "horizontal",
+    "style": "mono-black",
+    "width": 2360,
+    "height": 800
+  },
+  {
+    "name": "THANH-AN_horizontal_mono-white",
+    "layout": "horizontal",
+    "style": "mono-white",
+    "width": 2360,
+    "height": 800
+  },
+  {
+    "name": "THANH-AN_icon_color-transparent",
+    "layout": "icon",
+    "style": "color-transparent",
+    "width": 1300,
+    "height": 850
+  },
+  {
+    "name": "THANH-AN_icon_color-white",
+    "layout": "icon",
+    "style": "color-white",
+    "width": 1300,
+    "height": 850
+  },
+  {
+    "name": "THANH-AN_icon_dark-background",
+    "layout": "icon",
+    "style": "dark-background",
+    "width": 1300,
+    "height": 850
+  },
+  {
+    "name": "THANH-AN_icon_mono-blue",
+    "layout": "icon",
+    "style": "mono-blue",
+    "width": 1300,
+    "height": 850
+  },
+  {
+    "name": "THANH-AN_icon_mono-black",
+    "layout": "icon",
+    "style": "mono-black",
+    "width": 1300,
+    "height": 850
+  },
+  {
+    "name": "THANH-AN_icon_mono-white",
+    "layout": "icon",
+    "style": "mono-white",
+    "width": 1300,
+    "height": 850
+  }
+]
