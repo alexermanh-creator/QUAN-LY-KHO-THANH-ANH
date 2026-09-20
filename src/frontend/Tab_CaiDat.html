@@ -1,383 +1,455 @@
-<!-- ==========================================
-     PHÂN HỆ 9: CÀI ĐẶT, PHÂN QUYỀN, SAO LƯU & BẢO TRÌ HỆ THỐNG (V4 ENTERPRISE)
-     ========================================== -->
-<div class="container-fluid p-0">
-  <div class="row mb-3">
-    <div class="col-md-12">
-      <h3 class="fw-bold text-dark"><i class="fa-solid fa-gear text-secondary"></i> Cài Đặt Hệ Thống, Phân Quyền & Quản Trị</h3>
-      <p class="text-muted mb-0">Thiết lập cấu hình doanh nghiệp, tài khoản phân quyền, nhật ký kiểm toán, sao lưu & khôi phục dữ liệu an toàn.</p>
-    </div>
-  </div>
-
-  <!-- 5 TABS CON QUẢN TRỊ -->
-  <ul class="nav nav-pills mb-3 gap-1" id="pills-caidat" role="tablist">
-    <li class="nav-item">
-      <button class="nav-link active fw-bold" id="btn-tab-cfg" data-bs-toggle="pill" data-bs-target="#tab-cfg">
-        🏢 1. Hồ Sơ & Cảnh Báo
-      </button>
-    </li>
-    <li class="nav-item">
-      <button class="nav-link fw-bold" id="btn-tab-users" data-bs-toggle="pill" data-bs-target="#tab-users">
-        👥 2. Phân Quyền & Người Dùng
-      </button>
-    </li>
-    <li class="nav-item">
-      <button class="nav-link fw-bold" id="btn-tab-logs" data-bs-toggle="pill" data-bs-target="#tab-logs">
-        🛡️ 3. Nhật Ký Giám Sát (Audit)
-      </button>
-    </li>
-    <li class="nav-item">
-      <button class="nav-link fw-bold text-primary" id="btn-tab-backup" data-bs-toggle="pill" data-bs-target="#tab-backup">
-        💾 4. Sao Lưu & Khôi Phục
-      </button>
-    </li>
-    <li class="nav-item">
-      <button class="nav-link fw-bold text-danger" id="btn-tab-maint" data-bs-toggle="pill" data-bs-target="#tab-maint">
-        🛠️ 5. Bảo Trì & Toàn Vẹn
-      </button>
-    </li>
-  </ul>
-
-  <div class="tab-content" id="pills-tabContent">
-    <!-- SUB 1: THÔNG TIN DOANH NGHIỆP -->
-    <div class="tab-pane fade show active" id="tab-cfg">
-      <div class="card shadow-sm border-0 bg-white">
-        <div class="card-body p-4">
-          <div class="row g-3">
-            <div class="col-md-6">
-              <label class="form-label small fw-bold">Tên doanh nghiệp đầy đủ</label>
-              <input type="text" id="cfg-tencty" class="form-control form-control-sm" placeholder="VD: CÔNG TY TNHH THIẾT BỊ VĂN PHÒNG THÀNH AN">
-            </div>
-            <div class="col-md-3">
-              <label class="form-label small fw-bold">Tên viết tắt hiển thị</label>
-              <input type="text" id="cfg-tentat" class="form-control form-control-sm" placeholder="VD: THÀNH AN">
-            </div>
-            <div class="col-md-3">
-              <label class="form-label small fw-bold">Mã số thuế</label>
-              <input type="text" id="cfg-mst" class="form-control form-control-sm">
-            </div>
-            <div class="col-md-6">
-              <label class="form-label small fw-bold">Địa chỉ trụ sở / kho</label>
-              <input type="text" id="cfg-diachi" class="form-control form-control-sm">
-            </div>
-            <div class="col-md-3">
-              <label class="form-label small fw-bold">Hotline kỹ thuật</label>
-              <input type="text" id="cfg-hotline" class="form-control form-control-sm">
-            </div>
-            <div class="col-md-3">
-              <label class="form-label small fw-bold">Số tài khoản ngân hàng</label>
-              <input type="text" id="cfg-stk" class="form-control form-control-sm">
-            </div>
-
-            <div class="col-md-12 border-top pt-3 mt-4">
-              <h6 class="fw-bold text-primary mb-3">MỐC THIẾT LẬP CẢNH BÁO TỒN KHO & BẢO HÀNH</h6>
-            </div>
-            <div class="col-md-4">
-              <label class="form-label small fw-bold text-danger">Mốc báo đỏ ĐỌNG KHO (Số ngày)</label>
-              <input type="number" id="cfg-canhbaoton" class="form-control form-control-sm" value="60">
-              <div class="form-text small">Hàng nằm trong kho quá số ngày này sẽ hiện cảnh báo đỏ trên Dashboard.</div>
-            </div>
-            <div class="col-md-4">
-              <label class="form-label small fw-bold text-warning text-dark">Mốc báo vàng SẮP HẾT HẠN BH (Số ngày)</label>
-              <input type="number" id="cfg-canhbaobh" class="form-control form-control-sm" value="30">
-              <div class="form-text small">Máy xuất bán còn hạn dưới số ngày này sẽ bật đèn vàng để nhân viên liên hệ khách.</div>
-            </div>
-            <div class="col-md-4">
-              <label class="form-label small fw-bold text-success">Tiền tố tự sinh Serial mặc định</label>
-              <input type="text" id="cfg-tiento" class="form-control form-control-sm" value="TA-">
-              <div class="form-text small">Mã Serial tự động sẽ có dạng: <code>TA-YYMMDD-XXX</code></div>
-            </div>
+      <div id="module-CaiDat" class="app-module" style="display: none;">
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+          <div>
+            <h4 class="fw-bold mb-1"><i class="fa-solid fa-gear text-secondary me-2"></i>Cài Đặt Hệ Thống, Phân Quyền &amp; Giám Sát</h4>
+            <p class="text-muted small mb-0">Thiết lập hồ sơ doanh nghiệp, tài khoản nhân viên, kiểm tra nhật ký sửa/xóa và sao lưu phục hồi dữ liệu.</p>
           </div>
-          <div class="text-end mt-4">
-            <button class="btn btn-primary fw-bold px-4" onclick="saveConfigBtn()"><i class="fa-solid fa-floppy-disk me-1"></i> Lưu Cấu Hình</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- SUB 2: TÀI KHOẢN NHÂN VIÊN & RBAC -->
-    <div class="tab-pane fade" id="tab-users">
-      <div class="card shadow-sm border-0 mb-3 bg-white">
-        <div class="card-header bg-white fw-bold text-primary py-3">THÊM / SỬA TÀI KHOẢN TRUY CẬP</div>
-        <div class="card-body">
-          <input type="hidden" id="user-rowid">
-          <div class="row g-2 mb-2">
-            <div class="col-md-3">
-              <label class="form-label small fw-bold">Tên đăng nhập (*)</label>
-              <input type="text" id="user-username" class="form-control form-control-sm" placeholder="VD: thukho01">
-            </div>
-            <div class="col-md-3">
-              <label class="form-label small fw-bold">Mật khẩu (*)</label>
-              <input type="password" id="user-password" class="form-control form-control-sm" placeholder="••••••">
-            </div>
-            <div class="col-md-3">
-              <label class="form-label small fw-bold">Họ và tên nhân viên (*)</label>
-              <input type="text" id="user-fullname" class="form-control form-control-sm" placeholder="VD: Trần Văn Kho">
-            </div>
-            <div class="col-md-3">
-              <label class="form-label small fw-bold">Vai trò (Phân quyền)</label>
-              <select id="user-role" class="form-select form-select-sm">
-                <option value="Kho">Thủ kho (Nhập/Xuất/Tồn/BH)</option>
-                <option value="Sale">Kinh doanh (Chỉ xem tồn & BH)</option>
-                <option value="Admin">Quản trị viên (Toàn quyền)</option>
-              </select>
-            </div>
-          </div>
-          <div class="text-end">
-            <button type="button" class="btn btn-secondary btn-sm d-none" id="btn-cancel-user" onclick="cancelEditUser()">Hủy</button>
-            <button type="button" class="btn btn-primary btn-sm fw-bold px-3" onclick="saveUserBtn()">Lưu Tài Khoản</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="card shadow-sm border-0 bg-white">
-        <div class="table-responsive">
-          <table class="table table-hover table-sm align-middle mb-0">
-            <thead class="table-light">
-              <tr>
-                <th>Tên đăng nhập</th>
-                <th>Họ và tên</th>
-                <th>Vai trò</th>
-                <th>Trạng thái</th>
-                <th class="text-center">Tác vụ</th>
-              </tr>
-            </thead>
-            <tbody id="user-table-body"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- SUB 3: NHẬT KÝ KIỂM TOÁN AUDIT TRAIL -->
-    <div class="tab-pane fade" id="tab-logs">
-      <div class="card shadow-sm border-0 mb-3 bg-white">
-        <div class="card-body">
-          <div class="input-group">
-            <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
-            <input type="text" id="log-search" class="form-control" placeholder="Tìm theo người thực hiện, hành động hoặc mã Serial..." oninput="filterLogs()">
-          </div>
-        </div>
-      </div>
-
-      <div class="card shadow-sm border-0 bg-white">
-        <div class="table-responsive">
-          <table class="table table-hover table-sm small align-middle mb-0">
-            <thead class="table-light">
-              <tr>
-                <th width="18%">Thời gian</th>
-                <th width="15%">Người thực hiện</th>
-                <th width="15%">Hành động</th>
-                <th width="15%">Mã Serial / Phiếu</th>
-                <th width="37%">Chi tiết thao tác</th>
-              </tr>
-            </thead>
-            <tbody id="log-table-body"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- SUB 4: SAO LƯU & KHÔI PHỤC DỮ LIỆU -->
-    <div class="tab-pane fade" id="tab-backup">
-      <div class="row g-3 mb-3">
-        <!-- Card Tạo Sao Lưu -->
-        <div class="col-md-8">
-          <div class="card shadow-sm border-0 bg-white h-100">
-            <div class="card-body p-4">
-              <div class="d-flex align-items-center justify-content-between mb-3">
-                <h5 class="fw-bold text-primary mb-0"><i class="fa-solid fa-box-archive me-2"></i> Sao Lưu Hệ Thống Snapshot</h5>
-                <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1">Chuẩn Snapshot V4</span>
-              </div>
-              <p class="text-muted small">
-                Đóng băng toàn bộ cơ sở dữ liệu hiện tại, bao gồm tất cả các Sheet dữ liệu và Serial Index. 
-                Snapshot được bảo lưu an toàn để phục hồi nguyên trạng bất cứ khi nào cần.
-              </p>
-              <div class="input-group mb-2">
-                <input type="text" id="manual-backup-note" class="form-control form-control-sm" placeholder="Nhập ghi chú sao lưu (VD: Trước khi nhập lô máy quý 3)...">
-                <button class="btn btn-primary btn-sm fw-bold px-3" onclick="triggerCreateBackup(document.getElementById('manual-backup-note').value)">
-                  <i class="fa-solid fa-camera me-1"></i> TẠO SAO LƯU THỦ CÔNG
-                </button>
-              </div>
-              <div class="small text-muted mt-2">
-                <i class="fa-solid fa-shield-halved text-success me-1"></i> Thao tác yêu cầu nhập mật khẩu xác nhận của Quản trị viên (Admin).
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Card Phục Hồi Serial VOID -->
-        <div class="col-md-4">
-          <div class="card shadow-sm border-0 bg-white h-100 border-start border-4 border-warning">
-            <div class="card-body p-4">
-              <h6 class="fw-bold text-dark mb-2"><i class="fa-solid fa-trash-arrow-up text-warning me-2"></i> Phục Hồi Serial Bị VOID Nhầm</h6>
-              <p class="text-muted small mb-3">Khôi phục một mã Serial đã bị hủy/VOID do nhầm lẫn về lại trạng thái hoạt động bình thường.</p>
-              <button class="btn btn-outline-warning text-dark fw-bold btn-sm w-100" onclick="triggerRecoverSerial()">
-                <i class="fa-solid fa-rotate-left me-1"></i> Cứu Dữ Liệu Serial VOID
+          <ul class="nav nav-pills" id="settingsTabs" role="tablist">
+            <li class="nav-item">
+              <button class="nav-link active btn-sm" id="btn-tab-set-permissions" data-bs-toggle="pill" data-bs-target="#tab-set-permissions" type="button">
+                <i class="fa-solid fa-shield-halved me-1 text-primary"></i> 1. Ma Trận Phân Quyền (20 Quyền)
               </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link btn-sm" id="btn-tab-set-rbac" data-bs-toggle="pill" data-bs-target="#tab-set-rbac" type="button">
+                <i class="fa-solid fa-users me-1"></i> 2. Tài Khoản Nhân Viên (RBAC)
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link btn-sm" id="btn-tab-set-profile" data-bs-toggle="pill" data-bs-target="#tab-set-profile" type="button">
+                <i class="fa-solid fa-file-invoice me-1"></i> 3. Hồ Sơ Doanh Nghiệp &amp; Mốc Cảnh Báo
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link btn-sm" id="btn-tab-set-audit" data-bs-toggle="pill" data-bs-target="#tab-set-audit" type="button">
+                <i class="fa-solid fa-eye me-1"></i> 4. Nhật Ký Giám Sát (Audit Trail)
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link btn-sm text-danger fw-semibold" id="btn-tab-set-backup" data-bs-toggle="pill" data-bs-target="#tab-set-backup" type="button">
+                <i class="fa-solid fa-floppy-disk me-1"></i> 5. Sao Lưu &amp; Reset Dữ Liệu
+              </button>
+            </li>
+          </ul>
+        </div>
+
+        <div class="tab-content" id="settingsTabsContent">
+          <!-- TAB 1: HỒ SƠ DOANH NGHIỆP & MỐC CẢNH BÁO -->
+          <div class="tab-pane fade" id="tab-set-profile">
+            <div class="row g-3">
+              <div class="col-lg-6">
+                <div class="app-card h-100">
+                  <div class="app-card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold text-dark mb-0"><i class="fa-solid fa-building me-2 text-primary"></i> Thông Tin Hồ Sơ Doanh Nghiệp</h6>
+                    <button class="btn btn-sm btn-primary" onclick="saveCompanyProfile()"><i class="fa-solid fa-check me-1"></i> Lưu Hồ Sơ</button>
+                  </div>
+                  <div class="app-card-body p-4">
+                    <form id="form-company-profile" onsubmit="event.preventDefault(); saveCompanyProfile();">
+                      <div class="mb-3">
+                        <label class="form-label small fw-bold">Tên Doanh Nghiệp / Công Ty (*)</label>
+                        <input type="text" id="cfg-company-name" class="form-control form-control-sm" value="Công ty TNHH Thương Mại & Dịch Vụ Thiết Bị Văn Phòng Thành An">
+                      </div>
+                      <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                          <label class="form-label small fw-bold">Mã Số Thuế (MST)</label>
+                          <input type="text" id="cfg-company-tax" class="form-control form-control-sm" value="0108991234">
+                        </div>
+                        <div class="col-md-6">
+                          <label class="form-label small fw-bold">Số Điện Thoại Hotline</label>
+                          <input type="text" id="cfg-company-phone" class="form-control form-control-sm" value="0988.123.456">
+                        </div>
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label small fw-bold">Địa Chỉ Trụ Sở Kho Chính</label>
+                        <input type="text" id="cfg-company-address" class="form-control form-control-sm" value="Số 12 ngõ 45 phố Định Công Thượng, P. Định Công, Q. Hoàng Mai, Hà Nội">
+                      </div>
+                      <div class="row g-2">
+                        <div class="col-md-6">
+                          <label class="form-label small fw-bold">Email Liên Hệ</label>
+                          <input type="email" id="cfg-company-email" class="form-control form-control-sm" value="khohang@thanhan.vn">
+                        </div>
+                        <div class="col-md-6">
+                          <label class="form-label small fw-bold">Người Đại Diện Pháp Luật</label>
+                          <input type="text" id="cfg-company-rep" class="form-control form-control-sm" value="Khổng Mạnh Cường">
+                        </div>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Cấu hình mốc cảnh báo kho -->
+              <div class="col-lg-6">
+                <div class="app-card h-100">
+                  <div class="app-card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold text-dark mb-0"><i class="fa-solid fa-bell me-2 text-warning"></i> Cấu Hình Mốc Cảnh Báo Dashboard</h6>
+                    <button class="btn btn-sm btn-primary" onclick="saveAlertSettings()"><i class="fa-solid fa-check me-1"></i> Lưu Cảnh Báo</button>
+                  </div>
+                  <div class="app-card-body p-3">
+                    <div class="mb-3 p-3 border rounded bg-light">
+                      <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="alert-cfg-stockAging" checked onchange="toggleStockAgingInputs()">
+                        <label class="form-check-label fw-bold small" for="alert-cfg-stockAging">
+                          <i class="fa-solid fa-box-archive text-danger me-1"></i> Cảnh báo thiết bị tồn kho lâu ngày
+                        </label>
+                      </div>
+                      <div class="row g-2 align-items-center ps-4">
+                        <div class="col-auto"><small class="text-muted">Ngưỡng số ngày:</small></div>
+                        <div class="col-auto">
+                          <select id="alert-cfg-stockAgingDays-preset" class="form-select form-select-sm" onchange="onStockAgingPresetChange()">
+                            <option value="30">30 ngày</option>
+                            <option value="45">45 ngày</option>
+                            <option value="60">60 ngày</option>
+                            <option value="90">90 ngày</option>
+                            <option value="120">120 ngày</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="p-3 border rounded bg-light mb-3">
+                      <div class="form-check form-switch mb-1">
+                        <input class="form-check-input" type="checkbox" id="alert-cfg-warrantyOverdue" checked>
+                        <label class="form-check-label fw-bold small" for="alert-cfg-warrantyOverdue">
+                          <i class="fa-solid fa-triangle-exclamation text-danger me-1"></i> Cảnh báo ca bảo hành quá hạn cam kết
+                        </label>
+                      </div>
+                      <small class="text-muted ps-4 d-block">Hiển thị ca bảo hành chưa hoàn tất và đã quá ngày hẹn trả cho khách hàng.</small>
+                    </div>
+
+                    <div class="p-3 border rounded bg-light">
+                      <div class="form-check form-switch mb-1">
+                        <input class="form-check-input" type="checkbox" id="alert-cfg-draftVoucher" checked>
+                        <label class="form-check-label fw-bold small" for="alert-cfg-draftVoucher">
+                          <i class="fa-solid fa-file-lines text-secondary me-1"></i> Cảnh báo phiếu DRAFT chưa hoàn tất xác nhận
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 1: MA TRẬN 20 QUYỀN HẠN PHÂN QUYỀN (ACTIVE MẶC ĐỊNH CHO ADMIN) -->
+          <div class="tab-pane fade show active" id="tab-set-permissions">
+            <div class="app-card">
+              <div class="app-card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                  <h6 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-shield-halved text-primary me-2"></i> Ma Trận Phân Quyền Chi Tiết (20 Quyền Hạn)</h6>
+                  <small class="text-muted">Tích chọn để cấp hoặc thu hồi quyền cho từng vai trò trong hệ thống. ADMIN có toàn quyền.</small>
+                </div>
+                <div class="d-flex gap-2">
+                  <button class="btn btn-sm btn-outline-secondary" onclick="resetPermissionsMatrix()">
+                    <i class="fa-solid fa-rotate-left"></i> Mặc định
+                  </button>
+                  <button class="btn btn-sm btn-primary fw-bold px-3" onclick="savePermissionsMatrix()">
+                    <i class="fa-solid fa-check me-1"></i> Lưu Ma Trận Quyền
+                  </button>
+                </div>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-bordered table-hover align-middle mb-0 text-center small">
+                  <thead class="table-light">
+                    <tr>
+                      <th class="text-start ps-3" style="width: 38%;">Tên Quyền Hạn (Permission Code)</th>
+                      <th style="width: 16%;">Nhóm Quyền</th>
+                      <th style="width: 11%;">THỦ KHO</th>
+                      <th style="width: 11%;">BẢO HÀNH</th>
+                      <th style="width: 11%;">QUẢN LÝ</th>
+                      <th style="width: 13%;">ADMIN (Toàn quyền)</th>
+                    </tr>
+                  </thead>
+                  <tbody id="permissions-matrix-table-body">
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 2: TÀI KHOẢN NHÂN VIÊN (RBAC) -->
+          <div class="tab-pane fade" id="tab-set-rbac">
+            <div class="app-card mb-3">
+              <div class="app-card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold text-primary mb-0 text-uppercase" style="letter-spacing: 0.5px;">DANH SÁCH TÀI KHOẢN NHÂN SỰ</h6>
+                <button class="btn btn-sm btn-outline-secondary" onclick="resetRbacForm()" id="rbac-mode-badge">
+                  <i class="fa-solid fa-user-plus me-1"></i> Chế độ: Thêm mới
+                </button>
+              </div>
+              <div class="app-card-body p-4 border-bottom bg-light">
+                <form id="form-rbac-user" onsubmit="event.preventDefault(); saveRbacUser();">
+                  <div class="row g-3 align-items-end">
+                    <div class="col-md-2">
+                      <label class="form-label small fw-bold text-muted mb-1">Username (*)</label>
+                      <input type="text" id="rbac-input-username" class="form-control form-control-sm" placeholder="Tên đăng nhập" required>
+                    </div>
+                    <div class="col-md-2">
+                      <label class="form-label small fw-bold text-muted mb-1">Password (*)</label>
+                      <input type="password" id="rbac-input-password" class="form-control form-control-sm" placeholder="Mật khẩu" required>
+                    </div>
+                    <div class="col-md-3">
+                      <label class="form-label small fw-bold text-muted mb-1">Họ và tên nhân viên</label>
+                      <input type="text" id="rbac-input-fullname" class="form-control form-control-sm" placeholder="VD: Nguyễn Văn An" required>
+                    </div>
+                    <div class="col-md-2">
+                      <label class="form-label small fw-bold text-muted mb-1">Vai trò (Role)</label>
+                      <select id="rbac-input-role" class="form-select form-select-sm">
+                        <option value="ADMIN">👑 Admin (Toàn quyền)</option>
+                        <option value="QUẢN LÝ">👤 Quản lý kho (Hủy/Sửa/Kiểm kê)</option>
+                        <option value="THỦ KHO" selected>🛒 Thủ kho (Nhập/Xuất/Tồn/Scan)</option>
+                        <option value="BẢO HÀNH">🛠 Nhân viên Bảo hành</option>
+                      </select>
+                    </div>
+                    <div class="col-md-1">
+                      <label class="form-label small fw-bold text-muted mb-1">Trạng thái</label>
+                      <select id="rbac-input-status" class="form-select form-select-sm">
+                        <option value="ACTIVE">Mở</option>
+                        <option value="LOCKED">Khóa</option>
+                      </select>
+                    </div>
+                    <div class="col-md-2">
+                      <button type="submit" class="btn btn-primary btn-sm w-100 fw-bold py-2 shadow-sm" id="btn-save-rbac-user">
+                        <i class="fa-solid fa-floppy-disk me-1"></i> Lưu
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              </div>
+
+              <!-- BẢNG DANH SÁCH NHÂN SỰ -->
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 text-start">
+                  <thead class="table-light small">
+                    <tr>
+                      <th style="width: 20%;" class="ps-4">Username</th>
+                      <th style="width: 30%;">Họ và tên</th>
+                      <th style="width: 20%;">Vai trò</th>
+                      <th style="width: 15%;">Trạng thái</th>
+                      <th style="width: 15%;" class="text-center">Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody id="rbac-users-table-body">
+                    <!-- Sẽ được nạp động từ JS -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 3: NHẬT KÝ GIÁM SÁT (AUDIT TRAIL) -->
+          <div class="tab-pane fade" id="tab-set-audit">
+            <div class="app-card mb-3">
+              <div class="app-card-body p-3 bg-light d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                  <h6 class="fw-bold mb-1"><i class="fa-solid fa-shield-halved text-primary me-2"></i>Nhật Ký Giám Sát Thao Tác Hệ Thống (Audit Trail)</h6>
+                  <small class="text-muted">Ghi nhận mọi thao tác sửa phiếu, hủy phiếu, can thiệp số tồn, xuất nhập kho và phục hồi dữ liệu.</small>
+                </div>
+                <div class="d-flex gap-2 align-items-center">
+                  <input type="text" id="audit-filter-keyword" class="form-control form-control-sm" placeholder="Tìm theo người dùng, hành động, số phiếu..." style="width: 250px;" oninput="filterAuditTrailTable()">
+                  <button class="btn btn-sm btn-outline-secondary" onclick="renderAuditTrailTable()"><i class="fa-solid fa-rotate me-1"></i> Làm mới</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="app-card">
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 text-start small">
+                  <thead class="table-light">
+                    <tr>
+                      <th style="width: 14%;" class="ps-3">Thời gian</th>
+                      <th style="width: 14%;">Người thực hiện</th>
+                      <th style="width: 14%;">Hành động</th>
+                      <th style="width: 16%;">Đối tượng tác động</th>
+                      <th style="width: 22%;">Lý do / Mô tả</th>
+                      <th style="width: 20%;">Chi tiết thay đổi</th>
+                    </tr>
+                  </thead>
+                  <tbody id="audit-trail-settings-table-body">
+                    <tr><td colspan="6" class="text-center text-muted py-3">Đang tải nhật ký giám sát...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 4: SAO LƯU & KHÔI PHỤC DỮ LIỆU -->
+          <!-- TAB 4: SAO LƯU, KHÔI PHỤC & RESET HỆ THỐNG (CHỈ ADMIN) -->
+          <div class="tab-pane fade" id="tab-set-backup">
+            <div class="row g-3 mb-3">
+              <!-- KHỐI 1: TẠO BẢN SAO LƯU SNAPSHOT -->
+              <div class="col-md-7">
+                <div class="app-card h-100">
+                  <div class="app-card-body p-4">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                      <h5 class="fw-bold text-primary mb-0"><i class="fa-solid fa-box-archive me-2"></i> Sao Lưu Hệ Thống Snapshot</h5>
+                      <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1">Admin Only 🔒</span>
+                    </div>
+                    <p class="text-muted small">
+                      Đóng băng toàn bộ cơ sở dữ liệu hiện tại (Google Sheets, Danh mục, Lịch sử, Serial Index). 
+                      Snapshot được bảo lưu an toàn để phục hồi nguyên trạng bất cứ khi nào cần.
+                    </p>
+                    <div class="input-group mb-2">
+                      <input type="text" id="demo-backup-note" class="form-control form-control-sm" placeholder="Nhập ghi chú sao lưu (VD: Trước khi nhập lô máy quý 3)...">
+                      <button class="btn btn-primary btn-sm fw-bold px-3" onclick="triggerDemoBackup()">
+                        <i class="fa-solid fa-camera me-1"></i> TẠO SAO LƯU THỦ CÔNG
+                      </button>
+                    </div>
+                    <div class="small text-danger mt-2 fw-semibold">
+                      <i class="fa-solid fa-lock me-1"></i> Thao tác chỉ Quản trị viên (Admin) được thực hiện và yêu cầu mật khẩu xác nhận.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- KHỐI 2: CỨU SERIAL VOID NHẦM -->
+              <div class="col-md-5">
+                <div class="app-card h-100 border-start border-4 border-warning">
+                  <div class="app-card-body p-4">
+                    <h6 class="fw-bold text-dark mb-2"><i class="fa-solid fa-trash-arrow-up text-warning me-2"></i> Phục Hồi Serial Bị VOID Nhầm</h6>
+                    <p class="text-muted small mb-3">Khôi phục một mã Serial đã bị hủy/VOID do nhầm lẫn về lại trạng thái hoạt động bình thường trong kho.</p>
+                    <button class="btn btn-outline-warning text-dark fw-bold btn-sm w-100 py-2" onclick="triggerDemoRecoverSerial()">
+                      <i class="fa-solid fa-rotate-left me-1"></i> Cứu Dữ Liệu Serial VOID
+                    </button>
+                    <div class="small text-muted mt-2 text-center">
+                      <i class="fa-solid fa-key me-1"></i> Yêu cầu mật khẩu Admin
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- KHỐI 3: BẢNG DANH SÁCH BẢN SAO LƯU & PHỤC HỒI (RESTORE) -->
+            <div class="app-card mb-3">
+              <div class="app-card-header bg-white py-3 d-flex align-items-center justify-content-between">
+                <h6 class="fw-bold text-dark mb-0"><i class="fa-solid fa-list-check me-2 text-primary"></i> DANH SÁCH BẢN SAO LƯU &amp; KHÔI PHỤC DỮ LIỆU</h6>
+                <button class="btn btn-sm btn-outline-secondary" onclick="renderDemoBackupList()"><i class="fa-solid fa-rotate me-1"></i> Làm mới danh sách</button>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-hover table-sm align-middle mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Mã Backup</th>
+                      <th>Thời Gian</th>
+                      <th>Phân Loại</th>
+                      <th>Người Tạo</th>
+                      <th>Mô Tả / Ghi Chú</th>
+                      <th>Dung Lượng</th>
+                      <th>Trạng Thái</th>
+                      <th class="text-center" width="160">Khôi Phục</th>
+                    </tr>
+                  </thead>
+                  <tbody id="demo-backup-table-body">
+                    <tr>
+                      <td colspan="8" class="text-center text-muted py-3">Đang tải danh sách sao lưu...</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- KHỐI 4: VÙNG QUẢN TRỊ NGUY HIỂM (SYSTEM RESET) -->
+            <div class="app-card border-start border-4 border-danger">
+              <div class="app-card-body p-4">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                  <h5 class="fw-bold text-danger mb-0"><i class="fa-solid fa-skull-crossbones me-2"></i> RESET HỆ THỐNG VỀ TRẠNG THÁI MẶC ĐỊNH</h5>
+                  <span class="badge bg-danger text-white px-2 py-1">Yêu cầu Mật Khẩu Admin 🔒</span>
+                </div>
+                <p class="text-muted small mb-3">
+                  Khởi tạo lại hệ thống về trạng thái sạch ban đầu. Hệ thống luôn tự động tạo 1 bản sao lưu khẩn cấp 
+                  <code>PRE_RESET</code> trước khi dọn dẹp để bạn có thể khôi phục lại bất kỳ lúc nào.
+                </p>
+                <div class="d-flex gap-3 flex-wrap">
+                  <button class="btn btn-outline-danger fw-bold btn-sm px-3" onclick="triggerDemoReset('TRANSACTIONS_ONLY')">
+                    <i class="fa-solid fa-eraser me-1"></i> Xóa Lịch Sử Giao Dịch &amp; Tồn Kho (Giữ Danh Mục)
+                  </button>
+                  <button class="btn btn-danger fw-bold btn-sm px-3" onclick="triggerDemoReset('FULL_SYSTEM')">
+                    <i class="fa-solid fa-fire me-1"></i> Reset Toàn Bộ Hệ Thống Về Trắng (Full Clean)
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Bảng Danh Sách Bản Sao Lưu -->
-      <div class="card shadow-sm border-0 bg-white">
-        <div class="card-header bg-white py-3 d-flex align-items-center justify-content-between">
-          <h6 class="fw-bold text-dark mb-0"><i class="fa-solid fa-list-check me-2 text-primary"></i> DANH SÁCH BẢN SAO LƯU HỆ THỐNG</h6>
-          <button class="btn btn-sm btn-outline-secondary" onclick="loadBackupListUI()"><i class="fa-solid fa-rotate me-1"></i> Làm mới</button>
+      <!-- ==================================================== -->
+      <!-- MODULE: CHẾ ĐỘ THAO TÁC NHANH KHO (YÊU CẦU J5) -->
+      <!-- ==================================================== -->
+      <div id="module-MobileQuick" class="app-module" style="display: none;">
+        <div class="text-center mb-4">
+          <h4 class="fw-bold mb-1"><i class="fa-solid fa-bolt text-warning me-2"></i>Chế Độ Thao Tác Nhanh Tại Kho</h4>
+          <p class="text-muted small">Tối ưu cho thủ kho cầm điện thoại một tay, phím bấm lớn và quét camera tức thì</p>
         </div>
-        <div class="table-responsive">
-          <table class="table table-hover table-sm align-middle mb-0">
-            <thead class="table-light">
-              <tr>
-                <th>Mã Backup</th>
-                <th>Thời Gian</th>
-                <th>Phân Loại</th>
-                <th>Người Tạo</th>
-                <th>Mô Tả / Ghi Chú</th>
-                <th>Dung Lượng</th>
-                <th>Trạng Thái</th>
-                <th class="text-center" width="160">Thao Tác</th>
-              </tr>
-            </thead>
-            <tbody id="backup-table-body">
-              <tr>
-                <td colspan="8" class="text-center text-muted py-3">Nhấn "Làm mới" để tải danh sách sao lưu...</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
 
-    <!-- SUB 5: BẢO TRÌ & TOÀN VẸN HỆ THỐNG -->
-    <div class="tab-pane fade" id="tab-maint">
-      <div class="row g-3">
-        <!-- Đối soát toàn vẹn -->
-        <div class="col-md-6">
-          <div class="card shadow-sm border-0 bg-white h-100">
-            <div class="card-body p-4">
-              <h5 class="fw-bold text-primary mb-2"><i class="fa-solid fa-microchip me-2"></i> Đối Soát & Tự Sửa Toàn Vẹn Dữ Liệu</h5>
-              <p class="text-muted small">
-                Kiểm tra tính nhất quán giữa <b>Serial Index</b>, <b>Lịch sử Nhập/Xuất</b> và <b>Tồn kho hiện tại</b>. 
-                Tự động phát hiện và khắc phục các sai lệch trạng thái phát sinh do gián đoạn mạng.
-              </p>
-              <div class="d-flex gap-2 mt-4">
-                <button class="btn btn-outline-primary fw-bold btn-sm flex-grow-1" onclick="triggerDataReconciliation(false)">
-                  <i class="fa-solid fa-magnifying-glass me-1"></i> Kiểm Tra Đối Soát
-                </button>
-                <button class="btn btn-primary fw-bold btn-sm flex-grow-1" onclick="triggerDataReconciliation(true)">
-                  <i class="fa-solid fa-wrench me-1"></i> Tự Động Sửa Sai Lệch
-                </button>
-              </div>
-            </div>
+        <div class="row g-3">
+          <div class="col-6">
+            <a href="javascript:void(0)" class="quick-mode-btn text-primary" onclick="switchTab('NhapKho')">
+              <i class="fa-solid fa-truck-ramp-box"></i>
+              <span>NHẬP KHO</span>
+              <small class="text-muted fw-normal" style="font-size:0.75rem">Tạo phiếu nhập mới</small>
+            </a>
           </div>
-        </div>
-
-        <!-- Tái lập chỉ mục -->
-        <div class="col-md-6">
-          <div class="card shadow-sm border-0 bg-white h-100">
-            <div class="card-body p-4">
-              <h5 class="fw-bold text-dark mb-2"><i class="fa-solid fa-network-wired text-info me-2"></i> Tái Lập Chỉ Mục (Rebuild Serial Index)</h5>
-              <p class="text-muted small">
-                Quét toàn bộ sheet <code>SERIAL_MASTER</code> để tái tạo bảng băm tra cứu O(1). 
-                Thực hiện khi nghi ngờ chỉ mục tra cứu bị mất đồng bộ hoặc sau khi import dữ liệu khối lượng lớn từ file Excel ngoài.
-              </p>
-              <div class="mt-4">
-                <button class="btn btn-outline-dark fw-bold btn-sm w-100" onclick="triggerRebuildIndex()">
-                  <i class="fa-solid fa-arrows-rotate me-1"></i> Rebuild Serial Index Ngay
-                </button>
-              </div>
-            </div>
+          <div class="col-6">
+            <a href="javascript:void(0)" class="quick-mode-btn text-success" onclick="switchTab('XuatKho')">
+              <i class="fa-solid fa-truck-fast"></i>
+              <span>XUẤT KHO</span>
+              <small class="text-muted fw-normal" style="font-size:0.75rem">Xuất máy cho khách</small>
+            </a>
           </div>
-        </div>
-
-        <!-- VÙNG NGUY HIỂM: RESET HỆ THỐNG -->
-        <div class="col-md-12">
-          <div class="card shadow-sm border-0 bg-white border-start border-4 border-danger">
-            <div class="card-body p-4">
-              <div class="d-flex align-items-center justify-content-between mb-2">
-                <h5 class="fw-bold text-danger mb-0"><i class="fa-solid fa-skull-crossbones me-2"></i> VÙNG QUẢN TRỊ NGUY HIỂM (SYSTEM RESET)</h5>
-                <span class="badge bg-danger text-white px-2 py-1">Yêu cầu Re-Auth 5 Lớp</span>
-              </div>
-              <p class="text-muted small mb-4">
-                Khởi tạo lại hệ thống về trạng thái sạch ban đầu. <b>CHÚ Ý:</b> Hệ thống luôn tự động tạo 1 bản sao lưu khẩn cấp 
-                <code>PRE_RESET</code> trước khi dọn dẹp để bạn có thể khôi phục lại bất kỳ lúc nào.
-              </p>
-              <div class="d-flex gap-3">
-                <button class="btn btn-outline-danger fw-bold btn-sm px-3" onclick="triggerResetSystem('TRANSACTIONS_ONLY')">
-                  <i class="fa-solid fa-eraser me-1"></i> Xóa Lịch Sử Giao Dịch & Tồn Kho (Giữ Danh Mục)
-                </button>
-                <button class="btn btn-danger fw-bold btn-sm px-3" onclick="triggerResetSystem('FULL_SYSTEM')">
-                  <i class="fa-solid fa-fire me-1"></i> Reset Toàn Bộ Hệ Thống Về Trắng (Full Clean)
-                </button>
-              </div>
-            </div>
+          <div class="col-6">
+            <a href="javascript:void(0)" class="quick-mode-btn text-danger" onclick="openScannerModal('SERIAL_360')">
+              <i class="fa-solid fa-camera"></i>
+              <span>QUÉT CAMERA</span>
+              <small class="text-muted fw-normal" style="font-size:0.75rem">Quét Serial tức thì</small>
+            </a>
+          </div>
+          <div class="col-6">
+            <a href="javascript:void(0)" class="quick-mode-btn text-info" onclick="switchTab('TonKho')">
+              <i class="fa-solid fa-warehouse"></i>
+              <span>TRA TỒN KHO</span>
+              <small class="text-muted fw-normal" style="font-size:0.75rem">Xem số lượng theo model</small>
+            </a>
+          </div>
+          <div class="col-6">
+            <a href="javascript:void(0)" class="quick-mode-btn text-warning" onclick="switchTab('BaoHanh')">
+              <i class="fa-solid fa-screwdriver-wrench"></i>
+              <span>BẢO HÀNH</span>
+              <small class="text-muted fw-normal" style="font-size:0.75rem">Nhận máy lỗi từ khách</small>
+            </a>
+          </div>
+          <div class="col-6">
+            <a href="javascript:void(0)" class="quick-mode-btn text-secondary" onclick="openCreateInventorySessionModal()">
+              <i class="fa-solid fa-clipboard-check"></i>
+              <span>KIỂM KÊ KHO</span>
+              <small class="text-muted fw-normal" style="font-size:0.75rem">Quét kiểm kê theo phiên</small>
+            </a>
           </div>
         </div>
       </div>
-    </div>
+
+    </main>
   </div>
-</div>
 
-<script>
-  // Tải danh sách bản sao lưu từ backend
-  function loadBackupListUI() {
-    const tbody = document.getElementById('backup-table-body');
-    if (!tbody) return;
-    tbody.innerHTML = '<tr><td colspan="8" class="text-center py-3"><span class="spinner-border spinner-border-sm me-2"></span>Đang tải danh sách sao lưu...</td></tr>';
-
-    google.script.run
-      .withSuccessHandler(function(res) {
-        if (!res || !res.success || !res.backups || res.backups.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-3">Chưa có bản sao lưu nào được ghi nhận.</td></tr>';
-          return;
-        }
-
-        tbody.innerHTML = res.backups.map(b => {
-          const typeBadge = b.type === 'AUTO_DAILY' ? '<span class="badge bg-info-subtle text-info">Tự Động</span>'
-            : b.type === 'PRE_RESTORE' ? '<span class="badge bg-warning-subtle text-warning">Pre-Restore</span>'
-            : b.type === 'PRE_RESET' ? '<span class="badge bg-danger-subtle text-danger">Pre-Reset</span>'
-            : '<span class="badge bg-primary-subtle text-primary">Thủ Công</span>';
-          
-          return `
-            <tr>
-              <td class="fw-bold text-dark font-monospace">${b.backupId}</td>
-              <td class="small">${b.timestamp}</td>
-              <td>${typeBadge}</td>
-              <td class="small">${b.triggeredBy || 'System'}</td>
-              <td class="small text-truncate" style="max-width: 250px;" title="${b.description || ''}">${b.description || '---'}</td>
-              <td class="small font-monospace">${b.sizeKb ? b.sizeKb + ' KB' : '---'}</td>
-              <td><span class="badge bg-success-subtle text-success">Khả dụng</span></td>
-              <td class="text-center">
-                <button class="btn btn-danger btn-xs py-1 px-2 fw-bold" onclick="triggerRestoreBackup('${b.backupId}')" title="Khôi phục về bản này">
-                  <i class="fa-solid fa-clock-rotate-left me-1"></i> Khôi Phục
-                </button>
-              </td>
-            </tr>
-          `;
-        }).join('');
-      })
-      .withFailureHandler(function(err) {
-        tbody.innerHTML = `<tr><td colspan="8" class="text-center text-danger py-3">Lỗi tải danh sách sao lưu: ${err.message || err}</td></tr>`;
-      })
-      .listSystemBackups();
-  }
-
-  function triggerRebuildIndex() {
-    openAdminReauthModal('Tái Lập Serial Index', 'Quét lại toàn bộ Serial Master để lập lại chỉ mục tra cứu tốc độ cao.', function() {
-      Swal.fire({ title: 'Đang Rebuild Index...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-      google.script.run
-        .withSuccessHandler(function(res) {
-          if (res && res.success) {
-            Swal.fire({ icon: 'success', title: 'Thành công!', text: `Đã tái lập chỉ mục cho ${res.count || 0} Serial.` });
-          } else {
-            Swal.fire({ icon: 'error', title: 'Lỗi', text: res ? res.message : 'Không thể rebuild' });
-          }
-        })
-        .withFailureHandler(function(err) {
-          Swal.fire({ icon: 'error', title: 'Lỗi hệ thống', text: err.message || err });
-        })
-        .rebuildSerialIndex();
-    });
-  }
-</script>
+  <!-- MOBILE BOTTOM NAVIGATION (YÊU CẦU J1) -->
+  <nav class="mobile-bottom-nav">
+    <a href="javascript:void(0)" class="mobile-bottom-nav-item active" data-module="Dashboard" onclick="switchTab('Dashboard')">
+      <i class="fa-solid fa-chart-pie"></i>
+      <span>Tổng quan</span>
+    </a>
+    <a href="javascript:void(0)" class="mobile-bottom-nav-item" data-module="TonKho" onclick="switchTab('TonKho')">
+      <i class="fa-solid fa-warehouse"></i>
+      <span>Tồn kho</span>
+    </a>
+    <a href="javascript:void(0)" class="mobile-bottom-nav-item text-success" onclick="openScannerModal('SERIAL_360')">
+      <i class="fa-solid fa-camera fs-3 text-success"></i>
+      <span class="fw-bold">QUÉT</span>
+    </a>
+    <a href="javascript:void(0)" class="mobile-bottom-nav-item" data-module="NhapKho" onclick="switchTab('NhapKho')">
+      <i class="fa-solid fa-truck-ramp-box"></i>
+      <span>Nhập</span>
+    </a>
+    <a href="javascript:void(0)" class="mobile-bottom-nav-item" data-module="XuatKho" onclick="switchTab('XuatKho')">
+      <i class="fa-solid fa-truck-fast"></i>
+      <span>Xuất</span>
+    </a>
+  </nav>

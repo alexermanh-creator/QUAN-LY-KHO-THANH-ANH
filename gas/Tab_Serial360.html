@@ -1,103 +1,49 @@
-<!-- ==========================================
-     PHÂN HỆ 5: HỒ SƠ THIẾT BỊ SERIAL 360° (V4)
-     Tra cứu toàn diện: Nguồn gốc, Xuất bán, Bảo hành, Timeline vòng đời
-     ========================================== -->
-<div class="container-fluid p-0">
-  <div class="row mb-3">
-    <div class="col-md-12">
-      <h3 class="fw-bold text-dark"><i class="fa-solid fa-circle-nodes text-warning"></i> Hồ Sơ Thiết Bị Toàn Diện (Serial 360°)</h3>
-      <p class="text-muted mb-0">Truy ngược toàn bộ vòng đời từng cá thể máy: từ lúc nhập kho, vị trí lưu trữ, xuất bán đến lịch sử bảo hành.</p>
-    </div>
-  </div>
+      <div id="module-Serial360" class="app-module" style="display: none;">
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+          <div>
+            <h4 class="fw-bold mb-1"><i class="fa-solid fa-fingerprint text-primary me-2"></i>Hồ Sơ Lý Lịch Thiết Bị (Serial 360°)</h4>
+            <p class="text-muted small mb-0">Truy vết trọn vòng đời thiết bị từ khi nhập kho, xuất bán, bảo hành và luân chuyển</p>
+          </div>
+          <button class="btn btn-cam" onclick="openScannerModal('SERIAL_360')">
+            <i class="fa-solid fa-camera me-1"></i> 📷 Quét Serial
+          </button>
+        </div>
 
-  <!-- THANH TÌM KIẾM SERIAL 360 -->
-  <div class="card shadow-sm border-0 mb-3 bg-white">
-    <div class="card-body p-3">
-      <div class="row g-2 align-items-center">
-        <div class="col-md-8">
-          <div class="input-group input-group-lg">
-            <span class="input-group-text bg-white"><i class="fa-solid fa-barcode text-primary"></i></span>
-            <input type="text" id="s360-search-input" class="form-control font-monospace fw-bold" placeholder="Nhập hoặc quét mã Serial cần tra cứu..." onkeypress="if(event.key==='Enter') lookupSerial360Action()">
-            <button class="btn btn-primary fw-bold px-4" onclick="lookupSerial360Action()"><i class="fa-solid fa-magnifying-glass me-1"></i> TRA CỨU 360°</button>
+        <div class="app-card mb-3">
+          <div class="app-card-body p-3">
+            <div class="row g-2">
+              <div class="col-12 col-md-8">
+                <div class="input-group">
+                  <input type="text" id="serial-360-search-input" class="form-control" 
+                         placeholder="Nhập Serial hãng hoặc Mã nội bộ Thành An..." 
+                         onkeydown="if(event.key==='Enter') lookupSerial360(this.value)">
+                  <button class="btn btn-primary" onclick="lookupSerial360(document.getElementById('serial-360-search-input').value)">
+                    <i class="fa-solid fa-magnifying-glass"></i> Tra cứu
+                  </button>
+                  <button class="btn btn-cam" onclick="openScannerModal('SERIAL_360')">
+                    <i class="fa-solid fa-camera"></i> Scan
+                  </button>
+                </div>
+              </div>
+              <div class="col-12 col-md-4 d-flex align-items-center gap-2">
+                <span class="small text-muted">Gợi ý tra nhanh:</span>
+                <button class="btn btn-sm btn-outline-secondary" onclick="lookupSerial360('TA-260918-001')">TA-001</button>
+                <button class="btn btn-sm btn-outline-secondary" onclick="lookupSerial360('CN6030-9901')">CN6030</button>
+                <button class="btn btn-sm btn-outline-secondary" onclick="lookupSerial360('RICOH-5054-01')">RICOH-01</button>
+              </div>
+            </div>
           </div>
         </div>
-        <div class="col-md-4">
-          <span class="small text-muted">Gợi ý: Gõ mã Serial trên vỏ hộp hoặc tem bảo hành để xem hồ sơ tức thì.</span>
-        </div>
-      </div>
-    </div>
-  </div>
 
-  <!-- CONTAINER KẾT QUẢ PROFILE 360 -->
-  <div id="s360-result-box" class="d-none">
-    <div class="row g-3">
-      <!-- CỘT 1: THÔNG SỐ ĐỊNH DANH -->
-      <div class="col-md-4">
-        <div class="card shadow-sm border-0 bg-white h-100 p-3">
-          <div class="text-center mb-3 border-bottom pb-3">
-            <div class="fs-1 text-primary mb-1"><i class="fa-solid fa-print"></i></div>
-            <h4 class="fw-bold font-monospace text-primary mb-1" id="s360-d-serial">---</h4>
-            <span class="badge fs-6 mt-1" id="s360-d-status-badge">---</span>
-          </div>
-
-          <ul class="list-group list-group-flush small">
-            <li class="list-group-item d-flex justify-content-between px-0">
-              <span class="text-muted">Mã Model:</span>
-              <strong id="s360-d-model">---</strong>
-            </li>
-            <li class="list-group-item d-flex justify-content-between px-0">
-              <span class="text-muted">Tên thiết bị:</span>
-              <strong id="s360-d-name">---</strong>
-            </li>
-            <li class="list-group-item d-flex justify-content-between px-0">
-              <span class="text-muted">Nhóm hàng:</span>
-              <span class="badge bg-secondary" id="s360-d-category">---</span>
-            </li>
-            <li class="list-group-item d-flex justify-content-between px-0">
-              <span class="text-muted">Vị trí kho hiện tại:</span>
-              <strong class="text-dark" id="s360-d-warehouse">---</strong>
-            </li>
-            <li class="list-group-item d-flex justify-content-between px-0">
-              <span class="text-muted">Số ngày trong hệ thống:</span>
-              <strong id="s360-d-days">---</strong>
-            </li>
-          </ul>
-        </div>
-      </div>
-
-      <!-- CỘT 2: NGUỒN GỐC & XUẤT BÁN -->
-      <div class="col-md-4">
-        <div class="card shadow-sm border-0 bg-white h-100 p-3">
-          <h6 class="fw-bold text-primary mb-3 border-bottom pb-2"><i class="fa-solid fa-truck-ramp-box me-1"></i> 1. NGUỒN GỐC NHẬP HÀNG</h6>
-          <p class="small mb-1"><strong>Mã phiếu nhập:</strong> <span class="font-monospace text-primary fw-bold" id="s360-d-in-receipt">---</span></p>
-          <p class="small mb-1"><strong>Ngày nhập kho:</strong> <span id="s360-d-in-date">---</span></p>
-          <p class="small mb-3"><strong>Nhà cung cấp:</strong> <span class="fw-bold text-dark" id="s360-d-in-supplier">---</span></p>
-
-          <h6 class="fw-bold text-danger mb-3 border-bottom pb-2 pt-2"><i class="fa-solid fa-file-invoice me-1"></i> 2. THÔNG TIN XUẤT BÁN</h6>
-          <div id="s360-d-out-box">
-            <p class="small mb-1"><strong>Mã phiếu xuất:</strong> <span class="font-monospace text-danger fw-bold" id="s360-d-out-receipt">---</span></p>
-            <p class="small mb-1"><strong>Ngày xuất bán:</strong> <span id="s360-d-out-date">---</span></p>
-            <p class="small mb-1"><strong>Khách hàng:</strong> <span class="fw-bold text-dark" id="s360-d-out-customer">---</span></p>
-            <p class="small mb-1"><strong>Số điện thoại:</strong> <span class="text-danger fw-bold" id="s360-d-out-phone">---</span></p>
+        <div id="serial-360-profile-container">
+          <div class="app-card p-5 text-center text-muted">
+            <i class="fa-solid fa-id-card-clip fs-1 text-secondary mb-3"></i>
+            <h5>Vui lòng nhập Serial hãng hoặc Mã nội bộ để xem hồ sơ 360°</h5>
+            <p class="small">Hệ thống sẽ tái hiện đầy đủ lý lịch: Nhập kho, Xuất kho, Khách hàng, Bảo hành và Timeline vòng đời.</p>
           </div>
         </div>
       </div>
 
-      <!-- CỘT 3: BẢO HÀNH & TIMELINE VÒNG ĐỜI -->
-      <div class="col-md-4">
-        <div class="card shadow-sm border-0 bg-white h-100 p-3">
-          <h6 class="fw-bold text-success mb-3 border-bottom pb-2"><i class="fa-solid fa-shield-halved me-1"></i> 3. HẬU MÃI & BẢO HÀNH</h6>
-          <div class="alert alert-light border py-2 mb-3 small" id="s360-d-warranty-box">
-            <strong>Hạn bảo hành đến:</strong> <span class="fw-bold fs-6" id="s360-d-w-exp">---</span><br>
-            <strong>Trạng thái:</strong> <span id="s360-d-w-status">---</span>
-          </div>
-
-          <h6 class="fw-bold text-dark mb-3 border-bottom pb-2"><i class="fa-solid fa-timeline me-1"></i> 4. TIMELINE VÒNG ĐỜI THIẾT BỊ</h6>
-          <ul class="timeline small mb-0" id="s360-d-timeline-list">
-            <!-- Timeline items render bằng script -->
-          </ul>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
+      <!-- ==================================================== -->
+      <!-- MODULE: BẢO HÀNH (WARRANTY CASES - YÊU CẦU H & A6) -->
+      <!-- ==================================================== -->
