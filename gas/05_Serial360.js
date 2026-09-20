@@ -5,7 +5,7 @@
 
 function getSerial360Profile(serialNumber) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const tbSheet = ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
+  const tbSheet = ss.getSheetByName("SERIAL_MASTER") || ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
   if (!tbSheet || tbSheet.getLastRow() <= 1) return { found: false };
 
   const cleanSN = String(serialNumber || '').trim().toUpperCase();

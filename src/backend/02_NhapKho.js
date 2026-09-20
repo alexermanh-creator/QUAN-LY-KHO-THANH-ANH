@@ -21,7 +21,7 @@ function getFormNhapKhoData() {
     if (r[2]) loaiHangList.push(r[2]);
   });
 
-  const tbSheet = ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
+  const tbSheet = ss.getSheetByName("SERIAL_MASTER") || ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
   const existingSerials = (tbSheet && tbSheet.getLastRow() > 1) 
     ? tbSheet.getRange(2, 1, tbSheet.getLastRow() - 1, 1).getValues().map(r => String(r[0]).trim().toUpperCase()) 
     : [];
@@ -79,7 +79,7 @@ function generateAutoSerials(count, customPrefix) {
 
   // Nếu chưa có trong cache sequence, quét nhanh 100 dòng cuối của Sheet
   if (startIndex === 0) {
-    const tbSheet = ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
+    const tbSheet = ss.getSheetByName("SERIAL_MASTER") || ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
     if (tbSheet && tbSheet.getLastRow() > 1) {
       const lastRow = tbSheet.getLastRow();
       const scanRows = Math.min(150, lastRow - 1);
@@ -134,7 +134,7 @@ function executeNhapKhoMulti(data) {
 
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
-    const tbSheet = ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
+    const tbSheet = ss.getSheetByName("SERIAL_MASTER") || ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
     const lsSheet = ss.getSheetByName("LICH_SU_NHAP");
 
     // IDEMPOTENCY CHECK (Chống lặp do bấm đúp nút Lưu trong cùng 1 request)
@@ -281,7 +281,7 @@ function executeNhapKhoMulti(data) {
 
 function getChiTietDonNhap(maPhieu) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const tbSheet = ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
+  const tbSheet = ss.getSheetByName("SERIAL_MASTER") || ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
   if (!tbSheet || tbSheet.getLastRow() <= 1) return [];
   const data = tbSheet.getRange(2, 1, tbSheet.getLastRow() - 1, 17).getValues();
   const list = [];

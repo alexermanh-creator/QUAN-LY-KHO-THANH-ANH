@@ -21,7 +21,7 @@ function getTonKhoList(filters) {
   }
 
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
+  const sheet = ss.getSheetByName("SERIAL_MASTER") || ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
   if (!sheet || sheet.getLastRow() <= 1) return [];
 
   const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 17).getValues();
@@ -104,7 +104,7 @@ function getTonKhoList(filters) {
 
 function updateThietBi(rowId, serial, model, kho, ncc, ghiChu) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const tbSheet = ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
+  const tbSheet = ss.getSheetByName("SERIAL_MASTER") || ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
   const spSheet = ss.getSheetByName("DM_SAN_PHAM");
 
   const cleanSerial = String(serial).trim().toUpperCase();
@@ -148,7 +148,7 @@ function updateThietBi(rowId, serial, model, kho, ncc, ghiChu) {
 
 function deleteThietBi(rowId, reason) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const tbSheet = ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
+  const tbSheet = ss.getSheetByName("SERIAL_MASTER") || ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
   const targetRow = Number(rowId);
   const sn = String(tbSheet.getRange(targetRow, 1).getValue() || '').trim();
   const cancelReason = String(reason || 'Hủy do nhập sai/hỏng hóc/thanh lý').trim();

@@ -13,7 +13,7 @@ function getFormXuatKhoData() {
   const bhData = (qcSheet && qcSheet.getLastRow() > 1) ? qcSheet.getRange(2, 4, qcSheet.getLastRow() - 1, 1).getValues() : [];
   const goiBhList = bhData.map(r => String(r[0]).trim()).filter(r => r);
 
-  const tbSheet = ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
+  const tbSheet = ss.getSheetByName("SERIAL_MASTER") || ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
   const tonKhoList = [];
   if (tbSheet && tbSheet.getLastRow() > 1) {
     const data = tbSheet.getRange(2, 1, tbSheet.getLastRow() - 1, 10).getValues();
@@ -60,7 +60,7 @@ function executeXuatKho(data) {
 
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
-    const tbSheet = ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
+    const tbSheet = ss.getSheetByName("SERIAL_MASTER") || ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
     const lsSheet = ss.getSheetByName("LICH_SU_XUAT");
 
     // IDEMPOTENCY CHECK (Chống lặp do bấm đúp nút Lưu trong cùng 1 request)
@@ -224,7 +224,7 @@ function executeXuatKho(data) {
 
 function getChiTietDonXuat(maPhieu) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const tbSheet = ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
+  const tbSheet = ss.getSheetByName("SERIAL_MASTER") || ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
   if (!tbSheet || tbSheet.getLastRow() <= 1) return [];
   const data = tbSheet.getRange(2, 1, tbSheet.getLastRow() - 1, 17).getValues();
   const list = [];

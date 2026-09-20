@@ -75,7 +75,7 @@ function getInitAppData(options) {
   }
 
   // 2. TÍNH TOÁN METRICS VÀ THU THẬP DỮ LIỆU TỒN KHO/SERIAL (ĐỌC 1 LẦN DUY NHẤT)
-  let tbSheet = ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
+  let tbSheet = ss.getSheetByName("SERIAL_MASTER") || ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
   let totalStock = 0;
   let totalSold = 0;
   let totalWarrantyActive = 0;
@@ -216,7 +216,7 @@ function getStockPage(params) {
   }
 
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const tbSheet = ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
+  const tbSheet = ss.getSheetByName("SERIAL_MASTER") || ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
   if (!tbSheet || tbSheet.getLastRow() <= 1) {
     return { rows: [], page: 1, pageSize: pageSize, total: 0, totalPages: 0 };
   }
@@ -491,7 +491,7 @@ function getWarrantyPage(filters, page, pageSize) {
   const statusFilter = String(filters.status || '').trim(); // 'ACTIVE', 'WARNING', 'EXPIRED'
 
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const tbSheet = ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
+  const tbSheet = ss.getSheetByName("SERIAL_MASTER") || ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
   if (!tbSheet || tbSheet.getLastRow() <= 1) {
     return { rows: [], page: 1, pageSize: pageSize, total: 0, totalPages: 0 };
   }
@@ -609,7 +609,7 @@ function getDashboardSummary(period, customFrom, customTo) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const vSheet = ss.getSheetByName("V4_RECEIPT_HEADERS") || ss.getSheetByName("LICH_SU_NHAP");
   const xSheet = ss.getSheetByName("V4_ISSUE_HEADERS") || ss.getSheetByName("LICH_SU_XUAT");
-  const tbSheet = ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
+  const tbSheet = ss.getSheetByName("SERIAL_MASTER") || ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -767,7 +767,7 @@ function getBaoHanhPaged(params) {
  */
 function searchModelQuickAvailability(modelKeyword) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const tbSheet = ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
+  const tbSheet = ss.getSheetByName("SERIAL_MASTER") || ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
   if (!tbSheet || tbSheet.getLastRow() <= 1) return { found: false };
 
   const cleanKey = String(modelKeyword || '').trim().toLowerCase();

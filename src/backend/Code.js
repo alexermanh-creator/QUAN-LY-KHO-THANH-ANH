@@ -75,7 +75,7 @@ function getInitAppData(options) {
   }
 
   // 2. TÍNH TOÁN METRICS VÀ THU THẬP DỮ LIỆU TỒN KHO/SERIAL (ĐỌC 1 LẦN DUY NHẤT)
-  let tbSheet = ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
+  let tbSheet = ss.getSheetByName("SERIAL_MASTER") || ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
   let totalStock = 0;
   let totalSold = 0;
   let totalWarrantyActive = 0;
@@ -216,7 +216,7 @@ function getStockPage(params) {
   }
 
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const tbSheet = ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
+  const tbSheet = ss.getSheetByName("SERIAL_MASTER") || ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
   if (!tbSheet || tbSheet.getLastRow() <= 1) {
     return { rows: [], page: 1, pageSize: pageSize, total: 0, totalPages: 0 };
   }
@@ -491,7 +491,7 @@ function getWarrantyPage(filters, page, pageSize) {
   const statusFilter = String(filters.status || '').trim(); // 'ACTIVE', 'WARNING', 'EXPIRED'
 
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const tbSheet = ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
+  const tbSheet = ss.getSheetByName("SERIAL_MASTER") || ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
   if (!tbSheet || tbSheet.getLastRow() <= 1) {
     return { rows: [], page: 1, pageSize: pageSize, total: 0, totalPages: 0 };
   }
@@ -609,7 +609,7 @@ function getDashboardSummary(period, customFrom, customTo) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const vSheet = ss.getSheetByName("V4_RECEIPT_HEADERS") || ss.getSheetByName("LICH_SU_NHAP");
   const xSheet = ss.getSheetByName("V4_ISSUE_HEADERS") || ss.getSheetByName("LICH_SU_XUAT");
-  const tbSheet = ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
+  const tbSheet = ss.getSheetByName("SERIAL_MASTER") || ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -767,7 +767,7 @@ function getBaoHanhPaged(params) {
  */
 function searchModelQuickAvailability(modelKeyword) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const tbSheet = ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
+  const tbSheet = ss.getSheetByName("SERIAL_MASTER") || ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
   if (!tbSheet || tbSheet.getLastRow() <= 1) return { found: false };
 
   const cleanKey = String(modelKeyword || '').trim().toLowerCase();
@@ -936,9 +936,56 @@ function khoiTaoHeThongThanhAnTuDong() {
     }
   });
 
+  // Tự động gom file Google Sheet và thư mục Backup vào thư mục "Thành An" trên Google Drive
   try {
-    ui.alert(" THÀNH AN ERP v4.0", "Khởi tạo toàn bộ 10 bảng dữ liệu thành công!\nBạn đã có thể mở Web App để đăng nhập (Tài khoản: admin / Mật khẩu: 123456).", ui.ButtonSet.OK);
+    toChucThuMucGoogleDriveThanhAn();
+  } catch(driveErr) {
+    Logger.log("To chuc thu muc Drive: " + driveErr.message);
+  }
+
+  try {
+    ui.alert(" THÀNH AN ERP v4.0", "Khởi tạo toàn bộ 10 bảng dữ liệu thành công!\nĐã tự động tạo thư mục 'Thành An' trên Google Drive chứa file Bảng tính và thư mục Sao lưu.\nBạn đã có thể mở Web App để đăng nhập (Tài khoản: admin / Mật khẩu: 123456).", ui.ButtonSet.OK);
   } catch(e) {
     Logger.log("Khoi tao CSDL thanh cong!");
   }
 }
+
+// =========================================================================
+// HÀM TỔ CHỨC THƯ MỤC "Thành An" TRÊN GOOGLE DRIVE
+// Tự động gom file Google Sheet chính và thư mục Backup vào chung 1 nơi
+// =========================================================================
+function toChucThuMucGoogleDriveThanhAn() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  
+  // 1. Tạo hoặc lấy thư mục chính "Thành An" trên Google Drive
+  let thanhAnFolder = null;
+  const mainFolders = DriveApp.getFoldersByName("Thành An");
+  if (mainFolders.hasNext()) {
+    thanhAnFolder = mainFolders.next();
+  } else {
+    thanhAnFolder = DriveApp.createFolder("Thành An");
+  }
+
+  // 2. Chuyển file Google Sheet chính vào thư mục "Thành An"
+  try {
+    const ssFile = DriveApp.getFileById(ss.getId());
+    ssFile.moveTo(thanhAnFolder);
+  } catch (e) {
+    Logger.log("Chuyen file Google Sheet: " + e.message);
+  }
+
+  // 3. Tạo hoặc lấy thư mục con "Sao Lưu & Khôi Phục (Backups)" bên trong "Thành An"
+  let backupFolder = null;
+  const subFolders = thanhAnFolder.getFoldersByName("Sao Lưu & Khôi Phục (Backups)");
+  if (subFolders.hasNext()) {
+    backupFolder = subFolders.next();
+  } else {
+    backupFolder = thanhAnFolder.createFolder("Sao Lưu & Khôi Phục (Backups)");
+  }
+
+  return {
+    thanhAnFolderUrl: thanhAnFolder.getUrl(),
+    backupFolderUrl: backupFolder.getUrl()
+  };
+}
+

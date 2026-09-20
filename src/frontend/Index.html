@@ -345,7 +345,9 @@
         tonKhoList: data.tonKhoList || []
       };
 
-      window._tonKhoList = data.tonKhoList || [];
+      tonKhoList = data.tonKhoList || [];
+      baoHanhList = data.baoHanhList || [];
+      window._tonKhoList = tonKhoList;
       window._existingSerials = data.existingSerials || [];
       window._dashboardSummary = data.summary || null;
 
@@ -359,6 +361,7 @@
         elKho.innerHTML = '<option value="">-- Tất cả vị trí kho --</option>' + data.kho.map(k => `<option value="${k.val}">${k.val}</option>`).join('');
       }
 
+      renderDashboardData();
       markModuleDirty(['Dashboard', 'TonKho', 'LichSu', 'BaoHanh']);
       if (callback) callback();
     }).getInitAppData();
@@ -512,23 +515,45 @@
       labels.push(`T${m}/${y}`);
     }
 
-    lsNhapList.forEach(pn => {
-      if (pn.ngayNhap && pn.ngayNhap.includes('/')) {
-        const parts = pn.ngayNhap.split('/');
-        const tag = `T${parseInt(parts[1], 10)}/${parseInt(parts[2], 10)}`;
-        const idx = labels.indexOf(tag);
-        if (idx !== -1) nhapData[idx] += Number(pn.soLuong || 1);
-      }
-    });
+    if (lsNhapList.length > 0) {
+      lsNhapList.forEach(pn => {
+        if (pn.ngayNhap && pn.ngayNhap.includes('/')) {
+          const parts = pn.ngayNhap.split('/');
+          const tag = `T${parseInt(parts[1], 10)}/${parseInt(parts[2], 10)}`;
+          const idx = labels.indexOf(tag);
+          if (idx !== -1) nhapData[idx] += Number(pn.soLuong || 1);
+        }
+      });
+    } else if (tonKhoList && tonKhoList.length > 0) {
+      tonKhoList.forEach(t => {
+        if (t.ngayNhap && t.ngayNhap.includes('/')) {
+          const parts = t.ngayNhap.split('/');
+          const tag = `T${parseInt(parts[1], 10)}/${parseInt(parts[2], 10)}`;
+          const idx = labels.indexOf(tag);
+          if (idx !== -1) nhapData[idx] += 1;
+        }
+      });
+    }
 
-    lsXuatList.forEach(px => {
-      if (px.ngayXuat && px.ngayXuat.includes('/')) {
-        const parts = px.ngayXuat.split('/');
-        const tag = `T${parseInt(parts[1], 10)}/${parseInt(parts[2], 10)}`;
-        const idx = labels.indexOf(tag);
-        if (idx !== -1) xuatData[idx] += Number(px.soLuong || 1);
-      }
-    });
+    if (lsXuatList.length > 0) {
+      lsXuatList.forEach(px => {
+        if (px.ngayXuat && px.ngayXuat.includes('/')) {
+          const parts = px.ngayXuat.split('/');
+          const tag = `T${parseInt(parts[1], 10)}/${parseInt(parts[2], 10)}`;
+          const idx = labels.indexOf(tag);
+          if (idx !== -1) xuatData[idx] += Number(px.soLuong || 1);
+        }
+      });
+    } else if (baoHanhList && baoHanhList.length > 0) {
+      baoHanhList.forEach(b => {
+        if (b.ngayXuat && b.ngayXuat.includes('/')) {
+          const parts = b.ngayXuat.split('/');
+          const tag = `T${parseInt(parts[1], 10)}/${parseInt(parts[2], 10)}`;
+          const idx = labels.indexOf(tag);
+          if (idx !== -1) xuatData[idx] += 1;
+        }
+      });
+    }
 
     const ctxBar = document.getElementById('chartNhapXuat');
     if (ctxBar) {
@@ -640,16 +665,25 @@
   }
 
   function loadDashboardData() {
+    renderDashboardData();
     google.script.run.withSuccessHandler(function(summary) {
       if (!summary) return;
       const kpiTon = document.getElementById('kpi-tonkho');
-      if (kpiTon) kpiTon.innerText = `${summary.totalStock || summary.inStock || 0} máy`;
+      if (kpiTon && (summary.totalStock !== undefined || summary.inStock !== undefined)) {
+        kpiTon.innerText = `${summary.totalStock !== undefined ? summary.totalStock : summary.inStock} máy`;
+      }
       const kpiXuat = document.getElementById('kpi-xuat-thang');
-      if (kpiXuat) kpiXuat.innerText = `${summary.monthExportCount || summary.exported || summary.periodExport || 0} máy`;
+      if (kpiXuat && (summary.monthExportCount !== undefined || summary.exported !== undefined)) {
+        kpiXuat.innerText = `${summary.monthExportCount !== undefined ? summary.monthExportCount : summary.exported} máy`;
+      }
       const kpiBh = document.getElementById('kpi-sap-hethan');
-      if (kpiBh) kpiBh.innerText = `${summary.warrantyWarningCount || summary.warrantyWarning || 0} máy`;
+      if (kpiBh && summary.warrantyWarningCount !== undefined) {
+        kpiBh.innerText = `${summary.warrantyWarningCount} máy`;
+      }
       const kpiDong = document.getElementById('kpi-dong-kho');
-      if (kpiDong) kpiDong.innerText = `${summary.agingCount || 0} máy`;
+      if (kpiDong && summary.agingCount !== undefined) {
+        kpiDong.innerText = `${summary.agingCount} máy`;
+      }
 
       MODULE_STATE.Dashboard.dirty = false;
       MODULE_STATE.Dashboard.rendered = true;
