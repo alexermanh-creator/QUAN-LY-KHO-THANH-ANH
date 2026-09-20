@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cẩm Nang Vận Hành & Nâng Cấp - THÀNH AN ERP v4.0</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { font-family: 'Segoe UI', Inter, Roboto, sans-serif; background-color: #f8fafc; color: #1e293b; padding-bottom: 50px; }
+    .header-banner { background: linear-gradient(135deg, #101f3a 0%, #1e40af 100%); color: white; padding: 40px 20px; border-radius: 0 0 20px 20px; margin-bottom: 30px; box-shadow: 0 4px 20px rgba(16,31,58,0.15); }
+    .card-custom { border: none; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.05); transition: transform 0.2s; margin-bottom: 24px; }
+    .card-custom:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.08); }
+    .step-badge { width: 36px; height: 36px; border-radius: 50%; background: #2563eb; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 12px; }
+    .link-box { padding: 16px; border-radius: 10px; background: #eff6ff; border: 1px solid #bfdbfe; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+    .btn-action { font-weight: 600; padding: 8px 18px; border-radius: 8px; }
+  </style>
+</head>
+<body>
+
+<div class="header-banner text-center">
+  <div class="container">
+    <h2 class="fw-bold mb-2"><i class="fa-solid fa-cube text-info me-2"></i> THÀNH AN ERP v4.0</h2>
+    <p class="fs-5 text-light opacity-75 mb-0">Cẩm Nang Vận Hành & Quy Trình Nâng Cấp Hệ Thống</p>
+  </div>
+</div>
+
+<div class="container" style="max-width: 960px;">
+
+  <!-- PHẦN 1: CÁC ĐƯỜNG LINK QUAN TRỌNG -->
+  <div class="card card-custom p-4">
+    <h4 class="fw-bold text-primary mb-3"><i class="fa-solid fa-link me-2"></i> 1. Các Đường Link Truy Cập Hệ Thống</h4>
+    
+    <div class="link-box">
+      <div>
+        <h6 class="fw-bold mb-1 text-dark"><i class="fa-solid fa-globe text-primary me-2"></i> Web App Quản Lý Kho (Chính thức dùng hàng ngày)</h6>
+        <small class="text-muted">Dành cho bạn và nhân viên: Nhập kho, xuất kho, quét mã QR/Barcode, tra cứu Serial 360°</small>
+      </div>
+      <a href="https://script.google.com/macros/s/AKfycbxWJGAstijUt3nCFFZpWWUAtcMJBARp5w9Dv9-TmgJOlgSXqXl8571Te9Sf4Zm_ZcxK/exec" target="_blank" class="btn btn-primary btn-action">Mở Web App <i class="fa-solid fa-arrow-up-right-from-square ms-1"></i></a>
+    </div>
+
+    <div class="link-box" style="background: #f0fdf4; border-color: #bbf7d0;">
+      <div>
+        <h6 class="fw-bold mb-1 text-dark"><i class="fa-solid fa-table text-success me-2"></i> Google Sheet Cơ Sở Dữ Liệu</h6>
+        <small class="text-muted">Chứa 10 bảng dữ liệu gốc trên Google Drive của bạn (không ai xem hay xóa được)</small>
+      </div>
+      <a href="https://docs.google.com/spreadsheets/d/1qcXqmOsdciDHjeCUtY65Zd41aLlUvPHO_Wo-hWTyQck/edit" target="_blank" class="btn btn-success btn-action">Mở Google Sheet <i class="fa-solid fa-arrow-up-right-from-square ms-1"></i></a>
+    </div>
+
+    <div class="link-box" style="background: #faf5ff; border-color: #e9d5ff;">
+      <div>
+        <h6 class="fw-bold mb-1 text-dark"><i class="fa-solid fa-code text-purple me-2" style="color: #9333ea;"></i> Google Apps Script Editor</h6>
+        <small class="text-muted">Nơi chứa 19 file mã nguồn đang chạy trên Cloud của Google</small>
+      </div>
+      <a href="https://script.google.com/d/1gh2JeFuQ106ksrpPuXAB0U1lCafpqkXyYnXnEPKBvkRsOQdT2ap70wpZ/edit" target="_blank" class="btn btn-outline-dark btn-action">Xem Apps Script <i class="fa-solid fa-arrow-up-right-from-square ms-1"></i></a>
+    </div>
+
+    <div class="link-box" style="background: #f8fafc; border-color: #cbd5e1;">
+      <div>
+        <h6 class="fw-bold mb-1 text-dark"><i class="fa-brands fa-github text-dark me-2"></i> Kho Lưu Trữ GitHub</h6>
+        <small class="text-muted">Bản sao lưu dự phòng an toàn tuyệt đối toàn bộ lịch sử code của bạn</small>
+      </div>
+      <a href="https://github.com/alexermanh-creator/QUAN-LY-KHO-THANH-ANH" target="_blank" class="btn btn-dark btn-action">Mở GitHub <i class="fa-solid fa-arrow-up-right-from-square ms-1"></i></a>
+    </div>
+
+    <div class="alert alert-info mt-3 mb-0">
+      <i class="fa-solid fa-key me-2"></i> <strong>Tài khoản đăng nhập mặc định:</strong> Tên đăng nhập: <code>admin</code> | Mật khẩu: <code>123456</code>
+    </div>
+  </div>
+
+  <!-- PHẦN 2: CÁC FILE TRÊN MÁY TÍNH -->
+  <div class="card card-custom p-4">
+    <h4 class="fw-bold text-primary mb-3"><i class="fa-solid fa-folder-tree me-2"></i> 2. Các File Trên Máy Tính Của Bạn</h4>
+    <p class="text-muted">Tại thư mục <code>C:\Projects\Quan Ly Kho Thanh An\</code>:</p>
+    
+    <div class="table-responsive">
+      <table class="table table-bordered align-middle">
+        <thead class="table-light">
+          <tr>
+            <th style="width: 35%;">Tên File / Thư mục</th>
+            <th>Ý nghĩa & Cách sử dụng</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong class="text-danger"><i class="fa-solid fa-bolt me-1"></i> 2_DAY_19_FILE_LEN_GOOGLE_SHEETS.bat</strong></td>
+            <td><strong>File quan trọng nhất!</strong> Nhấp đúp chuột vào đây mỗi khi sửa xong code để tự động đẩy toàn bộ 19 file lên Google Sheets trong 3 giây.</td>
+          </tr>
+          <tr>
+            <td><strong class="text-dark"><i class="fa-brands fa-github me-1"></i> push_to_github.bat</strong></td>
+            <td>Nhấp đúp chuột để lưu bản sao lưu mã nguồn mới nhất lên tài khoản GitHub của bạn.</td>
+          </tr>
+          <tr>
+            <td><strong class="text-primary"><i class="fa-solid fa-folder-open me-1"></i> gas\ (Thư mục)</strong></td>
+            <td><strong>TRÁI TIM CỦA DỰ ÁN:</strong> Chứa trọn vẹn 19 file code chuẩn đang chạy trên Google. Mọi chỉnh sửa code sau này sẽ thực hiện tại đây.</td>
+          </tr>
+          <tr>
+            <td><strong class="text-secondary"><i class="fa-solid fa-globe me-1"></i> demo_quan_ly_kho.html</strong></td>
+            <td>Bản demo Offline độc lập trên máy tính (nhấp đúp là mở ra xem giao diện được ngay mà không cần mạng).</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- PHẦN 3: QUY TRÌNH SỬA CODE & CẬP NHẬT -->
+  <div class="card card-custom p-4">
+    <h4 class="fw-bold text-primary mb-4"><i class="fa-solid fa-arrows-rotate me-2"></i> 3. Quy Trình 3 Bước Khi Sửa Code & Nâng Cấp</h4>
+
+    <div class="d-flex align-items-start mb-4">
+      <div class="step-badge">1</div>
+      <div>
+        <h5 class="fw-bold mb-1">Bước 1: Sửa file trong thư mục <code>gas\</code></h5>
+        <p class="text-muted mb-0">Mở đúng file cần sửa (hoặc nhắn yêu cầu cho AI sửa giúp):<br>
+        - Muốn sửa giao diện, form nhập ➔ Sửa <code>gas\Index.html</code><br>
+        - Muốn sửa logic Nhập kho ➔ Sửa <code>gas\02_NhapKho.js</code><br>
+        - Muốn sửa logic Xuất kho ➔ Sửa <code>gas\03_XuatKho.js</code></p>
+      </div>
+    </div>
+
+    <div class="d-flex align-items-start mb-4">
+      <div class="step-badge">2</div>
+      <div>
+        <h5 class="fw-bold mb-1">Bước 2: Lưu lại trên máy tính</h5>
+        <p class="text-muted mb-0">Nhấn phím <strong><code>Ctrl + S</code></strong> để lưu lại các thay đổi.</p>
+      </div>
+    </div>
+
+    <div class="d-flex align-items-start">
+      <div class="step-badge bg-success">3</div>
+      <div>
+        <h5 class="fw-bold mb-1 text-success">Bước 3: Nhấp đúp chuột để đẩy lên Google Sheets (3 giây)</h5>
+        <p class="text-muted mb-2">Ra thư mục ngoài cùng, nhấp đúp chuột vào file:</p>
+        <div class="p-2 bg-light border rounded text-monospace fw-bold text-danger">
+          <i class="fa-solid fa-arrow-right me-2"></i> 2_DAY_19_FILE_LEN_GOOGLE_SHEETS.bat
+        </div>
+        <small class="text-success mt-2 d-block"><i class="fa-solid fa-circle-check me-1"></i> Xong! Mở lại Web App trên trình duyệt là tính năng mới lập tức xuất hiện!</small>
+      </div>
+    </div>
+  </div>
+
+  <div class="text-center text-muted mt-4 small">
+    THÀNH AN ERP v4.0 &copy; 2026 - Bản quyền thuộc Công ty TNHH Thương Mại & Dịch Vụ Thành An
+  </div>
+
+</div>
+
+</body>
+</html>
