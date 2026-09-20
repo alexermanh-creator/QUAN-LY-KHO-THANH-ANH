@@ -1,0 +1,112 @@
+<!-- ==========================================
+     PHÂN HỆ 7: LỊCH SỬ GIAO DỊCH NHẬP / XUẤT (V4)
+     ========================================== -->
+<div class="container-fluid p-0">
+  <div class="row mb-3">
+    <div class="col-md-12">
+      <h3 class="fw-bold text-dark"><i class="fa-solid fa-clock-rotate-left text-primary"></i> Nhật Ký Lịch Sử Giao Dịch Kho</h3>
+      <p class="text-muted mb-0">Theo dõi toàn bộ các đợt nhập hàng và phiếu xuất bán thiết bị trong quá khứ.</p>
+    </div>
+  </div>
+
+  <ul class="nav nav-pills mb-3">
+    <li class="nav-item">
+      <button class="nav-link active fw-bold" id="btn-sub-lsnhap" onclick="switchLsSubTab('nhap')">
+        <i class="fa-solid fa-file-arrow-down me-1"></i> Lịch Sử Nhập Kho
+      </button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link fw-bold" id="btn-sub-lsxuat" onclick="switchLsSubTab('xuat')">
+        <i class="fa-solid fa-file-arrow-up me-1 text-danger"></i> Lịch Sử Xuất Bán
+      </button>
+    </li>
+  </ul>
+
+  <!-- SUB TAB 1: LỊCH SỬ NHẬP -->
+  <div id="sub-box-lsnhap">
+    <div class="card shadow-sm border-0 mb-3 bg-white">
+      <div class="card-body">
+        <div class="row g-2">
+          <div class="col-md-8">
+            <div class="input-group">
+              <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-primary"></i></span>
+              <input type="text" id="ls-nhap-search" class="form-control" placeholder="Tìm theo Mã phiếu, NCC, Model hoặc Serial..." oninput="filterLsNhap()">
+            </div>
+          </div>
+          <div class="col-md-4 text-end">
+            <span class="badge bg-primary fs-6 p-2 w-100" id="ls-nhap-total">0 đợt nhập</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card shadow-sm border-0 bg-white">
+      <div class="table-responsive">
+        <table class="table table-hover table-sm align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th width="15%">Mã phiếu nhập</th>
+              <th width="12%">Ngày nhập</th>
+              <th width="18%">Nhà cung cấp</th>
+              <th width="20%">Model tóm tắt</th>
+              <th width="8%" class="text-center">Số lượng</th>
+              <th width="12%">Vị trí kho</th>
+              <th width="15%" class="text-center">Chi tiết</th>
+            </tr>
+          </thead>
+          <tbody id="ls-nhap-table-body">
+            <tr><td colspan="7" class="text-center text-muted py-4">Đang tải lịch sử nhập...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card-footer bg-light py-2 d-flex justify-content-between align-items-center">
+        <small class="text-muted" id="lsnhap-page-info">Trang 1 / 1 (0 đợt)</small>
+        <div class="btn-group btn-group-sm" id="lsnhap-pagination"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUB TAB 2: LỊCH SỬ XUẤT -->
+  <div id="sub-box-lsxuat" style="display: none;">
+    <div class="card shadow-sm border-0 mb-3 bg-white">
+      <div class="card-body">
+        <div class="row g-2">
+          <div class="col-md-8">
+            <div class="input-group">
+              <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-danger"></i></span>
+              <input type="text" id="ls-xuat-search" class="form-control" placeholder="Tìm theo Mã phiếu, Khách hàng, SĐT hoặc Serial..." oninput="filterLsXuat()">
+            </div>
+          </div>
+          <div class="col-md-4 text-end">
+            <span class="badge bg-danger fs-6 p-2 w-100" id="ls-xuat-total">0 đợt xuất</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card shadow-sm border-0 bg-white">
+      <div class="table-responsive">
+        <table class="table table-hover table-sm align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th width="15%">Mã phiếu xuất</th>
+              <th width="12%">Ngày xuất</th>
+              <th width="25%">Khách hàng (SĐT)</th>
+              <th width="8%" class="text-center">Số lượng</th>
+              <th width="15%">Gói bảo hành</th>
+              <th width="15%">Serials</th>
+              <th width="10%" class="text-center">Chi tiết</th>
+            </tr>
+          </thead>
+          <tbody id="ls-xuat-table-body">
+            <tr><td colspan="7" class="text-center text-muted py-4">Đang tải lịch sử xuất...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card-footer bg-light py-2 d-flex justify-content-between align-items-center">
+        <small class="text-muted" id="lsxuat-page-info">Trang 1 / 1 (0 đợt)</small>
+        <div class="btn-group btn-group-sm" id="lsxuat-pagination"></div>
+      </div>
+    </div>
+  </div>
+</div>

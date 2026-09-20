@@ -1,0 +1,224 @@
+<!-- ==========================================
+     PHÂN HỆ 8: QUẢN LÝ DANH MỤC HỆ THỐNG (V4)
+     ========================================== -->
+<div class="container-fluid p-0">
+  <div class="row mb-3">
+    <div class="col-md-12">
+      <h3 class="fw-bold text-dark"><i class="fa-solid fa-tags text-primary"></i> Quản Lý Danh Mục Hệ Thống</h3>
+      <p class="text-muted mb-0">Quản lý định danh Model, Nhà cung cấp (Tên viết tắt + Đầy đủ), Khách hàng và Quy chuẩn kho.</p>
+    </div>
+  </div>
+
+  <div class="row">
+    <!-- CỘT MENU DỌC BÊN TRÁI -->
+    <div class="col-md-3 mb-3">
+      <div class="list-group shadow-sm" id="sub-tabs" role="tablist">
+        <button class="list-group-item list-group-item-action active fw-bold py-3" data-bs-toggle="list" href="#sub-model">
+          <i class="fa-solid fa-print text-primary me-2"></i> 1. Model & Sản phẩm
+        </button>
+        <button class="list-group-item list-group-item-action fw-bold py-3" data-bs-toggle="list" href="#sub-quychuan">
+          <i class="fa-solid fa-sliders text-success me-2"></i> 2. Bảng Quy Chuẩn Vận Hành
+        </button>
+        <button class="list-group-item list-group-item-action fw-bold py-3" data-bs-toggle="list" href="#sub-ncc">
+          <i class="fa-solid fa-truck-ramp-box text-warning me-2"></i> 3. Nhà Cung Cấp
+        </button>
+        <button class="list-group-item list-group-item-action fw-bold py-3" data-bs-toggle="list" href="#sub-kh">
+          <i class="fa-solid fa-users text-info me-2"></i> 4. Danh bạ Khách Hàng
+        </button>
+      </div>
+    </div>
+
+    <!-- CỘT NỘI DUNG CHI TIẾT BÊN PHẢI -->
+    <div class="col-md-9">
+      <div class="tab-content">
+        
+        <!-- SUB 1: MODEL & SẢN PHẨM -->
+        <div class="tab-pane fade show active" id="sub-model">
+          <div class="card shadow-sm border-0 mb-3 bg-white">
+            <div class="card-header bg-white fw-bold text-primary py-3">THÊM / CẬP NHẬT MODEL SẢN PHẨM</div>
+            <div class="card-body">
+              <input type="hidden" id="sp-rowid">
+              <div class="row g-2 mb-2">
+                <div class="col-md-3">
+                  <label class="form-label small fw-bold">Mã Model (*)</label>
+                  <input type="text" id="sp-model" class="form-control form-control-sm" placeholder="VD: Canon 2900">
+                </div>
+                <div class="col-md-5">
+                  <label class="form-label small fw-bold">Tên hàng hóa đầy đủ (*)</label>
+                  <input type="text" id="sp-ten" class="form-control form-control-sm" placeholder="VD: Máy in Laser Canon LBP 2900">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label small fw-bold">Nhóm hàng (*)</label>
+                  <select id="sp-nhom" class="form-select form-select-sm"></select>
+                </div>
+              </div>
+              <div class="text-end">
+                <button type="button" class="btn btn-secondary btn-sm d-none" id="btn-cancel-sp" onclick="cancelEditSp()">Hủy</button>
+                <button type="button" class="btn btn-primary btn-sm fw-bold px-3" onclick="saveProductBtn()">Lưu Model</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card shadow-sm border-0 bg-white">
+            <div class="table-responsive">
+              <table class="table table-hover table-sm align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th width="25%">Mã Model</th>
+                    <th width="45%">Tên hàng hóa</th>
+                    <th width="20%">Nhóm hàng</th>
+                    <th width="10%" class="text-center">Tác vụ</th>
+                  </tr>
+                </thead>
+                <tbody id="sp-table-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUB 2: QUY CHUẨN KHO -->
+        <div class="tab-pane fade" id="sub-quychuan">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="card shadow-sm border-0 bg-white p-3 h-100">
+                <h6 class="fw-bold text-primary mb-2">Nhóm hàng</h6>
+                <div class="input-group input-group-sm mb-2">
+                  <input type="text" id="add-qc-nhom" class="form-control" placeholder="Tên nhóm mới...">
+                  <button class="btn btn-outline-primary" onclick="addQcBtn(1, 'add-qc-nhom')">Thêm</button>
+                </div>
+                <ul class="list-group list-group-flush" id="list-nhomhang"></ul>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="card shadow-sm border-0 bg-white p-3 h-100">
+                <h6 class="fw-bold text-success mb-2">Vị trí kho</h6>
+                <div class="input-group input-group-sm mb-2">
+                  <input type="text" id="add-qc-kho" class="form-control" placeholder="Tên kho mới...">
+                  <button class="btn btn-outline-success" onclick="addQcBtn(2, 'add-qc-kho')">Thêm</button>
+                </div>
+                <ul class="list-group list-group-flush" id="list-kho"></ul>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="card shadow-sm border-0 bg-white p-3 h-100">
+                <h6 class="fw-bold text-warning text-dark mb-2">Phân loại hàng hóa</h6>
+                <div class="input-group input-group-sm mb-2">
+                  <input type="text" id="add-qc-loai" class="form-control" placeholder="Loại hàng mới...">
+                  <button class="btn btn-outline-warning text-dark" onclick="addQcBtn(3, 'add-qc-loai')">Thêm</button>
+                </div>
+                <ul class="list-group list-group-flush" id="list-loaihang"></ul>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="card shadow-sm border-0 bg-white p-3 h-100">
+                <h6 class="fw-bold text-info text-dark mb-2">Gói bảo hành tiêu chuẩn</h6>
+                <div class="input-group input-group-sm mb-2">
+                  <input type="text" id="add-qc-bh" class="form-control" placeholder="VD: 12 tháng...">
+                  <button class="btn btn-outline-info" onclick="addQcBtn(4, 'add-qc-bh')">Thêm</button>
+                </div>
+                <ul class="list-group list-group-flush" id="list-bh"></ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUB 3: NHÀ CUNG CẤP -->
+        <div class="tab-pane fade" id="sub-ncc">
+          <div class="card shadow-sm border-0 mb-3 bg-white">
+            <div class="card-header bg-white fw-bold text-warning text-dark py-3">THÊM / CẬP NHẬT NHÀ CUNG CẤP</div>
+            <div class="card-body">
+              <input type="hidden" id="ncc-rowid">
+              <div class="row g-2 mb-2">
+                <div class="col-md-3">
+                  <label class="form-label small fw-bold">Mã viết tắt (*)</label>
+                  <input type="text" id="ncc-tentat" class="form-control form-control-sm" placeholder="VD: LBM">
+                </div>
+                <div class="col-md-5">
+                  <label class="form-label small fw-bold">Tên đầy đủ pháp nhân</label>
+                  <input type="text" id="ncc-tendaydu" class="form-control form-control-sm" placeholder="VD: Công ty Lê Bảo Minh">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label small fw-bold">Số điện thoại liên hệ</label>
+                  <input type="text" id="ncc-sdt" class="form-control form-control-sm" placeholder="VD: 028... hoặc 090..." inputmode="tel" onblur="normalizePhoneInput(this)">
+                </div>
+              </div>
+              <div class="mb-2">
+                <label class="form-label small fw-bold">Ghi chú đối tác</label>
+                <input type="text" id="ncc-ghichu" class="form-control form-control-sm" placeholder="Chính sách bảo hành, đầu mối liên hệ...">
+              </div>
+              <div class="text-end">
+                <button type="button" class="btn btn-secondary btn-sm d-none" id="btn-cancel-ncc" onclick="cancelEditNcc()">Hủy</button>
+                <button type="button" class="btn btn-warning text-dark btn-sm fw-bold px-3" onclick="saveNccBtn()">Lưu Nhà Cung Cấp</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card shadow-sm border-0 bg-white">
+            <div class="table-responsive">
+              <table class="table table-hover table-sm align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th width="20%">Mã viết tắt</th>
+                    <th width="45%">Tên đầy đủ</th>
+                    <th width="25%">Số điện thoại</th>
+                    <th width="10%" class="text-center">Tác vụ</th>
+                  </tr>
+                </thead>
+                <tbody id="ncc-table-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUB 4: KHÁCH HÀNG -->
+        <div class="tab-pane fade" id="sub-kh">
+          <div class="card shadow-sm border-0 mb-3 bg-white">
+            <div class="card-header bg-white fw-bold text-info text-dark py-3">THÊM / CẬP NHẬT DANH BẠ KHÁCH HÀNG</div>
+            <div class="card-body">
+              <input type="hidden" id="kh-rowid">
+              <div class="row g-2 mb-2">
+                <div class="col-md-4">
+                  <label class="form-label small fw-bold">Tên khách hàng / Cơ quan (*)</label>
+                  <input type="text" id="kh-ten" class="form-control form-control-sm" placeholder="VD: Công ty TNHH ABC">
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label small fw-bold">Số điện thoại (*)</label>
+                  <input type="text" id="kh-sdt" class="form-control form-control-sm" placeholder="VD: 090..." inputmode="tel" onblur="normalizePhoneInput(this)">
+                </div>
+                <div class="col-md-5">
+                  <label class="form-label small fw-bold">Địa chỉ nhận hàng</label>
+                  <input type="text" id="kh-diachi" class="form-control form-control-sm" placeholder="Số nhà, đường, quận...">
+                </div>
+              </div>
+              <div class="mb-2">
+                <label class="form-label small fw-bold">Ghi chú</label>
+                <input type="text" id="kh-ghichu" class="form-control form-control-sm" placeholder="Người đại diện, mã số thuế...">
+              </div>
+              <div class="text-end">
+                <button type="button" class="btn btn-secondary btn-sm d-none" id="btn-cancel-kh" onclick="cancelEditKh()">Hủy</button>
+                <button type="button" class="btn btn-info text-dark btn-sm fw-bold px-3" onclick="saveKhBtn()">Lưu Khách Hàng</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card shadow-sm border-0 bg-white">
+            <div class="table-responsive">
+              <table class="table table-hover table-sm align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th width="30%">Tên khách hàng</th>
+                    <th width="20%">Số điện thoại</th>
+                    <th width="40%">Địa chỉ</th>
+                    <th width="10%" class="text-center">Tác vụ</th>
+                  </tr>
+                </thead>
+                <tbody id="kh-table-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
