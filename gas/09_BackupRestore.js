@@ -151,16 +151,29 @@ function createSystemBackup(options) {
   }
 
   try {
-    const backupFolderName = "THANHAN_BACKUPS_KHO";
-    let targetFolder = null;
-    const folders = DriveApp.getFoldersByName(backupFolderName);
-    if (folders.hasNext()) {
-      targetFolder = folders.next();
+    // Tìm hoặc tạo thư mục cha "Thành An" trên Google Drive
+    let thanhAnFolder = null;
+    const mainFolders = DriveApp.getFoldersByName("Thành An");
+    if (mainFolders.hasNext()) {
+      thanhAnFolder = mainFolders.next();
     } else {
-      targetFolder = DriveApp.createFolder(backupFolderName);
+      thanhAnFolder = DriveApp.createFolder("Thành An");
+    }
+
+    // Tìm hoặc tạo thư mục con "Sao Lưu & Khôi Phục (Backups)"
+    let targetFolder = null;
+    const subFolders = thanhAnFolder.getFoldersByName("Sao Lưu & Khôi Phục (Backups)");
+    if (subFolders.hasNext()) {
+      targetFolder = subFolders.next();
+    } else {
+      targetFolder = thanhAnFolder.createFolder("Sao Lưu & Khôi Phục (Backups)");
     }
 
     const ssFile = DriveApp.getFileById(ss.getId());
+    // Đảm bảo file Google Sheet chính cũng nằm trong thư mục Thành An
+    try {
+      ssFile.moveTo(thanhAnFolder);
+    } catch(e) {}
     const backupFileName = `${ss.getName()}_SAO_LUU_${backupId}`;
     const copiedFile = ssFile.makeCopy(backupFileName, targetFolder);
 

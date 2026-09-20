@@ -8,8 +8,9 @@
 
 | Hạng mục | Đường link truy cập | Mục đích & Đối tượng sử dụng |
 |---|---|---|
-| 🚀 **Web App Quản Lý Kho (Chính thức)** | [Mở Phần Mềm Quản Lý Kho](https://script.google.com/macros/s/AKfycbxWJGAstijUt3nCFFZpWWUAtcMJBARp5w9Dv9-TmgJOlgSXqXl8571Te9Sf4Zm_ZcxK/exec) | **Dùng hàng ngày**: Dành cho Quản lý, Thủ kho, Kế toán, Kỹ thuật viên thao tác nhập xuất, quét barcode, tra cứu Serial. |
-| 📊 **Google Sheet Cơ Sở Dữ Liệu** | [Mở Google Sheet CSDL](https://docs.google.com/spreadsheets/d/1qcXqmOsdciDHjeCUtY65Zd41aLlUvPHO_Wo-hWTyQck/edit) | **Lưu trữ dữ liệu gốc**: Chứa toàn bộ 10 tab dữ liệu (`V4_SERIAL_MASTER`, `V4_RECEIPT_HEADERS`, `DM_SAN_PHAM`...). |
+| ⚡ **Link Rút Gọn Web App (Khuyên dùng)** | **[https://tinyurl.com/khothanhan-chuan](https://tinyurl.com/khothanhan-chuan)** | **Dùng hàng ngày**: Link siêu ngắn, dễ nhớ cho bạn và nhân viên (Dự phòng: `https://tinyurl.com/29cxuyup`). |
+| 🚀 **Đường Link Gốc Web App** | [Mở Link Gốc Apps Script](https://script.google.com/macros/s/AKfycbxWJGAsTijUt3nCFFZpWWUAtcMJBARp5w9Dv9-TmgJOIgSXqXl8S71Te9Sf4Zm_ZcxK/exec) | Link chính thức do máy chủ Google Apps Script cấp phát. |
+| 📊 **Google Sheet Cơ Sở Dữ Liệu** | [Mở Google Sheet CSDL](https://docs.google.com/spreadsheets/d/1qcXqmOsdciDHjeCUtY65Zd41aLlUvPHO_Wo-hWTyQck/edit) | **Lưu trữ dữ liệu gốc**: Chứa toàn bộ 10 tab dữ liệu nằm trong thư mục `Thành An` trên Google Drive. |
 | 🛠️ **Google Apps Script Editor** | [Mở Apps Script Project](https://script.google.com/d/1gh2JeFuQ106ksrpPuXAB0U1lCafpqkXyYnXnEPKBvkRsOQdT2ap70wpZ/edit) | **Quản lý mã nguồn trên Cloud**: Chứa 19 file code đang chạy trên máy chủ Google. |
 | 🛡️ **Kho Lưu Trữ GitHub** | [Mở GitHub Repository](https://github.com/alexermanh-creator/QUAN-LY-KHO-THANH-ANH) | **Bảo mật & Sao lưu**: Lưu trữ lịch sử nâng cấp và toàn bộ bản sao dự phòng mã nguồn. |
 

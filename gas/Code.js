@@ -936,9 +936,56 @@ function khoiTaoHeThongThanhAnTuDong() {
     }
   });
 
+  // Tự động gom file Google Sheet và thư mục Backup vào thư mục "Thành An" trên Google Drive
   try {
-    ui.alert(" THÀNH AN ERP v4.0", "Khởi tạo toàn bộ 10 bảng dữ liệu thành công!\nBạn đã có thể mở Web App để đăng nhập (Tài khoản: admin / Mật khẩu: 123456).", ui.ButtonSet.OK);
+    toChucThuMucGoogleDriveThanhAn();
+  } catch(driveErr) {
+    Logger.log("To chuc thu muc Drive: " + driveErr.message);
+  }
+
+  try {
+    ui.alert(" THÀNH AN ERP v4.0", "Khởi tạo toàn bộ 10 bảng dữ liệu thành công!\nĐã tự động tạo thư mục 'Thành An' trên Google Drive chứa file Bảng tính và thư mục Sao lưu.\nBạn đã có thể mở Web App để đăng nhập (Tài khoản: admin / Mật khẩu: 123456).", ui.ButtonSet.OK);
   } catch(e) {
     Logger.log("Khoi tao CSDL thanh cong!");
   }
 }
+
+// =========================================================================
+// HÀM TỔ CHỨC THƯ MỤC "Thành An" TRÊN GOOGLE DRIVE
+// Tự động gom file Google Sheet chính và thư mục Backup vào chung 1 nơi
+// =========================================================================
+function toChucThuMucGoogleDriveThanhAn() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  
+  // 1. Tạo hoặc lấy thư mục chính "Thành An" trên Google Drive
+  let thanhAnFolder = null;
+  const mainFolders = DriveApp.getFoldersByName("Thành An");
+  if (mainFolders.hasNext()) {
+    thanhAnFolder = mainFolders.next();
+  } else {
+    thanhAnFolder = DriveApp.createFolder("Thành An");
+  }
+
+  // 2. Chuyển file Google Sheet chính vào thư mục "Thành An"
+  try {
+    const ssFile = DriveApp.getFileById(ss.getId());
+    ssFile.moveTo(thanhAnFolder);
+  } catch (e) {
+    Logger.log("Chuyen file Google Sheet: " + e.message);
+  }
+
+  // 3. Tạo hoặc lấy thư mục con "Sao Lưu & Khôi Phục (Backups)" bên trong "Thành An"
+  let backupFolder = null;
+  const subFolders = thanhAnFolder.getFoldersByName("Sao Lưu & Khôi Phục (Backups)");
+  if (subFolders.hasNext()) {
+    backupFolder = subFolders.next();
+  } else {
+    backupFolder = thanhAnFolder.createFolder("Sao Lưu & Khôi Phục (Backups)");
+  }
+
+  return {
+    thanhAnFolderUrl: thanhAnFolder.getUrl(),
+    backupFolderUrl: backupFolder.getUrl()
+  };
+}
+
