@@ -14,11 +14,10 @@ if %errorlevel% equ 0 (
 ) else (
     echo.
     echo ========================================================
-    echo [HUONG DAN KHAC PHUC NHANH]
-    echo Neu gap loi dang nhap hoac loi quyen API:
-    echo Ban hay nhap dup file: "3_TU_DONG_COPY_CODE.bat"
-    echo File nay se tu dong copy toan bo code vao chuot va mo trang
-    echo Apps Script de ban chi can Ctrl+V la xong ngay trong 5 giay!
+    echo [HUONG DAN XU LY NEU GAP LOI]
+    echo 1. Neu loi chua bat API: Truy cap https://script.google.com/home/usersettings va bat "Google Apps Script API" sang ON.
+    echo 2. Neu loi het han dang nhap: Chay lai file "1_DANG_NHAP_GOOGLE.bat" de dang nhap lai tai khoan Google.
+    echo 3. Sau do chay lai file nay de day toan bo 19 file len.
     echo ========================================================
 )
 pause
