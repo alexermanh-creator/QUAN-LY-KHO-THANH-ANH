@@ -22,6 +22,24 @@
             </div>
           </div>
 
+          <!-- Bộ điều khiển thiết bị Camera & Quét ảnh -->
+          <div class="row g-2 mb-2 align-items-center">
+            <div class="col-8">
+              <div class="input-group input-group-sm">
+                <span class="input-group-text bg-light text-secondary"><i class="fa-solid fa-video"></i></span>
+                <select id="scanner-camera-select" class="form-select form-select-sm" onchange="switchCameraDevice(this.value)">
+                  <option value="">Đang tìm camera...</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-4 text-end">
+              <label class="btn btn-sm btn-outline-secondary w-100 mb-0" style="cursor:pointer;" title="Chọn file ảnh tem mã vạch để quét trực tiếp">
+                <i class="fa-solid fa-image me-1"></i> Quét ảnh
+                <input type="file" id="scanner-file-input" accept="image/*" style="display:none;" onchange="scanBarcodeFromFile(this)">
+              </label>
+            </div>
+          </div>
+
           <div id="scanner-video-wrapper">
             <div id="html5-qr-reader" style="width: 100%;"></div>
             <div class="scanner-laser" id="scanner-laser-line"></div>

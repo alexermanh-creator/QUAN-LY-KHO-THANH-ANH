@@ -605,10 +605,21 @@
 
     Swal.fire({
       title: `Chỉnh sửa Model: ${p.model}`,
+      width: '600px',
       html: `
         <div class="text-start small">
+          <div class="row g-2 mb-2">
+            <div class="col-6">
+              <label class="form-label fw-bold mb-1">Mã Model (*)</label>
+              <input id="swal-edit-p-model" class="form-control form-control-sm font-monospace text-uppercase fw-bold" value="${escapeHtml(p.model)}">
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-bold mb-1">Đơn vị tính (ĐVT)</label>
+              <input id="swal-edit-p-dvt" class="form-control form-control-sm" value="${escapeHtml(p.dvt || 'Chiếc')}" placeholder="Chiếc, Máy, Bộ...">
+            </div>
+          </div>
           <label class="form-label fw-bold mb-1">Tên sản phẩm (*)</label>
-          <input id="swal-edit-p-name" class="form-control form-control-sm mb-2" value="${p.ten}">
+          <input id="swal-edit-p-name" class="form-control form-control-sm mb-2" value="${escapeHtml(p.ten)}">
           <div class="row g-2 mb-2">
             <div class="col-6">
               <label class="form-label fw-bold mb-1">Hãng sản xuất (*)</label>
@@ -637,20 +648,35 @@
             </div>
           </div>
           <label class="form-label fw-bold mb-1">Ghi chú</label>
-          <input id="swal-edit-p-note" class="form-control form-control-sm" value="${p.ghiChu || ''}">
+          <input id="swal-edit-p-note" class="form-control form-control-sm" value="${escapeHtml(p.ghiChu || '')}" placeholder="Ghi chú cấu hình, mã phụ...">
         </div>
       `,
       showCancelButton: true,
       confirmButtonText: 'Lưu thay đổi',
       cancelButtonText: 'Đóng',
       preConfirm: () => {
+        const newModel = document.getElementById('swal-edit-p-model').value.trim();
         const ten = document.getElementById('swal-edit-p-name').value.trim();
-        if (!ten) {
-          Swal.showValidationMessage('Vui lòng nhập tên sản phẩm!');
+        if (!newModel) {
+          Swal.showValidationMessage('Vui lòng nhập Mã Model!');
           return false;
         }
+        if (!ten) {
+          Swal.showValidationMessage('Vui lòng nhập Tên sản phẩm!');
+          return false;
+        }
+        // Kiểm tra trùng mã Model mới nếu có thay đổi
+        if (newModel.toLowerCase() !== p.model.toLowerCase()) {
+          const duplicate = INITIAL_PRODUCTS.some(x => x !== p && x.model.toLowerCase() === newModel.toLowerCase());
+          if (duplicate) {
+            Swal.showValidationMessage(`Mã Model "${newModel}" đã tồn tại trong hệ thống!`);
+            return false;
+          }
+        }
         return {
-          ten,
+          model: newModel,
+          ten: ten,
+          dvt: document.getElementById('swal-edit-p-dvt').value.trim() || 'Chiếc',
           hang: document.getElementById('swal-edit-p-brand').value,
           nhom: document.getElementById('swal-edit-p-cat').value,
           defaultBh: parseInt(document.getElementById('swal-edit-p-bh').value) || 12,
@@ -660,18 +686,60 @@
       }
     }).then(res => {
       if (res.isConfirmed) {
-        const changes = [];
-        if (p.ten !== res.value.ten) changes.push({ field: 'Tên SP', oldVal: p.ten, newVal: res.value.ten });
-        if (p.hang !== res.value.hang) changes.push({ field: 'Hãng', oldVal: p.hang, newVal: res.value.hang });
-        if (p.nhom !== res.value.nhom) changes.push({ field: 'Nhóm', oldVal: p.nhom, newVal: res.value.nhom });
-        if (p.defaultBh !== res.value.defaultBh) changes.push({ field: 'BH Mặc Định', oldVal: p.defaultBh, newVal: res.value.defaultBh });
-        if (p.manageSerial !== res.value.manageSerial) changes.push({ field: 'Quản lý Serial', oldVal: p.manageSerial, newVal: res.value.manageSerial });
+        const oldModel = p.model;
+        const newModel = res.value.model;
+
+        // Nếu thay đổi Mã Model, tự động đồng bộ sang SERIAL_DB và VOUCHERS_DB
+        if (oldModel !== newModel) {
+          SERIAL_DB.forEach(s => {
+            if (s.model === oldModel) {
+              s.model = newModel;
+              s.tenHang = res.value.ten;
+              s.nhom = res.value.nhom;
+            }
+          });
+          if (VOUCHERS_DB && VOUCHERS_DB.nhap) {
+            VOUCHERS_DB.nhap.forEach(v => {
+              if (v.items) {
+                v.items.forEach(it => { if (it.model === oldModel) it.model = newModel; });
+              }
+            });
+          }
+          if (VOUCHERS_DB && VOUCHERS_DB.xuat) {
+            VOUCHERS_DB.xuat.forEach(v => {
+              if (v.items) {
+                v.items.forEach(it => { if (it.model === oldModel) it.model = newModel; });
+              }
+            });
+          }
+        }
 
         Object.assign(p, res.value);
-        recordAuditLog('SỬA MODEL', `Model ${p.model}`, 'Cũ', 'Mới', 'Cập nhật danh mục sản phẩm', changes);
+
+        // Lưu vào localStorage
+        try {
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('THANH_AN_PRODUCTS', JSON.stringify(INITIAL_PRODUCTS));
+            localStorage.setItem('THANH_AN_SERIAL_DB', JSON.stringify(SERIAL_DB.slice(0, 2000)));
+            localStorage.setItem('THANH_AN_VOUCHERS_DB', JSON.stringify(VOUCHERS_DB));
+          }
+        } catch(e) {}
+
+        // Đồng bộ Backend Apps Script nếu có
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          google.script.run
+            .withSuccessHandler(r => console.log('Đã cập nhật Model trên Sheet:', r))
+            .saveProduct(p.model, p.ten, p.nhom, p.rowId || null);
+        }
+
+        recordAuditLog('SỬA MODEL', `Model ${oldModel} -> ${newModel}`, 'Cũ', 'Mới', 'Cập nhật đầy đủ thông tin danh mục sản phẩm');
         notifyCatalogChanged();
         renderCatalogProductsTable();
-        Swal.fire('Thành công', `Đã cập nhật Model ${p.model}`, 'success');
+        populateCatalogFilterDropdowns();
+        if (typeof setupNhapKhoForm === 'function') setupNhapKhoForm();
+        if (typeof renderDashboard === 'function') renderDashboard();
+
+        Swal.fire('Thành công', `Đã cập nhật Model <strong>${p.model}</strong> (${p.ten})`, 'success');
       }
     });
   }
@@ -774,60 +842,112 @@
 
     Swal.fire({
       title: `Chỉnh sửa NCC: ${s.tenTat}`,
+      width: '600px',
       html: `
         <div class="text-start small">
-          <label class="form-label fw-bold mb-1">Tên đầy đủ NCC (*)</label>
-          <input id="swal-edit-s-fullname" class="form-control form-control-sm mb-2" value="${s.tenDayDu}">
+          <div class="row g-2 mb-2">
+            <div class="col-5">
+              <label class="form-label fw-bold mb-1">Mã / Tên viết tắt (*)</label>
+              <input id="swal-edit-s-code" class="form-control form-control-sm font-monospace text-uppercase fw-bold" value="${escapeHtml(s.tenTat)}">
+            </div>
+            <div class="col-7">
+              <label class="form-label fw-bold mb-1">Tên đầy đủ NCC / Nhà SX (*)</label>
+              <input id="swal-edit-s-fullname" class="form-control form-control-sm" value="${escapeHtml(s.tenDayDu)}">
+            </div>
+          </div>
           <div class="row g-2 mb-2">
             <div class="col-6">
               <label class="form-label fw-bold mb-1">Số điện thoại (*)</label>
-              <input id="swal-edit-s-phone" class="form-control form-control-sm" value="${s.sdt}">
+              <input id="swal-edit-s-phone" class="form-control form-control-sm" value="${escapeHtml(s.sdt)}">
             </div>
             <div class="col-6">
               <label class="form-label fw-bold mb-1">Email</label>
-              <input id="swal-edit-s-email" class="form-control form-control-sm" value="${s.email || ''}">
+              <input id="swal-edit-s-email" class="form-control form-control-sm" value="${escapeHtml(s.email || '')}" placeholder="ncc@email.com">
             </div>
           </div>
-          <label class="form-label fw-bold mb-1">Địa chỉ</label>
-          <input id="swal-edit-s-address" class="form-control form-control-sm mb-2" value="${s.diaChi || ''}">
+          <label class="form-label fw-bold mb-1">Địa chỉ văn phòng / Kho xuất</label>
+          <input id="swal-edit-s-address" class="form-control form-control-sm mb-2" value="${escapeHtml(s.diaChi || '')}">
           <div class="row g-2 mb-2">
             <div class="col-6">
               <label class="form-label fw-bold mb-1">Người liên hệ</label>
-              <input id="swal-edit-s-contact" class="form-control form-control-sm" value="${s.nguoiLienHe || ''}">
+              <input id="swal-edit-s-contact" class="form-control form-control-sm" value="${escapeHtml(s.nguoiLienHe || '')}">
             </div>
             <div class="col-6">
               <label class="form-label fw-bold mb-1">Mã số thuế</label>
-              <input id="swal-edit-s-tax" class="form-control form-control-sm" value="${s.mst || ''}">
+              <input id="swal-edit-s-tax" class="form-control form-control-sm" value="${escapeHtml(s.mst || '')}">
             </div>
           </div>
+          <label class="form-label fw-bold mb-1">Ghi chú</label>
+          <input id="swal-edit-s-note" class="form-control form-control-sm" value="${escapeHtml(s.ghiChu || '')}" placeholder="Chính sách chiết khấu, hạn mức công nợ...">
         </div>
       `,
       showCancelButton: true,
       confirmButtonText: 'Lưu thay đổi',
       cancelButtonText: 'Đóng',
       preConfirm: () => {
+        const code = document.getElementById('swal-edit-s-code').value.trim().toUpperCase();
         const fullname = document.getElementById('swal-edit-s-fullname').value.trim();
         const phone = document.getElementById('swal-edit-s-phone').value.trim();
+        if (!code) {
+          Swal.showValidationMessage('Vui lòng nhập Mã / Tên viết tắt NCC!');
+          return false;
+        }
         if (!fullname || !phone) {
           Swal.showValidationMessage('Vui lòng nhập Tên đầy đủ và SĐT!');
           return false;
         }
+        if (code !== s.tenTat) {
+          const duplicate = INITIAL_SUPPLIERS.some(x => x !== s && x.tenTat.toUpperCase() === code);
+          if (duplicate) {
+            Swal.showValidationMessage(`Mã NCC "${code}" đã tồn tại!`);
+            return false;
+          }
+        }
         return {
+          tenTat: code,
           tenDayDu: fullname,
           sdt: phone,
           email: document.getElementById('swal-edit-s-email').value.trim(),
           diaChi: document.getElementById('swal-edit-s-address').value.trim(),
           nguoiLienHe: document.getElementById('swal-edit-s-contact').value.trim(),
-          mst: document.getElementById('swal-edit-s-tax').value.trim()
+          mst: document.getElementById('swal-edit-s-tax').value.trim(),
+          ghiChu: document.getElementById('swal-edit-s-note').value.trim()
         };
       }
     }).then(res => {
       if (res.isConfirmed) {
+        const oldCode = s.tenTat;
+        const newCode = res.value.tenTat;
+
+        if (oldCode !== newCode) {
+          SERIAL_DB.forEach(item => { if (item.ncc === oldCode) item.ncc = newCode; });
+          if (VOUCHERS_DB && VOUCHERS_DB.nhap) {
+            VOUCHERS_DB.nhap.forEach(v => { if (v.ncc === oldCode) v.ncc = newCode; });
+          }
+        }
+
         Object.assign(s, res.value);
-        recordAuditLog('SỬA NCC', `NCC ${s.tenTat}`, 'Cũ', 'Mới', 'Cập nhật danh mục nhà cung cấp');
+
+        try {
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('THANH_AN_SUPPLIERS', JSON.stringify(INITIAL_SUPPLIERS));
+            localStorage.setItem('THANH_AN_SERIAL_DB', JSON.stringify(SERIAL_DB.slice(0, 2000)));
+            localStorage.setItem('THANH_AN_VOUCHERS_DB', JSON.stringify(VOUCHERS_DB));
+          }
+        } catch(e) {}
+
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          google.script.run
+            .withSuccessHandler(r => console.log('Đã lưu NCC Sheet:', r))
+            .saveNcc(s.tenTat, s.tenDayDu, s.sdt, s.ghiChu, s.rowId || null);
+        }
+
+        recordAuditLog('SỬA NCC', `NCC ${oldCode} -> ${newCode}`, 'Cũ', 'Mới', 'Cập nhật đầy đủ danh mục nhà cung cấp');
         notifyCatalogChanged();
         renderCatalogSuppliersTable();
-        Swal.fire('Thành công', `Đã cập nhật NCC ${s.tenTat}`, 'success');
+        if (typeof setupNhapKhoForm === 'function') setupNhapKhoForm();
+
+        Swal.fire('Thành công', `Đã cập nhật NCC <strong>${s.tenTat}</strong> (${s.tenDayDu})`, 'success');
       }
     });
   }
@@ -930,32 +1050,43 @@
 
     Swal.fire({
       title: `Chỉnh sửa Khách Hàng: ${c.ten}`,
+      width: '600px',
       html: `
         <div class="text-start small">
-          <label class="form-label fw-bold mb-1">Tên khách hàng / Đơn vị (*)</label>
-          <input id="swal-edit-c-name" class="form-control form-control-sm mb-2" value="${c.ten}">
           <div class="row g-2 mb-2">
-            <div class="col-6">
-              <label class="form-label fw-bold mb-1">Số điện thoại (*)</label>
-              <input id="swal-edit-c-phone" class="form-control form-control-sm" value="${c.sdt}">
+            <div class="col-7">
+              <label class="form-label fw-bold mb-1">Tên khách hàng / Đơn vị (*)</label>
+              <input id="swal-edit-c-name" class="form-control form-control-sm" value="${escapeHtml(c.ten)}">
             </div>
-            <div class="col-6">
-              <label class="form-label fw-bold mb-1">Email</label>
-              <input id="swal-edit-c-email" class="form-control form-control-sm" value="${c.email || ''}">
+            <div class="col-5">
+              <label class="form-label fw-bold mb-1">Số điện thoại (*)</label>
+              <input id="swal-edit-c-phone" class="form-control form-control-sm font-monospace fw-bold" value="${escapeHtml(c.sdt)}">
             </div>
           </div>
-          <label class="form-label fw-bold mb-1">Địa chỉ giao hàng (*)</label>
-          <input id="swal-edit-c-address" class="form-control form-control-sm mb-2" value="${c.diaChi || ''}">
           <div class="row g-2 mb-2">
             <div class="col-6">
               <label class="form-label fw-bold mb-1">Người liên hệ</label>
-              <input id="swal-edit-c-contact" class="form-control form-control-sm" value="${c.nguoiLienHe || ''}">
+              <input id="swal-edit-c-contact" class="form-control form-control-sm" value="${escapeHtml(c.nguoiLienHe || '')}">
             </div>
             <div class="col-6">
-              <label class="form-label fw-bold mb-1">Mã số thuế</label>
-              <input id="swal-edit-c-tax" class="form-control form-control-sm" value="${c.mst || ''}">
+              <label class="form-label fw-bold mb-1">Email</label>
+              <input id="swal-edit-c-email" class="form-control form-control-sm" value="${escapeHtml(c.email || '')}" placeholder="khachhang@email.com">
             </div>
           </div>
+          <label class="form-label fw-bold mb-1">Địa chỉ giao hàng (*)</label>
+          <input id="swal-edit-c-address" class="form-control form-control-sm mb-2" value="${escapeHtml(c.diaChi || '')}">
+          <div class="row g-2 mb-2">
+            <div class="col-6">
+              <label class="form-label fw-bold mb-1">Mã số thuế</label>
+              <input id="swal-edit-c-tax" class="form-control form-control-sm" value="${escapeHtml(c.mst || '')}">
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-bold mb-1">Nhóm khách hàng</label>
+              <input id="swal-edit-c-group" class="form-control form-control-sm" value="${escapeHtml(c.nhomKhach || 'Khách lẻ')}" placeholder="Đại lý, Khách lẻ, Doanh nghiệp...">
+            </div>
+          </div>
+          <label class="form-label fw-bold mb-1">Ghi chú</label>
+          <input id="swal-edit-c-note" class="form-control form-control-sm" value="${escapeHtml(c.ghiChu || '')}" placeholder="Ghi chú tuyến giao, yêu cầu đặc biệt...">
         </div>
       `,
       showCancelButton: true,
@@ -974,16 +1105,35 @@
           email: document.getElementById('swal-edit-c-email').value.trim(),
           diaChi: document.getElementById('swal-edit-c-address').value.trim(),
           nguoiLienHe: document.getElementById('swal-edit-c-contact').value.trim(),
-          mst: document.getElementById('swal-edit-c-tax').value.trim()
+          mst: document.getElementById('swal-edit-c-tax').value.trim(),
+          nhomKhach: document.getElementById('swal-edit-c-group').value.trim() || 'Khách lẻ',
+          ghiChu: document.getElementById('swal-edit-c-note').value.trim()
         };
       }
     }).then(res => {
       if (res.isConfirmed) {
+        const oldName = c.ten;
+        const oldPhone = c.sdt;
         Object.assign(c, res.value);
-        recordAuditLog('SỬA KHÁCH HÀNG', `KH ${c.ten} (${c.sdt})`, 'Cũ', 'Mới', 'Cập nhật danh mục khách hàng');
+
+        try {
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('THANH_AN_CUSTOMERS', JSON.stringify(INITIAL_CUSTOMERS));
+          }
+        } catch(e) {}
+
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          google.script.run
+            .withSuccessHandler(r => console.log('Đã lưu Khách hàng Sheet:', r))
+            .saveKhachHang(c.ten, c.sdt, c.diaChi, c.ghiChu, c.rowId || null);
+        }
+
+        recordAuditLog('SỬA KHÁCH HÀNG', `KH ${oldName} (${oldPhone}) -> ${c.ten}`, 'Cũ', 'Mới', 'Cập nhật đầy đủ danh mục khách hàng');
         notifyCatalogChanged();
         renderCatalogCustomersTable();
-        Swal.fire('Thành công', `Đã cập nhật khách hàng ${c.ten}`, 'success');
+        if (typeof setupXuatKhoForm === 'function') setupXuatKhoForm();
+
+        Swal.fire('Thành công', `Đã cập nhật khách hàng <strong>${c.ten}</strong> (${c.sdt})`, 'success');
       }
     });
   }
@@ -1119,45 +1269,103 @@
 
     Swal.fire({
       title: `Chỉnh sửa Kho: ${w.tenKho}`,
+      width: '600px',
       html: `
         <div class="text-start small">
-          <label class="form-label fw-bold mb-1">Tên kho (*)</label>
-          <input id="swal-edit-w-name" class="form-control form-control-sm mb-2" value="${w.tenKho}">
-          <label class="form-label fw-bold mb-1">Loại kho</label>
-          <select id="swal-edit-w-type" class="form-select form-select-sm mb-2">
-            <option value="Kho Trung Tâm" ${w.loaiKho === 'Kho Trung Tâm' ? 'selected' : ''}>Kho Trung Tâm</option>
-            <option value="Kho Vệ Tinh" ${w.loaiKho === 'Kho Vệ Tinh' ? 'selected' : ''}>Kho Vệ Tinh</option>
-            <option value="Kho Cách Ly" ${w.loaiKho === 'Kho Cách Ly' ? 'selected' : ''}>Kho Cách Ly</option>
-          </select>
-          <label class="form-label fw-bold mb-1">Địa điểm</label>
-          <input id="swal-edit-w-location" class="form-control form-control-sm mb-2" value="${w.diaDiem || ''}">
+          <div class="row g-2 mb-2">
+            <div class="col-5">
+              <label class="form-label fw-bold mb-1">Mã kho (*)</label>
+              <input id="swal-edit-w-code" class="form-control form-control-sm font-monospace text-uppercase fw-bold" value="${escapeHtml(w.maKho || '')}">
+            </div>
+            <div class="col-7">
+              <label class="form-label fw-bold mb-1">Tên kho (*)</label>
+              <input id="swal-edit-w-name" class="form-control form-control-sm fw-semibold" value="${escapeHtml(w.tenKho)}">
+            </div>
+          </div>
+          <div class="row g-2 mb-2">
+            <div class="col-6">
+              <label class="form-label fw-bold mb-1">Loại kho</label>
+              <select id="swal-edit-w-type" class="form-select form-select-sm">
+                <option value="Kho Trung Tâm" ${w.loaiKho === 'Kho Trung Tâm' ? 'selected' : ''}>Kho Trung Tâm</option>
+                <option value="Kho Vệ Tinh" ${w.loaiKho === 'Kho Vệ Tinh' ? 'selected' : ''}>Kho Vệ Tinh</option>
+                <option value="Kho Cách Ly" ${w.loaiKho === 'Kho Cách Ly' ? 'selected' : ''}>Kho Cách Ly (Hàng lỗi/Chờ xử lý)</option>
+                <option value="Kho Trung Chuyển" ${w.loaiKho === 'Kho Trung Chuyển' ? 'selected' : ''}>Kho Trung Chuyển</option>
+              </select>
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-bold mb-1">Thủ kho phụ trách</label>
+              <input id="swal-edit-w-keeper" class="form-control form-control-sm" value="${escapeHtml(w.thuKho || '')}" placeholder="Tên thủ kho...">
+            </div>
+          </div>
+          <div class="row g-2 mb-2">
+            <div class="col-6">
+              <label class="form-label fw-bold mb-1">SĐT liên hệ kho</label>
+              <input id="swal-edit-w-phone" class="form-control form-control-sm font-monospace" value="${escapeHtml(w.sdt || '')}" placeholder="09xx...">
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-bold mb-1">Địa điểm / Địa chỉ kho</label>
+              <input id="swal-edit-w-location" class="form-control form-control-sm" value="${escapeHtml(w.diaDiem || '')}" placeholder="Số nhà, đường, quận/huyện...">
+            </div>
+          </div>
           <label class="form-label fw-bold mb-1">Ghi chú</label>
-          <input id="swal-edit-w-note" class="form-control form-control-sm" value="${w.ghiChu || ''}">
+          <input id="swal-edit-w-note" class="form-control form-control-sm" value="${escapeHtml(w.ghiChu || '')}" placeholder="Ghi chú diện tích, sức chứa, ghi chú đặc thù...">
         </div>
       `,
       showCancelButton: true,
       confirmButtonText: 'Lưu thay đổi',
       cancelButtonText: 'Đóng',
       preConfirm: () => {
+        const code = document.getElementById('swal-edit-w-code').value.trim().toUpperCase();
         const name = document.getElementById('swal-edit-w-name').value.trim();
+        if (!code) {
+          Swal.showValidationMessage('Vui lòng nhập Mã kho!');
+          return false;
+        }
         if (!name) {
-          Swal.showValidationMessage('Vui lòng nhập tên kho!');
+          Swal.showValidationMessage('Vui lòng nhập Tên kho!');
           return false;
         }
         return {
+          maKho: code,
           tenKho: name,
           loaiKho: document.getElementById('swal-edit-w-type').value,
+          thuKho: document.getElementById('swal-edit-w-keeper').value.trim(),
+          sdt: document.getElementById('swal-edit-w-phone').value.trim(),
           diaDiem: document.getElementById('swal-edit-w-location').value.trim(),
           ghiChu: document.getElementById('swal-edit-w-note').value.trim()
         };
       }
     }).then(res => {
       if (res.isConfirmed) {
+        const oldName = w.tenKho;
+        const newName = res.value.tenKho;
+
+        if (oldName !== newName) {
+          SERIAL_DB.forEach(item => { if (item.kho === oldName) item.kho = newName; });
+          if (VOUCHERS_DB && VOUCHERS_DB.nhap) {
+            VOUCHERS_DB.nhap.forEach(v => { if (v.kho === oldName) v.kho = newName; });
+          }
+          if (VOUCHERS_DB && VOUCHERS_DB.xuat) {
+            VOUCHERS_DB.xuat.forEach(v => { if (v.kho === oldName) v.kho = newName; });
+          }
+        }
+
         Object.assign(w, res.value);
-        recordAuditLog('SỬA KHO', `Kho ${w.maKho}`, 'Cũ', 'Mới', 'Cập nhật thông tin kho hàng');
+
+        try {
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('THANH_AN_WAREHOUSES', JSON.stringify(INITIAL_WAREHOUSES));
+            localStorage.setItem('THANH_AN_SERIAL_DB', JSON.stringify(SERIAL_DB.slice(0, 2000)));
+            localStorage.setItem('THANH_AN_VOUCHERS_DB', JSON.stringify(VOUCHERS_DB));
+          }
+        } catch(e) {}
+
+        recordAuditLog('SỬA KHO', `Kho ${oldName} -> ${newName}`, 'Cũ', 'Mới', 'Cập nhật đầy đủ thông tin kho hàng');
         notifyCatalogChanged();
         renderCatalogWarehousesTable();
-        Swal.fire('Thành công', `Đã cập nhật kho ${w.tenKho}`, 'success');
+        if (typeof setupNhapKhoForm === 'function') setupNhapKhoForm();
+
+        Swal.fire('Thành công', `Đã cập nhật kho <strong>${w.tenKho}</strong> (${w.maKho})`, 'success');
       }
     });
   }
@@ -2662,6 +2870,16 @@
     const todayStr = getLocalDateStr();
     const agingThreshold = parseInt(ALERT_SETTINGS.stockAgingDays) || 60;
 
+    // Tự động khôi phục dữ liệu từ localStorage nếu biến bộ nhớ đang rỗng
+    if ((!SERIAL_DB || SERIAL_DB.length === 0) && typeof localStorage !== 'undefined') {
+      try {
+        const savedS = localStorage.getItem('THANH_AN_SERIAL_DB');
+        if (savedS) SERIAL_DB = JSON.parse(savedS);
+        const savedV = localStorage.getItem('THANH_AN_VOUCHERS_DB');
+        if (savedV) VOUCHERS_DB = JSON.parse(savedV);
+      } catch(e) {}
+    }
+
     // --- 1. QUÉT DỮ LIỆU SERIAL_DB THỰC TẾ ---
     let totalInStock = 0;
     const distinctModelsSet = new Set();
@@ -2853,6 +3071,29 @@
     }
     if (document.getElementById('kpi-draft-vouchers')) {
       document.getElementById('kpi-draft-vouchers').textContent = displayImportVouchers;
+    }
+
+    // Nếu ở môi trường Google Apps Script Web App, đồng bộ thêm số liệu trực tiếp từ Google Sheet
+    if (typeof WarehouseAPI !== 'undefined' && WarehouseAPI.isAppsScriptEnvironment()) {
+      try {
+        WarehouseAPI.getDashboardSummary(KPI_PERIOD, KPI_CUSTOM_FROM, KPI_CUSTOM_TO, function(summary) {
+          if (summary) {
+            if (document.getElementById('kpi-total-stock') && summary.inStock !== undefined && summary.inStock > 0) {
+              document.getElementById('kpi-total-stock').textContent = summary.inStock.toLocaleString('vi-VN');
+            }
+            if (document.getElementById('kpi-period-import') && summary.imported !== undefined && summary.imported > 0) {
+              document.getElementById('kpi-period-import').textContent = summary.imported.toLocaleString('vi-VN');
+            }
+            if (document.getElementById('kpi-period-export') && summary.exported !== undefined && summary.exported > 0) {
+              document.getElementById('kpi-period-export').textContent = summary.exported.toLocaleString('vi-VN');
+            }
+            if (document.getElementById('kpi-stock-change') && summary.netChange !== undefined) {
+              const sign = summary.netChange > 0 ? '+' : '';
+              document.getElementById('kpi-stock-change').textContent = `${sign}${summary.netChange.toLocaleString('vi-VN')}`;
+            }
+          }
+        });
+      } catch(e) {}
     }
 
     // CẬP NHẬT TREND KPI THEO SỐ LIỆU THỰC TẾ (KHÔNG NHẢY % ẢO KHI CHƯA CÓ SỐ LIỆU)

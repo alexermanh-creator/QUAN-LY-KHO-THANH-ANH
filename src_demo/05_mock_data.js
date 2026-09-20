@@ -187,17 +187,35 @@
     }
   ].map(normalizeCustomField);
 
-  // 2. CƠ SỞ DỮ LIỆU SERIAL (RESET VỀ TRẠNG THÁI SẠCH SẴN SÀNG NẠP DỮ LIỆU THỰC TẾ)
+  // 2. CƠ SỞ DỮ LIỆU SERIAL (Tự động khôi phục từ bộ nhớ nếu có phát sinh giao dịch)
   let SERIAL_DB = [];
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const savedSerials = localStorage.getItem('THANH_AN_SERIAL_DB');
+      if (savedSerials) SERIAL_DB = JSON.parse(savedSerials);
+    }
+  } catch(e) {}
 
-  // 3. CƠ SỞ DỮ LIỆU PHIẾU NHẬP VÀ PHIẾU XUẤT (VOUCHERS - RESET RỖNG)
+  // 3. CƠ SỞ DỮ LIỆU PHIẾU NHẬP VÀ PHIẾU XUẤT (VOUCHERS)
   let VOUCHERS_DB = {
     nhap: [],
     xuat: []
   };
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const savedVouchers = localStorage.getItem('THANH_AN_VOUCHERS_DB');
+      if (savedVouchers) VOUCHERS_DB = JSON.parse(savedVouchers);
+    }
+  } catch(e) {}
 
-  // 4. CƠ SỞ DỮ LIỆU BẢO HÀNH (WARRANTY CASES - RESET RỖNG)
+  // 4. CƠ SỞ DỮ LIỆU BẢO HÀNH (WARRANTY CASES)
   let WARRANTY_CASES_DB = [];
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const savedWarranty = localStorage.getItem('THANH_AN_WARRANTY_CASES_DB');
+      if (savedWarranty) WARRANTY_CASES_DB = JSON.parse(savedWarranty);
+    }
+  } catch(e) {}
 
   // 5. CƠ SỞ DỮ LIỆU PHIÊN KIỂM KÊ KHO (RESET RỖNG)
   let INVENTORY_SESSIONS_DB = [];

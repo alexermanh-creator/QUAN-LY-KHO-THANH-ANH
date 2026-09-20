@@ -36,19 +36,45 @@
       });
     }
 
-    // 3. Điền danh sách Model (chỉ lấy active)
-    const modelSelect = document.getElementById('nhap-select-model');
-    modelSelect.innerHTML = '';
-    const activeProducts = INITIAL_PRODUCTS.filter(p => p.active !== false);
-    if (activeProducts.length === 0) {
-      modelSelect.innerHTML = '<option value="">-- Chưa có Model (Bấm + Model) --</option>';
+    // 3. Điền danh sách Model (chỉ lấy active) vào Datalist & Dropdown gợi ý
+    const modelHidden = document.getElementById('nhap-select-model');
+    const modelInput = document.getElementById('nhap-model-input');
+    const modelDatalist = document.getElementById('nhap-model-datalist');
+    const modelDropdown = document.getElementById('nhap-model-dropdown-list');
+
+    const activeProducts = (typeof INITIAL_PRODUCTS !== 'undefined' ? INITIAL_PRODUCTS : []).filter(p => p.active !== false);
+
+    if (modelDatalist) {
+      modelDatalist.innerHTML = activeProducts.map(p => 
+        `<option value="${p.model}">${p.ten} (${p.hang || ''} - ${p.nhom})</option>`
+      ).join('');
+    }
+
+    if (modelDropdown) {
+      if (activeProducts.length === 0) {
+        modelDropdown.innerHTML = '<li><span class="dropdown-item text-muted">Chưa có Model (Bấm Thêm Model mới)</span></li>';
+      } else {
+        modelDropdown.innerHTML = activeProducts.map(p => `
+          <li>
+            <a class="dropdown-item py-2 border-bottom border-light cursor-pointer" href="javascript:void(0)" onclick="selectModelFromDropdown('${p.model}')">
+              <div class="fw-bold text-dark font-monospace">${p.model}</div>
+              <div class="small text-secondary text-truncate" style="max-width: 260px;">${p.ten}</div>
+              <div class="text-muted" style="font-size: 0.72rem;">${p.hang || '--'} • ${p.nhom} • BH: ${p.defaultBh || 12}th</div>
+            </a>
+          </li>
+        `).join('');
+      }
+    }
+
+    // Chọn model mặc định đầu tiên nếu chưa có
+    if (activeProducts.length > 0) {
+      if (!modelHidden.value || !activeProducts.some(p => p.model === modelHidden.value)) {
+        modelHidden.value = activeProducts[0].model;
+        if (modelInput) modelInput.value = activeProducts[0].model;
+      }
     } else {
-      activeProducts.forEach(p => {
-        const opt = document.createElement('option');
-        opt.value = p.model;
-        opt.textContent = `${p.model} (${p.nhom})`;
-        modelSelect.appendChild(opt);
-      });
+      modelHidden.value = '';
+      if (modelInput) modelInput.value = '';
     }
 
     // 4. Ngày hôm nay
@@ -60,17 +86,53 @@
     renderDraftNhapTable();
   }
 
-  function onSelectModelNhap() {
-    const modelVal = document.getElementById('nhap-select-model').value;
-    const prod = INITIAL_PRODUCTS.find(p => p.model === modelVal);
-    const infoBox = document.getElementById('nhap-model-info');
+  function selectModelFromDropdown(modelCode) {
+    const modelHidden = document.getElementById('nhap-select-model');
+    const modelInput = document.getElementById('nhap-model-input');
+    if (modelHidden) modelHidden.value = modelCode;
+    if (modelInput) modelInput.value = modelCode;
+    onSelectModelNhap(modelCode);
+  }
+
+  function onInputModelNhap(typedVal) {
+    const val = (typedVal !== undefined ? typedVal : (document.getElementById('nhap-model-input')?.value || '')).trim();
+    if (!val) return;
+    const prod = (typeof INITIAL_PRODUCTS !== 'undefined' ? INITIAL_PRODUCTS : []).find(p => 
+      p.model.toLowerCase() === val.toLowerCase() ||
+      p.ten.toLowerCase() === val.toLowerCase()
+    );
     if (prod) {
+      document.getElementById('nhap-select-model').value = prod.model;
+      onSelectModelNhap(prod.model);
+    }
+  }
+
+  function onSelectModelNhap(modelParam) {
+    const modelInput = document.getElementById('nhap-model-input');
+    const modelHidden = document.getElementById('nhap-select-model');
+    const val = (modelParam || (modelInput ? modelInput.value : '') || (modelHidden ? modelHidden.value : '')).trim();
+    
+    const prod = (typeof INITIAL_PRODUCTS !== 'undefined' ? INITIAL_PRODUCTS : []).find(p => 
+      p.model.toLowerCase() === val.toLowerCase() ||
+      p.ten.toLowerCase() === val.toLowerCase()
+    );
+    const infoBox = document.getElementById('nhap-model-info');
+
+    if (prod) {
+      if (modelHidden) modelHidden.value = prod.model;
       infoBox.innerHTML = `
         <div class="fw-semibold text-primary">${prod.ten}</div>
-        <div class="text-muted">Hãng: <strong>${prod.hang || '--'}</strong> | Nhóm: <strong>${prod.nhom}</strong> | BH mặc định: <strong>${prod.defaultBh} tháng</strong></div>
+        <div class="text-muted">Mã: <strong class="font-monospace text-dark">${prod.model}</strong> | Hãng: <strong>${prod.hang || '--'}</strong> | Nhóm: <strong>${prod.nhom}</strong> | BH mặc định: <strong>${prod.defaultBh || 12} tháng</strong></div>
       `;
     } else {
-      infoBox.innerHTML = '<span class="text-muted">Chưa chọn model</span>';
+      if (val) {
+        if (modelHidden) modelHidden.value = val;
+        infoBox.innerHTML = `
+          <div class="text-warning small"><i class="fa-solid fa-triangle-exclamation me-1"></i> Model tùy chỉnh: <strong class="font-monospace">${val}</strong> (Chưa có trong danh mục chính, hệ thống sẽ lưu theo tên này).</div>
+        `;
+      } else {
+        infoBox.innerHTML = '<span class="text-muted small">Chưa chọn Model</span>';
+      }
     }
   }
 
@@ -348,8 +410,59 @@
       });
 
       recordAuditLog('XÁC NHẬN NHẬP KHO', `Phiếu ${maPhieu} (${CURRENT_DRAFT_NHAP_ITEMS.length} máy)`, 'DRAFT', 'CONFIRMED', `Nhập kho từ ${ncc}`, [], 'Nhập kho', '', maPhieu);
+      
+      // 1. Lưu trữ bền vững vào localStorage để không bị mất khi F5
+      try {
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('THANH_AN_SERIAL_DB', JSON.stringify(SERIAL_DB.slice(0, 2000)));
+          localStorage.setItem('THANH_AN_VOUCHERS_DB', JSON.stringify(VOUCHERS_DB));
+        }
+      } catch(e) {}
+
+      // 2. Nếu đang chạy trên Google Apps Script thật, đồng bộ xuống Google Sheet
+      if (typeof WarehouseAPI !== 'undefined' && WarehouseAPI.isAppsScriptEnvironment()) {
+        try {
+          const itemsByModel = {};
+          CURRENT_DRAFT_NHAP_ITEMS.forEach(it => {
+            if (!itemsByModel[it.model]) {
+              itemsByModel[it.model] = {
+                model: it.model,
+                tenHang: it.tenHang || it.model,
+                nhomHang: it.nhom || 'Khác',
+                serials: []
+              };
+            }
+            itemsByModel[it.model].serials.push(it.serial);
+          });
+
+          const payload = {
+            maPhieu: maPhieu,
+            ncc: ncc,
+            kho: kho,
+            ngay: ngay,
+            ghiChu: ghiChu,
+            items: Object.values(itemsByModel)
+          };
+
+          google.script.run
+            .withSuccessHandler(res => console.log('Đã lưu Google Sheet:', res))
+            .withFailureHandler(err => console.warn('Lỗi lưu Google Sheet:', err))
+            .executeNhapKhoMulti(payload);
+        } catch(err) {
+          console.warn('Lỗi đồng bộ Backend Apps Script:', err);
+        }
+      }
+
       if (typeof markModulesDirty === 'function') {
         markModulesDirty(['Dashboard', 'TonKho', 'LichSu', 'Serial360']);
+      }
+
+      // 3. Kích hoạt cập nhật số liệu Dashboard và Tồn Kho ngay lập tức
+      if (typeof renderDashboard === 'function') {
+        renderDashboard();
+      }
+      if (typeof renderTonKho === 'function') {
+        renderTonKho();
       }
       
       Swal.fire({
@@ -359,8 +472,17 @@
       });
     } else {
       recordAuditLog('LƯU NHÁP PHIẾU NHẬP', `Phiếu ${maPhieu} (${CURRENT_DRAFT_NHAP_ITEMS.length} máy)`, 'None', 'DRAFT', 'Lưu nháp chờ hoàn tất', [], 'Nhập kho', '', maPhieu);
+      try {
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('THANH_AN_VOUCHERS_DB', JSON.stringify(VOUCHERS_DB));
+        }
+      } catch(e) {}
+
       if (typeof markModulesDirty === 'function') {
         markModulesDirty(['Dashboard', 'LichSu']);
+      }
+      if (typeof renderDashboard === 'function') {
+        renderDashboard();
       }
       
       Swal.fire({

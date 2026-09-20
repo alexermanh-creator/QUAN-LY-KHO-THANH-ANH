@@ -61,50 +61,144 @@
     }, 300);
   }
 
+  let AVAILABLE_CAMERAS = [];
+  let CURRENT_CAMERA_ID = null;
+
   function startScannerCamera() {
     const feedbackBox = document.getElementById('scanner-feedback-box');
+    const cameraSelect = document.getElementById('scanner-camera-select');
     feedbackBox.className = 'mt-2 p-2 rounded small text-center fw-semibold bg-light text-muted';
-    feedbackBox.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin me-1"></i> Đang kích hoạt camera (ưu tiên camera sau)...';
+    feedbackBox.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin me-1"></i> Đang tìm thiết bị Camera khả dụng...';
 
-    if (typeof Html5Qrcode !== 'undefined') {
-      try {
-        if (html5QrCodeScanner) {
-          html5QrCodeScanner.stop().catch(() => {}).finally(() => {
-            initHtml5Scanner();
-          });
-        } else {
-          initHtml5Scanner();
-        }
-      } catch (err) {
-        console.warn('HTML5 QRCode error:', err);
-        feedbackBox.className = 'mt-2 p-2 rounded small text-center fw-semibold bg-warning-subtle text-warning';
-        feedbackBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i> Không thể truy cập Camera. Bạn có thể dùng ô "Mô phỏng máy quét" phía dưới để test nhanh!';
-      }
-    } else {
+    if (typeof Html5Qrcode === 'undefined') {
       feedbackBox.className = 'mt-2 p-2 rounded small text-center fw-semibold bg-warning-subtle text-warning';
-      feedbackBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i> Thư viện camera chưa tải xong. Bạn có thể dùng "Mô phỏng máy quét" để test!';
+      feedbackBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i> Thư viện camera chưa tải xong. Bạn có thể dùng "Mô phỏng máy quét" hoặc "Quét ảnh"!';
+      return;
     }
+
+    // 1. Quét danh sách camera vật lý có trên thiết bị (Webcam, Camera trước, Camera sau)
+    Html5Qrcode.getCameras().then(devices => {
+      AVAILABLE_CAMERAS = devices || [];
+      if (cameraSelect) {
+        cameraSelect.innerHTML = '';
+        if (AVAILABLE_CAMERAS.length === 0) {
+          cameraSelect.innerHTML = '<option value="">Không tìm thấy camera</option>';
+        } else {
+          AVAILABLE_CAMERAS.forEach((cam, idx) => {
+            const opt = document.createElement('option');
+            opt.value = cam.id;
+            const label = cam.label || `Camera ${idx + 1}`;
+            opt.textContent = label;
+            cameraSelect.appendChild(opt);
+          });
+        }
+      }
+
+      // Ưu tiên chọn camera sau nếu có (chứa chữ back, rear, environment)
+      let selectedCamId = null;
+      if (AVAILABLE_CAMERAS.length > 0) {
+        const backCam = AVAILABLE_CAMERAS.find(c => {
+          const l = (c.label || '').toLowerCase();
+          return l.includes('back') || l.includes('rear') || l.includes('sau') || l.includes('environment');
+        });
+        selectedCamId = backCam ? backCam.id : AVAILABLE_CAMERAS[0].id;
+        if (cameraSelect) cameraSelect.value = selectedCamId;
+      }
+
+      CURRENT_CAMERA_ID = selectedCamId;
+      initHtml5Scanner(selectedCamId);
+    }).catch(err => {
+      console.warn("Không lấy được danh sách camera:", err);
+      // Fallback: Thử mở trực tiếp bằng facingMode
+      initHtml5Scanner(null);
+    });
   }
 
-  function initHtml5Scanner() {
-    const feedbackBox = document.getElementById('scanner-feedback-box');
-    html5QrCodeScanner = new Html5Qrcode("html5-qr-reader");
-    const config = { fps: 15, qrbox: { width: 250, height: 160 } };
+  function switchCameraDevice(cameraId) {
+    if (!cameraId) return;
+    CURRENT_CAMERA_ID = cameraId;
+    stopScannerCamera();
+    setTimeout(() => {
+      initHtml5Scanner(cameraId);
+    }, 200);
+  }
 
-    html5QrCodeScanner.start(
-      { facingMode: "environment" },
-      config,
-      (decodedText) => {
-        handleDecodedBarcode(decodedText);
-      },
-      (errorMessage) => {}
-    ).then(() => {
+  function initHtml5Scanner(cameraId) {
+    const feedbackBox = document.getElementById('scanner-feedback-box');
+    try {
+      if (!html5QrCodeScanner) {
+        html5QrCodeScanner = new Html5Qrcode("html5-qr-reader");
+      }
+    } catch(e) {
+      console.warn("Lỗi khởi tạo Html5Qrcode:", e);
+      return;
+    }
+
+    const config = { 
+      fps: 15, 
+      qrbox: { width: 260, height: 160 },
+      aspectRatio: 1.777778
+    };
+
+    // Xác định nguồn camera: ID cụ thể hoặc facingMode fallback
+    let cameraSource = cameraId ? cameraId : { facingMode: "environment" };
+
+    const startWithConfig = (source) => {
+      return html5QrCodeScanner.start(
+        source,
+        config,
+        (decodedText) => {
+          handleDecodedBarcode(decodedText);
+        },
+        (errorMessage) => {}
+      );
+    };
+
+    startWithConfig(cameraSource).then(() => {
       feedbackBox.className = 'mt-2 p-2 rounded small text-center fw-semibold bg-success-subtle text-success';
-      feedbackBox.innerHTML = '<i class="fa-solid fa-video me-1"></i> Camera đang hoạt động! Đưa mã vạch hoặc QR vào khung đỏ.';
+      feedbackBox.innerHTML = '<i class="fa-solid fa-video me-1"></i> Camera đang hoạt động! Đưa tem mã vạch hoặc mã QR vào khung ngắm.';
     }).catch(err => {
-      console.warn("Camera start failed:", err);
-      feedbackBox.className = 'mt-2 p-2 rounded small text-center fw-semibold bg-info-subtle text-info';
-      feedbackBox.innerHTML = '<i class="fa-solid fa-keyboard me-1"></i> Chế độ quét mô phỏng: Bạn có thể chọn mã từ danh sách bên dưới rồi bấm "Quét mã này"!';
+      console.warn("Camera start failed lần 1:", err);
+      // Fallback 1: Thử lại với camera trước (facingMode: user) cho Laptop/Webcam
+      startWithConfig({ facingMode: "user" }).then(() => {
+        feedbackBox.className = 'mt-2 p-2 rounded small text-center fw-semibold bg-success-subtle text-success';
+        feedbackBox.innerHTML = '<i class="fa-solid fa-video me-1"></i> Đã bật WebCam trước! Đưa mã vạch vào khung ngắm.';
+      }).catch(err2 => {
+        console.warn("Camera start failed lần 2:", err2);
+        // Fallback 2: Không đặt constraint, chỉ yêu cầu video bất kỳ
+        startWithConfig(true).then(() => {
+          feedbackBox.className = 'mt-2 p-2 rounded small text-center fw-semibold bg-success-subtle text-success';
+          feedbackBox.innerHTML = '<i class="fa-solid fa-video me-1"></i> Camera đã kết nối thành công!';
+        }).catch(err3 => {
+          console.warn("Camera start failed hoàn toàn:", err3);
+          feedbackBox.className = 'mt-2 p-2 rounded small text-center fw-semibold bg-warning-subtle text-warning';
+          feedbackBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i> Chưa thể cấp quyền Camera. Bạn có thể bấm "Quét ảnh" hoặc dùng "Mô phỏng máy quét" để test!';
+        });
+      });
+    });
+  }
+
+  // Quét trực tiếp mã vạch từ ảnh chụp tem thiết bị
+  function scanBarcodeFromFile(fileInput) {
+    if (!fileInput || !fileInput.files || fileInput.files.length === 0) return;
+    const file = fileInput.files[0];
+    const feedbackBox = document.getElementById('scanner-feedback-box');
+    feedbackBox.className = 'mt-2 p-2 rounded small text-center fw-semibold bg-light text-primary';
+    feedbackBox.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin me-1"></i> Đang đọc mã vạch từ file ảnh...';
+
+    if (!html5QrCodeScanner) {
+      html5QrCodeScanner = new Html5Qrcode("html5-qr-reader");
+    }
+
+    html5QrCodeScanner.scanFile(file, true).then(decodedText => {
+      handleDecodedBarcode(decodedText);
+      feedbackBox.className = 'mt-2 p-2 rounded small text-center fw-semibold bg-success-subtle text-success';
+      feedbackBox.innerHTML = `<i class="fa-solid fa-check-circle me-1"></i> Đã đọc thành công từ ảnh: <strong>${decodedText}</strong>`;
+      fileInput.value = '';
+    }).catch(err => {
+      feedbackBox.className = 'mt-2 p-2 rounded small text-center fw-semibold bg-danger-subtle text-danger';
+      feedbackBox.innerHTML = '<i class="fa-solid fa-circle-xmark me-1"></i> Không nhận diện được mã vạch trong ảnh này. Hãy thử ảnh rõ nét hơn!';
+      fileInput.value = '';
     });
   }
 

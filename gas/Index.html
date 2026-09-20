@@ -1572,7 +1572,7 @@
                 <div class="d-flex justify-content-between align-items-center mb-1">
                   <label class="form-label small fw-semibold text-muted mb-0">Nhà Cung Cấp (*)</label>
                   <button class="btn btn-link p-0 text-primary small text-decoration-none" onclick="openQuickAddSupplierModal()">
-                    <i class="fa-solid fa-plus-circle"></i> + NCC nhanh
+                    <i class="fa-solid fa-plus-circle me-1"></i>Thêm NCC nhanh
                   </button>
                 </div>
                 <select id="nhap-ncc" class="form-select form-select-sm">
@@ -1604,15 +1604,25 @@
               <div class="app-card-header bg-light">
                 <h6 class="app-card-title mb-0"><i class="fa-solid fa-boxes-packing text-primary"></i> Thêm Model & Thiết Bị Vào Draft</h6>
                 <button class="btn btn-sm btn-outline-primary" onclick="openQuickAddModelModal()">
-                  <i class="fa-solid fa-plus-circle"></i> + Thêm Model mới
+                  <i class="fa-solid fa-plus-circle me-1"></i>Thêm Model mới
                 </button>
               </div>
               <div class="app-card-body p-3">
                 <div class="row g-3">
                   <div class="col-12 col-md-4">
-                    <label class="form-label small fw-semibold text-muted mb-1">Chọn Model Sản Phẩm (*)</label>
-                    <select id="nhap-select-model" class="form-select" onchange="onSelectModelNhap()">
-                    </select>
+                    <label class="form-label small fw-semibold text-muted mb-1">Chọn hoặc Gõ tìm Model (*)</label>
+                    <div class="position-relative">
+                      <div class="input-group">
+                        <input type="text" id="nhap-model-input" class="form-control" list="nhap-model-datalist"
+                               placeholder="Gõ mã hoặc tên Model (VD: 2900, Canon...)" autocomplete="off"
+                               oninput="onInputModelNhap(this.value)" onchange="onSelectModelNhap(this.value)">
+                        <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Xem danh sách Model"></button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-sm w-100" id="nhap-model-dropdown-list" style="max-height: 280px; overflow-y: auto;">
+                        </ul>
+                      </div>
+                      <datalist id="nhap-model-datalist"></datalist>
+                      <input type="hidden" id="nhap-select-model">
+                    </div>
                     <div id="nhap-model-info" class="mt-2 p-2 bg-light rounded small border">
                     </div>
                   </div>
@@ -3145,6 +3155,24 @@
             </div>
           </div>
 
+          <!-- Bộ điều khiển thiết bị Camera & Quét ảnh -->
+          <div class="row g-2 mb-2 align-items-center">
+            <div class="col-8">
+              <div class="input-group input-group-sm">
+                <span class="input-group-text bg-light text-secondary"><i class="fa-solid fa-video"></i></span>
+                <select id="scanner-camera-select" class="form-select form-select-sm" onchange="switchCameraDevice(this.value)">
+                  <option value="">Đang tìm camera...</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-4 text-end">
+              <label class="btn btn-sm btn-outline-secondary w-100 mb-0" style="cursor:pointer;" title="Chọn file ảnh tem mã vạch để quét trực tiếp">
+                <i class="fa-solid fa-image me-1"></i> Quét ảnh
+                <input type="file" id="scanner-file-input" accept="image/*" style="display:none;" onchange="scanBarcodeFromFile(this)">
+              </label>
+            </div>
+          </div>
+
           <div id="scanner-video-wrapper">
             <div id="html5-qr-reader" style="width: 100%;"></div>
             <div class="scanner-laser" id="scanner-laser-line"></div>
@@ -4245,17 +4273,35 @@
     }
   ].map(normalizeCustomField);
 
-  // 2. CƠ SỞ DỮ LIỆU SERIAL (RESET VỀ TRẠNG THÁI SẠCH SẴN SÀNG NẠP DỮ LIỆU THỰC TẾ)
+  // 2. CƠ SỞ DỮ LIỆU SERIAL (Tự động khôi phục từ bộ nhớ nếu có phát sinh giao dịch)
   let SERIAL_DB = [];
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const savedSerials = localStorage.getItem('THANH_AN_SERIAL_DB');
+      if (savedSerials) SERIAL_DB = JSON.parse(savedSerials);
+    }
+  } catch(e) {}
 
-  // 3. CƠ SỞ DỮ LIỆU PHIẾU NHẬP VÀ PHIẾU XUẤT (VOUCHERS - RESET RỖNG)
+  // 3. CƠ SỞ DỮ LIỆU PHIẾU NHẬP VÀ PHIẾU XUẤT (VOUCHERS)
   let VOUCHERS_DB = {
     nhap: [],
     xuat: []
   };
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const savedVouchers = localStorage.getItem('THANH_AN_VOUCHERS_DB');
+      if (savedVouchers) VOUCHERS_DB = JSON.parse(savedVouchers);
+    }
+  } catch(e) {}
 
-  // 4. CƠ SỞ DỮ LIỆU BẢO HÀNH (WARRANTY CASES - RESET RỖNG)
+  // 4. CƠ SỞ DỮ LIỆU BẢO HÀNH (WARRANTY CASES)
   let WARRANTY_CASES_DB = [];
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const savedWarranty = localStorage.getItem('THANH_AN_WARRANTY_CASES_DB');
+      if (savedWarranty) WARRANTY_CASES_DB = JSON.parse(savedWarranty);
+    }
+  } catch(e) {}
 
   // 5. CƠ SỞ DỮ LIỆU PHIÊN KIỂM KÊ KHO (RESET RỖNG)
   let INVENTORY_SESSIONS_DB = [];
@@ -6215,50 +6261,144 @@
     }, 300);
   }
 
+  let AVAILABLE_CAMERAS = [];
+  let CURRENT_CAMERA_ID = null;
+
   function startScannerCamera() {
     const feedbackBox = document.getElementById('scanner-feedback-box');
+    const cameraSelect = document.getElementById('scanner-camera-select');
     feedbackBox.className = 'mt-2 p-2 rounded small text-center fw-semibold bg-light text-muted';
-    feedbackBox.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin me-1"></i> Đang kích hoạt camera (ưu tiên camera sau)...';
+    feedbackBox.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin me-1"></i> Đang tìm thiết bị Camera khả dụng...';
 
-    if (typeof Html5Qrcode !== 'undefined') {
-      try {
-        if (html5QrCodeScanner) {
-          html5QrCodeScanner.stop().catch(() => {}).finally(() => {
-            initHtml5Scanner();
-          });
-        } else {
-          initHtml5Scanner();
-        }
-      } catch (err) {
-        console.warn('HTML5 QRCode error:', err);
-        feedbackBox.className = 'mt-2 p-2 rounded small text-center fw-semibold bg-warning-subtle text-warning';
-        feedbackBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i> Không thể truy cập Camera. Bạn có thể dùng ô "Mô phỏng máy quét" phía dưới để test nhanh!';
-      }
-    } else {
+    if (typeof Html5Qrcode === 'undefined') {
       feedbackBox.className = 'mt-2 p-2 rounded small text-center fw-semibold bg-warning-subtle text-warning';
-      feedbackBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i> Thư viện camera chưa tải xong. Bạn có thể dùng "Mô phỏng máy quét" để test!';
+      feedbackBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i> Thư viện camera chưa tải xong. Bạn có thể dùng "Mô phỏng máy quét" hoặc "Quét ảnh"!';
+      return;
     }
+
+    // 1. Quét danh sách camera vật lý có trên thiết bị (Webcam, Camera trước, Camera sau)
+    Html5Qrcode.getCameras().then(devices => {
+      AVAILABLE_CAMERAS = devices || [];
+      if (cameraSelect) {
+        cameraSelect.innerHTML = '';
+        if (AVAILABLE_CAMERAS.length === 0) {
+          cameraSelect.innerHTML = '<option value="">Không tìm thấy camera</option>';
+        } else {
+          AVAILABLE_CAMERAS.forEach((cam, idx) => {
+            const opt = document.createElement('option');
+            opt.value = cam.id;
+            const label = cam.label || `Camera ${idx + 1}`;
+            opt.textContent = label;
+            cameraSelect.appendChild(opt);
+          });
+        }
+      }
+
+      // Ưu tiên chọn camera sau nếu có (chứa chữ back, rear, environment)
+      let selectedCamId = null;
+      if (AVAILABLE_CAMERAS.length > 0) {
+        const backCam = AVAILABLE_CAMERAS.find(c => {
+          const l = (c.label || '').toLowerCase();
+          return l.includes('back') || l.includes('rear') || l.includes('sau') || l.includes('environment');
+        });
+        selectedCamId = backCam ? backCam.id : AVAILABLE_CAMERAS[0].id;
+        if (cameraSelect) cameraSelect.value = selectedCamId;
+      }
+
+      CURRENT_CAMERA_ID = selectedCamId;
+      initHtml5Scanner(selectedCamId);
+    }).catch(err => {
+      console.warn("Không lấy được danh sách camera:", err);
+      // Fallback: Thử mở trực tiếp bằng facingMode
+      initHtml5Scanner(null);
+    });
   }
 
-  function initHtml5Scanner() {
-    const feedbackBox = document.getElementById('scanner-feedback-box');
-    html5QrCodeScanner = new Html5Qrcode("html5-qr-reader");
-    const config = { fps: 15, qrbox: { width: 250, height: 160 } };
+  function switchCameraDevice(cameraId) {
+    if (!cameraId) return;
+    CURRENT_CAMERA_ID = cameraId;
+    stopScannerCamera();
+    setTimeout(() => {
+      initHtml5Scanner(cameraId);
+    }, 200);
+  }
 
-    html5QrCodeScanner.start(
-      { facingMode: "environment" },
-      config,
-      (decodedText) => {
-        handleDecodedBarcode(decodedText);
-      },
-      (errorMessage) => {}
-    ).then(() => {
+  function initHtml5Scanner(cameraId) {
+    const feedbackBox = document.getElementById('scanner-feedback-box');
+    try {
+      if (!html5QrCodeScanner) {
+        html5QrCodeScanner = new Html5Qrcode("html5-qr-reader");
+      }
+    } catch(e) {
+      console.warn("Lỗi khởi tạo Html5Qrcode:", e);
+      return;
+    }
+
+    const config = { 
+      fps: 15, 
+      qrbox: { width: 260, height: 160 },
+      aspectRatio: 1.777778
+    };
+
+    // Xác định nguồn camera: ID cụ thể hoặc facingMode fallback
+    let cameraSource = cameraId ? cameraId : { facingMode: "environment" };
+
+    const startWithConfig = (source) => {
+      return html5QrCodeScanner.start(
+        source,
+        config,
+        (decodedText) => {
+          handleDecodedBarcode(decodedText);
+        },
+        (errorMessage) => {}
+      );
+    };
+
+    startWithConfig(cameraSource).then(() => {
       feedbackBox.className = 'mt-2 p-2 rounded small text-center fw-semibold bg-success-subtle text-success';
-      feedbackBox.innerHTML = '<i class="fa-solid fa-video me-1"></i> Camera đang hoạt động! Đưa mã vạch hoặc QR vào khung đỏ.';
+      feedbackBox.innerHTML = '<i class="fa-solid fa-video me-1"></i> Camera đang hoạt động! Đưa tem mã vạch hoặc mã QR vào khung ngắm.';
     }).catch(err => {
-      console.warn("Camera start failed:", err);
-      feedbackBox.className = 'mt-2 p-2 rounded small text-center fw-semibold bg-info-subtle text-info';
-      feedbackBox.innerHTML = '<i class="fa-solid fa-keyboard me-1"></i> Chế độ quét mô phỏng: Bạn có thể chọn mã từ danh sách bên dưới rồi bấm "Quét mã này"!';
+      console.warn("Camera start failed lần 1:", err);
+      // Fallback 1: Thử lại với camera trước (facingMode: user) cho Laptop/Webcam
+      startWithConfig({ facingMode: "user" }).then(() => {
+        feedbackBox.className = 'mt-2 p-2 rounded small text-center fw-semibold bg-success-subtle text-success';
+        feedbackBox.innerHTML = '<i class="fa-solid fa-video me-1"></i> Đã bật WebCam trước! Đưa mã vạch vào khung ngắm.';
+      }).catch(err2 => {
+        console.warn("Camera start failed lần 2:", err2);
+        // Fallback 2: Không đặt constraint, chỉ yêu cầu video bất kỳ
+        startWithConfig(true).then(() => {
+          feedbackBox.className = 'mt-2 p-2 rounded small text-center fw-semibold bg-success-subtle text-success';
+          feedbackBox.innerHTML = '<i class="fa-solid fa-video me-1"></i> Camera đã kết nối thành công!';
+        }).catch(err3 => {
+          console.warn("Camera start failed hoàn toàn:", err3);
+          feedbackBox.className = 'mt-2 p-2 rounded small text-center fw-semibold bg-warning-subtle text-warning';
+          feedbackBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i> Chưa thể cấp quyền Camera. Bạn có thể bấm "Quét ảnh" hoặc dùng "Mô phỏng máy quét" để test!';
+        });
+      });
+    });
+  }
+
+  // Quét trực tiếp mã vạch từ ảnh chụp tem thiết bị
+  function scanBarcodeFromFile(fileInput) {
+    if (!fileInput || !fileInput.files || fileInput.files.length === 0) return;
+    const file = fileInput.files[0];
+    const feedbackBox = document.getElementById('scanner-feedback-box');
+    feedbackBox.className = 'mt-2 p-2 rounded small text-center fw-semibold bg-light text-primary';
+    feedbackBox.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin me-1"></i> Đang đọc mã vạch từ file ảnh...';
+
+    if (!html5QrCodeScanner) {
+      html5QrCodeScanner = new Html5Qrcode("html5-qr-reader");
+    }
+
+    html5QrCodeScanner.scanFile(file, true).then(decodedText => {
+      handleDecodedBarcode(decodedText);
+      feedbackBox.className = 'mt-2 p-2 rounded small text-center fw-semibold bg-success-subtle text-success';
+      feedbackBox.innerHTML = `<i class="fa-solid fa-check-circle me-1"></i> Đã đọc thành công từ ảnh: <strong>${decodedText}</strong>`;
+      fileInput.value = '';
+    }).catch(err => {
+      feedbackBox.className = 'mt-2 p-2 rounded small text-center fw-semibold bg-danger-subtle text-danger';
+      feedbackBox.innerHTML = '<i class="fa-solid fa-circle-xmark me-1"></i> Không nhận diện được mã vạch trong ảnh này. Hãy thử ảnh rõ nét hơn!';
+      fileInput.value = '';
     });
   }
 
@@ -6410,19 +6550,45 @@
       });
     }
 
-    // 3. Điền danh sách Model (chỉ lấy active)
-    const modelSelect = document.getElementById('nhap-select-model');
-    modelSelect.innerHTML = '';
-    const activeProducts = INITIAL_PRODUCTS.filter(p => p.active !== false);
-    if (activeProducts.length === 0) {
-      modelSelect.innerHTML = '<option value="">-- Chưa có Model (Bấm + Model) --</option>';
+    // 3. Điền danh sách Model (chỉ lấy active) vào Datalist & Dropdown gợi ý
+    const modelHidden = document.getElementById('nhap-select-model');
+    const modelInput = document.getElementById('nhap-model-input');
+    const modelDatalist = document.getElementById('nhap-model-datalist');
+    const modelDropdown = document.getElementById('nhap-model-dropdown-list');
+
+    const activeProducts = (typeof INITIAL_PRODUCTS !== 'undefined' ? INITIAL_PRODUCTS : []).filter(p => p.active !== false);
+
+    if (modelDatalist) {
+      modelDatalist.innerHTML = activeProducts.map(p => 
+        `<option value="${p.model}">${p.ten} (${p.hang || ''} - ${p.nhom})</option>`
+      ).join('');
+    }
+
+    if (modelDropdown) {
+      if (activeProducts.length === 0) {
+        modelDropdown.innerHTML = '<li><span class="dropdown-item text-muted">Chưa có Model (Bấm Thêm Model mới)</span></li>';
+      } else {
+        modelDropdown.innerHTML = activeProducts.map(p => `
+          <li>
+            <a class="dropdown-item py-2 border-bottom border-light cursor-pointer" href="javascript:void(0)" onclick="selectModelFromDropdown('${p.model}')">
+              <div class="fw-bold text-dark font-monospace">${p.model}</div>
+              <div class="small text-secondary text-truncate" style="max-width: 260px;">${p.ten}</div>
+              <div class="text-muted" style="font-size: 0.72rem;">${p.hang || '--'} • ${p.nhom} • BH: ${p.defaultBh || 12}th</div>
+            </a>
+          </li>
+        `).join('');
+      }
+    }
+
+    // Chọn model mặc định đầu tiên nếu chưa có
+    if (activeProducts.length > 0) {
+      if (!modelHidden.value || !activeProducts.some(p => p.model === modelHidden.value)) {
+        modelHidden.value = activeProducts[0].model;
+        if (modelInput) modelInput.value = activeProducts[0].model;
+      }
     } else {
-      activeProducts.forEach(p => {
-        const opt = document.createElement('option');
-        opt.value = p.model;
-        opt.textContent = `${p.model} (${p.nhom})`;
-        modelSelect.appendChild(opt);
-      });
+      modelHidden.value = '';
+      if (modelInput) modelInput.value = '';
     }
 
     // 4. Ngày hôm nay
@@ -6434,17 +6600,53 @@
     renderDraftNhapTable();
   }
 
-  function onSelectModelNhap() {
-    const modelVal = document.getElementById('nhap-select-model').value;
-    const prod = INITIAL_PRODUCTS.find(p => p.model === modelVal);
-    const infoBox = document.getElementById('nhap-model-info');
+  function selectModelFromDropdown(modelCode) {
+    const modelHidden = document.getElementById('nhap-select-model');
+    const modelInput = document.getElementById('nhap-model-input');
+    if (modelHidden) modelHidden.value = modelCode;
+    if (modelInput) modelInput.value = modelCode;
+    onSelectModelNhap(modelCode);
+  }
+
+  function onInputModelNhap(typedVal) {
+    const val = (typedVal !== undefined ? typedVal : (document.getElementById('nhap-model-input')?.value || '')).trim();
+    if (!val) return;
+    const prod = (typeof INITIAL_PRODUCTS !== 'undefined' ? INITIAL_PRODUCTS : []).find(p => 
+      p.model.toLowerCase() === val.toLowerCase() ||
+      p.ten.toLowerCase() === val.toLowerCase()
+    );
     if (prod) {
+      document.getElementById('nhap-select-model').value = prod.model;
+      onSelectModelNhap(prod.model);
+    }
+  }
+
+  function onSelectModelNhap(modelParam) {
+    const modelInput = document.getElementById('nhap-model-input');
+    const modelHidden = document.getElementById('nhap-select-model');
+    const val = (modelParam || (modelInput ? modelInput.value : '') || (modelHidden ? modelHidden.value : '')).trim();
+    
+    const prod = (typeof INITIAL_PRODUCTS !== 'undefined' ? INITIAL_PRODUCTS : []).find(p => 
+      p.model.toLowerCase() === val.toLowerCase() ||
+      p.ten.toLowerCase() === val.toLowerCase()
+    );
+    const infoBox = document.getElementById('nhap-model-info');
+
+    if (prod) {
+      if (modelHidden) modelHidden.value = prod.model;
       infoBox.innerHTML = `
         <div class="fw-semibold text-primary">${prod.ten}</div>
-        <div class="text-muted">Hãng: <strong>${prod.hang || '--'}</strong> | Nhóm: <strong>${prod.nhom}</strong> | BH mặc định: <strong>${prod.defaultBh} tháng</strong></div>
+        <div class="text-muted">Mã: <strong class="font-monospace text-dark">${prod.model}</strong> | Hãng: <strong>${prod.hang || '--'}</strong> | Nhóm: <strong>${prod.nhom}</strong> | BH mặc định: <strong>${prod.defaultBh || 12} tháng</strong></div>
       `;
     } else {
-      infoBox.innerHTML = '<span class="text-muted">Chưa chọn model</span>';
+      if (val) {
+        if (modelHidden) modelHidden.value = val;
+        infoBox.innerHTML = `
+          <div class="text-warning small"><i class="fa-solid fa-triangle-exclamation me-1"></i> Model tùy chỉnh: <strong class="font-monospace">${val}</strong> (Chưa có trong danh mục chính, hệ thống sẽ lưu theo tên này).</div>
+        `;
+      } else {
+        infoBox.innerHTML = '<span class="text-muted small">Chưa chọn Model</span>';
+      }
     }
   }
 
@@ -6722,8 +6924,59 @@
       });
 
       recordAuditLog('XÁC NHẬN NHẬP KHO', `Phiếu ${maPhieu} (${CURRENT_DRAFT_NHAP_ITEMS.length} máy)`, 'DRAFT', 'CONFIRMED', `Nhập kho từ ${ncc}`, [], 'Nhập kho', '', maPhieu);
+      
+      // 1. Lưu trữ bền vững vào localStorage để không bị mất khi F5
+      try {
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('THANH_AN_SERIAL_DB', JSON.stringify(SERIAL_DB.slice(0, 2000)));
+          localStorage.setItem('THANH_AN_VOUCHERS_DB', JSON.stringify(VOUCHERS_DB));
+        }
+      } catch(e) {}
+
+      // 2. Nếu đang chạy trên Google Apps Script thật, đồng bộ xuống Google Sheet
+      if (typeof WarehouseAPI !== 'undefined' && WarehouseAPI.isAppsScriptEnvironment()) {
+        try {
+          const itemsByModel = {};
+          CURRENT_DRAFT_NHAP_ITEMS.forEach(it => {
+            if (!itemsByModel[it.model]) {
+              itemsByModel[it.model] = {
+                model: it.model,
+                tenHang: it.tenHang || it.model,
+                nhomHang: it.nhom || 'Khác',
+                serials: []
+              };
+            }
+            itemsByModel[it.model].serials.push(it.serial);
+          });
+
+          const payload = {
+            maPhieu: maPhieu,
+            ncc: ncc,
+            kho: kho,
+            ngay: ngay,
+            ghiChu: ghiChu,
+            items: Object.values(itemsByModel)
+          };
+
+          google.script.run
+            .withSuccessHandler(res => console.log('Đã lưu Google Sheet:', res))
+            .withFailureHandler(err => console.warn('Lỗi lưu Google Sheet:', err))
+            .executeNhapKhoMulti(payload);
+        } catch(err) {
+          console.warn('Lỗi đồng bộ Backend Apps Script:', err);
+        }
+      }
+
       if (typeof markModulesDirty === 'function') {
         markModulesDirty(['Dashboard', 'TonKho', 'LichSu', 'Serial360']);
+      }
+
+      // 3. Kích hoạt cập nhật số liệu Dashboard và Tồn Kho ngay lập tức
+      if (typeof renderDashboard === 'function') {
+        renderDashboard();
+      }
+      if (typeof renderTonKho === 'function') {
+        renderTonKho();
       }
       
       Swal.fire({
@@ -6733,8 +6986,17 @@
       });
     } else {
       recordAuditLog('LƯU NHÁP PHIẾU NHẬP', `Phiếu ${maPhieu} (${CURRENT_DRAFT_NHAP_ITEMS.length} máy)`, 'None', 'DRAFT', 'Lưu nháp chờ hoàn tất', [], 'Nhập kho', '', maPhieu);
+      try {
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('THANH_AN_VOUCHERS_DB', JSON.stringify(VOUCHERS_DB));
+        }
+      } catch(e) {}
+
       if (typeof markModulesDirty === 'function') {
         markModulesDirty(['Dashboard', 'LichSu']);
+      }
+      if (typeof renderDashboard === 'function') {
+        renderDashboard();
       }
       
       Swal.fire({
@@ -10499,10 +10761,21 @@
 
     Swal.fire({
       title: `Chỉnh sửa Model: ${p.model}`,
+      width: '600px',
       html: `
         <div class="text-start small">
+          <div class="row g-2 mb-2">
+            <div class="col-6">
+              <label class="form-label fw-bold mb-1">Mã Model (*)</label>
+              <input id="swal-edit-p-model" class="form-control form-control-sm font-monospace text-uppercase fw-bold" value="${escapeHtml(p.model)}">
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-bold mb-1">Đơn vị tính (ĐVT)</label>
+              <input id="swal-edit-p-dvt" class="form-control form-control-sm" value="${escapeHtml(p.dvt || 'Chiếc')}" placeholder="Chiếc, Máy, Bộ...">
+            </div>
+          </div>
           <label class="form-label fw-bold mb-1">Tên sản phẩm (*)</label>
-          <input id="swal-edit-p-name" class="form-control form-control-sm mb-2" value="${p.ten}">
+          <input id="swal-edit-p-name" class="form-control form-control-sm mb-2" value="${escapeHtml(p.ten)}">
           <div class="row g-2 mb-2">
             <div class="col-6">
               <label class="form-label fw-bold mb-1">Hãng sản xuất (*)</label>
@@ -10531,20 +10804,35 @@
             </div>
           </div>
           <label class="form-label fw-bold mb-1">Ghi chú</label>
-          <input id="swal-edit-p-note" class="form-control form-control-sm" value="${p.ghiChu || ''}">
+          <input id="swal-edit-p-note" class="form-control form-control-sm" value="${escapeHtml(p.ghiChu || '')}" placeholder="Ghi chú cấu hình, mã phụ...">
         </div>
       `,
       showCancelButton: true,
       confirmButtonText: 'Lưu thay đổi',
       cancelButtonText: 'Đóng',
       preConfirm: () => {
+        const newModel = document.getElementById('swal-edit-p-model').value.trim();
         const ten = document.getElementById('swal-edit-p-name').value.trim();
-        if (!ten) {
-          Swal.showValidationMessage('Vui lòng nhập tên sản phẩm!');
+        if (!newModel) {
+          Swal.showValidationMessage('Vui lòng nhập Mã Model!');
           return false;
         }
+        if (!ten) {
+          Swal.showValidationMessage('Vui lòng nhập Tên sản phẩm!');
+          return false;
+        }
+        // Kiểm tra trùng mã Model mới nếu có thay đổi
+        if (newModel.toLowerCase() !== p.model.toLowerCase()) {
+          const duplicate = INITIAL_PRODUCTS.some(x => x !== p && x.model.toLowerCase() === newModel.toLowerCase());
+          if (duplicate) {
+            Swal.showValidationMessage(`Mã Model "${newModel}" đã tồn tại trong hệ thống!`);
+            return false;
+          }
+        }
         return {
-          ten,
+          model: newModel,
+          ten: ten,
+          dvt: document.getElementById('swal-edit-p-dvt').value.trim() || 'Chiếc',
           hang: document.getElementById('swal-edit-p-brand').value,
           nhom: document.getElementById('swal-edit-p-cat').value,
           defaultBh: parseInt(document.getElementById('swal-edit-p-bh').value) || 12,
@@ -10554,18 +10842,60 @@
       }
     }).then(res => {
       if (res.isConfirmed) {
-        const changes = [];
-        if (p.ten !== res.value.ten) changes.push({ field: 'Tên SP', oldVal: p.ten, newVal: res.value.ten });
-        if (p.hang !== res.value.hang) changes.push({ field: 'Hãng', oldVal: p.hang, newVal: res.value.hang });
-        if (p.nhom !== res.value.nhom) changes.push({ field: 'Nhóm', oldVal: p.nhom, newVal: res.value.nhom });
-        if (p.defaultBh !== res.value.defaultBh) changes.push({ field: 'BH Mặc Định', oldVal: p.defaultBh, newVal: res.value.defaultBh });
-        if (p.manageSerial !== res.value.manageSerial) changes.push({ field: 'Quản lý Serial', oldVal: p.manageSerial, newVal: res.value.manageSerial });
+        const oldModel = p.model;
+        const newModel = res.value.model;
+
+        // Nếu thay đổi Mã Model, tự động đồng bộ sang SERIAL_DB và VOUCHERS_DB
+        if (oldModel !== newModel) {
+          SERIAL_DB.forEach(s => {
+            if (s.model === oldModel) {
+              s.model = newModel;
+              s.tenHang = res.value.ten;
+              s.nhom = res.value.nhom;
+            }
+          });
+          if (VOUCHERS_DB && VOUCHERS_DB.nhap) {
+            VOUCHERS_DB.nhap.forEach(v => {
+              if (v.items) {
+                v.items.forEach(it => { if (it.model === oldModel) it.model = newModel; });
+              }
+            });
+          }
+          if (VOUCHERS_DB && VOUCHERS_DB.xuat) {
+            VOUCHERS_DB.xuat.forEach(v => {
+              if (v.items) {
+                v.items.forEach(it => { if (it.model === oldModel) it.model = newModel; });
+              }
+            });
+          }
+        }
 
         Object.assign(p, res.value);
-        recordAuditLog('SỬA MODEL', `Model ${p.model}`, 'Cũ', 'Mới', 'Cập nhật danh mục sản phẩm', changes);
+
+        // Lưu vào localStorage
+        try {
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('THANH_AN_PRODUCTS', JSON.stringify(INITIAL_PRODUCTS));
+            localStorage.setItem('THANH_AN_SERIAL_DB', JSON.stringify(SERIAL_DB.slice(0, 2000)));
+            localStorage.setItem('THANH_AN_VOUCHERS_DB', JSON.stringify(VOUCHERS_DB));
+          }
+        } catch(e) {}
+
+        // Đồng bộ Backend Apps Script nếu có
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          google.script.run
+            .withSuccessHandler(r => console.log('Đã cập nhật Model trên Sheet:', r))
+            .saveProduct(p.model, p.ten, p.nhom, p.rowId || null);
+        }
+
+        recordAuditLog('SỬA MODEL', `Model ${oldModel} -> ${newModel}`, 'Cũ', 'Mới', 'Cập nhật đầy đủ thông tin danh mục sản phẩm');
         notifyCatalogChanged();
         renderCatalogProductsTable();
-        Swal.fire('Thành công', `Đã cập nhật Model ${p.model}`, 'success');
+        populateCatalogFilterDropdowns();
+        if (typeof setupNhapKhoForm === 'function') setupNhapKhoForm();
+        if (typeof renderDashboard === 'function') renderDashboard();
+
+        Swal.fire('Thành công', `Đã cập nhật Model <strong>${p.model}</strong> (${p.ten})`, 'success');
       }
     });
   }
@@ -10668,60 +10998,112 @@
 
     Swal.fire({
       title: `Chỉnh sửa NCC: ${s.tenTat}`,
+      width: '600px',
       html: `
         <div class="text-start small">
-          <label class="form-label fw-bold mb-1">Tên đầy đủ NCC (*)</label>
-          <input id="swal-edit-s-fullname" class="form-control form-control-sm mb-2" value="${s.tenDayDu}">
+          <div class="row g-2 mb-2">
+            <div class="col-5">
+              <label class="form-label fw-bold mb-1">Mã / Tên viết tắt (*)</label>
+              <input id="swal-edit-s-code" class="form-control form-control-sm font-monospace text-uppercase fw-bold" value="${escapeHtml(s.tenTat)}">
+            </div>
+            <div class="col-7">
+              <label class="form-label fw-bold mb-1">Tên đầy đủ NCC / Nhà SX (*)</label>
+              <input id="swal-edit-s-fullname" class="form-control form-control-sm" value="${escapeHtml(s.tenDayDu)}">
+            </div>
+          </div>
           <div class="row g-2 mb-2">
             <div class="col-6">
               <label class="form-label fw-bold mb-1">Số điện thoại (*)</label>
-              <input id="swal-edit-s-phone" class="form-control form-control-sm" value="${s.sdt}">
+              <input id="swal-edit-s-phone" class="form-control form-control-sm" value="${escapeHtml(s.sdt)}">
             </div>
             <div class="col-6">
               <label class="form-label fw-bold mb-1">Email</label>
-              <input id="swal-edit-s-email" class="form-control form-control-sm" value="${s.email || ''}">
+              <input id="swal-edit-s-email" class="form-control form-control-sm" value="${escapeHtml(s.email || '')}" placeholder="ncc@email.com">
             </div>
           </div>
-          <label class="form-label fw-bold mb-1">Địa chỉ</label>
-          <input id="swal-edit-s-address" class="form-control form-control-sm mb-2" value="${s.diaChi || ''}">
+          <label class="form-label fw-bold mb-1">Địa chỉ văn phòng / Kho xuất</label>
+          <input id="swal-edit-s-address" class="form-control form-control-sm mb-2" value="${escapeHtml(s.diaChi || '')}">
           <div class="row g-2 mb-2">
             <div class="col-6">
               <label class="form-label fw-bold mb-1">Người liên hệ</label>
-              <input id="swal-edit-s-contact" class="form-control form-control-sm" value="${s.nguoiLienHe || ''}">
+              <input id="swal-edit-s-contact" class="form-control form-control-sm" value="${escapeHtml(s.nguoiLienHe || '')}">
             </div>
             <div class="col-6">
               <label class="form-label fw-bold mb-1">Mã số thuế</label>
-              <input id="swal-edit-s-tax" class="form-control form-control-sm" value="${s.mst || ''}">
+              <input id="swal-edit-s-tax" class="form-control form-control-sm" value="${escapeHtml(s.mst || '')}">
             </div>
           </div>
+          <label class="form-label fw-bold mb-1">Ghi chú</label>
+          <input id="swal-edit-s-note" class="form-control form-control-sm" value="${escapeHtml(s.ghiChu || '')}" placeholder="Chính sách chiết khấu, hạn mức công nợ...">
         </div>
       `,
       showCancelButton: true,
       confirmButtonText: 'Lưu thay đổi',
       cancelButtonText: 'Đóng',
       preConfirm: () => {
+        const code = document.getElementById('swal-edit-s-code').value.trim().toUpperCase();
         const fullname = document.getElementById('swal-edit-s-fullname').value.trim();
         const phone = document.getElementById('swal-edit-s-phone').value.trim();
+        if (!code) {
+          Swal.showValidationMessage('Vui lòng nhập Mã / Tên viết tắt NCC!');
+          return false;
+        }
         if (!fullname || !phone) {
           Swal.showValidationMessage('Vui lòng nhập Tên đầy đủ và SĐT!');
           return false;
         }
+        if (code !== s.tenTat) {
+          const duplicate = INITIAL_SUPPLIERS.some(x => x !== s && x.tenTat.toUpperCase() === code);
+          if (duplicate) {
+            Swal.showValidationMessage(`Mã NCC "${code}" đã tồn tại!`);
+            return false;
+          }
+        }
         return {
+          tenTat: code,
           tenDayDu: fullname,
           sdt: phone,
           email: document.getElementById('swal-edit-s-email').value.trim(),
           diaChi: document.getElementById('swal-edit-s-address').value.trim(),
           nguoiLienHe: document.getElementById('swal-edit-s-contact').value.trim(),
-          mst: document.getElementById('swal-edit-s-tax').value.trim()
+          mst: document.getElementById('swal-edit-s-tax').value.trim(),
+          ghiChu: document.getElementById('swal-edit-s-note').value.trim()
         };
       }
     }).then(res => {
       if (res.isConfirmed) {
+        const oldCode = s.tenTat;
+        const newCode = res.value.tenTat;
+
+        if (oldCode !== newCode) {
+          SERIAL_DB.forEach(item => { if (item.ncc === oldCode) item.ncc = newCode; });
+          if (VOUCHERS_DB && VOUCHERS_DB.nhap) {
+            VOUCHERS_DB.nhap.forEach(v => { if (v.ncc === oldCode) v.ncc = newCode; });
+          }
+        }
+
         Object.assign(s, res.value);
-        recordAuditLog('SỬA NCC', `NCC ${s.tenTat}`, 'Cũ', 'Mới', 'Cập nhật danh mục nhà cung cấp');
+
+        try {
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('THANH_AN_SUPPLIERS', JSON.stringify(INITIAL_SUPPLIERS));
+            localStorage.setItem('THANH_AN_SERIAL_DB', JSON.stringify(SERIAL_DB.slice(0, 2000)));
+            localStorage.setItem('THANH_AN_VOUCHERS_DB', JSON.stringify(VOUCHERS_DB));
+          }
+        } catch(e) {}
+
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          google.script.run
+            .withSuccessHandler(r => console.log('Đã lưu NCC Sheet:', r))
+            .saveNcc(s.tenTat, s.tenDayDu, s.sdt, s.ghiChu, s.rowId || null);
+        }
+
+        recordAuditLog('SỬA NCC', `NCC ${oldCode} -> ${newCode}`, 'Cũ', 'Mới', 'Cập nhật đầy đủ danh mục nhà cung cấp');
         notifyCatalogChanged();
         renderCatalogSuppliersTable();
-        Swal.fire('Thành công', `Đã cập nhật NCC ${s.tenTat}`, 'success');
+        if (typeof setupNhapKhoForm === 'function') setupNhapKhoForm();
+
+        Swal.fire('Thành công', `Đã cập nhật NCC <strong>${s.tenTat}</strong> (${s.tenDayDu})`, 'success');
       }
     });
   }
@@ -10824,32 +11206,43 @@
 
     Swal.fire({
       title: `Chỉnh sửa Khách Hàng: ${c.ten}`,
+      width: '600px',
       html: `
         <div class="text-start small">
-          <label class="form-label fw-bold mb-1">Tên khách hàng / Đơn vị (*)</label>
-          <input id="swal-edit-c-name" class="form-control form-control-sm mb-2" value="${c.ten}">
           <div class="row g-2 mb-2">
-            <div class="col-6">
-              <label class="form-label fw-bold mb-1">Số điện thoại (*)</label>
-              <input id="swal-edit-c-phone" class="form-control form-control-sm" value="${c.sdt}">
+            <div class="col-7">
+              <label class="form-label fw-bold mb-1">Tên khách hàng / Đơn vị (*)</label>
+              <input id="swal-edit-c-name" class="form-control form-control-sm" value="${escapeHtml(c.ten)}">
             </div>
-            <div class="col-6">
-              <label class="form-label fw-bold mb-1">Email</label>
-              <input id="swal-edit-c-email" class="form-control form-control-sm" value="${c.email || ''}">
+            <div class="col-5">
+              <label class="form-label fw-bold mb-1">Số điện thoại (*)</label>
+              <input id="swal-edit-c-phone" class="form-control form-control-sm font-monospace fw-bold" value="${escapeHtml(c.sdt)}">
             </div>
           </div>
-          <label class="form-label fw-bold mb-1">Địa chỉ giao hàng (*)</label>
-          <input id="swal-edit-c-address" class="form-control form-control-sm mb-2" value="${c.diaChi || ''}">
           <div class="row g-2 mb-2">
             <div class="col-6">
               <label class="form-label fw-bold mb-1">Người liên hệ</label>
-              <input id="swal-edit-c-contact" class="form-control form-control-sm" value="${c.nguoiLienHe || ''}">
+              <input id="swal-edit-c-contact" class="form-control form-control-sm" value="${escapeHtml(c.nguoiLienHe || '')}">
             </div>
             <div class="col-6">
-              <label class="form-label fw-bold mb-1">Mã số thuế</label>
-              <input id="swal-edit-c-tax" class="form-control form-control-sm" value="${c.mst || ''}">
+              <label class="form-label fw-bold mb-1">Email</label>
+              <input id="swal-edit-c-email" class="form-control form-control-sm" value="${escapeHtml(c.email || '')}" placeholder="khachhang@email.com">
             </div>
           </div>
+          <label class="form-label fw-bold mb-1">Địa chỉ giao hàng (*)</label>
+          <input id="swal-edit-c-address" class="form-control form-control-sm mb-2" value="${escapeHtml(c.diaChi || '')}">
+          <div class="row g-2 mb-2">
+            <div class="col-6">
+              <label class="form-label fw-bold mb-1">Mã số thuế</label>
+              <input id="swal-edit-c-tax" class="form-control form-control-sm" value="${escapeHtml(c.mst || '')}">
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-bold mb-1">Nhóm khách hàng</label>
+              <input id="swal-edit-c-group" class="form-control form-control-sm" value="${escapeHtml(c.nhomKhach || 'Khách lẻ')}" placeholder="Đại lý, Khách lẻ, Doanh nghiệp...">
+            </div>
+          </div>
+          <label class="form-label fw-bold mb-1">Ghi chú</label>
+          <input id="swal-edit-c-note" class="form-control form-control-sm" value="${escapeHtml(c.ghiChu || '')}" placeholder="Ghi chú tuyến giao, yêu cầu đặc biệt...">
         </div>
       `,
       showCancelButton: true,
@@ -10868,16 +11261,35 @@
           email: document.getElementById('swal-edit-c-email').value.trim(),
           diaChi: document.getElementById('swal-edit-c-address').value.trim(),
           nguoiLienHe: document.getElementById('swal-edit-c-contact').value.trim(),
-          mst: document.getElementById('swal-edit-c-tax').value.trim()
+          mst: document.getElementById('swal-edit-c-tax').value.trim(),
+          nhomKhach: document.getElementById('swal-edit-c-group').value.trim() || 'Khách lẻ',
+          ghiChu: document.getElementById('swal-edit-c-note').value.trim()
         };
       }
     }).then(res => {
       if (res.isConfirmed) {
+        const oldName = c.ten;
+        const oldPhone = c.sdt;
         Object.assign(c, res.value);
-        recordAuditLog('SỬA KHÁCH HÀNG', `KH ${c.ten} (${c.sdt})`, 'Cũ', 'Mới', 'Cập nhật danh mục khách hàng');
+
+        try {
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('THANH_AN_CUSTOMERS', JSON.stringify(INITIAL_CUSTOMERS));
+          }
+        } catch(e) {}
+
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          google.script.run
+            .withSuccessHandler(r => console.log('Đã lưu Khách hàng Sheet:', r))
+            .saveKhachHang(c.ten, c.sdt, c.diaChi, c.ghiChu, c.rowId || null);
+        }
+
+        recordAuditLog('SỬA KHÁCH HÀNG', `KH ${oldName} (${oldPhone}) -> ${c.ten}`, 'Cũ', 'Mới', 'Cập nhật đầy đủ danh mục khách hàng');
         notifyCatalogChanged();
         renderCatalogCustomersTable();
-        Swal.fire('Thành công', `Đã cập nhật khách hàng ${c.ten}`, 'success');
+        if (typeof setupXuatKhoForm === 'function') setupXuatKhoForm();
+
+        Swal.fire('Thành công', `Đã cập nhật khách hàng <strong>${c.ten}</strong> (${c.sdt})`, 'success');
       }
     });
   }
@@ -11013,45 +11425,103 @@
 
     Swal.fire({
       title: `Chỉnh sửa Kho: ${w.tenKho}`,
+      width: '600px',
       html: `
         <div class="text-start small">
-          <label class="form-label fw-bold mb-1">Tên kho (*)</label>
-          <input id="swal-edit-w-name" class="form-control form-control-sm mb-2" value="${w.tenKho}">
-          <label class="form-label fw-bold mb-1">Loại kho</label>
-          <select id="swal-edit-w-type" class="form-select form-select-sm mb-2">
-            <option value="Kho Trung Tâm" ${w.loaiKho === 'Kho Trung Tâm' ? 'selected' : ''}>Kho Trung Tâm</option>
-            <option value="Kho Vệ Tinh" ${w.loaiKho === 'Kho Vệ Tinh' ? 'selected' : ''}>Kho Vệ Tinh</option>
-            <option value="Kho Cách Ly" ${w.loaiKho === 'Kho Cách Ly' ? 'selected' : ''}>Kho Cách Ly</option>
-          </select>
-          <label class="form-label fw-bold mb-1">Địa điểm</label>
-          <input id="swal-edit-w-location" class="form-control form-control-sm mb-2" value="${w.diaDiem || ''}">
+          <div class="row g-2 mb-2">
+            <div class="col-5">
+              <label class="form-label fw-bold mb-1">Mã kho (*)</label>
+              <input id="swal-edit-w-code" class="form-control form-control-sm font-monospace text-uppercase fw-bold" value="${escapeHtml(w.maKho || '')}">
+            </div>
+            <div class="col-7">
+              <label class="form-label fw-bold mb-1">Tên kho (*)</label>
+              <input id="swal-edit-w-name" class="form-control form-control-sm fw-semibold" value="${escapeHtml(w.tenKho)}">
+            </div>
+          </div>
+          <div class="row g-2 mb-2">
+            <div class="col-6">
+              <label class="form-label fw-bold mb-1">Loại kho</label>
+              <select id="swal-edit-w-type" class="form-select form-select-sm">
+                <option value="Kho Trung Tâm" ${w.loaiKho === 'Kho Trung Tâm' ? 'selected' : ''}>Kho Trung Tâm</option>
+                <option value="Kho Vệ Tinh" ${w.loaiKho === 'Kho Vệ Tinh' ? 'selected' : ''}>Kho Vệ Tinh</option>
+                <option value="Kho Cách Ly" ${w.loaiKho === 'Kho Cách Ly' ? 'selected' : ''}>Kho Cách Ly (Hàng lỗi/Chờ xử lý)</option>
+                <option value="Kho Trung Chuyển" ${w.loaiKho === 'Kho Trung Chuyển' ? 'selected' : ''}>Kho Trung Chuyển</option>
+              </select>
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-bold mb-1">Thủ kho phụ trách</label>
+              <input id="swal-edit-w-keeper" class="form-control form-control-sm" value="${escapeHtml(w.thuKho || '')}" placeholder="Tên thủ kho...">
+            </div>
+          </div>
+          <div class="row g-2 mb-2">
+            <div class="col-6">
+              <label class="form-label fw-bold mb-1">SĐT liên hệ kho</label>
+              <input id="swal-edit-w-phone" class="form-control form-control-sm font-monospace" value="${escapeHtml(w.sdt || '')}" placeholder="09xx...">
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-bold mb-1">Địa điểm / Địa chỉ kho</label>
+              <input id="swal-edit-w-location" class="form-control form-control-sm" value="${escapeHtml(w.diaDiem || '')}" placeholder="Số nhà, đường, quận/huyện...">
+            </div>
+          </div>
           <label class="form-label fw-bold mb-1">Ghi chú</label>
-          <input id="swal-edit-w-note" class="form-control form-control-sm" value="${w.ghiChu || ''}">
+          <input id="swal-edit-w-note" class="form-control form-control-sm" value="${escapeHtml(w.ghiChu || '')}" placeholder="Ghi chú diện tích, sức chứa, ghi chú đặc thù...">
         </div>
       `,
       showCancelButton: true,
       confirmButtonText: 'Lưu thay đổi',
       cancelButtonText: 'Đóng',
       preConfirm: () => {
+        const code = document.getElementById('swal-edit-w-code').value.trim().toUpperCase();
         const name = document.getElementById('swal-edit-w-name').value.trim();
+        if (!code) {
+          Swal.showValidationMessage('Vui lòng nhập Mã kho!');
+          return false;
+        }
         if (!name) {
-          Swal.showValidationMessage('Vui lòng nhập tên kho!');
+          Swal.showValidationMessage('Vui lòng nhập Tên kho!');
           return false;
         }
         return {
+          maKho: code,
           tenKho: name,
           loaiKho: document.getElementById('swal-edit-w-type').value,
+          thuKho: document.getElementById('swal-edit-w-keeper').value.trim(),
+          sdt: document.getElementById('swal-edit-w-phone').value.trim(),
           diaDiem: document.getElementById('swal-edit-w-location').value.trim(),
           ghiChu: document.getElementById('swal-edit-w-note').value.trim()
         };
       }
     }).then(res => {
       if (res.isConfirmed) {
+        const oldName = w.tenKho;
+        const newName = res.value.tenKho;
+
+        if (oldName !== newName) {
+          SERIAL_DB.forEach(item => { if (item.kho === oldName) item.kho = newName; });
+          if (VOUCHERS_DB && VOUCHERS_DB.nhap) {
+            VOUCHERS_DB.nhap.forEach(v => { if (v.kho === oldName) v.kho = newName; });
+          }
+          if (VOUCHERS_DB && VOUCHERS_DB.xuat) {
+            VOUCHERS_DB.xuat.forEach(v => { if (v.kho === oldName) v.kho = newName; });
+          }
+        }
+
         Object.assign(w, res.value);
-        recordAuditLog('SỬA KHO', `Kho ${w.maKho}`, 'Cũ', 'Mới', 'Cập nhật thông tin kho hàng');
+
+        try {
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('THANH_AN_WAREHOUSES', JSON.stringify(INITIAL_WAREHOUSES));
+            localStorage.setItem('THANH_AN_SERIAL_DB', JSON.stringify(SERIAL_DB.slice(0, 2000)));
+            localStorage.setItem('THANH_AN_VOUCHERS_DB', JSON.stringify(VOUCHERS_DB));
+          }
+        } catch(e) {}
+
+        recordAuditLog('SỬA KHO', `Kho ${oldName} -> ${newName}`, 'Cũ', 'Mới', 'Cập nhật đầy đủ thông tin kho hàng');
         notifyCatalogChanged();
         renderCatalogWarehousesTable();
-        Swal.fire('Thành công', `Đã cập nhật kho ${w.tenKho}`, 'success');
+        if (typeof setupNhapKhoForm === 'function') setupNhapKhoForm();
+
+        Swal.fire('Thành công', `Đã cập nhật kho <strong>${w.tenKho}</strong> (${w.maKho})`, 'success');
       }
     });
   }
@@ -12556,6 +13026,16 @@
     const todayStr = getLocalDateStr();
     const agingThreshold = parseInt(ALERT_SETTINGS.stockAgingDays) || 60;
 
+    // Tự động khôi phục dữ liệu từ localStorage nếu biến bộ nhớ đang rỗng
+    if ((!SERIAL_DB || SERIAL_DB.length === 0) && typeof localStorage !== 'undefined') {
+      try {
+        const savedS = localStorage.getItem('THANH_AN_SERIAL_DB');
+        if (savedS) SERIAL_DB = JSON.parse(savedS);
+        const savedV = localStorage.getItem('THANH_AN_VOUCHERS_DB');
+        if (savedV) VOUCHERS_DB = JSON.parse(savedV);
+      } catch(e) {}
+    }
+
     // --- 1. QUÉT DỮ LIỆU SERIAL_DB THỰC TẾ ---
     let totalInStock = 0;
     const distinctModelsSet = new Set();
@@ -12747,6 +13227,29 @@
     }
     if (document.getElementById('kpi-draft-vouchers')) {
       document.getElementById('kpi-draft-vouchers').textContent = displayImportVouchers;
+    }
+
+    // Nếu ở môi trường Google Apps Script Web App, đồng bộ thêm số liệu trực tiếp từ Google Sheet
+    if (typeof WarehouseAPI !== 'undefined' && WarehouseAPI.isAppsScriptEnvironment()) {
+      try {
+        WarehouseAPI.getDashboardSummary(KPI_PERIOD, KPI_CUSTOM_FROM, KPI_CUSTOM_TO, function(summary) {
+          if (summary) {
+            if (document.getElementById('kpi-total-stock') && summary.inStock !== undefined && summary.inStock > 0) {
+              document.getElementById('kpi-total-stock').textContent = summary.inStock.toLocaleString('vi-VN');
+            }
+            if (document.getElementById('kpi-period-import') && summary.imported !== undefined && summary.imported > 0) {
+              document.getElementById('kpi-period-import').textContent = summary.imported.toLocaleString('vi-VN');
+            }
+            if (document.getElementById('kpi-period-export') && summary.exported !== undefined && summary.exported > 0) {
+              document.getElementById('kpi-period-export').textContent = summary.exported.toLocaleString('vi-VN');
+            }
+            if (document.getElementById('kpi-stock-change') && summary.netChange !== undefined) {
+              const sign = summary.netChange > 0 ? '+' : '';
+              document.getElementById('kpi-stock-change').textContent = `${sign}${summary.netChange.toLocaleString('vi-VN')}`;
+            }
+          }
+        });
+      } catch(e) {}
     }
 
     // CẬP NHẬT TREND KPI THEO SỐ LIỆU THỰC TẾ (KHÔNG NHẢY % ẢO KHI CHƯA CÓ SỐ LIỆU)
