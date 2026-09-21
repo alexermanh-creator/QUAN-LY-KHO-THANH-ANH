@@ -57,11 +57,18 @@
 - **Súng quét phần cứng**: Lắng nghe sự kiện bàn phím toàn cục (tốc độ gõ < 50ms giữa các ký tự) để tự động nhận diện mã vạch từ súng quét tại bất kỳ tab nào (Nhập kho, Xuất kho, Tra cứu 360°) mà không cần người dùng phải bấm chuột vào ô nhập liệu.
 - **Quét điện thoại**: Tích hợp mã QR kết nối nhanh và quét camera trực tiếp từ smartphone qua GitHub Pages đồng bộ thời gian thực về máy tính qua `BroadcastChannel` và `localStorage`.
 
-### 8. Biên dịch, Kiểm thử và Triển khai:
-- Chạy kiểm thử tự động giả lập máy quét `test_simulation_scanner.js` đạt 4/4 bài kiểm tra.
-- Chạy kiểm tra cú pháp `check_syntax.js` đạt 0 lỗi.
-- Đã chạy `build_demo.ps1` cập nhật file `demo_quan_ly_kho.html` (724 KB).
-- Đã chạy `build_gas_index.ps1` tạo `gas/Index.html` và `src/frontend/Index.html` (734 KB).
-- Đã đẩy toàn bộ 20 file lên Google Apps Script bằng `clasp push -f` thành công 100%.
-- Đã commit và push toàn bộ lên GitHub `main` branch thành công 100%.
+### 9. Xóa sạch 100% dữ liệu mẫu, chuẩn hóa Reset và Đăng nhập thực tế:
+- **Loại bỏ triệt để dữ liệu mẫu (`defaultQc`)**: Xóa bỏ hoàn toàn mảng dữ liệu mẫu hardcoded (Kho Tổng Hà Nội, Kho Đà Nẵng, CANON, RICOH, HP, EPSON, DELL, LENOVO, Máy in, Laptop...). Khi Reset hệ thống hoặc khởi tạo, tất cả các bảng danh mục chỉ giữ lại dòng Tiêu đề (Header), sạch sẽ 100% để kho Thành An tự định nghĩa.
+- **Làm sạch Audit Log khi Reset**:
+  + Trên giao diện Web App và `localStorage`: Xóa trắng 100% danh sách Audit Log, không để sót log cũ.
+  + Trên Google Sheet (`NHAT_KY_HOAT_DONG`): Dọn sạch các log cũ, chỉ chèn duy nhất 1 dòng ghi nhận việc Reset hệ thống (*[Thời gian] - [Người thực hiện] - [Hành động: RESET_HỆ_THỐNG] - [Chi tiết: Dọn dẹp sạch toàn bộ dữ liệu kho]*) để lưu hồ sơ bảo mật.
+- **Chuẩn hóa Đăng nhập & Hiển thị Người dùng**:
+  + **Loại bỏ toàn bộ các nút chuyển vai trò rườm rà** trong dropdown menu Topbar.
+  + Hiển thị chính xác **Tên người đăng nhập** kèm **Badge Vai trò** (Ví dụ: `Khổng Mạnh Cường (Quản trị viên)` hoặc `Khổng Minh Quân (Thủ kho)`).
+  + Bổ sung Modal Đăng Nhập / Chuyển Tài Khoản (`loginModal`) chuyên nghiệp: Người dùng đăng xuất thì có thể đăng nhập bằng tài khoản của mình (`admin` / `minhquan`), hệ thống tự động phân quyền tương ứng.
+- **Biên dịch & Đẩy lên Google Sheets**:
+  + Đã biên dịch `demo_quan_ly_kho.html` (731 KB).
+  + Đã biên dịch `gas/Index.html` và `src/frontend/Index.html` (742 KB).
+  + Đã đẩy thành công 20 file lên Google Apps Script qua `clasp push -f` lúc 17:10:13.
+
 
