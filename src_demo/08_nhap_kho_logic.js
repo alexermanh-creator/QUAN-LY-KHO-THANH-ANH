@@ -6,19 +6,18 @@
   let EXCEL_PARSED_ITEMS = [];
 
   function setupNhapKhoForm() {
-    // 1. Điền danh sách NCC (chỉ lấy active)
-    const nccSelect = document.getElementById('nhap-ncc');
-    nccSelect.innerHTML = '';
-    const activeSuppliers = INITIAL_SUPPLIERS.filter(s => s.active !== false);
-    if (activeSuppliers.length === 0) {
-      nccSelect.innerHTML = '<option value="">-- Chưa có NCC (Bấm + NCC) --</option>';
+    // 1. Điền thông tin NCC (chỉ lấy active)
+    const nccHidden = document.getElementById('nhap-ncc');
+    const nccInput = document.getElementById('nhap-ncc-input');
+    const activeSuppliers = (typeof INITIAL_SUPPLIERS !== 'undefined' ? INITIAL_SUPPLIERS : []).filter(s => s.active !== false);
+    if (activeSuppliers.length > 0) {
+      if (!nccHidden.value || !activeSuppliers.some(s => s.tenTat === nccHidden.value)) {
+        nccHidden.value = activeSuppliers[0].tenTat;
+        if (nccInput) nccInput.value = `${activeSuppliers[0].tenTat} - ${activeSuppliers[0].tenDayDu}`;
+      }
     } else {
-      activeSuppliers.forEach(s => {
-        const opt = document.createElement('option');
-        opt.value = s.tenTat;
-        opt.textContent = `${s.tenTat} - ${s.tenDayDu}`;
-        nccSelect.appendChild(opt);
-      });
+      nccHidden.value = '';
+      if (nccInput) nccInput.value = '';
     }
 
     // 2. Điền danh sách Kho (từ INITIAL_WAREHOUSES)
@@ -36,37 +35,11 @@
       });
     }
 
-    // 3. Điền danh sách Model (chỉ lấy active) vào Datalist & Dropdown gợi ý
+    // 3. Điền thông tin Model mặc định (chỉ lấy active)
     const modelHidden = document.getElementById('nhap-select-model');
     const modelInput = document.getElementById('nhap-model-input');
-    const modelDatalist = document.getElementById('nhap-model-datalist');
-    const modelDropdown = document.getElementById('nhap-model-dropdown-list');
-
     const activeProducts = (typeof INITIAL_PRODUCTS !== 'undefined' ? INITIAL_PRODUCTS : []).filter(p => p.active !== false);
 
-    if (modelDatalist) {
-      modelDatalist.innerHTML = activeProducts.map(p => 
-        `<option value="${p.model}">${p.ten} (${p.hang || ''} - ${p.nhom})</option>`
-      ).join('');
-    }
-
-    if (modelDropdown) {
-      if (activeProducts.length === 0) {
-        modelDropdown.innerHTML = '<li><span class="dropdown-item text-muted">Chưa có Model (Bấm Thêm Model mới)</span></li>';
-      } else {
-        modelDropdown.innerHTML = activeProducts.map(p => `
-          <li>
-            <a class="dropdown-item py-2 border-bottom border-light cursor-pointer" href="javascript:void(0)" onclick="selectModelFromDropdown('${p.model}')">
-              <div class="fw-bold text-dark font-monospace">${p.model}</div>
-              <div class="small text-secondary text-truncate" style="max-width: 260px;">${p.ten}</div>
-              <div class="text-muted" style="font-size: 0.72rem;">${p.hang || '--'} • ${p.nhom} • BH: ${p.defaultBh || 12}th</div>
-            </a>
-          </li>
-        `).join('');
-      }
-    }
-
-    // Chọn model mặc định đầu tiên nếu chưa có
     if (activeProducts.length > 0) {
       if (!modelHidden.value || !activeProducts.some(p => p.model === modelHidden.value)) {
         modelHidden.value = activeProducts[0].model;
@@ -91,33 +64,115 @@
     renderDraftNhapTable();
   }
 
-  function syncNhapItemLoaiHang(val) {
-    const itemSel = document.getElementById('nhap-item-loai-hang');
-    if (itemSel && val) {
-      itemSel.value = val;
-    }
-  }
-  window.syncNhapItemLoaiHang = syncNhapItemLoaiHang;
+  // Gợi ý thông minh Nhà Cung Cấp khi gõ
+  function handleSuggestNccNhap(query) {
+    const q = (query || '').trim().toLowerCase();
+    const dropdown = document.getElementById('nhap-ncc-suggest');
+    if (!dropdown) return;
 
-  function selectModelFromDropdown(modelCode) {
+    const suppliers = (typeof INITIAL_SUPPLIERS !== 'undefined' ? INITIAL_SUPPLIERS : []).filter(s => s.active !== false);
+    const matched = suppliers.filter(s => {
+      if (!q) return true;
+      return (s.tenTat && s.tenTat.toLowerCase().includes(q)) ||
+             (s.tenDayDu && s.tenDayDu.toLowerCase().includes(q)) ||
+             (s.sdt && s.sdt.toLowerCase().includes(q));
+    });
+
+    if (matched.length === 0) {
+      dropdown.innerHTML = '<div class="p-2 text-muted small text-center">Không tìm thấy NCC nào khớp. Bấm <b>+ Thêm NCC</b> để tạo mới.</div>';
+      dropdown.style.display = 'block';
+      return;
+    }
+
+    dropdown.innerHTML = matched.slice(0, 10).map((s, idx) => `
+      <div class="suggest-item ${idx === 0 ? 'active' : ''}" onclick="selectNccNhap('${s.tenTat.replace(/'/g, "\\'")}', '${(s.tenDayDu || '').replace(/'/g, "\\'")}')">
+        <div>
+          <div class="fw-bold text-primary" style="font-size: 0.85rem;">${s.tenTat}</div>
+          <div class="suggest-sub-text text-truncate" style="max-width: 250px;">${s.tenDayDu || ''}</div>
+        </div>
+        <div class="text-end">
+          <small class="text-muted font-monospace">${s.sdt || ''}</small>
+        </div>
+      </div>
+    `).join('');
+    dropdown.style.display = 'block';
+  }
+
+  function selectNccNhap(tenTat, tenDayDu) {
+    const nccHidden = document.getElementById('nhap-ncc');
+    const nccInput = document.getElementById('nhap-ncc-input');
+    const dropdown = document.getElementById('nhap-ncc-suggest');
+    if (nccHidden) nccHidden.value = tenTat;
+    if (nccInput) nccInput.value = tenDayDu ? `${tenTat} - ${tenDayDu}` : tenTat;
+    if (dropdown) dropdown.style.display = 'none';
+  }
+
+  // Gợi ý thông minh Model khi gõ
+  function handleSuggestModelNhap(query) {
+    const q = (query || '').trim().toLowerCase();
+    const dropdown = document.getElementById('nhap-model-suggest');
+    if (!dropdown) return;
+
+    const products = (typeof INITIAL_PRODUCTS !== 'undefined' ? INITIAL_PRODUCTS : []).filter(p => p.active !== false);
+    const matched = products.filter(p => {
+      if (!q) return true;
+      return (p.model && p.model.toLowerCase().includes(q)) ||
+             (p.ten && p.ten.toLowerCase().includes(q)) ||
+             (p.hang && p.hang.toLowerCase().includes(q)) ||
+             (p.nhom && p.nhom.toLowerCase().includes(q)) ||
+             (p.nhomHang && p.nhomHang.toLowerCase().includes(q));
+    });
+
+    if (matched.length === 0) {
+      dropdown.innerHTML = `
+        <div class="p-2 text-warning small">
+          <i class="fa-solid fa-circle-exclamation me-1"></i> Chưa có Model "${query}" trong danh mục.
+          <div class="text-muted mt-1" style="font-size: 0.72rem;">Hệ thống sẽ lưu tạm hoặc bấm <b>+ Thêm Model mới</b> bên trên.</div>
+        </div>
+      `;
+      dropdown.style.display = 'block';
+      // Vẫn cập nhật hidden để không bị chặn
+      const modelHidden = document.getElementById('nhap-select-model');
+      if (modelHidden) modelHidden.value = query;
+      onSelectModelNhap(query);
+      return;
+    }
+
+    dropdown.innerHTML = matched.slice(0, 12).map((p, idx) => `
+      <div class="suggest-item ${idx === 0 ? 'active' : ''}" onclick="selectModelNhap('${p.model.replace(/'/g, "\\'")}')">
+        <div>
+          <div class="suggest-badge-model text-primary">${p.model}</div>
+          <div class="suggest-sub-text text-truncate" style="max-width: 260px;">${p.ten}</div>
+        </div>
+        <div class="text-end">
+          <span class="badge bg-light text-dark border p-1" style="font-size: 0.68rem;">${p.hang || '--'}</span>
+          <div class="suggest-sub-text mt-1">BH: ${p.defaultBh || 12}th</div>
+        </div>
+      </div>
+    `).join('');
+    dropdown.style.display = 'block';
+  }
+
+  function selectModelNhap(modelCode) {
     const modelHidden = document.getElementById('nhap-select-model');
     const modelInput = document.getElementById('nhap-model-input');
+    const dropdown = document.getElementById('nhap-model-suggest');
     if (modelHidden) modelHidden.value = modelCode;
     if (modelInput) modelInput.value = modelCode;
+    if (dropdown) dropdown.style.display = 'none';
     onSelectModelNhap(modelCode);
+
+    // Chuyển focus sang ô serial nhập tiếp
+    const serialInput = document.getElementById('nhap-serial-input');
+    if (serialInput) serialInput.focus();
+  }
+
+  function selectModelFromDropdown(modelCode) {
+    selectModelNhap(modelCode);
   }
 
   function onInputModelNhap(typedVal) {
-    const val = (typedVal !== undefined ? typedVal : (document.getElementById('nhap-model-input')?.value || '')).trim();
-    if (!val) return;
-    const prod = (typeof INITIAL_PRODUCTS !== 'undefined' ? INITIAL_PRODUCTS : []).find(p => 
-      p.model.toLowerCase() === val.toLowerCase() ||
-      p.ten.toLowerCase() === val.toLowerCase()
-    );
-    if (prod) {
-      document.getElementById('nhap-select-model').value = prod.model;
-      onSelectModelNhap(prod.model);
-    }
+    handleSuggestModelNhap(typedVal);
   }
 
   function onSelectModelNhap(modelParam) {
@@ -135,13 +190,13 @@
       if (modelHidden) modelHidden.value = prod.model;
       infoBox.innerHTML = `
         <div class="fw-semibold text-primary">${prod.ten}</div>
-        <div class="text-muted">Mã: <strong class="font-monospace text-dark">${prod.model}</strong> | Hãng: <strong>${prod.hang || '--'}</strong> | Nhóm: <strong>${prod.nhom}</strong> | BH mặc định: <strong>${prod.defaultBh || 12} tháng</strong></div>
+        <div class="text-muted">Mã: <strong class="font-monospace text-dark">${prod.model}</strong> | Hãng: <strong>${prod.hang || '--'}</strong> | Nhóm: <strong>${prod.nhom || prod.nhomHang}</strong> | BH mặc định: <strong>${prod.defaultBh || 12} tháng</strong></div>
       `;
     } else {
       if (val) {
         if (modelHidden) modelHidden.value = val;
         infoBox.innerHTML = `
-          <div class="text-warning small"><i class="fa-solid fa-triangle-exclamation me-1"></i> Model tùy chỉnh: <strong class="font-monospace">${val}</strong> (Chưa có trong danh mục chính, hệ thống sẽ lưu theo tên này).</div>
+          <div class="text-warning small"><i class="fa-solid fa-triangle-exclamation me-1"></i> Model: <strong class="font-monospace">${val}</strong> (Hệ thống sẽ lưu theo mã này).</div>
         `;
       } else {
         infoBox.innerHTML = '<span class="text-muted small">Chưa chọn Model</span>';
@@ -365,7 +420,11 @@
       }
     }
 
-    const ncc = document.getElementById('nhap-ncc').value;
+    const ncc = (document.getElementById('nhap-ncc')?.value || document.getElementById('nhap-ncc-input')?.value || '').trim();
+    if (!ncc) {
+      Swal.fire('Thiếu thông tin', 'Vui lòng chọn hoặc gõ Nhà cung cấp!', 'warning');
+      return;
+    }
     const kho = document.getElementById('nhap-kho').value;
     const generalLoaiHang = document.getElementById('nhap-loai-hang')?.value || 'Chính Hãng';
     const ngay = formatDateDisplay(document.getElementById('nhap-ngay').value) || formatDateDisplay(getLocalDateStr());
@@ -821,14 +880,10 @@
     };
     INITIAL_SUPPLIERS.push(newSup);
 
-    const select = document.getElementById('nhap-ncc');
-    if (select) {
-      const opt = document.createElement('option');
-      opt.value = code;
-      opt.textContent = `${code} - ${name}`;
-      opt.selected = true;
-      select.appendChild(opt);
-    }
+    const nccHidden = document.getElementById('nhap-ncc');
+    const nccInput = document.getElementById('nhap-ncc-input');
+    if (nccHidden) nccHidden.value = code;
+    if (nccInput) nccInput.value = `${code} - ${name}`;
 
     recordAuditLog('THÊM NCC MỚI', `NCC ${code} (${supId})`, 'None', name, 'Thêm vào danh mục NCC', [], 'Danh mục');
 
@@ -848,4 +903,16 @@
       timer: 1500,
       showConfirmButton: false
     });
+  }
+
+  // Xuất ra toàn cục
+  if (typeof window !== 'undefined') {
+    window.setupNhapKhoForm = setupNhapKhoForm;
+    window.handleSuggestNccNhap = handleSuggestNccNhap;
+    window.selectNccNhap = selectNccNhap;
+    window.handleSuggestModelNhap = handleSuggestModelNhap;
+    window.selectModelNhap = selectModelNhap;
+    window.selectModelFromDropdown = selectModelFromDropdown;
+    window.onSelectModelNhap = onSelectModelNhap;
+    window.onInputModelNhap = onInputModelNhap;
   }

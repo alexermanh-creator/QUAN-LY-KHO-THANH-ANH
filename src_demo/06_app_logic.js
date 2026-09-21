@@ -2424,6 +2424,73 @@
     });
   }
 
+  // ====================================================
+  // BỘ ĐIỀU HƯỚNG BÀN PHÍM VÀ GỢI Ý THÔNG MINH AUTOCOMPLETE
+  // ====================================================
+  function handleSuggestKeydown(event, dropdownId, selectCallback) {
+    const dropdown = document.getElementById(dropdownId);
+    if (!dropdown || dropdown.style.display !== 'block') return;
+
+    const items = dropdown.querySelectorAll('.suggest-item');
+    if (items.length === 0) return;
+
+    let currentIndex = -1;
+    items.forEach((item, idx) => {
+      if (item.classList.contains('active')) currentIndex = idx;
+    });
+
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      currentIndex = (currentIndex + 1) % items.length;
+      items.forEach((item, idx) => {
+        if (idx === currentIndex) {
+          item.classList.add('active');
+          item.scrollIntoView({ block: 'nearest' });
+        } else {
+          item.classList.remove('active');
+        }
+      });
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      currentIndex = (currentIndex - 1 + items.length) % items.length;
+      items.forEach((item, idx) => {
+        if (idx === currentIndex) {
+          item.classList.add('active');
+          item.scrollIntoView({ block: 'nearest' });
+        } else {
+          item.classList.remove('active');
+        }
+      });
+    } else if (event.key === 'Enter') {
+      event.preventDefault();
+      if (currentIndex >= 0 && items[currentIndex]) {
+        items[currentIndex].click();
+      } else if (items.length > 0) {
+        items[0].click();
+      }
+    } else if (event.key === 'Escape') {
+      dropdown.style.display = 'none';
+    }
+  }
+
+  function toggleSuggestAll(dropdownId, searchFn) {
+    const dropdown = document.getElementById(dropdownId);
+    if (dropdown && dropdown.style.display === 'block') {
+      dropdown.style.display = 'none';
+    } else {
+      searchFn('');
+    }
+  }
+
+  // Tự động đóng tất cả dropdown gợi ý khi click ra ngoài
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.smart-suggest-wrap')) {
+      document.querySelectorAll('.smart-suggest-dropdown').forEach(d => {
+        d.style.display = 'none';
+      });
+    }
+  });
+
   // Xuất ra toàn cục
   if (typeof window !== 'undefined') {
     window.openChangePasswordModal = openChangePasswordModal;
@@ -2435,4 +2502,6 @@
     window.handleSystemLogout = handleSystemLogout;
     window.logoutSystem = logoutSystem;
     window.checkAuthOnStartup = checkAuthOnStartup;
+    window.handleSuggestKeydown = handleSuggestKeydown;
+    window.toggleSuggestAll = toggleSuggestAll;
   }

@@ -2359,30 +2359,19 @@
     }
     switchTab('XuatKho');
 
-    // 1. Chọn khách hàng trong dropdown xuat-khach-select
-    const selectEl = document.getElementById('xuat-khach-select');
-    if (selectEl) {
-      let found = false;
-      for (let i = 0; i < selectEl.options.length; i++) {
-        const opt = selectEl.options[i];
-        if (opt.value === ten || opt.textContent.includes(ten)) {
-          selectEl.selectedIndex = i;
-          found = true;
-          break;
-        }
-      }
-      if (!found && ten) {
-        const newOpt = new Option(ten, ten, true, true);
-        selectEl.add(newOpt);
-      }
+    // 1. Điền khách hàng thông qua selectKhachXuat
+    if (typeof selectKhachXuat === 'function') {
+      selectKhachXuat(ten, sdt, diaChi);
+    } else {
+      const selectEl = document.getElementById('xuat-khach-select');
+      if (selectEl) selectEl.value = ten;
+      const inpEl = document.getElementById('xuat-khach-input');
+      if (inpEl) inpEl.value = sdt ? `${ten} (${sdt})` : ten;
+      const sdtEl = document.getElementById('xuat-sdt');
+      if (sdtEl) sdtEl.value = sdt || '';
+      const diaChiEl = document.getElementById('xuat-diachi');
+      if (diaChiEl) diaChiEl.value = diaChi || '';
     }
-
-    // 2. Điền đúng SĐT và Địa chỉ
-    const sdtEl = document.getElementById('xuat-sdt');
-    if (sdtEl) sdtEl.value = sdt || '';
-
-    const diaChiEl = document.getElementById('xuat-diachi');
-    if (diaChiEl) diaChiEl.value = diaChi || '';
 
     Swal.fire({
       icon: 'info',

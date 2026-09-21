@@ -5,18 +5,23 @@
   let CURRENT_DRAFT_XUAT_ITEMS = [];
 
   function setupXuatKhoForm() {
-    const custSelect = document.getElementById('xuat-khach-select');
-    const activeCustomers = INITIAL_CUSTOMERS.filter(c => c.active !== false);
-    if (activeCustomers.length === 0) {
-      custSelect.innerHTML = '<option value="">-- Chưa có Khách hàng (Bấm + Thêm KH) --</option>';
+    const custHidden = document.getElementById('xuat-khach-select');
+    const custInput = document.getElementById('xuat-khach-input');
+    const activeCustomers = (typeof INITIAL_CUSTOMERS !== 'undefined' ? INITIAL_CUSTOMERS : []).filter(c => c.active !== false);
+    
+    if (activeCustomers.length > 0) {
+      if (!custHidden.value || !activeCustomers.some(c => c.ten === custHidden.value)) {
+        const firstCust = activeCustomers[0];
+        custHidden.value = firstCust.ten;
+        if (custInput) custInput.value = `${firstCust.ten} (${firstCust.sdt})`;
+        const sdtEl = document.getElementById('xuat-sdt');
+        const diaChiEl = document.getElementById('xuat-diachi');
+        if (sdtEl) sdtEl.value = firstCust.sdt || '';
+        if (diaChiEl) diaChiEl.value = firstCust.diaChi || '';
+      }
     } else {
-      custSelect.innerHTML = '<option value="">-- Chọn khách hàng --</option>';
-      activeCustomers.forEach(c => {
-        const opt = document.createElement('option');
-        opt.value = c.ten;
-        opt.textContent = `${c.ten} (${c.sdt})`;
-        custSelect.appendChild(opt);
-      });
+      custHidden.value = '';
+      if (custInput) custInput.value = '';
     }
 
     const today = getLocalDateStr();
@@ -25,15 +30,67 @@
     renderDraftXuatTable();
   }
 
+  // Gợi ý thông minh Khách Hàng khi gõ
+  function handleSuggestKhachXuat(query) {
+    const q = (query || '').trim().toLowerCase();
+    const dropdown = document.getElementById('xuat-khach-suggest');
+    const custHidden = document.getElementById('xuat-khach-select');
+    if (custHidden) custHidden.value = (query || '').trim();
+    if (!dropdown) return;
+
+    const customers = (typeof INITIAL_CUSTOMERS !== 'undefined' ? INITIAL_CUSTOMERS : []).filter(c => c.active !== false);
+    const matched = customers.filter(c => {
+      if (!q) return true;
+      return (c.ten && c.ten.toLowerCase().includes(q)) ||
+             (c.sdt && c.sdt.toLowerCase().includes(q)) ||
+             (c.diaChi && c.diaChi.toLowerCase().includes(q)) ||
+             (c.nguoiLienHe && c.nguoiLienHe.toLowerCase().includes(q));
+    });
+
+    if (matched.length === 0) {
+      dropdown.innerHTML = '<div class="p-2 text-muted small text-center">Không tìm thấy khách hàng khớp. Bấm <b>+ Thêm KH</b> để tạo mới.</div>';
+      dropdown.style.display = 'block';
+      return;
+    }
+
+    dropdown.innerHTML = matched.slice(0, 10).map((c, idx) => `
+      <div class="suggest-item ${idx === 0 ? 'active' : ''}" onclick="selectKhachXuat('${c.ten.replace(/'/g, "\\'")}', '${(c.sdt || '').replace(/'/g, "\\'")}', '${(c.diaChi || '').replace(/'/g, "\\'")}')">
+        <div>
+          <div class="fw-bold text-dark" style="font-size: 0.85rem;">${c.ten}</div>
+          <div class="suggest-sub-text text-truncate" style="max-width: 250px;"><i class="fa-solid fa-location-dot me-1 text-secondary"></i>${c.diaChi || 'Chưa có địa chỉ'}</div>
+        </div>
+        <div class="text-end">
+          <span class="text-primary font-monospace fw-semibold small"><i class="fa-solid fa-phone me-1"></i>${c.sdt || '--'}</span>
+        </div>
+      </div>
+    `).join('');
+    dropdown.style.display = 'block';
+  }
+
+  function selectKhachXuat(name, phone, address) {
+    const custHidden = document.getElementById('xuat-khach-select');
+    const custInput = document.getElementById('xuat-khach-input');
+    const sdtEl = document.getElementById('xuat-sdt');
+    const diaChiEl = document.getElementById('xuat-diachi');
+    const dropdown = document.getElementById('xuat-khach-suggest');
+
+    if (custHidden) custHidden.value = name;
+    if (custInput) custInput.value = phone ? `${name} (${phone})` : name;
+    if (sdtEl && phone !== undefined) sdtEl.value = phone;
+    if (diaChiEl && address !== undefined) diaChiEl.value = address;
+    if (dropdown) dropdown.style.display = 'none';
+
+    // Focus sang ô quét serial
+    const serialInput = document.getElementById('xuat-serial-input');
+    if (serialInput) serialInput.focus();
+  }
+
   function onSelectKhachHangXuat() {
-    const custName = document.getElementById('xuat-khach-select').value;
+    // Tương thích ngược
+    const custName = document.getElementById('xuat-khach-select')?.value;
     const cust = INITIAL_CUSTOMERS.find(c => c.ten === custName);
     if (cust) {
-      document.getElementById('xuat-sdt').value = cust.sdt;
-      document.getElementById('xuat-diachi').value = cust.diaChi;
-    } else {
-      document.getElementById('xuat-sdt').value = '';
-      document.getElementById('xuat-diachi').value = '';
+      selectKhachXuat(cust.ten, cust.sdt, cust.diaChi);
     }
   }
 
@@ -74,13 +131,11 @@
     INITIAL_CUSTOMERS.push(newCust);
     recordAuditLog('THÊM KHÁCH HÀNG NHANH', `${name} (${phone})`, 'None', custId, 'Thêm nhanh tại Xuất kho');
 
-    // Cập nhật lại dropdown và tự chọn bản ghi vừa thêm mà không làm mất draft (Yêu cầu 4.3)
-    const custSelect = document.getElementById('xuat-khach-select');
-    const opt = document.createElement('option');
-    opt.value = name;
-    opt.textContent = `${name} (${phone})`;
-    opt.selected = true;
-    custSelect.appendChild(opt);
+    // Cập nhật lại input và dropdown tự chọn bản ghi vừa thêm mà không làm mất draft (Yêu cầu 4.3)
+    const custHidden = document.getElementById('xuat-khach-select');
+    const custInput = document.getElementById('xuat-khach-input');
+    if (custHidden) custHidden.value = name;
+    if (custInput) custInput.value = `${name} (${phone})`;
 
     document.getElementById('xuat-sdt').value = phone;
     document.getElementById('xuat-diachi').value = address;
@@ -101,6 +156,128 @@
       timer: 1500,
       showConfirmButton: false
     });
+  }
+
+  // Gợi ý thông minh Serial / Thiết bị tồn kho khi gõ
+  function handleSuggestSerialXuat(query) {
+    const q = (query || '').trim().toLowerCase();
+    const dropdown = document.getElementById('xuat-serial-suggest');
+    if (!dropdown) return;
+
+    if (!q) {
+      dropdown.style.display = 'none';
+      return;
+    }
+
+    const inStockSerials = (typeof SERIAL_DB !== 'undefined' ? SERIAL_DB : []).filter(s => s.status === 'IN_STOCK');
+    const matched = inStockSerials.filter(s => {
+      return (s.serial && s.serial.toLowerCase().includes(q)) ||
+             (s.internalId && s.internalId.toLowerCase().includes(q)) ||
+             (s.model && s.model.toLowerCase().includes(q)) ||
+             (s.name && s.name.toLowerCase().includes(q)) ||
+             (s.tenHang && s.tenHang.toLowerCase().includes(q)) ||
+             (s.kho && s.kho.toLowerCase().includes(q));
+    });
+
+    if (matched.length === 0) {
+      dropdown.innerHTML = `
+        <div class="p-2 text-muted small text-center">
+          <i class="fa-solid fa-box-open me-1 text-secondary"></i> Không tìm thấy thiết bị nào tồn kho khớp với "${query}".
+        </div>
+      `;
+      dropdown.style.display = 'block';
+      return;
+    }
+
+    dropdown.innerHTML = matched.slice(0, 15).map((s, idx) => `
+      <div class="suggest-item ${idx === 0 ? 'active' : ''}" onclick="addSerialFromSuggest('${s.serial.replace(/'/g, "\\'")}')">
+        <div>
+          <div class="d-flex align-items-center gap-2">
+            <span class="suggest-badge-serial">${s.serial}</span>
+            ${s.internalId && s.internalId !== s.serial ? `<span class="badge bg-light text-dark border p-1" style="font-size: 0.68rem;">${s.internalId}</span>` : ''}
+          </div>
+          <div class="suggest-sub-text text-truncate" style="max-width: 320px;">
+            <strong class="text-dark">${s.model}</strong> • ${s.tenHang || s.name || ''}
+          </div>
+        </div>
+        <div class="text-end">
+          <span class="badge bg-primary-subtle text-primary border border-primary-subtle" style="font-size: 0.7rem;">${s.kho || 'Kho VP'}</span>
+          <div class="suggest-sub-text mt-1">Lưu: ${s.daysInStock || s.soNgayLuuKho || 0} ngày</div>
+        </div>
+      </div>
+    `).join('');
+    dropdown.style.display = 'block';
+  }
+
+  function addSerialFromSuggest(sn) {
+    const inp = document.getElementById('xuat-serial-input');
+    const dropdown = document.getElementById('xuat-serial-suggest');
+    if (dropdown) dropdown.style.display = 'none';
+    if (inp) inp.value = '';
+    addSerialToXuatDraft(sn);
+    if (inp) inp.focus();
+  }
+
+  function handleSerialSuggestKeydown(event) {
+    const dropdown = document.getElementById('xuat-serial-suggest');
+    const inp = document.getElementById('xuat-serial-input');
+    const isDropdownVisible = (dropdown && dropdown.style.display === 'block');
+
+    if (isDropdownVisible) {
+      const items = dropdown.querySelectorAll('.suggest-item');
+      if (items.length > 0) {
+        let currentIndex = -1;
+        items.forEach((item, idx) => {
+          if (item.classList.contains('active')) currentIndex = idx;
+        });
+
+        if (event.key === 'ArrowDown') {
+          event.preventDefault();
+          currentIndex = (currentIndex + 1) % items.length;
+          items.forEach((item, idx) => {
+            if (idx === currentIndex) {
+              item.classList.add('active');
+              item.scrollIntoView({ block: 'nearest' });
+            } else {
+              item.classList.remove('active');
+            }
+          });
+          return;
+        } else if (event.key === 'ArrowUp') {
+          event.preventDefault();
+          currentIndex = (currentIndex - 1 + items.length) % items.length;
+          items.forEach((item, idx) => {
+            if (idx === currentIndex) {
+              item.classList.add('active');
+              item.scrollIntoView({ block: 'nearest' });
+            } else {
+              item.classList.remove('active');
+            }
+          });
+          return;
+        } else if (event.key === 'Enter') {
+          event.preventDefault();
+          if (currentIndex >= 0 && items[currentIndex]) {
+            items[currentIndex].click();
+          } else {
+            items[0].click();
+          }
+          return;
+        } else if (event.key === 'Escape') {
+          dropdown.style.display = 'none';
+          return;
+        }
+      }
+    }
+
+    // Nếu ấn Enter mà dropdown không bật hoặc chưa chọn gợi ý -> Thực hiện thêm mã trực tiếp (dán/quét)
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      if (inp && inp.value.trim()) {
+        if (dropdown) dropdown.style.display = 'none';
+        addSerialToXuatDraft(inp.value.trim());
+      }
+    }
   }
 
   function addSerialToXuatDraft(rawInput) {
@@ -320,7 +497,7 @@
       return;
     }
 
-    const khach = document.getElementById('xuat-khach-select').value;
+    const khach = (document.getElementById('xuat-khach-select')?.value || document.getElementById('xuat-khach-input')?.value || '').trim();
     const sdt = document.getElementById('xuat-sdt').value.trim();
     const diachi = document.getElementById('xuat-diachi').value.trim();
     const kho = (document.getElementById('xuat-kho')?.value) || (CURRENT_DRAFT_XUAT_ITEMS[0]?.kho) || 'Kho Chính';
@@ -381,7 +558,7 @@
   }
 
   function executeConfirmXuatVoucher() {
-    const khach = document.getElementById('xuat-khach-select').value;
+    const khach = (document.getElementById('xuat-khach-select')?.value || document.getElementById('xuat-khach-input')?.value || '').trim();
     const sdt = document.getElementById('xuat-sdt').value.trim();
     const diachi = document.getElementById('xuat-diachi').value.trim();
     const kho = (document.getElementById('xuat-kho')?.value) || (CURRENT_DRAFT_XUAT_ITEMS[0]?.kho) || 'Kho Chính';
@@ -461,7 +638,7 @@
       return;
     }
 
-    const khach = document.getElementById('xuat-khach-select').value || 'Khách hàng dự thảo';
+    const khach = (document.getElementById('xuat-khach-select')?.value || document.getElementById('xuat-khach-input')?.value || 'Khách hàng dự thảo').trim();
     const sdt = document.getElementById('xuat-sdt').value.trim();
     const diachi = document.getElementById('xuat-diachi').value.trim();
     const kho = (document.getElementById('xuat-kho')?.value) || (CURRENT_DRAFT_XUAT_ITEMS[0]?.kho) || 'Kho Chính';
@@ -747,4 +924,18 @@
       timer: 1800,
       showConfirmButton: false
     });
+  }
+
+  // Xuất ra toàn cục
+  if (typeof window !== 'undefined') {
+    window.setupXuatKhoForm = setupXuatKhoForm;
+    window.handleSuggestKhachXuat = handleSuggestKhachXuat;
+    window.selectKhachXuat = selectKhachXuat;
+    window.onSelectKhachHangXuat = onSelectKhachHangXuat;
+    window.handleSuggestSerialXuat = handleSuggestSerialXuat;
+    window.addSerialFromSuggest = addSerialFromSuggest;
+    window.handleSerialSuggestKeydown = handleSerialSuggestKeydown;
+    window.addSerialToXuatDraft = addSerialToXuatDraft;
+    window.openSelectStockModalForXuat = openSelectStockModalForXuat;
+    window.applyBatchStockToXuatDraft = applyBatchStockToXuatDraft;
   }

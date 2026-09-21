@@ -265,6 +265,55 @@
       z-index: 1050;
       display: none;
     }
+    /* SMART SUGGEST DROPDOWN (AUTOCOMPLETE CHO NHẬP / XUẤT KHO) */
+    .smart-suggest-wrap {
+      position: relative;
+    }
+    .smart-suggest-dropdown {
+      position: absolute;
+      top: calc(100% + 3px);
+      left: 0;
+      right: 0;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      box-shadow: 0 12px 28px -4px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.05);
+      max-height: 280px;
+      overflow-y: auto;
+      z-index: 1060;
+      display: none;
+    }
+    .suggest-item {
+      padding: 7px 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #f1f5f9;
+      transition: background 0.15s ease;
+    }
+    .suggest-item:last-child {
+      border-bottom: none;
+    }
+    .suggest-item:hover, .suggest-item.active {
+      background: #eff6ff;
+    }
+    .suggest-badge-model {
+      font-family: var(--bs-font-monospace);
+      font-weight: 700;
+      color: #0f172a;
+      font-size: 0.82rem;
+    }
+    .suggest-badge-serial {
+      font-family: var(--bs-font-monospace);
+      font-weight: 700;
+      color: #2563eb;
+      font-size: 0.82rem;
+    }
+    .suggest-sub-text {
+      font-size: 0.72rem;
+      color: #64748b;
+    }
     .search-group-title {
       background: #f8fafc;
       padding: 5px 12px;
