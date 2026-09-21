@@ -401,8 +401,8 @@
   <!-- ==================================================== -->
   <!-- MODAL: SỬA PHIẾU NHẬP / XUẤT (YÊU CẦU 3) -->
   <!-- ==================================================== -->
-  <div class="modal fade" id="editVoucherModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
+  <div class="modal fade" id="editVoucherModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
       <div class="modal-content">
         <div class="modal-header bg-warning py-2 text-dark">
           <h6 class="modal-title fw-bold" id="edit-voucher-modal-title">
@@ -414,20 +414,50 @@
           <input type="hidden" id="edit-voucher-type">
           <input type="hidden" id="edit-voucher-code">
 
-          <div class="p-2 bg-light rounded border mb-3 small">
-            Mã phiếu: <strong id="edit-voucher-code-label" class="font-monospace text-primary">--</strong> | 
-            Trạng thái: <span class="badge bg-success" id="edit-voucher-status-label">CONFIRMED</span>
+          <div class="p-2 bg-light rounded border mb-3 small d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+              Mã phiếu: <strong id="edit-voucher-code-label" class="font-monospace text-primary">--</strong> | 
+              Trạng thái: <span class="badge bg-success" id="edit-voucher-status-label">CONFIRMED</span>
+            </div>
+            <span class="badge bg-warning text-dark border"><i class="fa-solid fa-shield-halved me-1"></i> Ghi nhận vết kiểm toán Audit Trail</span>
           </div>
 
-          <!-- Các trường cho phép sửa -->
-          <div id="edit-voucher-fields-container" class="row g-3">
+          <!-- Các trường thông tin chung (Header) cho phép sửa full -->
+          <div id="edit-voucher-fields-container" class="row g-2 mb-3">
           </div>
 
-          <hr class="my-3">
+          <!-- Vùng danh sách thiết bị cho phép sửa từng máy -->
+          <div class="border rounded p-2 bg-white mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span class="fw-bold small text-primary">
+                <i class="fa-solid fa-boxes-stacked me-1"></i> Danh Sách Thiết Bị / Serial Thuộc Phiếu
+              </span>
+              <button type="button" class="btn btn-sm btn-outline-success py-1 px-2 fw-semibold" onclick="addNewItemToEditVoucher()">
+                <i class="fa-solid fa-plus me-1"></i> Thêm thiết bị vào phiếu
+              </button>
+            </div>
+            <div class="table-responsive border rounded" style="max-height: 280px; overflow-y: auto;">
+              <table class="table table-sm table-bordered align-middle mb-0" id="edit-voucher-items-table">
+                <thead class="table-light small sticky-top">
+                  <tr id="edit-voucher-table-header">
+                    <th style="width: 40px;" class="text-center">#</th>
+                    <th style="min-width: 160px;">Model</th>
+                    <th style="min-width: 150px;">Serial Hãng (*)</th>
+                    <th style="min-width: 130px;">Mã Nội Bộ</th>
+                    <th style="min-width: 130px;" id="edit-col-spec-1">Loại Hàng / Gói BH</th>
+                    <th style="min-width: 130px;" id="edit-col-spec-2">Kho / Hạn BH</th>
+                    <th style="width: 50px;" class="text-center">Xóa</th>
+                  </tr>
+                </thead>
+                <tbody id="edit-voucher-items-tbody" class="small">
+                </tbody>
+              </table>
+            </div>
+          </div>
 
           <div class="mb-2">
             <label class="form-label small fw-bold text-danger mb-1">Lý do điều chỉnh / sửa phiếu (*) (Bắt buộc ghi nhận Audit)</label>
-            <input type="text" id="edit-voucher-reason" class="form-control form-control-sm" placeholder="Ví dụ: Khách hàng xác nhận cập nhật SĐT và gia hạn BH thêm 12 tháng...">
+            <input type="text" id="edit-voucher-reason" class="form-control form-control-sm" placeholder="Ví dụ: Khách hàng xác nhận cập nhật SĐT, đổi serial do xuất nhầm và gia hạn BH thêm 12 tháng...">
           </div>
 
           <!-- Cảnh báo dependency nếu có -->

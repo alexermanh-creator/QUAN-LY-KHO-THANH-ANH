@@ -553,10 +553,36 @@
   }
 
   /* ==================================================== */
-  /* BỔ SUNG NGHIỆP VỤ SỬA PHIẾU (YÊU CẦU 3) */
+  /* BỔ SUNG NGHIỆP VỤ SỬA PHIẾU FULL TRƯỜNG (YÊU CẦU 3)  */
   /* ==================================================== */
+  let EDIT_VOUCHER_TEMP_ITEMS = [];
+
+  function toInputDateFormat(dateStr) {
+    if (!dateStr) return '';
+    const str = String(dateStr).trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+    const parts = str.split('/');
+    if (parts.length === 3) {
+      const d = parts[0].padStart(2, '0');
+      const m = parts[1].padStart(2, '0');
+      const y = parts[2].length === 4 ? parts[2] : ('20' + parts[2]);
+      return `${y}-${m}-${d}`;
+    }
+    return '';
+  }
+
+  function fromInputDateFormat(dateStr) {
+    if (!dateStr) return '';
+    const str = String(dateStr).trim();
+    if (str.includes('/')) return str;
+    const parts = str.split('-');
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    return str;
+  }
+
   function openEditVoucherModal(type, maPhieu) {
-    // 1. Kiểm tra quyền Voucher.Edit (Yêu cầu 3: Chỉ Quản lý / Admin)
     if (!checkPermission('Voucher.Edit', 'Sửa thông tin phiếu')) return;
 
     const isNhap = type === 'NHAP';
@@ -576,100 +602,289 @@
 
     const container = document.getElementById('edit-voucher-fields-container');
     const alertDep = document.getElementById('edit-voucher-dependency-alert');
-    alertDep.style.display = 'none';
+    if (alertDep) alertDep.style.display = 'none';
+
+    // Clone danh sách items để người dùng sửa đổi trực tiếp
+    EDIT_VOUCHER_TEMP_ITEMS = JSON.parse(JSON.stringify(v.items || []));
+
+    // Cập nhật tiêu đề cột đặc thù trên bảng thiết bị
+    const colSpec1 = document.getElementById('edit-col-spec-1');
+    const colSpec2 = document.getElementById('edit-col-spec-2');
+    if (isNhap) {
+      if (colSpec1) colSpec1.textContent = 'Loại Hàng';
+      if (colSpec2) colSpec2.textContent = 'Kho Nhận';
+    } else {
+      if (colSpec1) colSpec1.textContent = 'Gói Bảo Hành';
+      if (colSpec2) colSpec2.textContent = 'Hạn Bảo Hành';
+    }
 
     if (isNhap) {
-      // Phiếu nhập: Cho sửa Nhà cung cấp, Kho nhận, Ghi chú
+      // 1. PHIẾU NHẬP: FULL TRƯỜNG HEADER (Ngày, NCC, Kho, Loại hàng, Ghi chú)
       let suppOptions = '<option value="">-- Chọn Nhà Cung Cấp --</option>';
+      let hasCurrentNcc = false;
       if (typeof INITIAL_SUPPLIERS !== 'undefined') {
         INITIAL_SUPPLIERS.filter(s => s.active !== false).forEach(s => {
-          const selected = (v.ncc === s.tenTat || v.ncc === s.tenDayDu) ? 'selected' : '';
-          suppOptions += `<option value="${s.tenTat}" ${selected}>${s.tenTat} - ${s.tenDayDu}</option>`;
+          const isSel = (v.ncc === s.tenTat || v.ncc === s.tenDayDu);
+          if (isSel) hasCurrentNcc = true;
+          suppOptions += `<option value="${s.tenTat}" ${isSel ? 'selected' : ''}>${s.tenTat} - ${s.tenDayDu}</option>`;
         });
       }
+      if (v.ncc && !hasCurrentNcc) {
+        suppOptions += `<option value="${v.ncc}" selected>${v.ncc} (Hiện tại)</option>`;
+      }
+
+      let khoOptions = '';
+      const khoList = (typeof INITIAL_WAREHOUSES !== 'undefined' && INITIAL_WAREHOUSES.length > 0)
+        ? INITIAL_WAREHOUSES.map(k => k.tenKho || k.name || k.val)
+        : ['Kho VP', 'Kho Chi Nhánh', 'Kho Cách Ly (Hàng lỗi)'];
+      khoList.forEach(k => {
+        khoOptions += `<option value="${k}" ${v.kho === k ? 'selected' : ''}>${k}</option>`;
+      });
+
+      let loaiOptions = '';
+      const loaiList = (typeof INITIAL_CONDITIONS !== 'undefined' && INITIAL_CONDITIONS.length > 0)
+        ? INITIAL_CONDITIONS.map(c => c.ten || c.name || c.val)
+        : ['Chính Hãng', 'Nhập Khẩu', 'Mới 100%', 'Like New 99%', 'Cũ'];
+      const curLoai = v.loaiHang || (v.items && v.items[0] && v.items[0].loaiHang) || 'Chính Hãng';
+      loaiList.forEach(l => {
+        loaiOptions += `<option value="${l}" ${curLoai === l ? 'selected' : ''}>${l}</option>`;
+      });
 
       container.innerHTML = `
-        <div class="col-12 col-md-6">
+        <div class="col-12 col-md-3">
+          <label class="form-label small fw-semibold text-muted mb-1">Ngày Nhập Kho (*)</label>
+          <input type="date" id="edit-nhap-ngay" class="form-control form-control-sm font-monospace" value="${toInputDateFormat(v.ngay)}">
+        </div>
+        <div class="col-12 col-md-3">
           <label class="form-label small fw-semibold text-muted mb-1">Nhà Cung Cấp (*)</label>
           <select id="edit-nhap-ncc" class="form-select form-select-sm">
             ${suppOptions}
           </select>
         </div>
-        <div class="col-12 col-md-6">
+        <div class="col-12 col-md-3">
           <label class="form-label small fw-semibold text-muted mb-1">Kho Nhận Hàng (*)</label>
           <select id="edit-nhap-kho" class="form-select form-select-sm">
-            <option value="Kho VP" ${v.kho === 'Kho VP' ? 'selected' : ''}>Kho VP</option>
-            <option value="Kho Chi Nhánh" ${v.kho === 'Kho Chi Nhánh' ? 'selected' : ''}>Kho Chi Nhánh</option>
-            <option value="Kho Cách Ly (Hàng lỗi)" ${v.kho === 'Kho Cách Ly (Hàng lỗi)' ? 'selected' : ''}>Kho Cách Ly (Hàng lỗi)</option>
+            ${khoOptions}
+          </select>
+        </div>
+        <div class="col-12 col-md-3">
+          <label class="form-label small fw-semibold text-muted mb-1">Loại Hàng Quy Chuẩn (*)</label>
+          <select id="edit-nhap-loaihang" class="form-select form-select-sm">
+            ${loaiOptions}
           </select>
         </div>
         <div class="col-12">
-          <label class="form-label small fw-semibold text-muted mb-1">Ghi Chú Phiếu</label>
+          <label class="form-label small fw-semibold text-muted mb-1">Ghi Chú Phiếu Nhập</label>
           <input type="text" id="edit-nhap-ghichu" class="form-control form-control-sm" value="${v.ghiChu || ''}">
         </div>
       `;
     } else {
-      // Phiếu xuất: Cho sửa Khách hàng, SĐT khách, Địa chỉ giao, Gói BH riêng của từng Serial (Yêu cầu 3)
+      // 2. PHIẾU XUẤT: FULL TRƯỜNG HEADER (Ngày, Khách, SĐT, Địa chỉ, Kho, Ghi chú)
       let custOptions = '<option value="">-- Chọn Khách Hàng --</option>';
+      let hasCurrentCust = false;
       if (typeof INITIAL_CUSTOMERS !== 'undefined') {
         INITIAL_CUSTOMERS.filter(c => c.active !== false).forEach(c => {
-          const selected = (v.khachHang === c.ten) ? 'selected' : '';
-          custOptions += `<option value="${c.ten}" ${selected}>${c.ten} (${c.sdt})</option>`;
+          const isSel = (v.khachHang === c.ten || v.khachHang === c.name);
+          if (isSel) hasCurrentCust = true;
+          custOptions += `<option value="${c.ten || c.name}" ${isSel ? 'selected' : ''}>${c.ten || c.name} (${c.phone || c.sdt || ''})</option>`;
         });
       }
+      if (v.khachHang && !hasCurrentCust) {
+        custOptions += `<option value="${v.khachHang}" selected>${v.khachHang} (Hiện tại)</option>`;
+      }
 
-      let itemsWarrantyHtml = (v.items || []).map((it, idx) => `
-        <div class="row g-2 align-items-center mb-2 p-2 bg-light rounded border">
-          <div class="col-12 col-md-6">
-            <strong class="text-primary font-monospace">${it.serial}</strong> (${it.model})
-            <span class="badge bg-secondary font-monospace ms-1">${it.internalId}</span>
-          </div>
-          <div class="col-12 col-md-6 d-flex align-items-center gap-2">
-            <span class="small text-muted">Gói BH:</span>
-            <select class="form-select form-select-sm edit-item-warranty-select" data-serial="${it.serial}">
-              <option value="0" ${it.soThangBh === 0 ? 'selected' : ''}>0 tháng</option>
-              <option value="1" ${it.soThangBh === 1 ? 'selected' : ''}>1 tháng</option>
-              <option value="3" ${it.soThangBh === 3 ? 'selected' : ''}>3 tháng</option>
-              <option value="6" ${it.soThangBh === 6 ? 'selected' : ''}>6 tháng</option>
-              <option value="12" ${it.soThangBh === 12 ? 'selected' : ''}>12 tháng</option>
-              <option value="24" ${it.soThangBh === 24 ? 'selected' : ''}>24 tháng</option>
-              <option value="36" ${it.soThangBh === 36 ? 'selected' : ''}>36 tháng</option>
-            </select>
-          </div>
-        </div>
-      `).join('');
+      let khoOptions = '';
+      const khoList = (typeof INITIAL_WAREHOUSES !== 'undefined' && INITIAL_WAREHOUSES.length > 0)
+        ? INITIAL_WAREHOUSES.map(k => k.tenKho || k.name || k.val)
+        : ['Kho VP', 'Kho Chi Nhánh', 'Kho Cách Ly (Hàng lỗi)'];
+      khoList.forEach(k => {
+        khoOptions += `<option value="${k}" ${v.kho === k ? 'selected' : ''}>${k}</option>`;
+      });
 
       container.innerHTML = `
-        <div class="col-12 col-md-4">
+        <div class="col-12 col-md-3">
+          <label class="form-label small fw-semibold text-muted mb-1">Ngày Xuất Kho (*)</label>
+          <input type="date" id="edit-xuat-ngay" class="form-control form-control-sm font-monospace" value="${toInputDateFormat(v.ngay)}">
+        </div>
+        <div class="col-12 col-md-3">
           <label class="form-label small fw-semibold text-muted mb-1">Khách Hàng (*)</label>
           <select id="edit-xuat-khach" class="form-select form-select-sm">
             ${custOptions}
           </select>
         </div>
-        <div class="col-12 col-md-4">
-          <label class="form-label small fw-semibold text-muted mb-1">Số Điện Thoại Khách</label>
+        <div class="col-12 col-md-3">
+          <label class="form-label small fw-semibold text-muted mb-1">Số Điện Thoại (*)</label>
           <input type="text" id="edit-xuat-sdt" class="form-control form-control-sm font-monospace" value="${v.sdtKhach || ''}">
         </div>
-        <div class="col-12 col-md-4">
+        <div class="col-12 col-md-3">
+          <label class="form-label small fw-semibold text-muted mb-1">Kho Xuất Hàng (*)</label>
+          <select id="edit-xuat-kho" class="form-select form-select-sm">
+            ${khoOptions}
+          </select>
+        </div>
+        <div class="col-12 col-md-6">
           <label class="form-label small fw-semibold text-muted mb-1">Địa Chỉ Giao Nhận</label>
           <input type="text" id="edit-xuat-diachi" class="form-control form-control-sm" value="${v.diaChi || ''}">
         </div>
-        <div class="col-12">
-          <label class="form-label small fw-semibold text-muted mb-1">Điều Chỉnh Bảo Hành Từng Serial Của Phiếu</label>
-          ${itemsWarrantyHtml}
-        </div>
-        <div class="col-12">
-          <label class="form-label small fw-semibold text-muted mb-1">Ghi Chú Xuất</label>
+        <div class="col-12 col-md-6">
+          <label class="form-label small fw-semibold text-muted mb-1">Ghi Chú Xuất Kho</label>
           <input type="text" id="edit-xuat-ghichu" class="form-control form-control-sm" value="${v.ghiChu || ''}">
         </div>
       `;
     }
 
+    // Render bảng thiết bị có thể sửa trực tiếp
+    renderEditVoucherItemsTable(type);
+
     const modal = new bootstrap.Modal(document.getElementById('editVoucherModal'));
     modal.show();
   }
 
+  // Render bảng thiết bị trong modal sửa phiếu
+  function renderEditVoucherItemsTable(type) {
+    const tbody = document.getElementById('edit-voucher-items-tbody');
+    if (!tbody) return;
+
+    const isNhap = type === 'NHAP';
+    const loaiList = (typeof INITIAL_CONDITIONS !== 'undefined' && INITIAL_CONDITIONS.length > 0)
+      ? INITIAL_CONDITIONS.map(c => c.ten || c.name || c.val)
+      : ['Chính Hãng', 'Nhập Khẩu', 'Mới 100%', 'Like New 99%', 'Cũ'];
+
+    const khoList = (typeof INITIAL_WAREHOUSES !== 'undefined' && INITIAL_WAREHOUSES.length > 0)
+      ? INITIAL_WAREHOUSES.map(k => k.tenKho || k.name || k.val)
+      : ['Kho VP', 'Kho Chi Nhánh', 'Kho Cách Ly (Hàng lỗi)'];
+
+    if (EDIT_VOUCHER_TEMP_ITEMS.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-3">Chưa có thiết bị nào trong phiếu. Bấm "+ Thêm thiết bị" để bổ sung.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = EDIT_VOUCHER_TEMP_ITEMS.map((it, idx) => {
+      let specCol1Html = '';
+      let specCol2Html = '';
+
+      if (isNhap) {
+        // Cột Loại hàng
+        const curLoai = it.loaiHang || it.condition || 'Chính Hãng';
+        let loaiOpts = loaiList.map(l => `<option value="${l}" ${curLoai === l ? 'selected' : ''}>${l}</option>`).join('');
+        specCol1Html = `<select class="form-select form-select-sm edit-item-loaihang" data-idx="${idx}">${loaiOpts}</select>`;
+
+        // Cột Kho nhận
+        const curKho = it.kho || 'Kho VP';
+        let khoOpts = khoList.map(k => `<option value="${k}" ${curKho === k ? 'selected' : ''}>${k}</option>`).join('');
+        specCol2Html = `<select class="form-select form-select-sm edit-item-kho" data-idx="${idx}">${khoOpts}</select>`;
+      } else {
+        // Cột Gói bảo hành
+        const curBh = (typeof it.soThangBh !== 'undefined') ? it.soThangBh : 12;
+        const bhOpts = [0, 1, 3, 6, 12, 24, 36].map(m => `<option value="${m}" ${curBh === m ? 'selected' : ''}>${m} tháng</option>`).join('');
+        specCol1Html = `<select class="form-select form-select-sm edit-item-warranty-select" data-idx="${idx}" data-serial="${it.serial || ''}">${bhOpts}</select>`;
+
+        // Cột Hạn bảo hành
+        const curExp = toInputDateFormat(it.ngayHetHanBh);
+        specCol2Html = `<input type="date" class="form-control form-control-sm font-monospace edit-item-exp" data-idx="${idx}" value="${curExp}">`;
+      }
+
+      return `
+        <tr>
+          <td class="text-center text-muted fw-bold">${idx + 1}</td>
+          <td>
+            <input type="text" class="form-control form-control-sm edit-item-model" data-idx="${idx}" value="${it.model || ''}" placeholder="Model thiết bị">
+          </td>
+          <td>
+            <input type="text" class="form-control form-control-sm font-monospace fw-bold text-primary edit-item-serial" data-idx="${idx}" value="${it.serial || ''}" placeholder="Serial hãng (*)">
+          </td>
+          <td>
+            <input type="text" class="form-control form-control-sm font-monospace edit-item-internal" data-idx="${idx}" value="${it.internalId || it.maNoiBo || ''}" placeholder="Mã nội bộ">
+          </td>
+          <td>${specCol1Html}</td>
+          <td>${specCol2Html}</td>
+          <td class="text-center">
+            <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2" onclick="removeEditVoucherItem(${idx})" title="Xóa thiết bị khỏi phiếu">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  // Thêm dòng thiết bị mới vào phiếu đang sửa
+  function addNewItemToEditVoucher() {
+    syncEditVoucherDomToTempItems();
+    const type = document.getElementById('edit-voucher-type').value;
+    const isNhap = type === 'NHAP';
+    const defKho = isNhap ? (document.getElementById('edit-nhap-kho')?.value || 'Kho VP') : (document.getElementById('edit-xuat-kho')?.value || 'Kho VP');
+    const defLoai = isNhap ? (document.getElementById('edit-nhap-loaihang')?.value || 'Chính Hãng') : 'Mới 100%';
+
+    EDIT_VOUCHER_TEMP_ITEMS.push({
+      model: 'HP Laser 108A',
+      serial: '',
+      internalId: '',
+      loaiHang: defLoai,
+      kho: defKho,
+      soThangBh: 12,
+      ngayHetHanBh: ''
+    });
+
+    renderEditVoucherItemsTable(type);
+  }
+
+  // Xóa thiết bị khỏi phiếu đang sửa
+  function removeEditVoucherItem(idx) {
+    syncEditVoucherDomToTempItems();
+    const type = document.getElementById('edit-voucher-type').value;
+    if (idx >= 0 && idx < EDIT_VOUCHER_TEMP_ITEMS.length) {
+      EDIT_VOUCHER_TEMP_ITEMS.splice(idx, 1);
+      renderEditVoucherItemsTable(type);
+    }
+  }
+
+  // Đồng bộ các ô input trong bảng vào mảng tạm
+  function syncEditVoucherDomToTempItems() {
+    const type = document.getElementById('edit-voucher-type').value;
+    const isNhap = type === 'NHAP';
+
+    document.querySelectorAll('.edit-item-model').forEach(inp => {
+      const idx = parseInt(inp.getAttribute('data-idx'));
+      if (EDIT_VOUCHER_TEMP_ITEMS[idx]) EDIT_VOUCHER_TEMP_ITEMS[idx].model = inp.value.trim();
+    });
+    document.querySelectorAll('.edit-item-serial').forEach(inp => {
+      const idx = parseInt(inp.getAttribute('data-idx'));
+      if (EDIT_VOUCHER_TEMP_ITEMS[idx]) EDIT_VOUCHER_TEMP_ITEMS[idx].serial = inp.value.trim();
+    });
+    document.querySelectorAll('.edit-item-internal').forEach(inp => {
+      const idx = parseInt(inp.getAttribute('data-idx'));
+      if (EDIT_VOUCHER_TEMP_ITEMS[idx]) {
+        EDIT_VOUCHER_TEMP_ITEMS[idx].internalId = inp.value.trim();
+        EDIT_VOUCHER_TEMP_ITEMS[idx].maNoiBo = inp.value.trim();
+      }
+    });
+
+    if (isNhap) {
+      document.querySelectorAll('.edit-item-loaihang').forEach(inp => {
+        const idx = parseInt(inp.getAttribute('data-idx'));
+        if (EDIT_VOUCHER_TEMP_ITEMS[idx]) EDIT_VOUCHER_TEMP_ITEMS[idx].loaiHang = inp.value;
+      });
+      document.querySelectorAll('.edit-item-kho').forEach(inp => {
+        const idx = parseInt(inp.getAttribute('data-idx'));
+        if (EDIT_VOUCHER_TEMP_ITEMS[idx]) EDIT_VOUCHER_TEMP_ITEMS[idx].kho = inp.value;
+      });
+    } else {
+      document.querySelectorAll('.edit-item-warranty-select').forEach(inp => {
+        const idx = parseInt(inp.getAttribute('data-idx'));
+        if (EDIT_VOUCHER_TEMP_ITEMS[idx]) EDIT_VOUCHER_TEMP_ITEMS[idx].soThangBh = parseInt(inp.value) || 0;
+      });
+      document.querySelectorAll('.edit-item-exp').forEach(inp => {
+        const idx = parseInt(inp.getAttribute('data-idx'));
+        if (EDIT_VOUCHER_TEMP_ITEMS[idx]) EDIT_VOUCHER_TEMP_ITEMS[idx].ngayHetHanBh = fromInputDateFormat(inp.value);
+      });
+    }
+  }
+
+  // Xử lý lưu thay đổi phiếu full trường
   function submitEditVoucher() {
+    syncEditVoucherDomToTempItems();
+
     const type = document.getElementById('edit-voucher-type').value;
     const maPhieu = document.getElementById('edit-voucher-code').value;
     const reason = document.getElementById('edit-voucher-reason').value.trim();
@@ -683,117 +898,166 @@
     const v = isNhap ? VOUCHERS_DB.nhap.find(x => x.maPhieu === maPhieu) : VOUCHERS_DB.xuat.find(x => x.maPhieu === maPhieu);
     if (!v) return;
 
+    // Kiểm tra tính hợp lệ của danh sách thiết bị
+    for (let i = 0; i < EDIT_VOUCHER_TEMP_ITEMS.length; i++) {
+      const it = EDIT_VOUCHER_TEMP_ITEMS[i];
+      if (!it.serial) {
+        Swal.fire('Thiếu Serial', `Thiết bị dòng #${i + 1} chưa có Serial hãng. Vui lòng kiểm tra lại!`, 'warning');
+        return;
+      }
+    }
+
     let changes = [];
     const nowStr = `${formatDateDisplay(getLocalDateStr())} ${new Date().toLocaleTimeString('vi-VN')}`;
 
     if (isNhap) {
-      const newNcc = document.getElementById('edit-nhap-ncc') ? document.getElementById('edit-nhap-ncc').value : '';
-      const newKho = document.getElementById('edit-nhap-kho').value;
-      const newGhiChu = document.getElementById('edit-nhap-ghichu').value.trim();
+      // 1. Thu thập thay đổi Header Nhập
+      const rawDate = document.getElementById('edit-nhap-ngay')?.value;
+      const newNgay = rawDate ? fromInputDateFormat(rawDate) : v.ngay;
+      const newNcc = document.getElementById('edit-nhap-ncc')?.value || v.ncc;
+      const newKho = document.getElementById('edit-nhap-kho')?.value || v.kho;
+      const newLoai = document.getElementById('edit-nhap-loaihang')?.value || v.loaiHang || 'Chính Hãng';
+      const newGhiChu = document.getElementById('edit-nhap-ghichu')?.value.trim() || '';
 
+      if (newNgay && newNgay !== v.ngay) {
+        changes.push({ field: 'Ngày nhập', oldVal: v.ngay, newVal: newNgay });
+        v.ngay = newNgay;
+      }
       if (newNcc && newNcc !== v.ncc) {
         changes.push({ field: 'Nhà cung cấp', oldVal: v.ncc || 'Trống', newVal: newNcc });
         v.ncc = newNcc;
-        (v.items || []).forEach(it => {
-          const s = SERIAL_DB.find(x => x.serial === it.serial);
-          if (s) s.ncc = newNcc;
-        });
       }
-
-      if (newKho !== v.kho) {
+      if (newKho && newKho !== v.kho) {
         changes.push({ field: 'Kho nhận', oldVal: v.kho, newVal: newKho });
         v.kho = newKho;
-        // Cập nhật vị trí các serial
-        (v.items || []).forEach(it => {
-          const s = SERIAL_DB.find(x => x.serial === it.serial);
-          if (s && s.status === 'IN_STOCK') s.kho = newKho;
-        });
+      }
+      if (newLoai && newLoai !== v.loaiHang) {
+        changes.push({ field: 'Loại hàng', oldVal: v.loaiHang || 'Chính Hãng', newVal: newLoai });
+        v.loaiHang = newLoai;
       }
       if (newGhiChu !== (v.ghiChu || '')) {
         changes.push({ field: 'Ghi chú', oldVal: v.ghiChu || 'Trống', newVal: newGhiChu });
         v.ghiChu = newGhiChu;
       }
-    } else {
-      const newKhach = document.getElementById('edit-xuat-khach') ? document.getElementById('edit-xuat-khach').value : '';
-      const newSdt = document.getElementById('edit-xuat-sdt').value.trim();
-      const newDiaChi = document.getElementById('edit-xuat-diachi').value.trim();
-      const newGhiChu = document.getElementById('edit-xuat-ghichu').value.trim();
 
+      // 2. Thu thập thay đổi thiết bị Nhập
+      const oldSerials = (v.items || []).map(x => x.serial).join(', ');
+      const newSerials = EDIT_VOUCHER_TEMP_ITEMS.map(x => x.serial).join(', ');
+      if (oldSerials !== newSerials) {
+        changes.push({ field: 'Danh sách Serial', oldVal: oldSerials || 'Trống', newVal: newSerials });
+      }
+
+      // Cập nhật từng serial sang SERIAL_DB
+      EDIT_VOUCHER_TEMP_ITEMS.forEach((it, idx) => {
+        const oldItem = (v.items && v.items[idx]) ? v.items[idx] : null;
+        let s = SERIAL_DB.find(x => x.serial === it.serial);
+        if (!s && oldItem) {
+          s = SERIAL_DB.find(x => x.serial === oldItem.serial);
+        }
+
+        if (s) {
+          s.serial = it.serial;
+          s.internalId = it.internalId || it.serial;
+          s.maNoiBo = it.internalId || it.serial;
+          s.model = it.model;
+          s.loaiHang = it.loaiHang || newLoai;
+          s.kho = it.kho || newKho;
+          s.ncc = newNcc;
+          s.ngayNhap = newNgay;
+        } else {
+          // Thêm mới vào SERIAL_DB nếu là máy thêm mới
+          SERIAL_DB.unshift({
+            serial: it.serial,
+            internalId: it.internalId || it.serial,
+            maNoiBo: it.internalId || it.serial,
+            model: it.model,
+            tenHang: it.tenHang || it.model,
+            nhom: 'Khác',
+            nhomHang: 'Khác',
+            loaiHang: it.loaiHang || newLoai,
+            kho: it.kho || newKho,
+            ncc: newNcc,
+            ngayNhap: newNgay,
+            maPhieuNhap: maPhieu,
+            maPhieu: maPhieu,
+            status: 'IN_STOCK',
+            ngayXuat: '',
+            maPhieuXuat: '',
+            khachHang: '',
+            sdtKhach: '',
+            soThangBh: 12,
+            ngayHetHanBh: '',
+            ghiChu: newGhiChu,
+            timeline: [{ date: nowStr, user: CURRENT_USER_NAME, action: 'Thêm vào phiếu', note: `Bổ sung qua sửa phiếu ${maPhieu}` }]
+          });
+        }
+      });
+
+      v.items = JSON.parse(JSON.stringify(EDIT_VOUCHER_TEMP_ITEMS));
+    } else {
+      // 1. Thu thập thay đổi Header Xuất
+      const rawDate = document.getElementById('edit-xuat-ngay')?.value;
+      const newNgay = rawDate ? fromInputDateFormat(rawDate) : v.ngay;
+      const newKhach = document.getElementById('edit-xuat-khach')?.value || v.khachHang;
+      const newSdt = document.getElementById('edit-xuat-sdt')?.value.trim() || '';
+      const newKho = document.getElementById('edit-xuat-kho')?.value || v.kho;
+      const newDiaChi = document.getElementById('edit-xuat-diachi')?.value.trim() || '';
+      const newGhiChu = document.getElementById('edit-xuat-ghichu')?.value.trim() || '';
+
+      if (newNgay && newNgay !== v.ngay) {
+        changes.push({ field: 'Ngày xuất', oldVal: v.ngay, newVal: newNgay });
+        v.ngay = newNgay;
+      }
       if (newKhach && newKhach !== v.khachHang) {
         changes.push({ field: 'Khách hàng', oldVal: v.khachHang || 'Trống', newVal: newKhach });
         v.khachHang = newKhach;
-        (v.items || []).forEach(it => {
-          const s = SERIAL_DB.find(x => x.serial === it.serial);
-          if (s) s.khachHang = newKhach;
-        });
       }
-
       if (newSdt !== (v.sdtKhach || '')) {
         changes.push({ field: 'SĐT Khách', oldVal: v.sdtKhach || 'Trống', newVal: newSdt });
         v.sdtKhach = newSdt;
-        // Cập nhật sdt trên các serial
-        (v.items || []).forEach(it => {
-          const s = SERIAL_DB.find(x => x.serial === it.serial);
-          if (s) s.sdtKhach = newSdt;
-        });
       }
-
+      if (newKho && newKho !== v.kho) {
+        changes.push({ field: 'Kho xuất', oldVal: v.kho || 'Trống', newVal: newKho });
+        v.kho = newKho;
+      }
       if (newDiaChi !== (v.diaChi || '')) {
-        changes.push({ field: 'Địa chỉ', oldVal: v.diaChi || 'Trống', newVal: newDiaChi });
+        changes.push({ field: 'Địa chỉ giao', oldVal: v.diaChi || 'Trống', newVal: newDiaChi });
         v.diaChi = newDiaChi;
       }
-
       if (newGhiChu !== (v.ghiChu || '')) {
         changes.push({ field: 'Ghi chú', oldVal: v.ghiChu || 'Trống', newVal: newGhiChu });
         v.ghiChu = newGhiChu;
       }
 
-      // Kiểm tra thay đổi gói bảo hành từng serial
-      const warrantySelects = document.querySelectorAll('.edit-item-warranty-select');
-      warrantySelects.forEach(sel => {
-        const serialCode = sel.getAttribute('data-serial');
-        const newMonths = parseInt(sel.value) || 0;
-        const itemInVoucher = v.items.find(x => x.serial === serialCode);
+      // 2. Thu thập thay đổi thiết bị Xuất
+      EDIT_VOUCHER_TEMP_ITEMS.forEach((it, idx) => {
+        const oldItem = (v.items && v.items[idx]) ? v.items[idx] : null;
+        let s = SERIAL_DB.find(x => x.serial === it.serial);
+        if (!s && oldItem) {
+          s = SERIAL_DB.find(x => x.serial === oldItem.serial);
+        }
 
-        if (itemInVoucher && itemInVoucher.soThangBh !== newMonths) {
-          // KIỂM TRA DEPENDENCY: Nếu serial đang có Warranty Case đang mở (Yêu cầu 3)
-          const activeCase = WARRANTY_CASES_DB.find(c => c.serial.toLowerCase() === serialCode.toLowerCase() && c.status !== 'HOÀN TẤT');
-          if (activeCase && newMonths < itemInVoucher.soThangBh) {
-            Swal.fire({
-              icon: 'error',
-              title: 'Chặn điều chỉnh bảo hành (Vướng Dependency)!',
-              html: `Serial <strong>${serialCode}</strong> đang có Ca bảo hành <strong>${activeCase.caseId}</strong> ở trạng thái <strong>${activeCase.status}</strong>.<br>Không thể rút ngắn thời hạn bảo hành khi ca xử lý chưa hoàn tất!`
-            });
-            throw new Error('Blocked by warranty dependency');
-          }
+        const oldMonths = oldItem ? oldItem.soThangBh : 12;
+        if (it.soThangBh !== oldMonths) {
+          changes.push({ field: `Gói BH (${it.serial})`, oldVal: `${oldMonths} tháng`, newVal: `${it.soThangBh} tháng` });
+        }
 
-          const oldMonths = itemInVoucher.soThangBh;
-          const oldExp = itemInVoucher.ngayHetHanBh;
-          const newExp = calculateExpiryDate(v.ngay, newMonths);
+        // Tự động tính lại hạn BH nếu chưa có
+        if (!it.ngayHetHanBh && typeof calculateExpiryDate === 'function') {
+          it.ngayHetHanBh = calculateExpiryDate(newNgay, it.soThangBh || 12);
+        }
 
-          changes.push({
-            field: `Gói BH (${serialCode})`,
-            oldVal: `${oldMonths} tháng (${oldExp})`,
-            newVal: `${newMonths} tháng (${newExp})`
-          });
-
-          itemInVoucher.soThangBh = newMonths;
-          itemInVoucher.ngayHetHanBh = newExp;
-
-          // Cập nhật sang SERIAL_DB
-          const s = SERIAL_DB.find(x => x.serial === serialCode);
-          if (s) {
-            s.soThangBh = newMonths;
-            s.ngayHetHanBh = newExp;
-            s.timeline.unshift({
-              date: nowStr,
-              user: CURRENT_USER_NAME,
-              action: 'Điều chỉnh bảo hành',
-              note: `Sửa gói bảo hành phiếu ${maPhieu} từ ${oldMonths} tháng thành ${newMonths} tháng. Lý do: ${reason}`
-            });
-          }
+        if (s) {
+          s.serial = it.serial;
+          s.khachHang = newKhach;
+          s.sdtKhach = newSdt;
+          s.ngayXuat = newNgay;
+          s.soThangBh = it.soThangBh;
+          s.ngayHetHanBh = it.ngayHetHanBh;
         }
       });
+
+      v.items = JSON.parse(JSON.stringify(EDIT_VOUCHER_TEMP_ITEMS));
     }
 
     if (changes.length === 0) {
@@ -807,11 +1071,11 @@
     v.history.unshift({
       time: nowStr,
       user: CURRENT_USER_NAME,
-      action: 'SỬA PHIẾU',
-      note: `Điều chỉnh: ${changes.map(c => `${c.field}: ${c.oldVal} -> ${c.newVal}`).join(', ')}. Lý do: ${reason}`
+      action: 'SỬA PHIẾU FULL',
+      note: `Điều chỉnh ${changes.length} trường: ${changes.map(c => `${c.field}: ${c.oldVal} -> ${c.newVal}`).join(', ')}. Lý do: ${reason}`
     });
 
-    // Ghi Audit Log field-level (Yêu cầu 3 & 7.2)
+    // Ghi Audit Log field-level
     recordAuditLog(
       isNhap ? 'SỬA PHIẾU NHẬP' : 'SỬA PHIẾU XUẤT',
       `Phiếu ${maPhieu}`,
@@ -824,9 +1088,33 @@
       maPhieu
     );
 
+    // Lưu bền vững vào localStorage
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('THANH_AN_SERIAL_DB', JSON.stringify(SERIAL_DB.slice(0, 2000)));
+        localStorage.setItem('THANH_AN_VOUCHERS_DB', JSON.stringify(VOUCHERS_DB));
+        localStorage.setItem('THANH_AN_AUDIT_LOGS', JSON.stringify(AUDIT_LOG_DB));
+      }
+    } catch(e) {}
+
+    // Đồng bộ trực tiếp xuống Google Sheet nếu ở môi trường Apps Script
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+      try {
+        google.script.run.saveVoucherEdit({
+          type: type,
+          maPhieu: maPhieu,
+          voucher: v,
+          changes: changes,
+          reason: reason
+        });
+      } catch(e) {}
+    }
+
     const modalEl = document.getElementById('editVoucherModal');
-    const modal = bootstrap.Modal.getInstance(modalEl);
-    if (modal) modal.hide();
+    if (modalEl && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+      const modal = bootstrap.Modal.getInstance(modalEl);
+      if (modal) modal.hide();
+    }
 
     if (typeof markModulesDirty === 'function') {
       markModulesDirty(['Dashboard', 'TonKho', 'LichSu', 'Serial360']);
@@ -836,8 +1124,17 @@
     Swal.fire({
       icon: 'success',
       title: 'Đã cập nhật phiếu!',
-      html: `Phiếu <strong>${maPhieu}</strong> đã được sửa và lưu vết kiểm toán Audit thành công.<br>Số trường thay đổi: <strong>${changes.length} trường</strong>.`
+      html: `Phiếu <strong>${maPhieu}</strong> đã được lưu thay đổi toàn diện.<br>Số trường thay đổi: <strong>${changes.length} trường</strong>.<br>Hệ thống đã lưu lại vết kiểm toán Audit Trail.`
     });
+  }
+
+  // Export functions ra window
+  if (typeof window !== 'undefined') {
+    window.openEditVoucherModal = openEditVoucherModal;
+    window.addNewItemToEditVoucher = addNewItemToEditVoucher;
+    window.removeEditVoucherItem = removeEditVoucherItem;
+    window.renderEditVoucherItemsTable = renderEditVoucherItemsTable;
+    window.submitEditVoucher = submitEditVoucher;
   }
 
   /* ==================================================== */

@@ -4302,15 +4302,18 @@
     if (VOUCHERS_DB && Array.isArray(VOUCHERS_DB.xuat)) {
       VOUCHERS_DB.xuat.forEach(v => {
         const itemDesc = v.items && v.items.length > 0 ? `${v.items[0].model || ''} / SN: ${v.items[0].serial || 'N/A'}` : 'Thiết bị';
+        const vCode = v.maPhieu || v.code || '';
         realActivities.push({
           time: v.createdAt ? (v.createdAt.split(' ')[1] || v.createdAt) : (v.ngay || 'Hôm nay'),
           type: 'Xuất kho',
           typeIcon: 'fa-solid fa-truck text-warning',
-          desc: `Xuất cho KH ${v.khachHang || 'Khách hàng'} (${v.maPhieu || v.code || ''})`,
+          desc: `Xuất cho KH ${v.khachHang || 'Khách hàng'} (${vCode})`,
           modelSerial: itemDesc,
           qty: v.items ? v.items.length : 1,
           user: v.nguoiTao || v.creator || 'Thủ kho',
-          actionTab: 'XuatKho'
+          actionTab: 'LichSu',
+          voucherType: 'XUAT',
+          voucherCode: vCode
         });
       });
     }
@@ -4319,15 +4322,18 @@
     if (VOUCHERS_DB && Array.isArray(VOUCHERS_DB.nhap)) {
       VOUCHERS_DB.nhap.forEach(v => {
         const itemDesc = v.items && v.items.length > 0 ? `${v.items[0].model || ''} / SN: ${v.items[0].serial || 'N/A'}` : 'Thiết bị';
+        const vCode = v.maPhieu || v.code || '';
         realActivities.push({
           time: v.createdAt ? (v.createdAt.split(' ')[1] || v.createdAt) : (v.ngay || 'Hôm nay'),
           type: 'Nhập kho',
           typeIcon: 'fa-solid fa-truck text-success',
-          desc: `Nhập từ NCC ${v.ncc || 'NCC'} (${v.maPhieu || v.code || ''})`,
+          desc: `Nhập từ NCC ${v.ncc || 'NCC'} (${vCode})`,
           modelSerial: itemDesc,
           qty: v.items ? v.items.length : 1,
           user: v.nguoiTao || v.creator || 'Thủ kho',
-          actionTab: 'NhapKho'
+          actionTab: 'LichSu',
+          voucherType: 'NHAP',
+          voucherCode: vCode
         });
       });
     }
@@ -4343,7 +4349,9 @@
           modelSerial: log.serial || 'Hệ thống kho',
           qty: 1,
           user: log.user || 'Thủ kho',
-          actionTab: 'CaiDat'
+          actionTab: 'LichSu',
+          voucherType: 'AUDIT',
+          voucherCode: ''
         });
       });
     }
@@ -4351,15 +4359,18 @@
     // 4. Lấy từ thiết bị thực tế trong SERIAL_DB nếu chưa kịp đồng bộ phiếu
     if (realActivities.length === 0 && Array.isArray(SERIAL_DB) && SERIAL_DB.length > 0) {
       SERIAL_DB.slice(0, 5).forEach(s => {
+        const vCode = s.maPhieu || s.maPhieuNhap || '';
         realActivities.push({
           time: s.ngayNhap || 'Gần đây',
           type: 'Nhập kho',
           typeIcon: 'fa-solid fa-truck text-success',
-          desc: `Nhập từ ${s.ncc || 'NCC'} (${s.maPhieu || s.maPhieuNhap || 'Nhập kho'})`,
+          desc: `Nhập từ ${s.ncc || 'NCC'} (${vCode || 'Nhập kho'})`,
           modelSerial: `${s.model || ''} / SN: ${s.serial || ''}`,
           qty: 1,
           user: 'Thủ kho',
-          actionTab: 'TonKho'
+          actionTab: 'LichSu',
+          voucherType: 'NHAP',
+          voucherCode: vCode
         });
       });
     }
@@ -4377,7 +4388,7 @@
     }
 
     tbody.innerHTML = realActivities.slice(0, 5).map(act => `
-      <tr class="cursor-pointer" onclick="switchTab('${act.actionTab}')">
+      <tr class="cursor-pointer" onclick="goToHistoryVoucher('${act.voucherType || ''}', '${act.voucherCode || ''}')" title="Bấm để mở xem chi tiết trong Lịch Sử & Audit">
         <td class="text-secondary" style="font-size:0.78rem; padding: 5px 10px;">${act.time}</td>
         <td style="padding: 5px 8px;">
           <span class="d-inline-flex align-items-center gap-1 fw-semibold text-dark" style="font-size:0.78rem;">
@@ -4400,6 +4411,30 @@
       </tr>
     `).join('');
   }
+
+  function goToHistoryVoucher(type, code) {
+    if (typeof switchTab === 'function') switchTab('LichSu');
+    setTimeout(() => {
+      if (type === 'XUAT') {
+        if (typeof switchHistoryTab === 'function') switchHistoryTab('XUAT');
+        const inp = document.getElementById('filter-history-xuat-search');
+        if (inp && code) {
+          inp.value = code;
+          if (typeof applyHistoryXuatFilter === 'function') applyHistoryXuatFilter();
+        }
+      } else if (type === 'NHAP') {
+        if (typeof switchHistoryTab === 'function') switchHistoryTab('NHAP');
+        const inp = document.getElementById('filter-history-nhap-search');
+        if (inp && code) {
+          inp.value = code;
+          if (typeof applyHistoryNhapFilter === 'function') applyHistoryNhapFilter();
+        }
+      } else {
+        if (typeof switchHistoryTab === 'function') switchHistoryTab('AUDIT');
+      }
+    }, 150);
+  }
+  if (typeof window !== 'undefined') window.goToHistoryVoucher = goToHistoryVoucher;
 
   // KHỞI ĐỘNG HỆ THỐNG KHI TẢI TRANG
   window.addEventListener('DOMContentLoaded', () => {

@@ -154,24 +154,31 @@ $bridge = @'
     if (Array.isArray(serverData.tonKhoList)) {
       SERIAL_DATA = serverData.tonKhoList.map(t => ({
         serial: t.serial,
+        internalId: t.internalId || t.maNoiBo || t.serial,
+        maNoiBo: t.internalId || t.maNoiBo || t.serial,
         model: t.model,
         name: t.tenHang,
         tenHang: t.tenHang,
+        nhom: t.nhom || t.nhomHang || 'Khác',
+        nhomHang: t.nhomHang || t.nhom || 'Khác',
         category: t.nhomHang || 'Khác',
-        nhomHang: t.nhomHang || 'Khác',
         warehouse: t.kho || 'Kho VP',
         kho: t.kho || 'Kho VP',
         supplier: t.ncc || 'Chính hãng',
         ncc: t.ncc || 'Chính hãng',
         importDate: t.ngayNhap,
         ngayNhap: t.ngayNhap,
-        importVoucher: t.maPhieu,
-        maPhieu: t.maPhieu,
+        importVoucher: t.maPhieuNhap || t.maPhieu,
+        maPhieu: t.maPhieu || t.maPhieuNhap,
+        maPhieuNhap: t.maPhieuNhap || t.maPhieu,
         status: 'IN_STOCK',
         daysInStock: t.soNgayLuuKho || 0,
         soNgayLuuKho: t.soNgayLuuKho || 0,
         condition: t.loaiHang || 'Mới 100%',
-        warrantyMonths: 12
+        loaiHang: t.loaiHang || 'Mới 100%',
+        soThangBh: t.soThangBh || t.warrantyMonths || 12,
+        warrantyMonths: t.warrantyMonths || t.soThangBh || 12,
+        ngayHetHanBh: t.ngayHetHanBh || ''
       }));
       if (typeof SERIAL_DB !== 'undefined') SERIAL_DB = SERIAL_DATA;
     }

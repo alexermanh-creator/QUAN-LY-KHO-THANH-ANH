@@ -125,14 +125,21 @@ function getInitAppData(options) {
         tonKhoList.push({
           rowId: idx + 2,
           serial: sn,
+          internalId: String(r[17] || r[0] || ''),
+          maNoiBo: String(r[17] || r[0] || ''),
           model: modelVal,
           tenHang: String(r[2] || ''),
-          nhomHang: String(r[3] || ''),
+          nhom: String(r[3] || 'Khác'),
+          nhomHang: String(r[3] || 'Khác'),
           loaiHang: String(r[4] || ''),
           kho: String(r[5] || ''),
           ncc: String(r[6] || ''),
           ngayNhap: r[7] instanceof Date ? Utilities.formatDate(r[7], "GMT+7", "dd/MM/yyyy") : String(r[7] || ''),
           maPhieu: String(r[8] || ''),
+          maPhieuNhap: String(r[8] || ''),
+          soThangBh: parseInt(String(r[14] || '').replace(/\D/g, '')) || 12,
+          warrantyMonths: parseInt(String(r[14] || '').replace(/\D/g, '')) || 12,
+          ngayHetHanBh: r[15] instanceof Date ? Utilities.formatDate(r[15], "GMT+7", "dd/MM/yyyy") : String(r[15] || ''),
           ghiChu: String(r[16] || '')
         });
       } else if (statusVal === "Đã xuất" || statusVal === "SOLD") {
@@ -1124,6 +1131,87 @@ function saveClientAuditLog(logItem) {
     return { success: true };
   } catch(e) {
     return { success: false, error: e.message };
+  }
+}
+
+/**
+ * Lưu chỉnh sửa thông tin phiếu (Manager/Admin) xuống Google Sheets
+ */
+function saveVoucherEdit(payload) {
+  try {
+    if (!payload || !payload.maPhieu) return { success: false, error: 'Thiếu mã phiếu' };
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const type = payload.type; // 'NHAP' hoặc 'XUAT'
+    const maPhieu = payload.maPhieu;
+    const v = payload.voucher || {};
+    const reason = payload.reason || 'Chỉnh sửa phiếu';
+
+    // 1. Cập nhật sheet lịch sử tương ứng
+    const sheetName = (type === 'NHAP') ? "LICH_SU_NHAP" : "LICH_SU_XUAT";
+    const historySheet = ss.getSheetByName(sheetName);
+    if (historySheet && historySheet.getLastRow() > 1) {
+      const data = historySheet.getRange(2, 1, historySheet.getLastRow() - 1, 8).getValues();
+      for (let i = 0; i < data.length; i++) {
+        if (String(data[i][0]).trim() === maPhieu) {
+          const row = i + 2;
+          if (v.ngay) historySheet.getRange(row, 2).setValue(v.ngay);
+          if (type === 'NHAP') {
+            if (v.ncc) historySheet.getRange(row, 3).setValue(v.ncc);
+            if (v.kho) historySheet.getRange(row, 4).setValue(v.kho);
+          } else {
+            if (v.khachHang) historySheet.getRange(row, 3).setValue(v.khachHang);
+            if (v.sdtKhach) historySheet.getRange(row, 4).setValue(formatPhoneNumberBackend(v.sdtKhach));
+            if (v.kho) historySheet.getRange(row, 5).setValue(v.kho);
+          }
+          if (v.ghiChu) historySheet.getRange(row, 7).setValue(v.ghiChu);
+          break;
+        }
+      }
+    }
+
+    // 2. Cập nhật SERIAL_MASTER nếu có danh sách items
+    const tbSheet = ss.getSheetByName("SERIAL_MASTER") || ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
+    if (tbSheet && tbSheet.getLastRow() > 1 && v.items && v.items.length > 0) {
+      const numRows = tbSheet.getLastRow() - 1;
+      const serialData = tbSheet.getRange(2, 1, numRows, 18).getValues();
+      v.items.forEach(it => {
+        for (let i = 0; i < serialData.length; i++) {
+          const sn = String(serialData[i][0]).trim();
+          if (sn === it.serial || (it.oldSerial && sn === it.oldSerial)) {
+            const row = i + 2;
+            tbSheet.getRange(row, 1).setValue(it.serial);
+            if (it.model) tbSheet.getRange(row, 2).setValue(it.model);
+            if (it.loaiHang) tbSheet.getRange(row, 5).setValue(it.loaiHang);
+            if (it.kho) tbSheet.getRange(row, 6).setValue(it.kho);
+            if (type === 'NHAP') {
+              if (v.ncc) tbSheet.getRange(row, 7).setValue(v.ncc);
+              if (v.ngay) tbSheet.getRange(row, 8).setValue(v.ngay);
+            } else {
+              if (v.ngay) tbSheet.getRange(row, 11).setValue(v.ngay);
+              if (v.khachHang) tbSheet.getRange(row, 13).setValue(v.khachHang);
+              if (v.sdtKhach) tbSheet.getRange(row, 14).setValue(formatPhoneNumberBackend(v.sdtKhach));
+              if (it.soThangBh !== undefined) tbSheet.getRange(row, 15).setValue(it.soThangBh + ' tháng');
+              if (it.ngayHetHanBh) tbSheet.getRange(row, 16).setValue(it.ngayHetHanBh);
+            }
+            if (it.internalId) tbSheet.getRange(row, 18).setValue(it.internalId);
+            break;
+          }
+        }
+      });
+    }
+
+    // 3. Ghi vết kiểm toán vào sheet NHAT_KY_HOAT_DONG
+    saveClientAuditLog({
+      time: Utilities.formatDate(new Date(), "GMT+7", "dd/MM/yyyy HH:mm:ss"),
+      user: 'Quản Lý',
+      action: 'SỬA PHIẾU ' + type,
+      target: maPhieu,
+      detail: `Điều chỉnh thông tin phiếu. Lý do: ${reason}`
+    });
+
+    return { success: true };
+  } catch(err) {
+    return { success: false, error: err.message };
   }
 }
 

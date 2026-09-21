@@ -433,11 +433,11 @@
               </div>
               <div class="mb-2">
                 <small class="text-muted d-block fw-semibold">MÃ NỘI BỘ THÀNH AN (ASSET ID):</small>
-                <span class="badge bg-secondary font-monospace fs-6">${target.internalId}</span>
+                <span class="badge bg-secondary font-monospace fs-6">${target.internalId || target.maNoiBo || target.serial || '--'}</span>
               </div>
               <div>
                 <small class="text-muted d-block fw-semibold">TÊN SẢN PHẨM & NHÓM HÀNG:</small>
-                <span>${target.tenHang}</span> (<span class="text-muted">${target.nhom}</span>)
+                <span>${target.tenHang || target.name || target.model || 'Thiết bị'}</span> (<span class="text-muted">${target.nhom || target.nhomHang || target.category || 'Khác'}</span>)
               </div>
             </div>
 
@@ -445,11 +445,11 @@
               <div class="row g-2">
                 <div class="col-6">
                   <small class="text-muted d-block fw-semibold">NHÀ CUNG CẤP:</small>
-                  <strong>${target.ncc}</strong>
+                  <strong>${target.ncc || target.supplier || 'N/A'}</strong>
                 </div>
                 <div class="col-6">
                   <small class="text-muted d-block fw-semibold">PHIẾU & NGÀY NHẬP:</small>
-                  <span>${target.maPhieuNhap} (${target.ngayNhap})</span>
+                  <span>${target.maPhieuNhap || target.maPhieu || target.importVoucher || '--'} (${target.ngayNhap || target.importDate || '--'})</span>
                 </div>
                 <div class="col-6">
                   <small class="text-muted d-block fw-semibold">KHÁCH HÀNG SỞ HỮU:</small>
@@ -461,11 +461,11 @@
                 </div>
                 <div class="col-6">
                   <small class="text-muted d-block fw-semibold">PHIẾU & NGÀY XUẤT:</small>
-                  <span>${target.maPhieuXuat ? `${target.maPhieuXuat} (${target.ngayXuat})` : '<span class="text-muted">--</span>'}</span>
+                  <span>${target.maPhieuXuat ? `${target.maPhieuXuat} (${target.ngayXuat || '--'})` : '<span class="text-muted">--</span>'}</span>
                 </div>
                 <div class="col-6">
                   <small class="text-muted d-block fw-semibold">HẠN BẢO HÀNH:</small>
-                  <span class="badge bg-warning text-dark font-monospace">${target.ngayHetHanBh || `${target.soThangBh} tháng`}</span>
+                  <span class="badge bg-warning text-dark font-monospace">${target.ngayHetHanBh || `${target.soThangBh || target.warrantyMonths || 12} tháng`}</span>
                 </div>
               </div>
             </div>
