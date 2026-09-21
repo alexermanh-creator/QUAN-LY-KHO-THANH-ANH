@@ -1178,6 +1178,7 @@
       newVal: newVal || 'Updated',
       reason: reason || 'Thao tác nghiệp vụ',
       changes: changesArray || [] // [{ field: 'SĐT', oldVal: '...', newVal: '...' }]
+    };
     AUDIT_LOG_DB.unshift(logItem);
     if (AUDIT_LOG_DB.length > 200) AUDIT_LOG_DB.length = 200;
     try {
