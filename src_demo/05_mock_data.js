@@ -85,15 +85,6 @@
   },
   {
     "brandId": "BR_08",
-    "maHang": "DTECH",
-    "tenHang": "Dtech",
-    "name": "Dtech",
-    "code": "DTECH",
-    "ghiChu": "Hãng sản xuất Dtech",
-    "active": true
-  },
-  {
-    "brandId": "BR_09",
     "maHang": "HP",
     "tenHang": "HP",
     "name": "HP",
@@ -102,7 +93,7 @@
     "active": true
   },
   {
-    "brandId": "BR_10",
+    "brandId": "BR_09",
     "maHang": "HALLOYA",
     "tenHang": "Halloya",
     "name": "Halloya",
@@ -111,7 +102,7 @@
     "active": true
   },
   {
-    "brandId": "BR_11",
+    "brandId": "BR_10",
     "maHang": "HIKSEMI",
     "tenHang": "Hiksemi",
     "name": "Hiksemi",
@@ -120,12 +111,21 @@
     "active": true
   },
   {
-    "brandId": "BR_12",
+    "brandId": "BR_11",
     "maHang": "INTEL",
     "tenHang": "Intel",
     "name": "Intel",
     "code": "INTEL",
     "ghiChu": "Hãng sản xuất Intel",
+    "active": true
+  },
+  {
+    "brandId": "BR_12",
+    "maHang": "JASONZ",
+    "tenHang": "Jasonz",
+    "name": "Jasonz",
+    "code": "JASONZ",
+    "ghiChu": "Hãng sản xuất Jasonz",
     "active": true
   },
   {
@@ -884,13 +884,13 @@
     "ghiChu": "Chuẩn hóa từ CSDL cũ Thành An ERP"
   },
   {
-    "productId": "Dtech HDMI Extender 150M",
-    "model": "Dtech HDMI Extender 150M",
+    "productId": "Jasonz T-G183",
+    "model": "Jasonz T-G183",
     "rawModel": "Bộ mở rộng HDMI qua dây LAN",
-    "ten": "Bộ mở rộng tín hiệu HDMI Extender 150M qua cáp mạng LAN CAT5e/CAT6 kèm điều khiển chuột phím USB",
-    "name": "Bộ mở rộng tín hiệu HDMI Extender 150M qua cáp mạng LAN CAT5e/CAT6 kèm điều khiển chuột phím USB",
-    "brand": "Dtech",
-    "hang": "Dtech",
+    "ten": "Bộ mở rộng tín hiệu HDMI qua LAN 150m có KVM (Jasonz T-G183)",
+    "name": "Bộ mở rộng tín hiệu HDMI qua LAN 150m có KVM (Jasonz T-G183)",
+    "brand": "Jasonz",
+    "hang": "Jasonz",
     "category": "Thiết Bị Mạng & Kết Nối",
     "nhom": "Thiết Bị Mạng & Kết Nối",
     "nhomHang": "Thiết Bị Mạng & Kết Nối",
@@ -3897,8 +3897,8 @@
   {
     "serial": "123456",
     "internalId": "TA-084",
-    "model": "Dtech HDMI Extender 150M",
-    "tenHang": "Bộ mở rộng tín hiệu HDMI Extender 150M qua cáp mạng LAN CAT5e/CAT6 kèm điều khiển chuột phím USB",
+    "model": "Jasonz T-G183",
+    "tenHang": "Bộ mở rộng tín hiệu HDMI qua LAN 150m có KVM (Jasonz T-G183)",
     "nhomHang": "Thiết Bị Mạng & Kết Nối",
     "loaiHang": "Chính Hãng",
     "kho": "Kho VP",
@@ -5232,7 +5232,7 @@
       "updatedBy": "",
       "ncc": "EASY",
       "kho": "Kho VP",
-      "model": "Dtech HDMI Extender 150M (1)",
+      "model": "Jasonz T-G183 (1)",
       "soLuong": 1,
       "status": "CONFIRMED",
       "nguoiTao": "Khổng Mạnh Cường",
@@ -5241,7 +5241,7 @@
         {
           "serial": "123456",
           "internalId": "TA-084",
-          "model": "Dtech HDMI Extender 150M",
+          "model": "Jasonz T-G183",
           "loaiHang": "Chính Hãng"
         }
       ],
@@ -5808,7 +5808,7 @@
       "ghiChu": "Phiếu xuất kho bán hàng",
       "items": [
         {
-          "model": "Dtech HDMI Extender 150M",
+          "model": "Jasonz T-G183",
           "serial": "123456",
           "internalId": "TA-084",
           "soThangBh": 12,

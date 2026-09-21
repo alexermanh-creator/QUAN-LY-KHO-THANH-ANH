@@ -95,13 +95,14 @@
       </div>
 
       <!-- GLOBAL SEARCH (THANH TÌM KIẾM SPOTLIGHT NỔI BẬT) -->
-      <div class="topbar-search-container">
-        <i class="fa-solid fa-magnifying-glass topbar-search-icon"></i>
+      <div class="topbar-search-container" onclick="focusGlobalSearch(event)">
+        <i class="fa-solid fa-magnifying-glass topbar-search-icon" onclick="focusGlobalSearch(event)" title="Nhấp để tìm kiếm toàn diện"></i>
         <input type="text" id="global-search-input" class="topbar-search-input" 
-               placeholder="Tìm Serial, Mã nội bộ, Model, KH, SĐT, Số phiếu..." 
-               oninput="handleGlobalSearch(this.value)" onfocus="handleGlobalSearch(this.value)" autocomplete="off">
-        <kbd class="spotlight-kbd-badge">Ctrl K</kbd>
-        <button class="btn btn-sm btn-cam topbar-search-cam-btn" onclick="openScannerModal('GLOBAL_SEARCH')" title="Quét Camera">
+               placeholder="Tìm Serial, Mã nội bộ, Model, KH, SĐT, NCC, Số phiếu..." 
+               oninput="handleGlobalSearch(this.value)" onfocus="handleGlobalSearch(this.value)" 
+               onkeydown="handleGlobalSearchKeydown(event)" autocomplete="off">
+        <kbd class="spotlight-kbd-badge" onclick="focusGlobalSearch(event)" title="Phím tắt: Ctrl + K">Ctrl K</kbd>
+        <button class="btn btn-sm btn-cam topbar-search-cam-btn" onclick="event.stopPropagation(); openScannerModal('GLOBAL_SEARCH');" title="Quét Camera">
           <i class="fa-solid fa-camera"></i> Scan
         </button>
         

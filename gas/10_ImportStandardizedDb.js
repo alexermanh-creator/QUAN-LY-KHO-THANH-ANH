@@ -5,7 +5,7 @@
 
 const STANDARDIZED_MIGRATION_PAYLOAD = {
   "metadata": {
-    "generatedAt": "2026-09-21T13:59:40.921Z",
+    "generatedAt": "2026-09-21T14:23:01.971Z",
     "sourceFile": "THÀNH AN ERP - DATABASE (1).xlsx",
     "totalProducts": 33,
     "totalSuppliers": 18,
@@ -562,13 +562,13 @@ const STANDARDIZED_MIGRATION_PAYLOAD = {
       "ghiChu": "Chuẩn hóa từ CSDL cũ Thành An ERP"
     },
     {
-      "productId": "Dtech HDMI Extender 150M",
-      "model": "Dtech HDMI Extender 150M",
+      "productId": "Jasonz T-G183",
+      "model": "Jasonz T-G183",
       "rawModel": "Bộ mở rộng HDMI qua dây LAN",
-      "ten": "Bộ mở rộng tín hiệu HDMI Extender 150M qua cáp mạng LAN CAT5e/CAT6 kèm điều khiển chuột phím USB",
-      "name": "Bộ mở rộng tín hiệu HDMI Extender 150M qua cáp mạng LAN CAT5e/CAT6 kèm điều khiển chuột phím USB",
-      "brand": "Dtech",
-      "hang": "Dtech",
+      "ten": "Bộ mở rộng tín hiệu HDMI qua LAN 150m có KVM (Jasonz T-G183)",
+      "name": "Bộ mở rộng tín hiệu HDMI qua LAN 150m có KVM (Jasonz T-G183)",
+      "brand": "Jasonz",
+      "hang": "Jasonz",
       "category": "Thiết Bị Mạng & Kết Nối",
       "nhom": "Thiết Bị Mạng & Kết Nối",
       "nhomHang": "Thiết Bị Mạng & Kết Nối",
@@ -3435,8 +3435,8 @@ const STANDARDIZED_MIGRATION_PAYLOAD = {
     {
       "serial": "123456",
       "internalId": "TA-084",
-      "model": "Dtech HDMI Extender 150M",
-      "tenHang": "Bộ mở rộng tín hiệu HDMI Extender 150M qua cáp mạng LAN CAT5e/CAT6 kèm điều khiển chuột phím USB",
+      "model": "Jasonz T-G183",
+      "tenHang": "Bộ mở rộng tín hiệu HDMI qua LAN 150m có KVM (Jasonz T-G183)",
       "nhomHang": "Thiết Bị Mạng & Kết Nối",
       "loaiHang": "Chính Hãng",
       "kho": "Kho VP",
@@ -4757,7 +4757,7 @@ const STANDARDIZED_MIGRATION_PAYLOAD = {
         "updatedBy": "",
         "ncc": "EASY",
         "kho": "Kho VP",
-        "model": "Dtech HDMI Extender 150M (1)",
+        "model": "Jasonz T-G183 (1)",
         "soLuong": 1,
         "status": "CONFIRMED",
         "nguoiTao": "Khổng Mạnh Cường",
@@ -4766,7 +4766,7 @@ const STANDARDIZED_MIGRATION_PAYLOAD = {
           {
             "serial": "123456",
             "internalId": "TA-084",
-            "model": "Dtech HDMI Extender 150M",
+            "model": "Jasonz T-G183",
             "loaiHang": "Chính Hãng"
           }
         ],
@@ -5333,7 +5333,7 @@ const STANDARDIZED_MIGRATION_PAYLOAD = {
         "ghiChu": "Phiếu xuất kho bán hàng",
         "items": [
           {
-            "model": "Dtech HDMI Extender 150M",
+            "model": "Jasonz T-G183",
             "serial": "123456",
             "internalId": "TA-084",
             "soThangBh": 12,
@@ -5918,7 +5918,7 @@ function executePopulateStandardizedDatabaseToGoogleSheets(password) {
     const maxQcLen = Math.max(p.products.length, 15);
     const qcRows = [];
     const catList = ["Bo Mạch Chủ (Mainboard)","Bộ Nhớ Trong (RAM)","Bộ Vi Xử Lý (CPU)","Card Màn Hình (VGA)","Chuột, Bàn Phím","Laptop","Màn Hình","Máy In","Máy Scan","Mực In","Nguồn Máy Tính","Thiết Bị Mạng & Kết Nối","Vỏ Máy Tính","Ổ Cứng (HDD)","Ổ Cứng (SSD)"];
-    const brandList = ["AIGO","Brother","CUSU","Canon","DAREU","Dahua","Darkflash","Dtech","HP","Halloya","Hiksemi","Intel","Kingston","Lenovo","MSI","Seagate","TJ INK","Western Digital"];
+    const brandList = ["AIGO","Brother","CUSU","Canon","DAREU","Dahua","Darkflash","HP","Halloya","Hiksemi","Intel","Jasonz","Kingston","Lenovo","MSI","Seagate","TJ INK","Western Digital"];
     const khoList = ["Kho VP", "Kho Nhà"];
     const loaiList = ["Chính Hãng", "Nhập Khẩu", "Trả Bảo Hành"];
     const bhList = ["36 tháng", "24 tháng", "12 tháng", "6 tháng", "3 tháng", "0 tháng (Không BH)"];

@@ -1718,8 +1718,52 @@
   });
 
   /* ==================================================== */
-  /* 5. TÌM KIẾM TOÀN HỆ THỐNG NÂNG CẤP (YÊU CẦU 8) */
   /* ==================================================== */
+  /* 5. TÌM KIẾM TOÀN HỆ THỐNG NÂNG CẤP TOÀN DIỆN */
+  /* ==================================================== */
+  function focusGlobalSearch(event) {
+    if (event && event.stopPropagation) event.stopPropagation();
+    const input = document.getElementById('global-search-input');
+    if (input) {
+      input.focus();
+      input.select();
+      if (input.value && input.value.trim()) {
+        handleGlobalSearch(input.value);
+      }
+    }
+  }
+
+  function handleGlobalSearchKeydown(event) {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      const kw = (event.target.value || '').trim();
+      if (!kw) return;
+      const dropdown = document.getElementById('global-search-dropdown');
+      if (dropdown && dropdown.style.display !== 'none') {
+        const firstItem = dropdown.querySelector('.search-result-item');
+        if (firstItem) {
+          firstItem.click();
+          return;
+        }
+      }
+      viewAllSearchResultsInStock(kw);
+    } else if (event.key === 'Escape') {
+      const dropdown = document.getElementById('global-search-dropdown');
+      if (dropdown) dropdown.style.display = 'none';
+    }
+  }
+
+  function viewAllSearchResultsInStock(kw) {
+    const dropdown = document.getElementById('global-search-dropdown');
+    if (dropdown) dropdown.style.display = 'none';
+    switchTab('TonKho');
+    const filterInput = document.getElementById('filter-stock-keyword');
+    if (filterInput) {
+      filterInput.value = kw;
+      if (typeof applyStockFilter === 'function') applyStockFilter();
+    }
+  }
+
   function handleGlobalSearch(keyword) {
     const kw = (keyword || '').trim().toLowerCase();
     const dropdown = document.getElementById('global-search-dropdown');
@@ -1729,110 +1773,188 @@
     }
 
     let html = '';
+    let totalFound = 0;
 
-    // 8.1 THIẾT BỊ / SERIAL: Hiển thị đầy đủ thông tin + nút mở Serial 360° (Yêu cầu 8.1)
-    const matchedSerials = SERIAL_DB.filter(s => 
-      s.serial.toLowerCase().includes(kw) || 
-      (s.internalId && s.internalId.toLowerCase().includes(kw))
+    // Helper kiểm tra chuỗi an toàn
+    const matchStr = (val) => val ? String(val).toLowerCase().includes(kw) : false;
+
+    // 8.1 THIẾT BỊ / SERIAL: Tìm đủ mọi thông tin (Serial, Nội bộ, Model, Tên, Hãng, KH, SĐT, NCC, Kho, Phiếu, Ghi chú)
+    const matchedSerials = (typeof SERIAL_DB !== 'undefined' ? SERIAL_DB : []).filter(s => 
+      matchStr(s.serial) || 
+      matchStr(s.internalId) || 
+      matchStr(s.maNoiBo) ||
+      matchStr(s.model) ||
+      matchStr(s.name) ||
+      matchStr(s.tenHang) ||
+      matchStr(s.hang) ||
+      matchStr(s.brand) ||
+      matchStr(s.nhom) ||
+      matchStr(s.nhomHang) ||
+      matchStr(s.category) ||
+      matchStr(s.kho) ||
+      matchStr(s.warehouse) ||
+      matchStr(s.khachHang) ||
+      matchStr(s.sdtKhach) ||
+      matchStr(s.phone) ||
+      matchStr(s.ncc) ||
+      matchStr(s.supplier) ||
+      matchStr(s.maPhieuNhap) ||
+      matchStr(s.maPhieuXuat) ||
+      matchStr(s.maPhieu) ||
+      matchStr(s.ghiChu)
     );
+
     if (matchedSerials.length > 0) {
-      html += `<div class="search-group-title"><i class="fa-solid fa-barcode me-1"></i> THIẾT BỊ / SERIAL (${matchedSerials.length})</div>`;
+      totalFound += matchedSerials.length;
+      html += `<div class="search-group-title"><i class="fa-solid fa-barcode me-1 text-primary"></i> THIẾT BỊ / SERIAL (${matchedSerials.length})</div>`;
       matchedSerials.slice(0, 5).forEach(s => {
-        const activeCase = WARRANTY_CASES_DB.find(c => c.serial.toLowerCase() === s.serial.toLowerCase() && c.status !== 'HOÀN TẤT');
+        const activeCase = (typeof WARRANTY_CASES_DB !== 'undefined' ? WARRANTY_CASES_DB : []).find(c => 
+          c.serial && s.serial && c.serial.toLowerCase() === s.serial.toLowerCase() && c.status !== 'HOÀN TẤT'
+        );
         html += `
           <div class="search-result-item" onclick="openSerialFromSearch('${s.serial}')">
             <div>
               <div class="title">
-                <span class="text-primary font-monospace">${s.serial}</span> 
-                <span class="badge bg-secondary font-monospace ms-1">${s.internalId}</span>
+                <span class="text-primary font-monospace fw-bold">${s.serial}</span> 
+                <span class="badge bg-secondary font-monospace ms-1">${s.internalId || s.maNoiBo || ''}</span>
               </div>
-              <div class="subtitle text-dark">${s.model} - ${s.tenHang || ''}</div>
+              <div class="subtitle text-dark fw-medium">${s.model} - ${s.tenHang || s.name || ''}</div>
               <div class="small text-muted">
-                Kho: <strong>${s.kho}</strong> | PN: ${s.maPhieuNhap} 
+                Kho: <strong>${s.kho || 'Kho VP'}</strong> | PN: ${s.maPhieuNhap || s.maPhieu || '--'} 
                 ${s.khachHang ? `| KH: <strong>${s.khachHang}</strong> (Hạn BH: ${s.ngayHetHanBh || 'Có'})` : '| Chưa xuất'}
+                ${s.ncc ? `| NCC: ${s.ncc}` : ''}
                 ${activeCase ? `<span class="badge bg-warning text-dark ms-1">Đang BH: ${activeCase.caseId}</span>` : ''}
               </div>
             </div>
-            <div class="text-end">
-              <span class="badge-status ${getBadgeClass(s.status)} mb-1">${s.status}</span><br>
-              <button class="btn btn-sm btn-outline-primary py-0" style="font-size:0.75rem">Mở 360°</button>
+            <div class="text-end ms-2">
+              <span class="badge-status ${getBadgeClass(s.status)} mb-1">${s.status || 'IN_STOCK'}</span><br>
+              <button class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size:0.75rem">Mở 360°</button>
             </div>
           </div>
         `;
       });
     }
 
-    // 8.2 MODEL: Hiển thị tồn từng kho, đã xuất, đang BH + Nút xem chi tiết (Yêu cầu 8.2)
-    const exactModels = INITIAL_PRODUCTS.filter(p => p.model.toLowerCase() === kw || (p.productId && p.productId.toLowerCase() === kw));
-    const partialModels = INITIAL_PRODUCTS.filter(p => !exactModels.includes(p) && ((p.productId && p.productId.toLowerCase().includes(kw)) || p.model.toLowerCase().includes(kw) || p.ten.toLowerCase().includes(kw)));
-    const matchedModels = [...exactModels, ...partialModels];
+    // 8.2 MODEL SẢN PHẨM: Tìm theo Model, Mã sp, Tên, Hãng, Nhóm danh mục
+    const matchedModels = (typeof INITIAL_PRODUCTS !== 'undefined' ? INITIAL_PRODUCTS : []).filter(p => 
+      matchStr(p.model) ||
+      matchStr(p.productId) ||
+      matchStr(p.id) ||
+      matchStr(p.name) ||
+      matchStr(p.ten) ||
+      matchStr(p.tenHang) ||
+      matchStr(p.hang) ||
+      matchStr(p.brand) ||
+      matchStr(p.nhom) ||
+      matchStr(p.nhomHang) ||
+      matchStr(p.category) ||
+      matchStr(p.dvt) ||
+      matchStr(p.ghiChu)
+    );
+
     if (matchedModels.length > 0) {
-      html += `<div class="search-group-title"><i class="fa-solid fa-cube me-1"></i> MODEL SẢN PHẨM (${matchedModels.length})</div>`;
+      totalFound += matchedModels.length;
+      html += `<div class="search-group-title"><i class="fa-solid fa-cube me-1 text-success"></i> MODEL SẢN PHẨM (${matchedModels.length})</div>`;
       matchedModels.slice(0, 4).forEach(p => {
-        const allInStock = SERIAL_DB.filter(s => s.model === p.model && s.status === 'IN_STOCK');
-        const inStockVp = allInStock.filter(s => s.kho === 'Kho VP').length;
-        const inStockCn = allInStock.filter(s => s.kho === 'Kho Chi Nhánh').length;
-        const inStockCl = allInStock.filter(s => s.kho === 'Kho Cách Ly (Hàng lỗi)').length;
-        const totalSold = SERIAL_DB.filter(s => s.model === p.model && s.status === 'SOLD').length;
-        const totalWarranty = SERIAL_DB.filter(s => s.model === p.model && s.status === 'IN_WARRANTY').length;
-        const agingCount = allInStock.filter(s => calculateStockAging(s.ngayNhap) > 60).length;
+        const sDb = (typeof SERIAL_DB !== 'undefined' ? SERIAL_DB : []);
+        const allInStock = sDb.filter(s => s.model === p.model && s.status === 'IN_STOCK');
+        const inStockVp = allInStock.filter(s => (s.kho || '').includes('VP')).length;
+        const inStockCn = allInStock.filter(s => (s.kho || '').includes('Chi Nhánh') || (s.kho || '').includes('CN')).length;
+        const inStockCl = allInStock.filter(s => (s.kho || '').includes('Cách Ly')).length;
+        const totalSold = sDb.filter(s => s.model === p.model && s.status === 'SOLD').length;
+        const totalWarranty = sDb.filter(s => s.model === p.model && s.status === 'IN_WARRANTY').length;
+        const agingCount = allInStock.filter(s => typeof calculateStockAging === 'function' && calculateStockAging(s.ngayNhap) > 60).length;
 
         html += `
           <div class="search-result-item" onclick="openModelFromSearch('${p.model}')">
             <div>
-              <div class="title text-primary fw-bold">${p.model} <span class="badge bg-light text-dark border">${p.hang || 'CANON'}</span> <small class="text-secondary font-monospace">(${p.productId})</small></div>
-              <div class="subtitle">${p.ten} (${p.nhom})</div>
+              <div class="title text-primary fw-bold">${p.model} <span class="badge bg-light text-dark border">${p.hang || p.brand || 'CHÍNH HÃNG'}</span> <small class="text-secondary font-monospace">(${p.productId || p.model})</small></div>
+              <div class="subtitle">${p.ten || p.name || ''} (${p.nhom || p.nhomHang || 'Phần cứng'})</div>
               <div class="small text-muted mt-1">
                 Tồn: <strong class="text-success">${allInStock.length}</strong> (Kho VP: ${inStockVp}, CN: ${inStockCn}, Cách ly: ${inStockCl}) | 
                 Đã bán: ${totalSold} | Đang BH: ${totalWarranty} 
                 ${agingCount > 0 ? `<span class="text-danger fw-bold">| Tồn >60N: ${agingCount}</span>` : ''}
               </div>
             </div>
-            <div class="text-end">
-              <button class="btn btn-sm btn-outline-success py-0" style="font-size:0.75rem">Xem Serial</button>
+            <div class="text-end ms-2">
+              <button class="btn btn-sm btn-outline-success py-0 px-2" style="font-size:0.75rem">Xem Serial</button>
             </div>
           </div>
         `;
       });
     }
 
-    // 8.3 KHÁCH HÀNG: Mở modal Tóm tắt hồ sơ Khách hàng (Yêu cầu 8.3 - Không tự động nhảy vào form xuất ngay)
-    const matchedCustomers = INITIAL_CUSTOMERS.filter(c => 
-      (c.customerId && c.customerId.toLowerCase().includes(kw)) ||
-      c.ten.toLowerCase().includes(kw) || c.sdt.includes(kw)
+    // 8.3 KHÁCH HÀNG: Tìm theo Tên, SĐT, Mã KH, Địa chỉ, Email, MST
+    const matchedCustomers = (typeof INITIAL_CUSTOMERS !== 'undefined' ? INITIAL_CUSTOMERS : []).filter(c => 
+      matchStr(c.customerId) ||
+      matchStr(c.id) ||
+      matchStr(c.ten) ||
+      matchStr(c.name) ||
+      matchStr(c.sdt) ||
+      matchStr(c.phone) ||
+      matchStr(c.diaChi) ||
+      matchStr(c.address) ||
+      matchStr(c.email) ||
+      matchStr(c.mst) ||
+      matchStr(c.nguoiLienHe) ||
+      matchStr(c.ghiChu)
     );
+
     if (matchedCustomers.length > 0) {
-      html += `<div class="search-group-title"><i class="fa-solid fa-user me-1"></i> KHÁCH HÀNG (${matchedCustomers.length})</div>`;
+      totalFound += matchedCustomers.length;
+      html += `<div class="search-group-title"><i class="fa-solid fa-user me-1 text-info"></i> KHÁCH HÀNG (${matchedCustomers.length})</div>`;
       matchedCustomers.slice(0, 3).forEach(c => {
-        const custMachines = SERIAL_DB.filter(s => s.khachHang && s.khachHang.toLowerCase() === c.ten.toLowerCase());
+        const sDb = (typeof SERIAL_DB !== 'undefined' ? SERIAL_DB : []);
+        const custMachines = sDb.filter(s => s.khachHang && (s.khachHang.toLowerCase() === (c.ten || '').toLowerCase() || s.khachHang.toLowerCase() === (c.name || '').toLowerCase()));
         html += `
-          <div class="search-result-item" onclick="openCustomerSummaryModal('${c.ten}')">
+          <div class="search-result-item" onclick="openCustomerSummaryModal('${c.ten || c.name}')">
             <div>
-              <div class="title">${c.ten} <span class="font-monospace text-primary">(${c.sdt})</span> <small class="text-secondary font-monospace">(${c.customerId})</small></div>
-              <div class="subtitle">${c.diaChi}</div>
-              <small class="text-muted">Đã mua: <strong>${custMachines.length} máy</strong></small>
+              <div class="title fw-bold">${c.ten || c.name} <span class="font-monospace text-primary">(${c.sdt || c.phone || 'Chưa có SĐT'})</span> <small class="text-secondary font-monospace">(${c.customerId || c.id})</small></div>
+              <div class="subtitle text-muted">${c.diaChi || c.address || 'Chưa cập nhật địa chỉ'}</div>
+              <small class="text-secondary">Đã mua: <strong>${custMachines.length} máy/thiết bị</strong></small>
             </div>
-            <div class="text-end">
-              <button class="btn btn-sm btn-outline-info py-0" style="font-size:0.75rem">Hồ sơ KH</button>
+            <div class="text-end ms-2">
+              <button class="btn btn-sm btn-outline-info py-0 px-2" style="font-size:0.75rem">Hồ sơ KH</button>
             </div>
           </div>
         `;
       });
     }
 
-    // 8.4 PHIẾU KHO: Gọi openVoucherDetail() hiện tại (Yêu cầu 8.4)
-    const matchedPn = VOUCHERS_DB.nhap.filter(v => v.maPhieu.toLowerCase().includes(kw));
-    const matchedPx = VOUCHERS_DB.xuat.filter(v => v.maPhieu.toLowerCase().includes(kw));
+    // 8.4 PHIẾU KHO (Nhập & Xuất): Tìm theo Mã phiếu, NCC, KH, SĐT, Kho, Ghi chú, Serial trong phiếu
+    const vNhap = (typeof VOUCHERS_DB !== 'undefined' && VOUCHERS_DB.nhap) ? VOUCHERS_DB.nhap : [];
+    const vXuat = (typeof VOUCHERS_DB !== 'undefined' && VOUCHERS_DB.xuat) ? VOUCHERS_DB.xuat : [];
+
+    const matchedPn = vNhap.filter(v => 
+      matchStr(v.maPhieu) ||
+      matchStr(v.ncc) ||
+      matchStr(v.kho) ||
+      matchStr(v.ngay) ||
+      matchStr(v.ghiChu) ||
+      (v.items && v.items.some(it => matchStr(it.serial) || matchStr(it.model)))
+    );
+
+    const matchedPx = vXuat.filter(v => 
+      matchStr(v.maPhieu) ||
+      matchStr(v.khachHang) ||
+      matchStr(v.sdt) ||
+      matchStr(v.kho) ||
+      matchStr(v.ngay) ||
+      matchStr(v.ghiChu) ||
+      (v.items && v.items.some(it => matchStr(it.serial) || matchStr(it.model)))
+    );
+
     if (matchedPn.length > 0 || matchedPx.length > 0) {
-      html += `<div class="search-group-title"><i class="fa-solid fa-file-lines me-1"></i> PHIẾU KHO (${matchedPn.length + matchedPx.length})</div>`;
+      totalFound += (matchedPn.length + matchedPx.length);
+      html += `<div class="search-group-title"><i class="fa-solid fa-file-lines me-1 text-warning"></i> PHIẾU KHO (${matchedPn.length + matchedPx.length})</div>`;
       matchedPn.slice(0, 3).forEach(v => {
         html += `
           <div class="search-result-item" onclick="openVoucherDetail('NHAP', '${v.maPhieu}')">
             <div>
-              <div class="title text-info font-monospace">${v.maPhieu} (Phiếu Nhập)</div>
-              <div class="subtitle">${v.ngay} - NCC: <strong>${v.ncc}</strong> - Kho: ${v.kho} (${v.items ? v.items.length : 0} máy)</div>
+              <div class="title text-info font-monospace fw-bold">${v.maPhieu} (Phiếu Nhập)</div>
+              <div class="subtitle">${v.ngay || ''} - NCC: <strong>${v.ncc || ''}</strong> - Kho: ${v.kho || ''} (${v.items ? v.items.length : 0} máy)</div>
             </div>
-            <span class="badge ${v.status === 'CONFIRMED' ? 'bg-success' : 'bg-secondary'}">${v.status}</span>
+            <span class="badge ${v.status === 'CONFIRMED' ? 'bg-success' : 'bg-secondary'}">${v.status || 'CONFIRMED'}</span>
           </div>
         `;
       });
@@ -1840,29 +1962,66 @@
         html += `
           <div class="search-result-item" onclick="openVoucherDetail('XUAT', '${v.maPhieu}')">
             <div>
-              <div class="title text-primary font-monospace">${v.maPhieu} (Phiếu Xuất)</div>
-              <div class="subtitle">${v.ngay} - KH: <strong>${v.khachHang}</strong> - Kho: ${v.kho} (${v.items ? v.items.length : 0} máy)</div>
+              <div class="title text-primary font-monospace fw-bold">${v.maPhieu} (Phiếu Xuất)</div>
+              <div class="subtitle">${v.ngay || ''} - KH: <strong>${v.khachHang || ''}</strong> - Kho: ${v.kho || ''} (${v.items ? v.items.length : 0} máy)</div>
             </div>
-            <span class="badge ${v.status === 'CONFIRMED' ? 'bg-success' : 'bg-secondary'}">${v.status}</span>
+            <span class="badge ${v.status === 'CONFIRMED' ? 'bg-success' : 'bg-secondary'}">${v.status || 'CONFIRMED'}</span>
           </div>
         `;
       });
     }
 
-    // 8.5 CA BẢO HÀNH: Mở chi tiết Case (Yêu cầu 8.5)
-    const matchedWarranty = WARRANTY_CASES_DB.filter(w => 
-      w.caseId.toLowerCase().includes(kw) || 
-      w.serial.toLowerCase().includes(kw) || 
-      w.khachHang.toLowerCase().includes(kw)
+    // 8.5 NHÀ CUNG CẤP (NCC): Tìm theo Tên viết tắt, Tên đầy đủ, Mã NCC, SĐT, Email, Địa chỉ
+    const matchedSuppliers = (typeof INITIAL_SUPPLIERS !== 'undefined' ? INITIAL_SUPPLIERS : []).filter(s => 
+      matchStr(s.supplierId) ||
+      matchStr(s.id) ||
+      matchStr(s.code) ||
+      matchStr(s.tenTat) ||
+      matchStr(s.tenDayDu) ||
+      matchStr(s.name) ||
+      matchStr(s.sdt) ||
+      matchStr(s.phone) ||
+      matchStr(s.email) ||
+      matchStr(s.diaChi) ||
+      matchStr(s.nguoiLienHe) ||
+      matchStr(s.ghiChu)
     );
+
+    if (matchedSuppliers.length > 0) {
+      totalFound += matchedSuppliers.length;
+      html += `<div class="search-group-title"><i class="fa-solid fa-building me-1 text-secondary"></i> NHÀ CUNG CẤP (${matchedSuppliers.length})</div>`;
+      matchedSuppliers.slice(0, 2).forEach(s => {
+        html += `
+          <div class="search-result-item" onclick="openSupplierSummaryModal('${s.tenTat || s.name}')">
+            <div>
+              <div class="title fw-bold">${s.tenTat || s.code} - ${s.tenDayDu || s.name} <small class="text-secondary font-monospace">(${s.supplierId || s.id || ''})</small></div>
+              <div class="subtitle text-muted">SĐT: ${s.sdt || s.phone || '--'} | Email: ${s.email || '--'}</div>
+            </div>
+            <button class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:0.75rem">Xem NCC</button>
+          </div>
+        `;
+      });
+    }
+
+    // 8.6 CA BẢO HÀNH
+    const matchedWarranty = (typeof WARRANTY_CASES_DB !== 'undefined' ? WARRANTY_CASES_DB : []).filter(w => 
+      matchStr(w.caseId) || 
+      matchStr(w.serial) || 
+      matchStr(w.model) ||
+      matchStr(w.khachHang) ||
+      matchStr(w.loiKhachBao) ||
+      matchStr(w.kyThuatPhuTrach)
+    );
+
     if (matchedWarranty.length > 0) {
-      html += `<div class="search-group-title"><i class="fa-solid fa-shield-halved me-1"></i> CA BẢO HÀNH (${matchedWarranty.length})</div>`;
+      totalFound += matchedWarranty.length;
+      html += `<div class="search-group-title"><i class="fa-solid fa-shield-halved me-1 text-danger"></i> CA BẢO HÀNH (${matchedWarranty.length})</div>`;
       matchedWarranty.slice(0, 3).forEach(w => {
         html += `
           <div class="search-result-item" onclick="openWarrantyDetailModal('${w.caseId}')">
             <div>
-              <div class="title text-warning font-monospace">${w.caseId} - ${w.serial}</div>
-              <div class="subtitle">${w.khachHang} - Lỗi: ${w.loiKhachBao}</div>
+              <div class="title text-warning font-monospace fw-bold">${w.caseId} - ${w.serial}</div>
+              <div class="subtitle">${w.khachHang || ''} - Lỗi: ${w.loiKhachBao || ''}</div>
               <small class="text-muted">Kỹ thuật: ${w.kyThuatPhuTrach || '--'} | Hẹn trả: ${w.ngayHenTra || '--'}</small>
             </div>
             <span class="badge bg-warning text-dark">${w.status}</span>
@@ -1871,40 +2030,26 @@
       });
     }
 
-    // 8.6 NHÀ CUNG CẤP: Mở modal Tóm tắt NCC (Yêu cầu 8.6)
-    const matchedSuppliers = INITIAL_SUPPLIERS.filter(s => 
-      (s.supplierId && s.supplierId.toLowerCase().includes(kw)) ||
-      s.tenTat.toLowerCase().includes(kw) || s.tenDayDu.toLowerCase().includes(kw)
-    );
-    if (matchedSuppliers.length > 0) {
-      html += `<div class="search-group-title"><i class="fa-solid fa-building me-1"></i> NHÀ CUNG CẤP (${matchedSuppliers.length})</div>`;
-      matchedSuppliers.slice(0, 2).forEach(s => {
-        html += `
-          <div class="search-result-item" onclick="openSupplierSummaryModal('${s.tenTat}')">
-            <div>
-              <div class="title">${s.tenTat} - ${s.tenDayDu} <small class="text-secondary font-monospace">(${s.supplierId})</small></div>
-              <div class="subtitle">SĐT: ${s.sdt} | Email: ${s.email || '--'}</div>
-            </div>
-            <button class="btn btn-sm btn-outline-success py-0" style="font-size:0.75rem">Xem NCC</button>
-          </div>
-        `;
-      });
-    }
-
     // 8.7 KHO HÀNG
-    const matchedWarehouses = INITIAL_WAREHOUSES.filter(w => 
-      (w.warehouseId && w.warehouseId.toLowerCase().includes(kw)) ||
-      w.maKho.toLowerCase().includes(kw) ||
-      w.tenKho.toLowerCase().includes(kw)
+    const matchedWarehouses = (typeof INITIAL_WAREHOUSES !== 'undefined' ? INITIAL_WAREHOUSES : []).filter(w => 
+      matchStr(w.warehouseId) ||
+      matchStr(w.code) ||
+      matchStr(w.maKho) ||
+      matchStr(w.tenKho) ||
+      matchStr(w.name) ||
+      matchStr(w.loaiKho) ||
+      matchStr(w.diaDiem)
     );
+
     if (matchedWarehouses.length > 0) {
-      html += `<div class="search-group-title"><i class="fa-solid fa-warehouse me-1"></i> KHO HÀNG (${matchedWarehouses.length})</div>`;
+      totalFound += matchedWarehouses.length;
+      html += `<div class="search-group-title"><i class="fa-solid fa-warehouse me-1 text-dark"></i> KHO HÀNG (${matchedWarehouses.length})</div>`;
       matchedWarehouses.slice(0, 2).forEach(w => {
         html += `
           <div class="search-result-item" onclick="document.getElementById('global-search-dropdown').style.display='none'; switchTab('TonKho');">
             <div>
-              <div class="title font-monospace text-primary">${w.warehouseId} - ${w.tenKho} (${w.maKho})</div>
-              <div class="subtitle">${w.loaiKho} - ${w.diaDiem}</div>
+              <div class="title font-monospace text-primary fw-bold">${w.warehouseId || w.code} - ${w.tenKho || w.name}</div>
+              <div class="subtitle text-muted">${w.loaiKho || 'Kho hàng'} - ${w.diaDiem || 'Trung tâm'}</div>
             </div>
             <span class="badge ${w.active !== false ? 'bg-success' : 'bg-secondary'}">${w.active !== false ? 'Active' : 'Inactive'}</span>
           </div>
@@ -1913,7 +2058,23 @@
     }
 
     if (!html) {
-      html = `<div class="p-3 text-center text-muted small"><i class="fa-solid fa-inbox me-1"></i> Không tìm thấy kết quả nào khớp với "${keyword}"</div>`;
+      html = `
+        <div class="p-3 text-center text-muted small">
+          <i class="fa-solid fa-inbox fs-4 mb-2 d-block text-secondary"></i>
+          Không tìm thấy dữ liệu nào khớp với từ khóa "<strong>${keyword}</strong>".<br>
+          <span style="font-size:0.75rem;">Hệ thống hỗ trợ tìm kiếm: Serial, Model, Tên sp, Hãng, Khách hàng, SĐT, NCC, Số phiếu, Kho, Bảo hành.</span>
+        </div>
+      `;
+    } else {
+      // Nút chân trang mở rộng xem trong bảng Tồn kho
+      const safeKw = kw.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+      html += `
+        <div class="p-2 border-top bg-light text-center">
+          <button class="btn btn-sm btn-primary w-100 py-1 fw-semibold" onclick="viewAllSearchResultsInStock('${safeKw}')" style="font-size:0.8rem;">
+            <i class="fa-solid fa-list-check me-1"></i> Xem tất cả kết quả khớp với "${keyword.replace(/"/g, '&quot;')}" trong Bảng Tồn Kho
+          </button>
+        </div>
+      `;
     }
 
     dropdown.innerHTML = html;

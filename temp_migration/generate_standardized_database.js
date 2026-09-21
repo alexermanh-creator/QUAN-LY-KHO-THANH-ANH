@@ -324,9 +324,9 @@ const CATALOG_MAPPING = {
     defaultBh: 36
   },
   "Bộ mở rộng HDMI qua dây LAN": {
-    standardModel: "Dtech HDMI Extender 150M",
-    brand: "Dtech",
-    fullTen: "Bộ mở rộng tín hiệu HDMI Extender 150M qua cáp mạng LAN CAT5e/CAT6 kèm điều khiển chuột phím USB",
+    standardModel: "Jasonz T-G183",
+    brand: "Jasonz",
+    fullTen: "Bộ mở rộng tín hiệu HDMI qua LAN 150m có KVM (Jasonz T-G183)",
     category: "Thiết Bị Mạng & Kết Nối",
     dvt: "Bộ",
     defaultBh: 12

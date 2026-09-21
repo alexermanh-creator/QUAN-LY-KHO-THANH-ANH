@@ -18,8 +18,8 @@ $bridge = @'
       if (typeof updateUIPermissions === 'function') updateUIPermissions();
     }
 
-    // 1. Đồng bộ Danh mục Sản phẩm / Model (Dữ liệu trắng nếu server trả rỗng)
-    if (Array.isArray(serverData.products)) {
+    // 1. Đồng bộ Danh mục Sản phẩm / Model (Chỉ ghi đè nếu server có dữ liệu thật)
+    if (Array.isArray(serverData.products) && serverData.products.length > 0) {
       INITIAL_PRODUCTS = serverData.products.map(p => ({
         id: p.model,
         productId: p.model,
@@ -42,7 +42,7 @@ $bridge = @'
     }
 
     // 2. Đồng bộ Danh mục Nhà Cung Cấp
-    if (Array.isArray(serverData.ncc)) {
+    if (Array.isArray(serverData.ncc) && serverData.ncc.length > 0) {
       INITIAL_SUPPLIERS = serverData.ncc.map(n => ({
         id: n.tenTat,
         supplierId: n.tenTat,
@@ -63,7 +63,7 @@ $bridge = @'
     }
 
     // 3. Đồng bộ Danh mục Khách Hàng
-    if (Array.isArray(serverData.khachHang)) {
+    if (Array.isArray(serverData.khachHang) && serverData.khachHang.length > 0) {
       INITIAL_CUSTOMERS = serverData.khachHang.map((k, idx) => ({
         id: 'KH' + String(idx + 1).padStart(3, '0'),
         customerId: 'KH' + String(idx + 1).padStart(3, '0'),
@@ -84,7 +84,7 @@ $bridge = @'
     }
 
     // 4. Đồng bộ Danh mục Kho Hàng
-    if (Array.isArray(serverData.kho)) {
+    if (Array.isArray(serverData.kho) && serverData.kho.length > 0) {
       INITIAL_WAREHOUSES = serverData.kho.map(k => ({
         id: k.val,
         warehouseId: k.val,
@@ -99,7 +99,7 @@ $bridge = @'
     }
 
     // 5. Đồng bộ Danh mục Nhóm Hàng
-    if (Array.isArray(serverData.nhomHang)) {
+    if (Array.isArray(serverData.nhomHang) && serverData.nhomHang.length > 0) {
       INITIAL_CATEGORIES = serverData.nhomHang.map(nh => ({
         id: nh.val,
         catId: nh.val,
@@ -113,7 +113,7 @@ $bridge = @'
     }
 
     // 6. Đồng bộ Danh mục Hãng SX
-    if (Array.isArray(serverData.hangSx)) {
+    if (Array.isArray(serverData.hangSx) && serverData.hangSx.length > 0) {
       INITIAL_BRANDS = serverData.hangSx.map(h => ({
         id: h.val,
         brandId: h.val,
@@ -127,7 +127,7 @@ $bridge = @'
     }
 
     // 7. Đồng bộ Danh mục Thời Gian Bảo Hành
-    if (Array.isArray(serverData.baoHanh)) {
+    if (Array.isArray(serverData.baoHanh) && serverData.baoHanh.length > 0) {
       INITIAL_WARRANTIES = serverData.baoHanh.map((b, idx) => {
         const valStr = String(b.val || b);
         const months = parseInt(valStr.replace(/\D/g, '')) || 0;
@@ -143,7 +143,7 @@ $bridge = @'
     }
 
     // 7b. Đồng bộ Danh mục Loại Hàng (Cột 3 DM_QUY_CHUAN)
-    if (Array.isArray(serverData.loaiHang)) {
+    if (Array.isArray(serverData.loaiHang) && serverData.loaiHang.length > 0) {
       INITIAL_CONDITIONS = serverData.loaiHang.map((l, idx) => {
         const valStr = String(l.val || l);
         return {
@@ -159,7 +159,7 @@ $bridge = @'
     }
 
     // 8. Đồng bộ Tồn kho và Thiết bị thực tế
-    if (Array.isArray(serverData.tonKhoList)) {
+    if (Array.isArray(serverData.tonKhoList) && serverData.tonKhoList.length > 0) {
       SERIAL_DATA = serverData.tonKhoList.map(t => ({
         serial: t.serial,
         internalId: t.internalId || t.maNoiBo || t.serial,
@@ -226,7 +226,7 @@ $bridge = @'
     }
 
     // 10. Đồng bộ Nhật ký kiểm toán (AUDIT_LOG_DB) - Làm sạch đồng bộ nếu server reset
-    if (Array.isArray(serverData.auditLogs)) {
+    if (Array.isArray(serverData.auditLogs) && serverData.auditLogs.length > 0) {
       if (typeof AUDIT_LOG_DB !== 'undefined') {
         AUDIT_LOG_DB = serverData.auditLogs.map(a => ({
           id: a.id || ('AUD-' + Math.floor(Math.random()*10000)),

@@ -209,7 +209,13 @@
       top: 11px;
       color: #64748b;
       font-size: 0.95rem;
-      pointer-events: none;
+      pointer-events: auto;
+      cursor: pointer;
+      transition: color 0.15s, transform 0.15s;
+    }
+    .topbar-search-icon:hover {
+      color: #2563eb;
+      transform: scale(1.15);
     }
     .spotlight-kbd-badge {
       position: absolute;
@@ -222,8 +228,14 @@
       padding: 2px 7px;
       border-radius: 5px;
       border: 1px solid #cbd5e1;
-      pointer-events: none;
+      pointer-events: auto;
+      cursor: pointer;
       font-family: inherit;
+      transition: background 0.15s;
+    }
+    .spotlight-kbd-badge:hover {
+      background: #cbd5e1;
+      color: #1e293b;
     }
     .topbar-search-cam-btn {
       position: absolute;

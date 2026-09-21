@@ -46,6 +46,17 @@ function getInitAppData(options) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
+  // TỰ ĐỘNG NẠP CƠ SỞ DỮ LIỆU CHUẨN HÓA NẾU GOOGLE SHEETS ĐANG TRỐNG
+  const spSheetCheck = ss.getSheetByName("DM_SAN_PHAM");
+  const tbSheetCheck = ss.getSheetByName("SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
+  if ((!spSheetCheck || spSheetCheck.getLastRow() <= 1 || !tbSheetCheck || tbSheetCheck.getLastRow() <= 1) && typeof executePopulateStandardizedDatabaseToGoogleSheets === 'function') {
+    try {
+      executePopulateStandardizedDatabaseToGoogleSheets("654321");
+    } catch(errAuto) {
+      Logger.log("[GAS] Auto populate error: " + errAuto.message);
+    }
+  }
+
   // 1. CÁC BẢNG DANH MỤC CƠ BẢN (Gọn nhẹ, được nén/lọc trường cần thiết)
   const spSheet = ss.getSheetByName("DM_SAN_PHAM");
   const products = (spSheet && spSheet.getLastRow() > 1) 
