@@ -103,6 +103,14 @@
       <i class="fa-solid fa-circle-notch fa-spin me-1"></i> Đang kết nối máy ảnh...
     </div>
 
+    <div class="mt-2 d-grid">
+      <label class="btn btn-outline-success btn-sm py-2 d-flex align-items-center justify-content-center gap-2" style="cursor: pointer;">
+        <i class="fa-solid fa-camera"></i>
+        <span>Chụp Ảnh Tem (Khuyên dùng khi quét trên điện thoại)</span>
+        <input type="file" id="phone-camera-file-input" accept="image/*" capture="environment" style="display:none;" onchange="onPhoneFileSelected(this)">
+      </label>
+    </div>
+
     <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top border-secondary">
       <small class="text-muted">Đã quét: <strong id="scanned-count" class="text-success fs-6">0</strong> mã</small>
       <div class="d-flex gap-1">
@@ -271,6 +279,33 @@
         try { await html5QrCode.stop(); } catch(e){}
       }
       await startActiveCamera(null);
+    }
+
+    async function onPhoneFileSelected(input) {
+      if (!input || !input.files || input.files.length === 0) return;
+      const file = input.files[0];
+      const statusEl = document.getElementById('scan-status');
+      statusEl.className = "alert alert-warning py-2 small mt-2 mb-2 font-monospace text-center";
+      statusEl.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin me-1"></i> Đang đọc mã từ ảnh chụp...';
+
+      if (!html5QrCode) {
+        html5QrCode = new Html5Qrcode("reader");
+      }
+
+      try {
+        const decodedText = await html5QrCode.scanFile(file, true);
+        onScanSuccess(decodedText);
+      } catch(e) {
+        try {
+          const decodedText2 = await html5QrCode.scanFile(file, false);
+          onScanSuccess(decodedText2);
+        } catch(e2) {
+          statusEl.className = "alert alert-danger py-2 small mt-2 mb-2 font-monospace text-center";
+          statusEl.innerHTML = '<i class="fa-solid fa-xmark me-1"></i> Không tìm thấy mã vạch trong ảnh. Hãy chụp lại gần hơn và đủ sáng!';
+        }
+      } finally {
+        input.value = '';
+      }
     }
 
     window.addEventListener('DOMContentLoaded', () => {

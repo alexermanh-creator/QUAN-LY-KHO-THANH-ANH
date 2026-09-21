@@ -53,6 +53,7 @@
 
   // Khởi động kênh đồng bộ ngay khi nạp script
   initBarcodeSyncChannel();
+  initGlobalHardwareScanner();
 
   function openScannerModal(targetContext) {
     CURRENT_SCAN_CONTEXT = targetContext;
@@ -532,8 +533,10 @@
     if (!isContinuous) {
       setTimeout(() => {
         const modalEl = document.getElementById('scannerModal');
-        const modal = bootstrap.Modal.getInstance(modalEl);
-        if (modal) modal.hide();
+        if (typeof bootstrap !== 'undefined' && bootstrap.Modal && modalEl) {
+          const modal = bootstrap.Modal.getInstance(modalEl);
+          if (modal) modal.hide();
+        }
         stopScannerCamera();
       }, 600);
     }
@@ -592,4 +595,181 @@
     if (code) {
       handleDecodedBarcode(code);
     }
+  }
+
+  /* ==================================================== */
+  /* TÍCH HỢP SÚNG QUÉT MÃ VẠCH TOÀN HỆ THỐNG (HARDWARE)  */
+  /* ==================================================== */
+  let hardwareScannerBuffer = '';
+  let lastHardwareKeyTime = 0;
+  const HARDWARE_KEY_INTERVAL_MAX_MS = 55; // Tốc độ bắn của súng quét thường < 40ms/phím
+
+  function initGlobalHardwareScanner() {
+    if (typeof window === 'undefined') return;
+    window.removeEventListener('keydown', onGlobalHardwareScannerKeyDown, true);
+    window.addEventListener('keydown', onGlobalHardwareScannerKeyDown, true);
+  }
+
+  function onGlobalHardwareScannerKeyDown(event) {
+    if (event.ctrlKey || event.altKey || event.metaKey) return;
+    if (event.key && event.key.startsWith('F') && event.key.length > 1) return;
+
+    const now = Date.now();
+    const timeDiff = now - lastHardwareKeyTime;
+    lastHardwareKeyTime = now;
+
+    // Khi súng quét kết thúc chuỗi mã bằng phím Enter hoặc Tab
+    if (event.key === 'Enter' || event.key === 'Tab') {
+      if (hardwareScannerBuffer.length >= 3 && timeDiff < 100) {
+        const code = hardwareScannerBuffer.trim();
+        hardwareScannerBuffer = '';
+        event.preventDefault();
+        event.stopPropagation();
+        handleHardwareScannedBarcode(code);
+        return;
+      }
+      hardwareScannerBuffer = '';
+      return;
+    }
+
+    // Ghi nhận ký tự văn bản đơn
+    if (event.key && event.key.length === 1) {
+      // Nếu thời gian gõ giữa 2 phím quá dài (> 55ms) thì là người dùng gõ phím thông thường
+      if (timeDiff > HARDWARE_KEY_INTERVAL_MAX_MS && hardwareScannerBuffer.length > 0) {
+        hardwareScannerBuffer = '';
+      }
+      hardwareScannerBuffer += event.key;
+    }
+  }
+
+  function handleHardwareScannedBarcode(code) {
+    if (!code) return;
+    playBeepSound();
+    triggerVibration();
+
+    // 1. Nếu modal scanner đang mở:
+    const modalEl = document.getElementById('scannerModal');
+    if (modalEl && modalEl.classList.contains('show')) {
+      handleDecodedBarcode(code);
+      return;
+    }
+
+    // 2. Tự động nhận diện ngữ cảnh theo tab đang hiển thị
+    const activeTab = (typeof CURRENT_TAB !== 'undefined') ? CURRENT_TAB : 'Dashboard';
+    showFloatingScannerToast(`🎯 Súng quét vừa bắn: <strong>${code}</strong>`);
+
+    if (activeTab === 'NhapKho') {
+      const textarea = document.getElementById('nhap-serial-input');
+      if (textarea) {
+        const currentVal = textarea.value.trim();
+        textarea.value = currentVal ? `${currentVal}\n${code}` : code;
+        if (typeof updateNhapSerialCounter === 'function') updateNhapSerialCounter();
+      } else {
+        routeScannedCodeToContext(code);
+      }
+    } else if (activeTab === 'XuatKho') {
+      if (typeof addSerialToXuatDraft === 'function') {
+        addSerialToXuatDraft(code);
+      } else {
+        routeScannedCodeToContext(code);
+      }
+    } else if (activeTab === 'TonKho') {
+      const inp = document.getElementById('filter-stock-keyword');
+      if (inp) {
+        inp.value = code;
+        if (typeof applyStockFilter === 'function') applyStockFilter();
+      }
+    } else if (activeTab === 'BaoHanh') {
+      const inp = document.getElementById('case-serial');
+      if (inp) {
+        inp.value = code;
+        if (typeof onWarrantySerialChange === 'function') onWarrantySerialChange(code);
+      }
+    } else {
+      // Mặc định chuyển sang Hồ sơ Serial 360 để tra cứu máy
+      if (typeof switchTab === 'function') switchTab('Serial360');
+      const inp = document.getElementById('serial-360-search-input');
+      if (inp) inp.value = code;
+      if (typeof lookupSerial360 === 'function') lookupSerial360(code);
+    }
+  }
+
+  // Hiển thị thông báo nổi thông minh khi súng quét bắn
+  function showFloatingScannerToast(htmlMsg) {
+    let toast = document.getElementById('scanner-floating-toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'scanner-floating-toast';
+      toast.style.cssText = `
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        background: #0f172a;
+        color: #38bdf8;
+        border: 1px solid #0284c7;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+        padding: 12px 20px;
+        border-radius: 10px;
+        font-size: 14px;
+        z-index: 99999;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      `;
+      document.body.appendChild(toast);
+    }
+    toast.innerHTML = htmlMsg;
+    toast.style.opacity = '1';
+    toast.style.transform = 'translateY(0)';
+
+    if (window._scannerToastTimeout) clearTimeout(window._scannerToastTimeout);
+    window._scannerToastTimeout = setTimeout(() => {
+      if (toast) {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(15px)';
+      }
+    }, 2800);
+  }
+
+  /* ==================================================== */
+  /* TÍCH HỢP QUÉT BẰNG ĐIỆN THOẠI & ĐỒNG BỘ THỜI GIAN THỰC */
+  /* ==================================================== */
+  function getPhoneSyncUrl() {
+    if (typeof location !== 'undefined') {
+      if (location.protocol === 'http:' || location.protocol === 'https:') {
+        if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+          return `${location.origin}/scanner.html`;
+        }
+      }
+    }
+    return 'https://alexermanh-creator.github.io/QUAN-LY-KHO-THANH-ANH/scanner.html';
+  }
+
+  function copyPhoneSyncLink() {
+    const link = getPhoneSyncUrl();
+    if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(link).then(() => {
+        showFloatingScannerToast('<i class="fa-solid fa-circle-check text-success me-1"></i> Đã sao chép link quét di động!');
+      }).catch(() => {
+        prompt('Sao chép liên kết quét di động:', link);
+      });
+    } else {
+      prompt('Sao chép liên kết quét di động:', link);
+    }
+  }
+
+  function openPhoneSyncDirectTab() {
+    const link = getPhoneSyncUrl();
+    window.open(link, '_blank');
+  }
+
+  // Xuất các hàm ra window để tương thích toàn diện
+  if (typeof window !== 'undefined') {
+    window.initGlobalHardwareScanner = initGlobalHardwareScanner;
+    window.handleHardwareScannedBarcode = handleHardwareScannedBarcode;
+    window.showFloatingScannerToast = showFloatingScannerToast;
+    window.copyPhoneSyncLink = copyPhoneSyncLink;
+    window.openPhoneSyncDirectTab = openPhoneSyncDirectTab;
+    window.getPhoneSyncUrl = getPhoneSyncUrl;
   }
