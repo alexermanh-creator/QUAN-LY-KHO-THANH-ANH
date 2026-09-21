@@ -139,9 +139,51 @@
   + Đã kiểm tra cú pháp toàn diện: **0 lỗi**.
   + Đã đẩy 21 file lên Google Apps Script thành công qua `clasp push -f`.
   + Đã commit và đồng bộ lên GitHub repo `origin main`.
-- **Gắn Tag Phiên Bản**: `v4.2.0` - Bản ổn định tích hợp RBAC, Dashboard Drill-down và Dữ liệu thực tế chuẩn hóa.
+### 12. Nâng cấp Toàn diện Quản Lý Tồn Kho (Master-Detail Accordion & Điểm chạm tương tác động):
+- **Khắc phục triệt để bất cập danh sách phẳng trùng lặp**:
+  + Thay thế danh sách phẳng dài dằng dặc (trước đây 5-6 dòng Canon 6030 lặp lại giống hệt nhau kèm nút Hủy đỏ nguy hiểm) bằng mô hình **Master-Detail Accordion**: Gom nhóm theo Model, mỗi Model là 1 dòng tổng quan có nút `[ Xem X Serial ▾ ]` trượt mở bảng con.
+  + Bổ sung nút `Mở rộng tất cả` / `Thu gọn tất cả` ở góc trên để xem nhanh toàn bộ kho chỉ với 1 click.
+- **Giải quyết triệt để lỗi tìm kiếm & hiển thị không rõ ràng**:
+  + Trước đây: Khi tìm `Canon LBP 6030` bị lọt `Halloya 85A/325 Toner` vào giữa bảng và 1 con Canon 6030w khác bị văng xuống đáy bảng do sắp xếp theo ngày nhập, gây hiểu lầm và rối loạn số liệu.
+  + Bây giờ: Cột sản phẩm hiển thị đầy đủ **Model in đậm + Tên hàng chi tiết + Badge Nhóm hàng** (*Máy In* vs *Mực In*). Khi tìm `Canon LBP 6030`, kết quả hiển thị gọn gàng thành đúng 3 dòng Model độc nhất (Canon 6030w: 6 máy, Canon 6030: 2 máy, Hộp mực Halloya: 5 hộp có tag Mực In rõ ràng).
+  + Bổ sung icon kính lúp 🔍 và nút `(x)` xóa nhanh từ khóa trong ô tìm kiếm.
+- **Bổ sung Thanh Chỉ Số Tồn Kho Nhanh (Summary KPI Strip)**:
+  + 📦 **Tổng Thiết Bị Tồn**: Đếm số máy khả dụng trong kho.
+  + 🏷️ **Chủng Loại Model**: Số lượng sản phẩm đang quản lý.
+  + 🟢 **Tồn An Toàn (≤30 ngày)**: Số máy mới nhập quay vòng tốt.
+  + 🟡 **Cần Lưu Ý (>30 ngày)**: Cảnh báo máy tồn lâu để ưu tiên xuất trước (FIFO).
+  + 🏢 **Phân bổ vị trí kho**: Thống kê nhanh số lượng tồn tại từng kho (*Kho VP: 52 • Kho khác: 8*).
+- **Mọi trường dữ liệu trên bảng con Serial đều là "Điểm Chạm" liên kết tương tác**:
+  + 🔗 **Serial Hãng**: Click ➔ Mở ngay **Hồ Sơ Serial 360°** xem toàn bộ vòng đời, lịch sử nhập xuất bảo hành.
+  + 🏷️ **Mã Nội Bộ Thành An**: Click ➔ Mở popup **Xem & In Tem Nhãn Barcode Code128 / QR Code** (tích hợp thư viện `JsBarcode` chuẩn nét).
+  + 🏢 **Kho Hiện Tại**: Click ➔ Mở popup **Chuyển kho nhanh** sang kho khác.
+  + 📄 **Chứng Từ Nhập**: Click số phiếu `PN-xxxx` ➔ Mở xem chi tiết **Phiếu Nhập Kho gốc** (biết ai lập, NCC nào, hóa đơn nào).
+  + 🚚 **Nút `[Xuất]`**: Tự động chuyển sang tab Xuất kho và điền sẵn số Serial này vào giỏ xuất.
+  + ✏️ **Nút `[Sửa]`**: Mở form **Đính chính thông tin thiết bị** an toàn (sửa SN, Model, Kho) có lưu vết Audit Log và đồng bộ chứng từ nhập gốc.
+  + 🚫 **Nút `[Hủy]`**: Chuyển trạng thái VOID an toàn với hộp thoại xác nhận lý do bắt buộc.
+- **Backend Google Apps Script & An Toàn Dữ Liệu**:
+  + Bổ sung `updateThietBiSafe` và `transferSingleDevice` vào `04_TonKho.js`.
+  + Nâng cấp `updateThietBi` và `deleteThietBi` tự động nhận diện cả số dòng `targetRow` lẫn chuỗi `serial` string an toàn, không lo lỗi NaN.
+- **Biên dịch & Đồng bộ Hệ thống**:
+  + Đã biên dịch toàn bộ `demo_quan_ly_kho.html` (1.025 KB) và `gas/Index.html` (1.039 KB).
+  + Kiểm tra cú pháp JavaScript: **0 lỗi**.
+  + Đã đẩy toàn bộ 21 file lên Google Apps Script thành công qua `clasp push -f`.
+  + Đã commit và đồng bộ lên GitHub repo `origin main` (commit `8470787`).
+- **Gắn Tag Phiên Bản**: `v4.3.0` - Bản nâng cấp Master-Detail Accordion Tồn Kho và Điểm Chạm Liên Kết Động.
 
+---
 
+## II. KẾ HOẠCH & PROMPT TIẾP TỤC KIỂM THỬ CHO PHIÊN TIẾP THEO
 
+### 1. Trọng tâm công việc phiên tới:
+- Kiểm thử chi tiết từng tương tác trên màn hình Tồn Kho mới:
+  + Mở/đóng từng dòng Model và nút `Mở rộng tất cả`.
+  + Bấm vào Serial Hãng ➔ Kiểm tra Hồ sơ 360° có hiển thị đúng máy đó không.
+  + Bấm vào Phiếu Nhập ➔ Kiểm tra popup chi tiết phiếu nhập gốc.
+  + Bấm nút `[Xuất]` ➔ Kiểm tra tab Xuất kho có tự động nhận Serial đó không.
+  + Bấm nút `[Sửa]` ➔ Thử sửa số SN hoặc Model và kiểm tra đồng bộ Audit Log.
+  + Bấm vào Mã nội bộ ➔ Kiểm tra tem in Barcode Code128 và QR Code.
+- Nâng cấp và thiết kế lại mục **Hồ Sơ Serial 360°** theo định hướng trực quan, hiện đại, liên kết sâu hơn.
 
-
+---
+*Biên bản cập nhật lúc: 23:55 ngày 21/09/2026.*
