@@ -232,9 +232,8 @@
             <div class="row g-2 small">
               <div class="col-6 col-md-4"><strong>Khách hàng:</strong> <span id="prev-xuat-khach">--</span></div>
               <div class="col-6 col-md-4"><strong>Số điện thoại:</strong> <span id="prev-xuat-sdt" class="font-monospace text-primary fw-bold">--</span></div>
-              <div class="col-6 col-md-4"><strong>Kho xuất:</strong> <span id="prev-xuat-kho">--</span></div>
               <div class="col-6 col-md-4"><strong>Ngày xuất:</strong> <span id="prev-xuat-ngay">--</span></div>
-              <div class="col-12 col-md-8"><strong>Địa chỉ giao:</strong> <span id="prev-xuat-diachi">--</span></div>
+              <div class="col-12"><strong>Địa chỉ giao:</strong> <span id="prev-xuat-diachi">--</span></div>
             </div>
           </div>
 
@@ -247,6 +246,7 @@
                   <th>Model</th>
                   <th>Serial Hãng</th>
                   <th>Mã Nội Bộ</th>
+                  <th>Kho Xuất</th>
                   <th>Gói Bảo Hành</th>
                   <th>Hạn Bảo Hành</th>
                   <th>Kiểm Tra</th>
@@ -1163,6 +1163,90 @@
       </div>
     </div>
   </div>
+
+  <!-- MODAL: CHỌN HÀNG LOẠT THIẾT BỊ / LINH KIỆN TỒN KHO XUẤT (BỘ PC & NHIỀU MÁY) -->
+  <div class="modal fade" id="selectStockBatchModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white py-2">
+          <h6 class="modal-title d-flex align-items-center gap-2 mb-0">
+            <i class="fa-solid fa-layer-group"></i>
+            <span>Chọn Thiết Bị / Linh Kiện Từ Kho (Bộ PC & Hàng Loạt)</span>
+          </h6>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-3">
+          <!-- Thanh công cụ tìm kiếm và lọc gõ nhanh -->
+          <div class="row g-2 mb-3 align-items-center bg-light p-2 rounded border">
+            <div class="col-12 col-md-5">
+              <div class="input-group input-group-sm">
+                <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                <input type="text" id="batch-stock-search" class="form-control" 
+                       placeholder="Gõ nhanh Model, Serial hãng, Mã nội bộ (VD: 12400F, RAM, RTX...)" 
+                       oninput="filterBatchStockTable()">
+                <button class="btn btn-outline-secondary" type="button" onclick="document.getElementById('batch-stock-search').value=''; filterBatchStockTable();" title="Xóa tìm kiếm">
+                  <i class="fa-solid fa-xmark"></i>
+                </button>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <select id="batch-stock-filter-nhom" class="form-select form-select-sm" onchange="filterBatchStockTable()">
+                <option value="">-- Tất cả nhóm hàng / linh kiện --</option>
+              </select>
+            </div>
+            <div class="col-6 col-md-2">
+              <select id="batch-stock-filter-kho" class="form-select form-select-sm" onchange="filterBatchStockTable()">
+                <option value="">-- Tất cả kho --</option>
+              </select>
+            </div>
+            <div class="col-12 col-md-2 text-md-end">
+              <span class="small text-muted" id="batch-stock-total-info">0 thiết bị sẵn sàng</span>
+            </div>
+          </div>
+
+          <!-- Bảng danh sách tồn kho có checkbox -->
+          <div class="table-responsive" style="max-height: 420px; overflow-y: auto;">
+            <table class="table table-sm table-hover table-bordered align-middle mb-0">
+              <thead class="table-light sticky-top small" style="z-index: 2;">
+                <tr>
+                  <th style="width: 40px;" class="text-center">
+                    <input type="checkbox" id="batch-stock-check-all" class="form-check-input" onchange="toggleSelectAllBatchStock(this.checked)" title="Chọn tất cả các dòng đang hiển thị">
+                  </th>
+                  <th style="width: 45px;">#</th>
+                  <th>Model / Tên Thiết Bị</th>
+                  <th>Serial Hãng</th>
+                  <th>Mã Nội Bộ</th>
+                  <th>Vị Trí Kho</th>
+                  <th>Gói BH Chuẩn</th>
+                  <th>Ngày Nhập</th>
+                  <th class="text-center" style="width: 90px;">Thao Tác</th>
+                </tr>
+              </thead>
+              <tbody id="batch-stock-table-body" class="small">
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer py-2 justify-content-between bg-light">
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-primary fs-6 py-2 px-3" id="batch-stock-selected-badge">
+              <i class="fa-solid fa-check-circle me-1"></i>Đã chọn: 0 linh kiện
+            </span>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearAllBatchStockSelection()">
+              Bỏ chọn tất cả
+            </button>
+          </div>
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            <button type="button" class="btn btn-sm btn-success fw-bold px-3" id="btn-apply-batch-stock" onclick="applyBatchStockToXuatDraft()">
+              <i class="fa-solid fa-plus me-1"></i> Đưa Vào Phiếu Xuất (<span id="batch-stock-btn-count">0</span>)
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 
 
 

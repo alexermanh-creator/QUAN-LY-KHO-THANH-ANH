@@ -1,0 +1,2866 @@
+{
+  "DATA_THIET_BI": {
+    "headers": [
+      "Serial",
+      "Model",
+      "Tên hàng hóa",
+      "Nhóm hàng",
+      "Loại hàng",
+      "Vị trí kho",
+      "Nhà cung cấp",
+      "Ngày nhập",
+      "Mã phiếu nhập",
+      "Trạng thái",
+      "Ngày xuất",
+      "Mã phiếu xuất",
+      "Khách hàng",
+      "SĐT Khách",
+      "Số tháng BH",
+      "Ngày hết hạn BH",
+      "Ghi chú"
+    ],
+    "rows": [
+      {
+        "_rowNum": 2,
+        "Serial": "CNB1T5GC6X",
+        "Model": "HP Laser 108a",
+        "Tên hàng hóa": "Máy in HP Laser 108a",
+        "Nhóm hàng": "Máy In",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Kho VP",
+        "Nhà cung cấp": "N/A",
+        "Ngày nhập": "46253.0",
+        "Mã phiếu nhập": "PN-260911-140733",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 3,
+        "Serial": "NTMA681531",
+        "Model": "Canon LBP 6030w",
+        "Tên hàng hóa": "Máy in laser Canon LBP 6030 wifi",
+        "Nhóm hàng": "Máy In",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Kho VP",
+        "Nhà cung cấp": "Nam Phát",
+        "Ngày nhập": "46274.0",
+        "Mã phiếu nhập": "PN-260911-140819",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 4,
+        "Serial": "NTMA681178",
+        "Model": "Canon LBP 6030w",
+        "Tên hàng hóa": "Máy in laser Canon LBP 6030 wifi",
+        "Nhóm hàng": "Máy In",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Kho VP",
+        "Nhà cung cấp": "Nam Phát",
+        "Ngày nhập": "46274.0",
+        "Mã phiếu nhập": "PN-260911-140819",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 5,
+        "Serial": "NTMA682190",
+        "Model": "Canon LBP 6030w",
+        "Tên hàng hóa": "Máy in laser Canon LBP 6030 wifi",
+        "Nhóm hàng": "Máy In",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Kho VP",
+        "Nhà cung cấp": "Nam Phát",
+        "Ngày nhập": "46274.0",
+        "Mã phiếu nhập": "PN-260911-140819",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 6,
+        "Serial": "NTMA680176",
+        "Model": "Canon LBP 6030w",
+        "Tên hàng hóa": "Máy in laser Canon LBP 6030 wifi",
+        "Nhóm hàng": "Máy In",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Kho VP",
+        "Nhà cung cấp": "Nam Phát",
+        "Ngày nhập": "46274.0",
+        "Mã phiếu nhập": "PN-260911-140819",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 7,
+        "Serial": "NTMA680542",
+        "Model": "Canon LBP 6030w",
+        "Tên hàng hóa": "Máy in laser Canon LBP 6030 wifi",
+        "Nhóm hàng": "Máy In",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Kho VP",
+        "Nhà cung cấp": "Nam Phát",
+        "Ngày nhập": "46274.0",
+        "Mã phiếu nhập": "PN-260911-140819",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 8,
+        "Serial": "NTLA767591",
+        "Model": "Canon LBP 6030",
+        "Tên hàng hóa": "Máy in laser Canon LBP 6030",
+        "Nhóm hàng": "Máy In",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Kho VP",
+        "Nhà cung cấp": "N/A",
+        "Ngày nhập": "46254.0",
+        "Mã phiếu nhập": "PN-260911-141015",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 9,
+        "Serial": "NTLA863393",
+        "Model": "Canon LBP 6030",
+        "Tên hàng hóa": "Máy in laser Canon LBP 6030",
+        "Nhóm hàng": "Máy In",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Kho VP",
+        "Nhà cung cấp": "N/A",
+        "Ngày nhập": "46254.0",
+        "Mã phiếu nhập": "PN-260911-141015",
+        "Trạng thái": "Đã xuất",
+        "Ngày xuất": "46280.0",
+        "Mã phiếu xuất": "PX-260915-172950",
+        "Khách hàng": "CÔNG TY TNHH X.E VIỆT NAM (A Dương)",
+        "SĐT Khách": "9.09689886E8",
+        "Số tháng BH": "12.0",
+        "Ngày hết hạn BH": "46645.0"
+      },
+      {
+        "_rowNum": 10,
+        "Serial": "NTLA863121",
+        "Model": "Canon LBP 6030",
+        "Tên hàng hóa": "Máy in laser Canon LBP 6030",
+        "Nhóm hàng": "Máy In",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Kho VP",
+        "Nhà cung cấp": "N/A",
+        "Ngày nhập": "46254.0",
+        "Mã phiếu nhập": "PN-260911-141015",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 11,
+        "Serial": "NTLA776136",
+        "Model": "Canon LBP 6030",
+        "Tên hàng hóa": "Máy in laser Canon LBP 6030",
+        "Nhóm hàng": "Máy In",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Kho VP",
+        "Nhà cung cấp": "N/A",
+        "Ngày nhập": "46254.0",
+        "Mã phiếu nhập": "PN-260911-141015",
+        "Trạng thái": "Đã xuất",
+        "Ngày xuất": "46262.0",
+        "Mã phiếu xuất": "PX-260917-092624",
+        "Khách hàng": "Quang",
+        "SĐT Khách": "0976147203",
+        "Số tháng BH": "12.0",
+        "Ngày hết hạn BH": "46627.0"
+      },
+      {
+        "_rowNum": 12,
+        "Serial": "NTLA863405",
+        "Model": "Canon LBP 6030",
+        "Tên hàng hóa": "Máy in laser Canon LBP 6030",
+        "Nhóm hàng": "Máy In",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Kho VP",
+        "Nhà cung cấp": "N/A",
+        "Ngày nhập": "46254.0",
+        "Mã phiếu nhập": "PN-260911-141015",
+        "Trạng thái": "Đã xuất",
+        "Ngày xuất": "46262.0",
+        "Mã phiếu xuất": "PX-260917-092624",
+        "Khách hàng": "Quang",
+        "SĐT Khách": "0976147203",
+        "Số tháng BH": "12.0",
+        "Ngày hết hạn BH": "46627.0"
+      },
+      {
+        "_rowNum": 13,
+        "Serial": "KPVF12443",
+        "Model": "Canon G2010",
+        "Tên hàng hóa": "Máy In Màu Đa Năng Canon G2010",
+        "Nhóm hàng": "Máy In",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Kho VP",
+        "Nhà cung cấp": "N/A",
+        "Ngày nhập": "46254.0",
+        "Mã phiếu nhập": "PN-260911-141202",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 14,
+        "Serial": "E81467J5X122374",
+        "Model": "Brother ADS-4300DN",
+        "Tên hàng hóa": "Máy Scan Brother ADS-4300DN",
+        "Nhóm hàng": "Máy Scan",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Kho VP",
+        "Nhà cung cấp": "N/A",
+        "Ngày nhập": "46254.0",
+        "Mã phiếu nhập": "PN-260911-141233",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 15,
+        "Serial": "E81467J5X122321",
+        "Model": "Brother ADS-4300DN",
+        "Tên hàng hóa": "Máy Scan Brother ADS-4300DN",
+        "Nhóm hàng": "Máy Scan",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Kho VP",
+        "Nhà cung cấp": "N/A",
+        "Ngày nhập": "46254.0",
+        "Mã phiếu nhập": "PN-260911-141233",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 16,
+        "Serial": "E81467J5X122298",
+        "Model": "Brother ADS-4300DN",
+        "Tên hàng hóa": "Máy Scan Brother ADS-4300DN",
+        "Nhóm hàng": "Máy Scan",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Kho VP",
+        "Nhà cung cấp": "N/A",
+        "Ngày nhập": "46254.0",
+        "Mã phiếu nhập": "PN-260911-141233",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 17,
+        "Serial": "CNB1T1P98B",
+        "Model": "HP 108W",
+        "Tên hàng hóa": "Máy in laser đen trắng HP 108W",
+        "Nhóm hàng": "Máy In",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Kho VP",
+        "Nhà cung cấp": "N/A",
+        "Ngày nhập": "46254.0",
+        "Mã phiếu nhập": "PN-260911-141318",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 18,
+        "Serial": "PHRA105934",
+        "Model": "Canon LBP 243dw II",
+        "Tên hàng hóa": "Máy In 2 Mặt Canon LBP243dw",
+        "Nhóm hàng": "Máy In",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Kho VP",
+        "Nhà cung cấp": "N/A",
+        "Ngày nhập": "46272.0",
+        "Mã phiếu nhập": "PN-260911-141413",
+        "Trạng thái": "Đã xuất",
+        "Ngày xuất": "46286.0",
+        "Mã phiếu xuất": "PX-260921-162918",
+        "Khách hàng": "Mr. Đỉnh: 096 9898168 Số L3-125 đường Limoni, Khu đô thị New An Thới, Đặc khu Phú Quốc, Tỉnh An Giang",
+        "Số tháng BH": "12.0",
+        "Ngày hết hạn BH": "46651.0"
+      },
+      {
+        "_rowNum": 19,
+        "Serial": "TA-260911-001",
+        "Model": "Halloya",
+        "Tên hàng hóa": "Mực in LPB 6030",
+        "Nhóm hàng": "Mực In",
+        "Loại hàng": "Nhập Khẩu",
+        "Vị trí kho": "Kho VP",
+        "Nhà cung cấp": "N/A",
+        "Ngày nhập": "46255.0",
+        "Mã phiếu nhập": "PN-260911-141500",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 20,
+        "Serial": "TA-260911-002",
+        "Model": "Halloya",
+        "Tên hàng hóa": "Mực in LPB 6030",
+        "Nhóm hàng": "Mực In",
+        "Loại hàng": "Nhập Khẩu",
+        "Vị trí kho": "Kho VP",
+        "Nhà cung cấp": "N/A",
+        "Ngày nhập": "46255.0",
+        "Mã phiếu nhập": "PN-260911-141500",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 21,
+        "Serial": "TA-260911-003",
+        "Model": "Halloya",
+        "Tên hàng hóa": "Mực in LPB 6030",
+        "Nhóm hàng": "Mực In",
+        "Loại hàng": "Nhập Khẩu",
+        "Vị trí kho": "Kho VP",
+        "Nhà cung cấp": "N/A",
+        "Ngày nhập": "46255.0",
+        "Mã phiếu nhập": "PN-260911-141500",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 22,
+        "Serial": "TA-260911-004",
+        "Model": "Halloya",
+        "Tên hàng hóa": "Mực in LPB 6030",
+        "Nhóm hàng": "Mực In",
+        "Loại hàng": "Nhập Khẩu",
+        "Vị trí kho": "Kho VP",
+        "Nhà cung cấp": "N/A",
+        "Ngày nhập": "46255.0",
+        "Mã phiếu nhập": "PN-260911-141500",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 23,
+        "Serial": "TA-260911-005",
+        "Model": "Halloya",
+        "Tên hàng hóa": "Mực in LPB 6030",
+        "Nhóm hàng": "Mực In",
+        "Loại hàng": "Nhập Khẩu",
+        "Vị trí kho": "Kho VP",
+        "Nhà cung cấp": "N/A",
+        "Ngày nhập": "46255.0",
+        "Mã phiếu nhập": "PN-260911-141500",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 24,
+        "Serial": "TA-260911-006",
+        "Model": "TJ INK",
+        "Tên hàng hóa": "Mực in CANON HP",
+        "Nhóm hàng": "Mực In",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Kho VP",
+        "Nhà cung cấp": "N/A",
+        "Ngày nhập": "46276.0",
+        "Mã phiếu nhập": "PN-260911-141624",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 25,
+        "Serial": "TA-260911-007",
+        "Model": "TJ INK",
+        "Tên hàng hóa": "Mực in CANON HP",
+        "Nhóm hàng": "Mực In",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Kho VP",
+        "Nhà cung cấp": "N/A",
+        "Ngày nhập": "46276.0",
+        "Mã phiếu nhập": "PN-260911-141624",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 26,
+        "Serial": "PHEA127806",
+        "Model": "Canon LBP246dw II",
+        "Tên hàng hóa": "Máy in laser đen trắng Canon LBP246DW II",
+        "Nhóm hàng": "Máy In",
+        "Loại hàng": "Nhập Khẩu",
+        "Vị trí kho": "Kho VP",
+        "Nhà cung cấp": "N/A",
+        "Ngày nhập": "46272.0",
+        "Mã phiếu nhập": "PN-260911-141701",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 27,
+        "Serial": "NTMA779070",
+        "Model": "Canon LBP 6030w",
+        "Tên hàng hóa": "Máy in laser Canon LBP 6030 wifi",
+        "Nhóm hàng": "Máy In",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Kho VP",
+        "Nhà cung cấp": "N/A",
+        "Ngày nhập": "46254.0",
+        "Mã phiếu nhập": "PN-260911-153249",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 28,
+        "Serial": "LK185BSEA260127061",
+        "Model": "Bàn phím LK185",
+        "Tên hàng hóa": "Bàn phím DAREU LK185",
+        "Nhóm hàng": "Chuột, Bàn Phím",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Văn Phòng",
+        "Nhà cung cấp": "FPS",
+        "Ngày nhập": "46254.0",
+        "Mã phiếu nhập": "PN-260911-155551",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 29,
+        "Serial": "LK185BSEA260127062",
+        "Model": "Bàn phím LK185",
+        "Tên hàng hóa": "Bàn phím DAREU LK185",
+        "Nhóm hàng": "Chuột, Bàn Phím",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Văn Phòng",
+        "Nhà cung cấp": "FPS",
+        "Ngày nhập": "46254.0",
+        "Mã phiếu nhập": "PN-260911-155551",
+        "Trạng thái": "Đã xuất",
+        "Ngày xuất": "46282.0",
+        "Mã phiếu xuất": "PX-260917-175255",
+        "Khách hàng": "Chị Phương",
+        "SĐT Khách": "3.25470077E8",
+        "Số tháng BH": "24.0",
+        "Ngày hết hạn BH": "47013.0"
+      },
+      {
+        "_rowNum": 30,
+        "Serial": "LK185BSEA260127064",
+        "Model": "Bàn phím LK185",
+        "Tên hàng hóa": "Bàn phím DAREU LK185",
+        "Nhóm hàng": "Chuột, Bàn Phím",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Văn Phòng",
+        "Nhà cung cấp": "FPS",
+        "Ngày nhập": "46254.0",
+        "Mã phiếu nhập": "PN-260911-155551",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 31,
+        "Serial": "LK185BSEA260127065",
+        "Model": "Bàn phím LK185",
+        "Tên hàng hóa": "Bàn phím DAREU LK185",
+        "Nhóm hàng": "Chuột, Bàn Phím",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Văn Phòng",
+        "Nhà cung cấp": "FPS",
+        "Ngày nhập": "46254.0",
+        "Mã phiếu nhập": "PN-260911-155551",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 32,
+        "Serial": "LK185BSEA260127067",
+        "Model": "Bàn phím LK185",
+        "Tên hàng hóa": "Bàn phím DAREU LK185",
+        "Nhóm hàng": "Chuột, Bàn Phím",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Văn Phòng",
+        "Nhà cung cấp": "FPS",
+        "Ngày nhập": "46254.0",
+        "Mã phiếu nhập": "PN-260911-155551",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 33,
+        "Serial": "LK185BSEA260127068",
+        "Model": "Bàn phím LK185",
+        "Tên hàng hóa": "Bàn phím DAREU LK185",
+        "Nhóm hàng": "Chuột, Bàn Phím",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Văn Phòng",
+        "Nhà cung cấp": "FPS",
+        "Ngày nhập": "46254.0",
+        "Mã phiếu nhập": "PN-260911-155551",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 34,
+        "Serial": "LK185BSEA260127069",
+        "Model": "Bàn phím LK185",
+        "Tên hàng hóa": "Bàn phím DAREU LK185",
+        "Nhóm hàng": "Chuột, Bàn Phím",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Văn Phòng",
+        "Nhà cung cấp": "FPS",
+        "Ngày nhập": "46254.0",
+        "Mã phiếu nhập": "PN-260911-155551",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 35,
+        "Serial": "LK185BSEA260127070",
+        "Model": "Bàn phím LK185",
+        "Tên hàng hóa": "Bàn phím DAREU LK185",
+        "Nhóm hàng": "Chuột, Bàn Phím",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Văn Phòng",
+        "Nhà cung cấp": "FPS",
+        "Ngày nhập": "46254.0",
+        "Mã phiếu nhập": "PN-260911-155551",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 36,
+        "Serial": "LK185BSEA260127071",
+        "Model": "Bàn phím LK185",
+        "Tên hàng hóa": "Bàn phím DAREU LK185",
+        "Nhóm hàng": "Chuột, Bàn Phím",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Văn Phòng",
+        "Nhà cung cấp": "FPS",
+        "Ngày nhập": "46254.0",
+        "Mã phiếu nhập": "PN-260911-155551",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 37,
+        "Serial": "VNM0WW42908",
+        "Model": "Hp Laserjet M211DW",
+        "Tên hàng hóa": "Máy in HP LaserJet M211DW",
+        "Nhóm hàng": "Máy In",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Kho VP",
+        "Nhà cung cấp": "N/A",
+        "Ngày nhập": "46254.0",
+        "Mã phiếu nhập": "PN-260912-083809",
+        "Trạng thái": "Đã xuất",
+        "Ngày xuất": "46277.0",
+        "Mã phiếu xuất": "PX-260912-083937",
+        "Khách hàng": "CÔNG TY TNHH THƯƠNG MẠI VÀ DỊCH VỤ KHOA NHÂN (KACAJOIN)",
+        "SĐT Khách": "9.63093555E8",
+        "Số tháng BH": "12.0",
+        "Ngày hết hạn BH": "46642.0",
+        "Ghi chú": "Khách hàng qua vp lấy"
+      },
+      {
+        "_rowNum": 38,
+        "Serial": "PF685QNZ",
+        "Model": "Lenovo ThinkPad E14 GEN 7",
+        "Tên hàng hóa": "Máy tính xách tay Lenovo ThinkPad E14 GEN 7 (Ultra 7 256V/ 16GB/ 512GB SSD/ 14 inch WUXGA/ NoOS/ Black/ Vỏ nhôm/ 2Y)",
+        "Nhóm hàng": "Laptop",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Kho VP",
+        "Nhà cung cấp": "Hưng Hà",
+        "Ngày nhập": "46277.0",
+        "Mã phiếu nhập": "PN-260912-205001",
+        "Trạng thái": "Đã xuất",
+        "Ngày xuất": "46277.0",
+        "Mã phiếu xuất": "PX-260912-214430",
+        "Khách hàng": "Công ty cổ phần giải pháp công nghệ và truyền Thông Việt (C Hà)",
+        "SĐT Khách": "9.7202266E7",
+        "Số tháng BH": "12.0",
+        "Ngày hết hạn BH": "46642.0"
+      },
+      {
+        "_rowNum": 39,
+        "Serial": "VNMOY11287",
+        "Model": "HP Laserjet Pro 4003dw",
+        "Tên hàng hóa": "Máy in HP LaserJet Pro 4003dw",
+        "Nhóm hàng": "Máy In",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Nhà",
+        "Nhà cung cấp": "Nam Phát",
+        "Ngày nhập": "46275.0",
+        "Mã phiếu nhập": "PN-260913-191519",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 40,
+        "Serial": "VNMOY10210",
+        "Model": "HP Laserjet Pro 4003dw",
+        "Tên hàng hóa": "Máy in HP LaserJet Pro 4003dw",
+        "Nhóm hàng": "Máy In",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Nhà",
+        "Nhà cung cấp": "Nam Phát",
+        "Ngày nhập": "46275.0",
+        "Mã phiếu nhập": "PN-260913-191519",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 41,
+        "Serial": "VNMOY10215",
+        "Model": "HP Laserjet Pro 4003dw",
+        "Tên hàng hóa": "Máy in HP LaserJet Pro 4003dw",
+        "Nhóm hàng": "Máy In",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Nhà",
+        "Nhà cung cấp": "Nam Phát",
+        "Ngày nhập": "46275.0",
+        "Mã phiếu nhập": "PN-260913-191519",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 42,
+        "Serial": "VNMOY10292",
+        "Model": "HP Laserjet Pro 4003dw",
+        "Tên hàng hóa": "Máy in HP LaserJet Pro 4003dw",
+        "Nhóm hàng": "Máy In",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Nhà",
+        "Nhà cung cấp": "Nam Phát",
+        "Ngày nhập": "46275.0",
+        "Mã phiếu nhập": "PN-260913-191519",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 43,
+        "Serial": "VNM1904374",
+        "Model": "HP Laserjet Pro 4003dw",
+        "Tên hàng hóa": "Máy in HP LaserJet Pro 4003dw",
+        "Nhóm hàng": "Máy In",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Nhà",
+        "Nhà cung cấp": "Nam Phát",
+        "Ngày nhập": "46275.0",
+        "Mã phiếu nhập": "PN-260913-191519",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 44,
+        "Serial": "VNM1904390",
+        "Model": "HP Laserjet Pro 4003dw",
+        "Tên hàng hóa": "Máy in HP LaserJet Pro 4003dw",
+        "Nhóm hàng": "Máy In",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Nhà",
+        "Nhà cung cấp": "Nam Phát",
+        "Ngày nhập": "46275.0",
+        "Mã phiếu nhập": "PN-260913-191519",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 45,
+        "Serial": "VNM1904400",
+        "Model": "HP Laserjet Pro 4003dw",
+        "Tên hàng hóa": "Máy in HP LaserJet Pro 4003dw",
+        "Nhóm hàng": "Máy In",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Nhà",
+        "Nhà cung cấp": "Nam Phát",
+        "Ngày nhập": "46275.0",
+        "Mã phiếu nhập": "PN-260913-191519",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 46,
+        "Serial": "VNM1904910",
+        "Model": "HP Laserjet Pro 4003dw",
+        "Tên hàng hóa": "Máy in HP LaserJet Pro 4003dw",
+        "Nhóm hàng": "Máy In",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Nhà",
+        "Nhà cung cấp": "Nam Phát",
+        "Ngày nhập": "46275.0",
+        "Mã phiếu nhập": "PN-260913-191519",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 47,
+        "Serial": "VNM1904918",
+        "Model": "HP Laserjet Pro 4003dw",
+        "Tên hàng hóa": "Máy in HP LaserJet Pro 4003dw",
+        "Nhóm hàng": "Máy In",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Nhà",
+        "Nhà cung cấp": "Nam Phát",
+        "Ngày nhập": "46275.0",
+        "Mã phiếu nhập": "PN-260913-191519",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 48,
+        "Serial": "VNM1904947",
+        "Model": "HP Laserjet Pro 4003dw",
+        "Tên hàng hóa": "Máy in HP LaserJet Pro 4003dw",
+        "Nhóm hàng": "Máy In",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Nhà",
+        "Nhà cung cấp": "Nam Phát",
+        "Ngày nhập": "46275.0",
+        "Mã phiếu nhập": "PN-260913-191519",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 49,
+        "Serial": "VNM1904953",
+        "Model": "HP Laserjet Pro 4003dw",
+        "Tên hàng hóa": "Máy in HP LaserJet Pro 4003dw",
+        "Nhóm hàng": "Máy In",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Nhà",
+        "Nhà cung cấp": "Nam Phát",
+        "Ngày nhập": "46275.0",
+        "Mã phiếu nhập": "PN-260913-191519",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 50,
+        "Serial": "VNM1904963",
+        "Model": "HP Laserjet Pro 4003dw",
+        "Tên hàng hóa": "Máy in HP LaserJet Pro 4003dw",
+        "Nhóm hàng": "Máy In",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Nhà",
+        "Nhà cung cấp": "Nam Phát",
+        "Ngày nhập": "46275.0",
+        "Mã phiếu nhập": "PN-260913-191519",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 51,
+        "Serial": "VNM1906781",
+        "Model": "HP Laserjet Pro 4003dw",
+        "Tên hàng hóa": "Máy in HP LaserJet Pro 4003dw",
+        "Nhóm hàng": "Máy In",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Nhà",
+        "Nhà cung cấp": "Nam Phát",
+        "Ngày nhập": "46275.0",
+        "Mã phiếu nhập": "PN-260913-191519",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 52,
+        "Serial": "VNMOY10206",
+        "Model": "HP Laserjet Pro 4003dw",
+        "Tên hàng hóa": "Máy in HP LaserJet Pro 4003dw",
+        "Nhóm hàng": "Máy In",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Nhà",
+        "Nhà cung cấp": "Nam Phát",
+        "Ngày nhập": "46275.0",
+        "Mã phiếu nhập": "PN-260913-191519",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 53,
+        "Serial": "VNM0W42889",
+        "Model": "Hp Laserjet M211DW",
+        "Tên hàng hóa": "Máy in HP LaserJet M211DW",
+        "Nhóm hàng": "Máy In",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Kho VP",
+        "Nhà cung cấp": "N/A",
+        "Ngày nhập": "46249.0",
+        "Mã phiếu nhập": "PN-260915-171953",
+        "Trạng thái": "Đã xuất",
+        "Ngày xuất": "46284.0",
+        "Mã phiếu xuất": "PX-260919-085717",
+        "Khách hàng": "CÔNG TY TNHH THƯƠNG MẠI DƯỢC PHẨM TRUNG TÍN",
+        "SĐT Khách": "0868749555 - Chị Giang",
+        "Số tháng BH": "12.0",
+        "Ngày hết hạn BH": "46649.0"
+      },
+      {
+        "_rowNum": 54,
+        "Serial": "VNM0W40960",
+        "Model": "Hp Laserjet M211DW",
+        "Tên hàng hóa": "Máy in HP LaserJet M211DW",
+        "Nhóm hàng": "Máy In",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Kho VP",
+        "Nhà cung cấp": "N/A",
+        "Ngày nhập": "46249.0",
+        "Mã phiếu nhập": "PN-260915-171953",
+        "Trạng thái": "Đã xuất",
+        "Ngày xuất": "46280.0",
+        "Mã phiếu xuất": "PX-260915-174408",
+        "Khách hàng": "e Vân",
+        "SĐT Khách": "3.83500018E8",
+        "Số tháng BH": "12.0",
+        "Ngày hết hạn BH": "46645.0"
+      },
+      {
+        "_rowNum": 55,
+        "Serial": "BM501913352103212",
+        "Model": "DAHUA DHI-LM22-A210Y",
+        "Tên hàng hóa": "Màn hình Monitor DAHUA DHI-LM22-A210Y",
+        "Nhóm hàng": "Màn Hình",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Kho VP",
+        "Nhà cung cấp": "Trí Việt",
+        "Ngày nhập": "46280.0",
+        "Mã phiếu nhập": "PN-260915-172547",
+        "Trạng thái": "Đã xuất",
+        "Ngày xuất": "46282.0",
+        "Mã phiếu xuất": "PX-260917-175255",
+        "Khách hàng": "Chị Phương",
+        "SĐT Khách": "3.25470077E8",
+        "Số tháng BH": "24.0",
+        "Ngày hết hạn BH": "47013.0"
+      },
+      {
+        "_rowNum": 56,
+        "Serial": "BM501913352100975",
+        "Model": "DAHUA DHI-LM22-A210Y",
+        "Tên hàng hóa": "Màn hình Monitor DAHUA DHI-LM22-A210Y",
+        "Nhóm hàng": "Màn Hình",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Kho VP",
+        "Nhà cung cấp": "Trí Việt",
+        "Ngày nhập": "46280.0",
+        "Mã phiếu nhập": "PN-260915-172547",
+        "Trạng thái": "Đã xuất",
+        "Ngày xuất": "46280.0",
+        "Mã phiếu xuất": "PX-260915-172950",
+        "Khách hàng": "CÔNG TY TNHH X.E VIỆT NAM (A Dương)",
+        "SĐT Khách": "9.09689886E8",
+        "Số tháng BH": "12.0",
+        "Ngày hết hạn BH": "46645.0"
+      },
+      {
+        "_rowNum": 57,
+        "Serial": "U60F4Q2500498",
+        "Model": "Bộ vi xử lý Intel Core i5-12400",
+        "Tên hàng hóa": "Bộ vi xử lý Intel Core i5-12400 (2.5Ghz Tubro up to 4.4Ghz, 6 nhân 12 luồng, 18MB Cache, UHD730, 65W, Socket1700)",
+        "Nhóm hàng": "CHIP (CPU)",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Kho VP",
+        "Nhà cung cấp": "FPS",
+        "Ngày nhập": "46280.0",
+        "Mã phiếu nhập": "PN-260915-180940",
+        "Trạng thái": "Đã xuất",
+        "Ngày xuất": "46280.0",
+        "Mã phiếu xuất": "PX-260916-154235",
+        "Khách hàng": "CÔNG TY TNHH X.E VIỆT NAM (A Dương)",
+        "SĐT Khách": "9.09689886E8",
+        "Số tháng BH": "12.0",
+        "Ngày hết hạn BH": "46645.0"
+      },
+      {
+        "_rowNum": 58,
+        "Serial": "3.0188230248E10",
+        "Model": "Ram PC Hiksemi Armor 16GB DDR4 bus 3200Mhz",
+        "Tên hàng hóa": "Ram PC Hiksemi Armor 16GB DDR4 bus 3200Mhz Tản Nhiệt (HSC416U32D2-16G)_FV-BH60T",
+        "Nhóm hàng": "RAM",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Văn Phòng",
+        "Nhà cung cấp": "Song Hùng",
+        "Ngày nhập": "46280.0",
+        "Mã phiếu nhập": "PN-260915-181137",
+        "Trạng thái": "Đã xuất",
+        "Ngày xuất": "46280.0",
+        "Mã phiếu xuất": "PX-260916-154906",
+        "Khách hàng": "CÔNG TY TNHH X.E VIỆT NAM (A Dương)",
+        "SĐT Khách": "9.09689886E8",
+        "Số tháng BH": "12.0",
+        "Ngày hết hạn BH": "46645.0"
+      },
+      {
+        "_rowNum": 59,
+        "Serial": "H610M2511201388",
+        "Model": "Mainboard DarkFlash H610M",
+        "Tên hàng hóa": "Mainboard DarkFlash H610M-VGD-V1 (Chipset H610, SK1700, 2xDDR4, PCE NVMe Gen3x4, Lan 1Gbps, VGA, HDMI",
+        "Nhóm hàng": "Main Máy Tính",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Kho VP",
+        "Nhà cung cấp": "Song Hùng",
+        "Ngày nhập": "46280.0",
+        "Mã phiếu nhập": "PN-260915-181217",
+        "Trạng thái": "Đã xuất",
+        "Ngày xuất": "46281.0",
+        "Mã phiếu xuất": "PX-260916-155029",
+        "Khách hàng": "CÔNG TY TNHH X.E VIỆT NAM (A Dương)",
+        "SĐT Khách": "9.09689886E8",
+        "Số tháng BH": "12.0",
+        "Ngày hết hạn BH": "46646.0"
+      },
+      {
+        "_rowNum": 60,
+        "Serial": "602-V809-2885S02601001478",
+        "Model": "VGA MSI GeForce RTX 3050",
+        "Tên hàng hóa": "VGA MSI GeForce RTX 3050 VENTUS 2X 8G OC",
+        "Nhóm hàng": "VGA (Card màn hình)",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Văn Phòng",
+        "Nhà cung cấp": "Song Hùng",
+        "Ngày nhập": "46280.0",
+        "Mã phiếu nhập": "PN-260915-181257",
+        "Trạng thái": "Đã xuất",
+        "Ngày xuất": "46280.0",
+        "Mã phiếu xuất": "PX-260916-155311",
+        "Khách hàng": "CÔNG TY TNHH X.E VIỆT NAM (A Dương)",
+        "SĐT Khách": "9.09689886E8",
+        "Số tháng BH": "12.0",
+        "Ngày hết hạn BH": "46645.0"
+      },
+      {
+        "_rowNum": 61,
+        "Serial": "TKSMC25C8X01266",
+        "Model": "SSD CUSU 512GB",
+        "Tên hàng hóa": "SSD CUSU 512GB PCIe 3x4 M.2 2280 NVMe,TLC,R/W up to 3500/2500MB/s",
+        "Nhóm hàng": "Ổ Cứng",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Kho VP",
+        "Nhà cung cấp": "FPS",
+        "Ngày nhập": "46280.0",
+        "Mã phiếu nhập": "PN-260915-181456",
+        "Trạng thái": "Đã xuất",
+        "Ngày xuất": "46280.0",
+        "Mã phiếu xuất": "PX-260916-155311",
+        "Khách hàng": "CÔNG TY TNHH X.E VIỆT NAM (A Dương)",
+        "SĐT Khách": "9.09689886E8",
+        "Số tháng BH": "12.0",
+        "Ngày hết hạn BH": "46645.0"
+      },
+      {
+        "_rowNum": 62,
+        "Serial": "GHD887363300087",
+        "Model": "Nguồn máy tính AIGO VK550, CST 550W,",
+        "Tên hàng hóa": "Nguồn máy tính AIGO VK550, CST 550W, Fan12cm",
+        "Nhóm hàng": "Nguồn Máy Tính",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Văn Phòng",
+        "Nhà cung cấp": "Song Hùng",
+        "Ngày nhập": "46280.0",
+        "Mã phiếu nhập": "PN-260915-181623",
+        "Trạng thái": "Đã xuất",
+        "Ngày xuất": "46280.0",
+        "Mã phiếu xuất": "PX-260916-155311",
+        "Khách hàng": "CÔNG TY TNHH X.E VIỆT NAM (A Dương)",
+        "SĐT Khách": "9.09689886E8",
+        "Số tháng BH": "12.0",
+        "Ngày hết hạn BH": "46645.0"
+      },
+      {
+        "_rowNum": 63,
+        "Serial": "5002687687698BFF",
+        "Model": "SSD Kingston KC600 512",
+        "Tên hàng hóa": "SSD Kingston SKC600 512GB 2.5 inch SATA3 (Đọc 550MB/s - Ghi 520MB/s) - (KC600/512GB)",
+        "Nhóm hàng": "Ổ Cứng",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Kho VP",
+        "Nhà cung cấp": "NAKIO",
+        "Ngày nhập": "46282.0",
+        "Mã phiếu nhập": "PN-260917-134355",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 64,
+        "Serial": "50026876876979D6",
+        "Model": "SSD Kingston KC600 512",
+        "Tên hàng hóa": "SSD Kingston SKC600 512GB 2.5 inch SATA3 (Đọc 550MB/s - Ghi 520MB/s) - (KC600/512GB)",
+        "Nhóm hàng": "Ổ Cứng",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Kho VP",
+        "Nhà cung cấp": "NAKIO",
+        "Ngày nhập": "46282.0",
+        "Mã phiếu nhập": "PN-260917-134355",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 65,
+        "Serial": "U6QP281903042",
+        "Model": "i3-12100",
+        "Tên hàng hóa": "Bộ vi xử lý Intel Core i3-12100",
+        "Nhóm hàng": "CHIP (CPU)",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Văn Phòng",
+        "Nhà cung cấp": "Song Hùng",
+        "Ngày nhập": "46282.0",
+        "Mã phiếu nhập": "PN-260917-173635",
+        "Trạng thái": "Đã xuất",
+        "Ngày xuất": "46282.0",
+        "Mã phiếu xuất": "PX-260917-175255",
+        "Khách hàng": "Chị Phương",
+        "SĐT Khách": "3.25470077E8",
+        "Số tháng BH": "24.0",
+        "Ngày hết hạn BH": "47013.0"
+      },
+      {
+        "_rowNum": 66,
+        "Serial": "H610M2511201381",
+        "Model": "Mainboard DarkFlash H610M",
+        "Tên hàng hóa": "Mainboard DarkFlash H610M-VGD-V1 (Chipset H610, SK1700, 2xDDR4, PCE NVMe Gen3x4, Lan 1Gbps, VGA, HDMI",
+        "Nhóm hàng": "Main Máy Tính",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Văn Phòng",
+        "Nhà cung cấp": "Song Hùng",
+        "Ngày nhập": "46282.0",
+        "Mã phiếu nhập": "PN-260917-173635",
+        "Trạng thái": "Đã xuất",
+        "Ngày xuất": "46282.0",
+        "Mã phiếu xuất": "PX-260917-175255",
+        "Khách hàng": "Chị Phương",
+        "SĐT Khách": "3.25470077E8",
+        "Số tháng BH": "24.0",
+        "Ngày hết hạn BH": "47013.0"
+      },
+      {
+        "_rowNum": 67,
+        "Serial": "3.0199802874E10",
+        "Model": "Ram PC Hiksemi Armor 8GB DDR4",
+        "Tên hàng hóa": "Ram PC Hiksemi Armor 8GB DDR4 bus 3200Mhz",
+        "Nhóm hàng": "RAM",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Văn Phòng",
+        "Nhà cung cấp": "Song Hùng",
+        "Ngày nhập": "46282.0",
+        "Mã phiếu nhập": "PN-260917-173635",
+        "Trạng thái": "Đã xuất",
+        "Ngày xuất": "46282.0",
+        "Mã phiếu xuất": "PX-260917-175255",
+        "Khách hàng": "Chị Phương",
+        "SĐT Khách": "3.25470077E8",
+        "Số tháng BH": "24.0",
+        "Ngày hết hạn BH": "47013.0"
+      },
+      {
+        "_rowNum": 68,
+        "Serial": "3.0200802591E10",
+        "Model": "SSD Hiksemi  256GB",
+        "Tên hàng hóa": "SSD Hiksemi HS-SSD-WAVE(S) 256GB",
+        "Nhóm hàng": "Ổ Cứng",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Văn Phòng",
+        "Nhà cung cấp": "Song Hùng",
+        "Ngày nhập": "46282.0",
+        "Mã phiếu nhập": "PN-260917-173635",
+        "Trạng thái": "Đã xuất",
+        "Ngày xuất": "46282.0",
+        "Mã phiếu xuất": "PX-260917-175255",
+        "Khách hàng": "Chị Phương",
+        "SĐT Khách": "3.25470077E8",
+        "Số tháng BH": "24.0",
+        "Ngày hết hạn BH": "47013.0"
+      },
+      {
+        "_rowNum": 69,
+        "Serial": "GHD887264200966",
+        "Model": "Nguồn máy tính AIGO VK350   350W",
+        "Tên hàng hóa": "Nguồn máy tính AIGO VK350, CST 350W",
+        "Nhóm hàng": "Nguồn Máy Tính",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Văn Phòng",
+        "Nhà cung cấp": "Song Hùng",
+        "Ngày nhập": "46282.0",
+        "Mã phiếu nhập": "PN-260917-173635",
+        "Trạng thái": "Đã xuất",
+        "Ngày xuất": "46282.0",
+        "Mã phiếu xuất": "PX-260917-175255",
+        "Khách hàng": "Chị Phương",
+        "SĐT Khách": "3.25470077E8",
+        "Số tháng BH": "24.0",
+        "Ngày hết hạn BH": "47013.0"
+      },
+      {
+        "_rowNum": 70,
+        "Serial": "LM103BT260212588",
+        "Model": "Chuột LM103",
+        "Tên hàng hóa": "Chuột DAREU LM103",
+        "Nhóm hàng": "Chuột, Bàn Phím",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Văn Phòng",
+        "Nhà cung cấp": "FPS",
+        "Ngày nhập": "46254.0",
+        "Mã phiếu nhập": "PN-260917-175158",
+        "Trạng thái": "Đã xuất",
+        "Ngày xuất": "46282.0",
+        "Mã phiếu xuất": "PX-260917-175255",
+        "Khách hàng": "Chị Phương",
+        "SĐT Khách": "3.25470077E8",
+        "Số tháng BH": "24.0",
+        "Ngày hết hạn BH": "47013.0"
+      },
+      {
+        "_rowNum": 71,
+        "Serial": "VNM0W45624",
+        "Model": "Hp Laserjet M211DW",
+        "Tên hàng hóa": "Máy in HP LaserJet M211DW",
+        "Nhóm hàng": "Máy In",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Kho VP",
+        "Nhà cung cấp": "Thanh Nga",
+        "Ngày nhập": "46283.0",
+        "Mã phiếu nhập": "PN-260918-095134",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 72,
+        "Serial": "VNM0W43917",
+        "Model": "Hp Laserjet M211DW",
+        "Tên hàng hóa": "Máy in HP LaserJet M211DW",
+        "Nhóm hàng": "Máy In",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Kho VP",
+        "Nhà cung cấp": "Thanh Nga",
+        "Ngày nhập": "46283.0",
+        "Mã phiếu nhập": "PN-260918-095134",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 73,
+        "Serial": "VNM0W45618",
+        "Model": "Hp Laserjet M211DW",
+        "Tên hàng hóa": "Máy in HP LaserJet M211DW",
+        "Nhóm hàng": "Máy In",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Kho VP",
+        "Nhà cung cấp": "Thanh Nga",
+        "Ngày nhập": "46283.0",
+        "Mã phiếu nhập": "PN-260918-095134",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 74,
+        "Serial": "VNM0W45625",
+        "Model": "Hp Laserjet M211DW",
+        "Tên hàng hóa": "Máy in HP LaserJet M211DW",
+        "Nhóm hàng": "Máy In",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Kho VP",
+        "Nhà cung cấp": "Thanh Nga",
+        "Ngày nhập": "46283.0",
+        "Mã phiếu nhập": "PN-260918-095134",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 75,
+        "Serial": "VNM0W42658",
+        "Model": "Hp Laserjet M211DW",
+        "Tên hàng hóa": "Máy in HP LaserJet M211DW",
+        "Nhóm hàng": "Máy In",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Kho VP",
+        "Nhà cung cấp": "Thanh Nga",
+        "Ngày nhập": "46283.0",
+        "Mã phiếu nhập": "PN-260918-095134",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 76,
+        "Serial": "LM103BT260212572",
+        "Model": "Chuột LM103",
+        "Tên hàng hóa": "Chuột DAREU LM103",
+        "Nhóm hàng": "Chuột, Bàn Phím",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Kho VP",
+        "Nhà cung cấp": "FPS",
+        "Ngày nhập": "46254.0",
+        "Mã phiếu nhập": "PN-260918-100016",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 77,
+        "Serial": "LM103BT260212577",
+        "Model": "Chuột LM103",
+        "Tên hàng hóa": "Chuột DAREU LM103",
+        "Nhóm hàng": "Chuột, Bàn Phím",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Kho VP",
+        "Nhà cung cấp": "FPS",
+        "Ngày nhập": "46254.0",
+        "Mã phiếu nhập": "PN-260918-100016",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 78,
+        "Serial": "LM103BT260212578",
+        "Model": "Chuột LM103",
+        "Tên hàng hóa": "Chuột DAREU LM103",
+        "Nhóm hàng": "Chuột, Bàn Phím",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Kho VP",
+        "Nhà cung cấp": "FPS",
+        "Ngày nhập": "46254.0",
+        "Mã phiếu nhập": "PN-260918-100016",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 79,
+        "Serial": "LM103BT260212590",
+        "Model": "Chuột LM103",
+        "Tên hàng hóa": "Chuột DAREU LM103",
+        "Nhóm hàng": "Chuột, Bàn Phím",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Kho VP",
+        "Nhà cung cấp": "FPS",
+        "Ngày nhập": "46254.0",
+        "Mã phiếu nhập": "PN-260918-100016",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 80,
+        "Serial": "LM103BT260212589",
+        "Model": "Chuột LM103",
+        "Tên hàng hóa": "Chuột DAREU LM103",
+        "Nhóm hàng": "Chuột, Bàn Phím",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Kho VP",
+        "Nhà cung cấp": "FPS",
+        "Ngày nhập": "46254.0",
+        "Mã phiếu nhập": "PN-260918-100016",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 81,
+        "Serial": "BM501913352103213",
+        "Model": "DAHUA DHI-LM22-A210Y",
+        "Tên hàng hóa": "Màn hình Monitor DAHUA DHI-LM22-A210Y",
+        "Nhóm hàng": "Màn Hình",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Văn Phòng",
+        "Nhà cung cấp": "Trí Việt",
+        "Ngày nhập": "46283.0",
+        "Mã phiếu nhập": "PN-260918-120738",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 82,
+        "Serial": "BM501913352100021",
+        "Model": "DAHUA DHI-LM22-A210Y",
+        "Tên hàng hóa": "Màn hình Monitor DAHUA DHI-LM22-A210Y",
+        "Nhóm hàng": "Màn Hình",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Văn Phòng",
+        "Nhà cung cấp": "Trí Việt",
+        "Ngày nhập": "46283.0",
+        "Mã phiếu nhập": "PN-260918-120738",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 83,
+        "Serial": "BM501913352103194",
+        "Model": "DAHUA DHI-LM22-A210Y",
+        "Tên hàng hóa": "Màn hình Monitor DAHUA DHI-LM22-A210Y",
+        "Nhóm hàng": "Màn Hình",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Văn Phòng",
+        "Nhà cung cấp": "Trí Việt",
+        "Ngày nhập": "46283.0",
+        "Mã phiếu nhập": "PN-260918-120738",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 84,
+        "Serial": "WRD0LQRY",
+        "Model": "HDD 8GB",
+        "Tên hàng hóa": "Segate Skyhawk 8TB",
+        "Nhóm hàng": "Ổ Cứng",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Văn Phòng",
+        "Nhà cung cấp": "N/A",
+        "Ngày nhập": "46283.0",
+        "Mã phiếu nhập": "PN-260919-081800",
+        "Trạng thái": "Đã xuất",
+        "Ngày xuất": "46283.0",
+        "Mã phiếu xuất": "PX-260919-082129",
+        "Khách hàng": "Nguyễn Thanh Tùng",
+        "SĐT Khách": "0989966619",
+        "Số tháng BH": "12.0",
+        "Ngày hết hạn BH": "46648.0"
+      },
+      {
+        "_rowNum": 85,
+        "Serial": "123456.0",
+        "Model": "Bộ mở rộng HDMI qua dây LAN",
+        "Tên hàng hóa": "Bộ mở rộng HDMI 150M qua dây LAN có điều khiển phím chuột",
+        "Nhóm hàng": "Thiết bị kết nối",
+        "Loại hàng": "Chính Hãng",
+        "Vị trí kho": "Văn Phòng",
+        "Nhà cung cấp": "EASY",
+        "Ngày nhập": "46283.0",
+        "Mã phiếu nhập": "PN-260919-090539",
+        "Trạng thái": "Đã xuất",
+        "Ngày xuất": "46286.0",
+        "Mã phiếu xuất": "PX-260921-164736",
+        "Khách hàng": "anh Luận",
+        "SĐT Khách": "0963732891",
+        "Số tháng BH": "12.0",
+        "Ngày hết hạn BH": "46651.0"
+      },
+      {
+        "_rowNum": 86,
+        "Serial": "PHPA117934",
+        "Model": "Canon LBP 243dw II",
+        "Tên hàng hóa": "Máy In 2 Mặt Canon LBP243dw",
+        "Nhóm hàng": "Máy In",
+        "Loại hàng": "Nhập Khẩu",
+        "Vị trí kho": "Văn Phòng",
+        "Nhà cung cấp": "Hưng Phúc",
+        "Ngày nhập": "46286.0",
+        "Mã phiếu nhập": "PN-260921-155542",
+        "Trạng thái": "Tồn kho"
+      },
+      {
+        "_rowNum": 87,
+        "Serial": "PHPA118726",
+        "Model": "Canon LBP 243dw II",
+        "Tên hàng hóa": "Máy In 2 Mặt Canon LBP243dw",
+        "Nhóm hàng": "Máy In",
+        "Loại hàng": "Nhập Khẩu",
+        "Vị trí kho": "Văn Phòng",
+        "Nhà cung cấp": "Hưng Phúc",
+        "Ngày nhập": "46286.0",
+        "Mã phiếu nhập": "PN-260921-155542",
+        "Trạng thái": "Đã xuất",
+        "Ngày xuất": "46286.0",
+        "Mã phiếu xuất": "PX-260921-162918",
+        "Khách hàng": "Mr. Đỉnh: 096 9898168 Số L3-125 đường Limoni, Khu đô thị New An Thới, Đặc khu Phú Quốc, Tỉnh An Giang",
+        "Số tháng BH": "12.0",
+        "Ngày hết hạn BH": "46651.0"
+      }
+    ]
+  },
+  "NHAT_KY_HOAT_DONG": {
+    "headers": [
+      "Thời gian",
+      "Người thực hiện",
+      "Hành động",
+      "Mã Serial",
+      "Chi tiết"
+    ],
+    "rows": [
+      {
+        "_rowNum": 2,
+        "Thời gian": "46276.49783564815",
+        "Người thực hiện": "Khổng Mạnh Cường",
+        "Hành động": "NHẬP KHO",
+        "Mã Serial": "PN-260911-115634",
+        "Chi tiết": "Nhập 1 loại hàng"
+      },
+      {
+        "_rowNum": 3,
+        "Thời gian": "46276.53375",
+        "Người thực hiện": "Khổng Mạnh Cường",
+        "Hành động": "XUẤT KHO",
+        "Mã Serial": "PX-260911-124810",
+        "Chi tiết": "Bán 1 máy"
+      },
+      {
+        "_rowNum": 4,
+        "Thời gian": "46276.534479166665",
+        "Người thực hiện": "A",
+        "Hành động": "SỬA THIẾT BỊ",
+        "Mã Serial": "SN-005",
+        "Chi tiết": "Đổi thông tin"
+      },
+      {
+        "_rowNum": 5,
+        "Thời gian": "46276.57787037037",
+        "Người thực hiện": "Admin",
+        "Hành động": "SAO LƯU DỮ LIỆU",
+        "Mã Serial": "-",
+        "Chi tiết": "Tạo bản sao lưu: [BACKUP] THANH_AN_ERP_20260911_135200"
+      },
+      {
+        "_rowNum": 6,
+        "Thời gian": "46276.577881944446",
+        "Người thực hiện": "Admin",
+        "Hành động": "RESET HỆ THỐNG",
+        "Mã Serial": "ALL",
+        "Chi tiết": "Đã xóa toàn bộ máy móc tồn kho và lịch sử giao dịch về trắng."
+      },
+      {
+        "_rowNum": 7,
+        "Thời gian": "46276.57792824074",
+        "Người thực hiện": "Admin",
+        "Hành động": "SAO LƯU DỮ LIỆU",
+        "Mã Serial": "-",
+        "Chi tiết": "Tạo bản sao lưu: [BACKUP] THANH_AN_ERP_20260911_135207"
+      },
+      {
+        "_rowNum": 8,
+        "Thời gian": "46276.577939814815",
+        "Người thực hiện": "Admin",
+        "Hành động": "RESET HỆ THỐNG",
+        "Mã Serial": "ALL",
+        "Chi tiết": "Đã xóa toàn bộ máy móc tồn kho và lịch sử giao dịch về trắng."
+      },
+      {
+        "_rowNum": 9,
+        "Thời gian": "46276.589050925926",
+        "Người thực hiện": "Khổng Mạnh Cường",
+        "Hành động": "NHẬP KHO",
+        "Mã Serial": "PN-260911-140733",
+        "Chi tiết": "Nhập 1 loại hàng"
+      },
+      {
+        "_rowNum": 10,
+        "Thời gian": "46276.59012731481",
+        "Người thực hiện": "Khổng Mạnh Cường",
+        "Hành động": "NHẬP KHO",
+        "Mã Serial": "PN-260911-140819",
+        "Chi tiết": "Nhập 1 loại hàng"
+      },
+      {
+        "_rowNum": 11,
+        "Thời gian": "46276.590891203705",
+        "Người thực hiện": "Khổng Mạnh Cường",
+        "Hành động": "NHẬP KHO",
+        "Mã Serial": "PN-260911-141015",
+        "Chi tiết": "Nhập 1 loại hàng"
+      },
+      {
+        "_rowNum": 12,
+        "Thời gian": "46276.591527777775",
+        "Người thực hiện": "Khổng Mạnh Cường",
+        "Hành động": "NHẬP KHO",
+        "Mã Serial": "PN-260911-141121",
+        "Chi tiết": "Nhập 1 loại hàng"
+      },
+      {
+        "_rowNum": 13,
+        "Thời gian": "46276.59195601852",
+        "Người thực hiện": "Khổng Mạnh Cường",
+        "Hành động": "NHẬP KHO",
+        "Mã Serial": "PN-260911-141202",
+        "Chi tiết": "Nhập 1 loại hàng"
+      },
+      {
+        "_rowNum": 14,
+        "Thời gian": "46276.59241898148",
+        "Người thực hiện": "Khổng Mạnh Cường",
+        "Hành động": "NHẬP KHO",
+        "Mã Serial": "PN-260911-141233",
+        "Chi tiết": "Nhập 1 loại hàng"
+      },
+      {
+        "_rowNum": 15,
+        "Thời gian": "46276.5928587963",
+        "Người thực hiện": "Khổng Mạnh Cường",
+        "Hành động": "NHẬP KHO",
+        "Mã Serial": "PN-260911-141318",
+        "Chi tiết": "Nhập 1 loại hàng"
+      },
+      {
+        "_rowNum": 16,
+        "Thời gian": "46276.593564814815",
+        "Người thực hiện": "Khổng Mạnh Cường",
+        "Hành động": "NHẬP KHO",
+        "Mã Serial": "PN-260911-141413",
+        "Chi tiết": "Nhập 1 loại hàng"
+      },
+      {
+        "_rowNum": 17,
+        "Thời gian": "46276.59460648148",
+        "Người thực hiện": "Khổng Mạnh Cường",
+        "Hành động": "NHẬP KHO",
+        "Mã Serial": "PN-260911-141500",
+        "Chi tiết": "Nhập 1 loại hàng"
+      },
+      {
+        "_rowNum": 18,
+        "Thời gian": "46276.59502314815",
+        "Người thực hiện": "Khổng Mạnh Cường",
+        "Hành động": "NHẬP KHO",
+        "Mã Serial": "PN-260911-141624",
+        "Chi tiết": "Nhập 1 loại hàng"
+      },
+      {
+        "_rowNum": 19,
+        "Thời gian": "46276.59547453704",
+        "Người thực hiện": "Khổng Mạnh Cường",
+        "Hành động": "NHẬP KHO",
+        "Mã Serial": "PN-260911-141701",
+        "Chi tiết": "Nhập 1 loại hàng"
+      },
+      {
+        "_rowNum": 20,
+        "Thời gian": "46276.64849537037",
+        "Người thực hiện": "Khổng Minh Quân",
+        "Hành động": "NHẬP KHO",
+        "Mã Serial": "PN-260911-153249",
+        "Chi tiết": "Nhập 1 loại hàng"
+      },
+      {
+        "_rowNum": 21,
+        "Thời gian": "46276.66488425926",
+        "Người thực hiện": "Khổng Minh Quân",
+        "Hành động": "NHẬP KHO",
+        "Mã Serial": "PN-260911-155551",
+        "Chi tiết": "Nhập 1 loại hàng"
+      },
+      {
+        "_rowNum": 22,
+        "Thời gian": "46277.359305555554",
+        "Người thực hiện": "Khổng Mạnh Cường",
+        "Hành động": "NHẬP KHO",
+        "Mã Serial": "PN-260912-083643",
+        "Chi tiết": "Nhập 1 loại hàng"
+      },
+      {
+        "_rowNum": 23,
+        "Thời gian": "46277.35965277778",
+        "Người thực hiện": "Khổng Mạnh Cường",
+        "Hành động": "XÓA MÁY",
+        "Mã Serial": "VNM0WW42908",
+        "Chi tiết": "Đã xóa khỏi kho"
+      },
+      {
+        "_rowNum": 24,
+        "Thời gian": "46277.360300925924",
+        "Người thực hiện": "Khổng Mạnh Cường",
+        "Hành động": "NHẬP KHO",
+        "Mã Serial": "PN-260912-083809",
+        "Chi tiết": "Nhập 1 loại hàng"
+      },
+      {
+        "_rowNum": 25,
+        "Thời gian": "46277.36106481482",
+        "Người thực hiện": "Khổng Mạnh Cường",
+        "Hành động": "XUẤT KHO",
+        "Mã Serial": "PX-260912-083937",
+        "Chi tiết": "Bán 1 máy"
+      },
+      {
+        "_rowNum": 26,
+        "Thời gian": "46277.86853009259",
+        "Người thực hiện": "Khổng Mạnh Cường",
+        "Hành động": "NHẬP KHO",
+        "Mã Serial": "PN-260912-205001",
+        "Chi tiết": "Nhập 1 loại hàng"
+      },
+      {
+        "_rowNum": 27,
+        "Thời gian": "46277.90542824074",
+        "Người thực hiện": "Khổng Mạnh Cường",
+        "Hành động": "SỬA THIẾT BỊ",
+        "Mã Serial": "PF685QNZ",
+        "Chi tiết": "Đổi thông tin"
+      },
+      {
+        "_rowNum": 28,
+        "Thời gian": "46277.90708333333",
+        "Người thực hiện": "Khổng Mạnh Cường",
+        "Hành động": "XUẤT KHO",
+        "Mã Serial": "PX-260912-214430",
+        "Chi tiết": "Bán 1 máy"
+      },
+      {
+        "_rowNum": 29,
+        "Thời gian": "46278.80326388889",
+        "Người thực hiện": "Khổng Mạnh Cường",
+        "Hành động": "NHẬP KHO",
+        "Mã Serial": "PN-260913-191519",
+        "Chi tiết": "Nhập 1 loại hàng"
+      },
+      {
+        "_rowNum": 30,
+        "Thời gian": "46280.721041666664",
+        "Người thực hiện": "Khổng Mạnh Cường",
+        "Hành động": "XÓA MÁY",
+        "Mã Serial": "VNM0W42889",
+        "Chi tiết": "Đã xóa khỏi kho"
+      },
+      {
+        "_rowNum": 31,
+        "Thời gian": "46280.721180555556",
+        "Người thực hiện": "Khổng Mạnh Cường",
+        "Hành động": "XÓA MÁY",
+        "Mã Serial": "VNM0W12908",
+        "Chi tiết": "Đã xóa khỏi kho"
+      },
+      {
+        "_rowNum": 32,
+        "Thời gian": "46280.72142361111",
+        "Người thực hiện": "Khổng Mạnh Cường",
+        "Hành động": "XÓA MÁY",
+        "Mã Serial": "VNM0W40960",
+        "Chi tiết": "Đã xóa khỏi kho"
+      },
+      {
+        "_rowNum": 33,
+        "Thời gian": "46280.72244212963",
+        "Người thực hiện": "Khổng Mạnh Cường",
+        "Hành động": "NHẬP KHO",
+        "Mã Serial": "PN-260915-171953",
+        "Chi tiết": "Nhập 1 loại hàng"
+      },
+      {
+        "_rowNum": 34,
+        "Thời gian": "46280.728796296295",
+        "Người thực hiện": "Khổng Minh Quân",
+        "Hành động": "NHẬP KHO",
+        "Mã Serial": "PN-260915-172547",
+        "Chi tiết": "Nhập 1 loại hàng"
+      },
+      {
+        "_rowNum": 35,
+        "Thời gian": "46280.730405092596",
+        "Người thực hiện": "Khổng Minh Quân",
+        "Hành động": "XUẤT KHO",
+        "Mã Serial": "PX-260915-172950",
+        "Chi tiết": "Bán 2 máy"
+      },
+      {
+        "_rowNum": 36,
+        "Thời gian": "46280.73596064815",
+        "Người thực hiện": "Khổng Mạnh Cường",
+        "Hành động": "XÓA MÁY",
+        "Mã Serial": "VNM0W12908",
+        "Chi tiết": "Đã xóa khỏi kho"
+      },
+      {
+        "_rowNum": 37,
+        "Thời gian": "46280.73983796296",
+        "Người thực hiện": "Khổng Minh Quân",
+        "Hành động": "XUẤT KHO",
+        "Mã Serial": "PX-260915-174408",
+        "Chi tiết": "Bán 1 máy"
+      },
+      {
+        "_rowNum": 38,
+        "Thời gian": "46280.75703703704",
+        "Người thực hiện": "Khổng Minh Quân",
+        "Hành động": "NHẬP KHO",
+        "Mã Serial": "PN-260915-180940",
+        "Chi tiết": "Nhập 1 loại hàng"
+      },
+      {
+        "_rowNum": 39,
+        "Thời gian": "46280.7583912037",
+        "Người thực hiện": "Khổng Minh Quân",
+        "Hành động": "NHẬP KHO",
+        "Mã Serial": "PN-260915-181137",
+        "Chi tiết": "Nhập 1 loại hàng"
+      },
+      {
+        "_rowNum": 40,
+        "Thời gian": "46280.75881944445",
+        "Người thực hiện": "Khổng Minh Quân",
+        "Hành động": "NHẬP KHO",
+        "Mã Serial": "PN-260915-181217",
+        "Chi tiết": "Nhập 1 loại hàng"
+      },
+      {
+        "_rowNum": 41,
+        "Thời gian": "46280.75927083333",
+        "Người thực hiện": "Khổng Minh Quân",
+        "Hành động": "NHẬP KHO",
+        "Mã Serial": "PN-260915-181257",
+        "Chi tiết": "Nhập 1 loại hàng"
+      },
+      {
+        "_rowNum": 42,
+        "Thời gian": "46280.760567129626",
+        "Người thực hiện": "Khổng Minh Quân",
+        "Hành động": "NHẬP KHO",
+        "Mã Serial": "PN-260915-181456",
+        "Chi tiết": "Nhập 1 loại hàng"
+      },
+      {
+        "_rowNum": 43,
+        "Thời gian": "46280.761608796296",
+        "Người thực hiện": "Khổng Minh Quân",
+        "Hành động": "NHẬP KHO",
+        "Mã Serial": "PN-260915-181623",
+        "Chi tiết": "Nhập 1 loại hàng"
+      },
+      {
+        "_rowNum": 44,
+        "Thời gian": "46281.656493055554",
+        "Người thực hiện": "Khổng Minh Quân",
+        "Hành động": "XUẤT KHO",
+        "Mã Serial": "PX-260916-154235",
+        "Chi tiết": "Bán 1 máy"
+      },
+      {
+        "_rowNum": 45,
+        "Thời gian": "46281.6593287037",
+        "Người thực hiện": "Khổng Minh Quân",
+        "Hành động": "XUẤT KHO",
+        "Mã Serial": "PX-260916-154906",
+        "Chi tiết": "Bán 1 máy"
+      },
+      {
+        "_rowNum": 46,
+        "Thời gian": "46281.66025462963",
+        "Người thực hiện": "Khổng Minh Quân",
+        "Hành động": "XUẤT KHO",
+        "Mã Serial": "PX-260916-155029",
+        "Chi tiết": "Bán 1 máy"
+      },
+      {
+        "_rowNum": 47,
+        "Thời gian": "46281.662407407406",
+        "Người thực hiện": "Khổng Minh Quân",
+        "Hành động": "XUẤT KHO",
+        "Mã Serial": "PX-260916-155311",
+        "Chi tiết": "Bán 3 máy"
+      },
+      {
+        "_rowNum": 48,
+        "Thời gian": "46282.39372685185",
+        "Người thực hiện": "Khổng Minh Quân",
+        "Hành động": "XUẤT KHO",
+        "Mã Serial": "PX-260917-092624",
+        "Chi tiết": "Bán 2 máy"
+      },
+      {
+        "_rowNum": 49,
+        "Thời gian": "46282.57305555556",
+        "Người thực hiện": "Khổng Minh Quân",
+        "Hành động": "NHẬP KHO",
+        "Mã Serial": "PN-260917-134355",
+        "Chi tiết": "Nhập 1 loại hàng"
+      },
+      {
+        "_rowNum": 50,
+        "Thời gian": "46282.73583333333",
+        "Người thực hiện": "Khổng Minh Quân",
+        "Hành động": "NHẬP KHO",
+        "Mã Serial": "PN-260917-173635",
+        "Chi tiết": "Nhập 5 loại hàng"
+      },
+      {
+        "_rowNum": 51,
+        "Thời gian": "46282.74489583333",
+        "Người thực hiện": "Khổng Minh Quân",
+        "Hành động": "NHẬP KHO",
+        "Mã Serial": "PN-260917-175158",
+        "Chi tiết": "Nhập 1 loại hàng"
+      },
+      {
+        "_rowNum": 52,
+        "Thời gian": "46282.745729166665",
+        "Người thực hiện": "Khổng Minh Quân",
+        "Hành động": "XUẤT KHO",
+        "Mã Serial": "PX-260917-175255",
+        "Chi tiết": "Bán 8 máy"
+      },
+      {
+        "_rowNum": 53,
+        "Thời gian": "46283.412523148145",
+        "Người thực hiện": "Khổng Minh Quân",
+        "Hành động": "NHẬP KHO",
+        "Mã Serial": "PN-260918-095134",
+        "Chi tiết": "Nhập 1 loại hàng"
+      },
+      {
+        "_rowNum": 54,
+        "Thời gian": "46283.41773148148",
+        "Người thực hiện": "Khổng Minh Quân",
+        "Hành động": "NHẬP KHO",
+        "Mã Serial": "PN-260918-100016",
+        "Chi tiết": "Nhập 1 loại hàng"
+      },
+      {
+        "_rowNum": 55,
+        "Thời gian": "46283.506377314814",
+        "Người thực hiện": "Khổng Minh Quân",
+        "Hành động": "NHẬP KHO",
+        "Mã Serial": "PN-260918-120738",
+        "Chi tiết": "Nhập 1 loại hàng"
+      },
+      {
+        "_rowNum": 56,
+        "Thời gian": "46284.346921296295",
+        "Người thực hiện": "Khổng Minh Quân",
+        "Hành động": "NHẬP KHO",
+        "Mã Serial": "PN-260919-081800",
+        "Chi tiết": "Nhập 1 loại hàng"
+      },
+      {
+        "_rowNum": 57,
+        "Thời gian": "46284.349641203706",
+        "Người thực hiện": "Khổng Minh Quân",
+        "Hành động": "XUẤT KHO",
+        "Mã Serial": "PX-260919-082129",
+        "Chi tiết": "Bán 1 máy"
+      },
+      {
+        "_rowNum": 58,
+        "Thời gian": "46284.37321759259",
+        "Người thực hiện": "Khổng Minh Quân",
+        "Hành động": "XUẤT KHO",
+        "Mã Serial": "PX-260919-085717",
+        "Chi tiết": "Bán 1 máy"
+      },
+      {
+        "_rowNum": 59,
+        "Thời gian": "46284.37936342593",
+        "Người thực hiện": "Khổng Minh Quân",
+        "Hành động": "NHẬP KHO",
+        "Mã Serial": "PN-260919-090539",
+        "Chi tiết": "Nhập 1 loại hàng"
+      },
+      {
+        "_rowNum": 60,
+        "Thời gian": "46286.66453703704",
+        "Người thực hiện": "Khổng Minh Quân",
+        "Hành động": "NHẬP KHO",
+        "Mã Serial": "PN-260921-155542",
+        "Chi tiết": "Nhập 1 loại hàng"
+      },
+      {
+        "_rowNum": 61,
+        "Thời gian": "46286.68782407408",
+        "Người thực hiện": "Khổng Minh Quân",
+        "Hành động": "XUẤT KHO",
+        "Mã Serial": "PX-260921-162918",
+        "Chi tiết": "Bán 2 máy"
+      },
+      {
+        "_rowNum": 62,
+        "Thời gian": "46286.70193287037",
+        "Người thực hiện": "Khổng Minh Quân",
+        "Hành động": "XUẤT KHO",
+        "Mã Serial": "PX-260921-164736",
+        "Chi tiết": "Bán 1 máy"
+      },
+      {
+        "_rowNum": 63,
+        "Thời gian": "46286.77148148148",
+        "Người thực hiện": "Khổng Mạnh Cường",
+        "Hành động": "SỬA THIẾT BỊ",
+        "Mã Serial": "CNB1T5GC6X",
+        "Chi tiết": "Đổi thông tin"
+      }
+    ]
+  },
+  "DM_SAN_PHAM": {
+    "headers": [
+      "Model",
+      "Tên hàng hóa",
+      "Nhóm hàng"
+    ],
+    "rows": [
+      {
+        "_rowNum": 2,
+        "Model": "HP Laserjet Pro 4003dw",
+        "Tên hàng hóa": "Máy in HP LaserJet Pro 4003dw",
+        "Nhóm hàng": "Máy In"
+      },
+      {
+        "_rowNum": 3,
+        "Model": "HP Laser 108a",
+        "Tên hàng hóa": "Máy in HP Laser 108a",
+        "Nhóm hàng": "Máy In"
+      },
+      {
+        "_rowNum": 4,
+        "Model": "Canon LBP 6030w",
+        "Tên hàng hóa": "Máy in laser Canon LBP 6030 wifi",
+        "Nhóm hàng": "Máy In"
+      },
+      {
+        "_rowNum": 5,
+        "Model": "Canon LBP 6030",
+        "Tên hàng hóa": "Máy in laser Canon LBP 6030",
+        "Nhóm hàng": "Máy In"
+      },
+      {
+        "_rowNum": 6,
+        "Model": "Hp Laserjet M211DW",
+        "Tên hàng hóa": "Máy in HP LaserJet M211DW",
+        "Nhóm hàng": "Máy In"
+      },
+      {
+        "_rowNum": 7,
+        "Model": "Canon G2010",
+        "Tên hàng hóa": "Máy In Màu Đa Năng Canon G2010",
+        "Nhóm hàng": "Máy In"
+      },
+      {
+        "_rowNum": 8,
+        "Model": "Brother ADS-4300DN",
+        "Tên hàng hóa": "Máy Scan Brother ADS-4300DN",
+        "Nhóm hàng": "Máy Scan"
+      },
+      {
+        "_rowNum": 9,
+        "Model": "Canon LBP121dn",
+        "Tên hàng hóa": "Máy in laser đen trắng Canon LBP 121DN",
+        "Nhóm hàng": "Máy In"
+      },
+      {
+        "_rowNum": 10,
+        "Model": "HP 108W",
+        "Tên hàng hóa": "Máy in laser đen trắng HP 108W",
+        "Nhóm hàng": "Máy In"
+      },
+      {
+        "_rowNum": 11,
+        "Model": "Canon LBP 243dw II",
+        "Tên hàng hóa": "Máy In 2 Mặt Canon LBP243dw",
+        "Nhóm hàng": "Máy In"
+      },
+      {
+        "_rowNum": 12,
+        "Model": "Halloya",
+        "Tên hàng hóa": "Mực in LPB 6030",
+        "Nhóm hàng": "Mực In"
+      },
+      {
+        "_rowNum": 13,
+        "Model": "TJ INK",
+        "Tên hàng hóa": "Mực in CANON HP",
+        "Nhóm hàng": "Mực In"
+      },
+      {
+        "_rowNum": 14,
+        "Model": "76A",
+        "Tên hàng hóa": "Mực In Canon/HP",
+        "Nhóm hàng": "Mực In"
+      },
+      {
+        "_rowNum": 15,
+        "Model": "Canon LBP246dw II",
+        "Tên hàng hóa": "Máy in laser đen trắng Canon LBP246DW II",
+        "Nhóm hàng": "Máy In"
+      },
+      {
+        "_rowNum": 16,
+        "Model": "Chuột LM103",
+        "Tên hàng hóa": "Chuột DAREU LM103",
+        "Nhóm hàng": "Chuột, Bàn Phím"
+      },
+      {
+        "_rowNum": 17,
+        "Model": "Bàn phím LK185",
+        "Tên hàng hóa": "Bàn phím DAREU LK185",
+        "Nhóm hàng": "Chuột, Bàn Phím"
+      },
+      {
+        "_rowNum": 18,
+        "Model": "Lenovo ThinkPad E14 GEN 7",
+        "Tên hàng hóa": "Máy tính xách tay Lenovo ThinkPad E14 GEN 7 (Ultra 7 256V/ 16GB/ 512GB SSD/ 14 inch WUXGA/ NoOS/ Black/ Vỏ nhôm/ 2Y)",
+        "Nhóm hàng": "Laptop"
+      },
+      {
+        "_rowNum": 19,
+        "Model": "DAHUA DHI-LM22-A210Y",
+        "Tên hàng hóa": "Màn hình Monitor DAHUA DHI-LM22-A210Y",
+        "Nhóm hàng": "Màn Hình"
+      },
+      {
+        "_rowNum": 20,
+        "Model": "Nguồn máy tính AIGO VK550, CST 550W,",
+        "Tên hàng hóa": "Nguồn máy tính AIGO VK550, CST 550W, Fan12cm",
+        "Nhóm hàng": "Nguồn Máy Tính"
+      },
+      {
+        "_rowNum": 21,
+        "Model": "Vỏ case Darkflash A290 Black",
+        "Tên hàng hóa": "Vỏ case Darkflash A290 Black ( 3 Fan LED - Form ATX, 01 Mặt lưới , Màu Đen )",
+        "Nhóm hàng": "Vỏ Máy Tính"
+      },
+      {
+        "_rowNum": 22,
+        "Model": "Ram PC Hiksemi Armor 16GB DDR4 bus 3200Mhz",
+        "Tên hàng hóa": "Ram PC Hiksemi Armor 16GB DDR4 bus 3200Mhz Tản Nhiệt (HSC416U32D2-16G)_FV-BH60T",
+        "Nhóm hàng": "RAM"
+      },
+      {
+        "_rowNum": 23,
+        "Model": "Mainboard DarkFlash H610M",
+        "Tên hàng hóa": "Mainboard DarkFlash H610M-VGD-V1 (Chipset H610, SK1700, 2xDDR4, PCE NVMe Gen3x4, Lan 1Gbps, VGA, HDMI",
+        "Nhóm hàng": "Main Máy Tính"
+      },
+      {
+        "_rowNum": 24,
+        "Model": "Bộ vi xử lý Intel Core i5-12400",
+        "Tên hàng hóa": "Bộ vi xử lý Intel Core i5-12400 (2.5Ghz Tubro up to 4.4Ghz, 6 nhân 12 luồng, 18MB Cache, UHD730, 65W, Socket1700)",
+        "Nhóm hàng": "CHIP (CPU)"
+      },
+      {
+        "_rowNum": 25,
+        "Model": "VGA MSI GeForce RTX 3050",
+        "Tên hàng hóa": "VGA MSI GeForce RTX 3050 VENTUS 2X 8G OC",
+        "Nhóm hàng": "VGA (Card màn hình)"
+      },
+      {
+        "_rowNum": 26,
+        "Model": "SSD CUSU 512GB",
+        "Tên hàng hóa": "SSD CUSU 512GB PCIe 3x4 M.2 2280 NVMe,TLC,R/W up to 3500/2500MB/s",
+        "Nhóm hàng": "Ổ Cứng"
+      },
+      {
+        "_rowNum": 27,
+        "Model": "SSD Kingston KC600 512",
+        "Tên hàng hóa": "SSD Kingston SKC600 512GB 2.5 inch SATA3 (Đọc 550MB/s - Ghi 520MB/s) - (KC600/512GB)",
+        "Nhóm hàng": "Ổ Cứng"
+      },
+      {
+        "_rowNum": 28,
+        "Model": "i3-12100",
+        "Tên hàng hóa": "Bộ vi xử lý Intel Core i3-12100",
+        "Nhóm hàng": "CHIP (CPU)"
+      },
+      {
+        "_rowNum": 29,
+        "Model": "Ram PC Hiksemi Armor 8GB DDR4",
+        "Tên hàng hóa": "Ram PC Hiksemi Armor 8GB DDR4 bus 3200Mhz",
+        "Nhóm hàng": "RAM"
+      },
+      {
+        "_rowNum": 30,
+        "Model": "SSD Hiksemi  256GB",
+        "Tên hàng hóa": "SSD Hiksemi HS-SSD-WAVE(S) 256GB",
+        "Nhóm hàng": "Ổ Cứng"
+      },
+      {
+        "_rowNum": 31,
+        "Model": "Nguồn máy tính AIGO VK350   350W",
+        "Tên hàng hóa": "Nguồn máy tính AIGO VK350, CST 350W",
+        "Nhóm hàng": "Nguồn Máy Tính"
+      },
+      {
+        "_rowNum": 32,
+        "Model": "HDD WD 1TB 3.5&quot; Sata3, màu xanh",
+        "Tên hàng hóa": "HDD WD 1TB 3.5&quot; Sata3, màu xanh (Blue) (WD10EARZ) 5400rpm",
+        "Nhóm hàng": "Ổ Cứng"
+      },
+      {
+        "_rowNum": 33,
+        "Model": "HDD 8GB",
+        "Tên hàng hóa": "Segate Skyhawk 8TB",
+        "Nhóm hàng": "Ổ Cứng"
+      },
+      {
+        "_rowNum": 34,
+        "Model": "Bộ mở rộng HDMI qua dây LAN",
+        "Tên hàng hóa": "Bộ mở rộng HDMI 150M qua dây LAN có điều khiển phím chuột",
+        "Nhóm hàng": "Thiết bị kết nối"
+      }
+    ]
+  },
+  "DM_NCC": {
+    "headers": [
+      "Tên viết tắt",
+      "Tên đầy đủ công ty",
+      "Số điện thoại",
+      "Địa chỉ / Ghi chú"
+    ],
+    "rows": [
+      {
+        "_rowNum": 2,
+        "Tên viết tắt": "FPS",
+        "Tên đầy đủ công ty": "Công ty FPS",
+        "Số điện thoại": "1234.0",
+        "Địa chỉ / Ghi chú": "fjsdhf"
+      },
+      {
+        "_rowNum": 3,
+        "Tên viết tắt": "Thảo Linh",
+        "Tên đầy đủ công ty": "Cty Thảo Linh"
+      },
+      {
+        "_rowNum": 4,
+        "Tên viết tắt": "Nam Phát",
+        "Tên đầy đủ công ty": "Công ty Nam Phát"
+      },
+      {
+        "_rowNum": 5,
+        "Tên viết tắt": "Thanh Nga",
+        "Tên đầy đủ công ty": "Công ty Thanh Nga"
+      },
+      {
+        "_rowNum": 6,
+        "Tên viết tắt": "Thiên Trường",
+        "Tên đầy đủ công ty": "Công ty Thiên Trường"
+      },
+      {
+        "_rowNum": 7,
+        "Tên viết tắt": "Minh Chính",
+        "Tên đầy đủ công ty": "Công ty Minh Chính"
+      },
+      {
+        "_rowNum": 8,
+        "Tên viết tắt": "TD",
+        "Tên đầy đủ công ty": "Công ty TD"
+      },
+      {
+        "_rowNum": 9,
+        "Tên viết tắt": "Neway",
+        "Tên đầy đủ công ty": "Công ty Neway"
+      },
+      {
+        "_rowNum": 10,
+        "Tên viết tắt": "Hưng Phúc",
+        "Tên đầy đủ công ty": "Công ty Hưng Phúc"
+      },
+      {
+        "_rowNum": 11,
+        "Tên viết tắt": "N/A",
+        "Tên đầy đủ công ty": "N/A"
+      },
+      {
+        "_rowNum": 12,
+        "Tên viết tắt": "Hưng Hà",
+        "Tên đầy đủ công ty": "Công ty Hưng Hà",
+        "Địa chỉ / Ghi chú": "A Tài"
+      },
+      {
+        "_rowNum": 13,
+        "Tên viết tắt": "Trí Việt",
+        "Tên đầy đủ công ty": "Công ty Trí Việt"
+      },
+      {
+        "_rowNum": 14,
+        "Tên viết tắt": "Trí Việt",
+        "Tên đầy đủ công ty": "Công ty Trí Việt"
+      },
+      {
+        "_rowNum": 15,
+        "Tên viết tắt": "Song Hùng",
+        "Tên đầy đủ công ty": "Công Ty Song Hùng"
+      },
+      {
+        "_rowNum": 16,
+        "Tên viết tắt": "Song Hùng",
+        "Tên đầy đủ công ty": "Công Ty Song Hùng"
+      },
+      {
+        "_rowNum": 17,
+        "Tên viết tắt": "NAKIO",
+        "Tên đầy đủ công ty": "CT CPTM VÀ DV NAKIO",
+        "Số điện thoại": "2.4366289E9"
+      },
+      {
+        "_rowNum": 18,
+        "Tên viết tắt": "EASY",
+        "Tên đầy đủ công ty": "Công ty EASY"
+      },
+      {
+        "_rowNum": 19,
+        "Tên viết tắt": "Hưng Phúc",
+        "Tên đầy đủ công ty": "Công Ty Hưng  Phúc"
+      }
+    ]
+  },
+  "DM_KHACH_HANG": {
+    "headers": [
+      "Tên Khách hàng",
+      "Số điện thoại",
+      "Địa chỉ",
+      "Ghi chú"
+    ],
+    "rows": [
+      {
+        "_rowNum": 2,
+        "Tên Khách hàng": "CÔNG TY TNHH THƯƠNG MẠI VÀ DỊCH VỤ KHOA NHÂN (KACAJOIN)",
+        "Số điện thoại": "0963093555",
+        "Địa chỉ": "Hà Nội"
+      },
+      {
+        "_rowNum": 3,
+        "Tên Khách hàng": "Công ty cổ phần giải pháp công nghệ và truyền Thông Việt (C Hà)",
+        "Số điện thoại": "9.7202266E7",
+        "Địa chỉ": "33C Nhân Hòa"
+      },
+      {
+        "_rowNum": 4,
+        "Tên Khách hàng": "CÔNG TY TNHH X.E VIỆT NAM (A Dương)",
+        "Số điện thoại": "9.09689886E8",
+        "Địa chỉ": "T2, toà nhà Licogi 12, số 21 Đại Từ, phường Định Công,HN"
+      },
+      {
+        "_rowNum": 5,
+        "Tên Khách hàng": "e Vân",
+        "Số điện thoại": "0383500018",
+        "Địa chỉ": "Tầng 6,Tòa D8 Đại Học Bách Khoa"
+      },
+      {
+        "_rowNum": 6,
+        "Tên Khách hàng": "e Vân",
+        "Số điện thoại": "3.83500018E8",
+        "Địa chỉ": "Tầng 6,Tòa D8 Đại Học Bách Khoa"
+      },
+      {
+        "_rowNum": 7,
+        "Tên Khách hàng": "Quang",
+        "Số điện thoại": "0976147203",
+        "Địa chỉ": "D03-L20, An Vượng villa, Dương Nội, Hà Đông, Hà Nội"
+      },
+      {
+        "_rowNum": 8,
+        "Tên Khách hàng": "Chị Phương",
+        "Số điện thoại": "3.25470077E8",
+        "Địa chỉ": "Yên Lương, Sông Lô, Phú Thọ"
+      },
+      {
+        "_rowNum": 9,
+        "Tên Khách hàng": "Nguyễn Thanh Tùng",
+        "Số điện thoại": "0989966619",
+        "Địa chỉ": "117 Trần Duy Hưng"
+      },
+      {
+        "_rowNum": 10,
+        "Tên Khách hàng": "CÔNG TY TNHH THƯƠNG MẠI DƯỢC PHẨM TRUNG TÍN",
+        "Số điện thoại": "0868749555 - Chị Giang",
+        "Địa chỉ": "Số nhà 47, Khu tập thể Viện Khoa học Nông nghiệp, Vĩnh Quỳnh, Thanh Trì"
+      },
+      {
+        "_rowNum": 11,
+        "Tên Khách hàng": "Mr. Đỉnh",
+        "Số điện thoại": "0969898168",
+        "Địa chỉ": "Mr. Đỉnh: 096 9898168 Số L3-125 đường Limoni, Khu đô thị New An Thới, Đặc khu Phú Quốc, Tỉnh An Giang"
+      },
+      {
+        "_rowNum": 12,
+        "Tên Khách hàng": "anh Luận",
+        "Số điện thoại": "0963732891",
+        "Địa chỉ": "183 Hoàng Hoa Thám Lh: A Luận:"
+      },
+      {
+        "_rowNum": 13,
+        "Tên Khách hàng": "anh Luận",
+        "Số điện thoại": "0963732891",
+        "Địa chỉ": "183 Hoàng Hoa Thám Lh: A Luận:"
+      },
+      {
+        "_rowNum": 14,
+        "Tên Khách hàng": "anh Luận",
+        "Số điện thoại": "0963732891",
+        "Địa chỉ": "183 Hoàng Hoa Thám"
+      }
+    ]
+  },
+  "DM_QUY_CHUAN": {
+    "headers": [
+      "Nhóm hàng",
+      "Vị trí kho",
+      "Loại hàng",
+      "Gói Bảo hành"
+    ],
+    "rows": [
+      {
+        "_rowNum": 2,
+        "Nhóm hàng": "Máy In",
+        "Vị trí kho": "Kho VP",
+        "Loại hàng": "Chính Hãng",
+        "Gói Bảo hành": "12 tháng"
+      },
+      {
+        "_rowNum": 3,
+        "Nhóm hàng": "Máy Scan",
+        "Vị trí kho": "Nhà",
+        "Loại hàng": "Nhập Khẩu",
+        "Gói Bảo hành": "24 Tháng"
+      },
+      {
+        "_rowNum": 4,
+        "Nhóm hàng": "CHIP (CPU)",
+        "Vị trí kho": "Văn Phòng",
+        "Loại hàng": "Trả Bảo Hành",
+        "Gói Bảo hành": "36 tháng"
+      },
+      {
+        "_rowNum": 5,
+        "Nhóm hàng": "Ổ Cứng"
+      },
+      {
+        "_rowNum": 6,
+        "Nhóm hàng": "Quạt tản nhiệt"
+      },
+      {
+        "_rowNum": 7,
+        "Nhóm hàng": "RAM"
+      },
+      {
+        "_rowNum": 8,
+        "Nhóm hàng": "Chuột, Bàn Phím"
+      },
+      {
+        "_rowNum": 9,
+        "Nhóm hàng": "VGA (Card màn hình)"
+      },
+      {
+        "_rowNum": 10,
+        "Nhóm hàng": "Mực In"
+      },
+      {
+        "_rowNum": 11,
+        "Nhóm hàng": "Laptop"
+      },
+      {
+        "_rowNum": 12,
+        "Nhóm hàng": "Màn Hình"
+      },
+      {
+        "_rowNum": 13,
+        "Nhóm hàng": "Nguồn Máy Tính"
+      },
+      {
+        "_rowNum": 14,
+        "Nhóm hàng": "Main Máy Tính"
+      },
+      {
+        "_rowNum": 15,
+        "Nhóm hàng": "Vỏ Máy Tính"
+      },
+      {
+        "_rowNum": 16,
+        "Nhóm hàng": "Thiết bị kết nối"
+      }
+    ]
+  },
+  "LICH_SU_NHAP": {
+    "headers": [
+      "Mã phiếu",
+      "Ngày nhập",
+      "Nhà cung cấp",
+      "Model",
+      "Số lượng",
+      "Danh sách Serial",
+      "Vị trí kho",
+      "Ghi chú"
+    ],
+    "rows": [
+      {
+        "_rowNum": 2,
+        "Mã phiếu": "PN-260911-140733",
+        "Ngày nhập": "46253.0",
+        "Nhà cung cấp": "N/A",
+        "Model": "HP Laser 108a (1)",
+        "Số lượng": "1.0",
+        "Danh sách Serial": "CNB1T5GC6X",
+        "Vị trí kho": "Kho VP"
+      },
+      {
+        "_rowNum": 3,
+        "Mã phiếu": "PN-260911-140819",
+        "Ngày nhập": "46274.0",
+        "Nhà cung cấp": "Nam Phát",
+        "Model": "Canon LBP 6030w (5)",
+        "Số lượng": "5.0",
+        "Danh sách Serial": "NTMA681531, NTMA681178, NTMA682190, NTMA680176, NTMA680542",
+        "Vị trí kho": "Kho VP"
+      },
+      {
+        "_rowNum": 4,
+        "Mã phiếu": "PN-260911-141015",
+        "Ngày nhập": "46254.0",
+        "Nhà cung cấp": "N/A",
+        "Model": "Canon LBP 6030 (5)",
+        "Số lượng": "5.0",
+        "Danh sách Serial": "NTLA767591, NTLA863393, NTLA863121, NTLA776136, NTLA863405",
+        "Vị trí kho": "Kho VP"
+      },
+      {
+        "_rowNum": 5,
+        "Mã phiếu": "PN-260911-141121",
+        "Ngày nhập": "46254.0",
+        "Nhà cung cấp": "N/A",
+        "Model": "Canon LBP121dn (3)",
+        "Số lượng": "3.0",
+        "Danh sách Serial": "VNM0W42889, VNM0W12908, VNM0W40960",
+        "Vị trí kho": "Kho VP"
+      },
+      {
+        "_rowNum": 6,
+        "Mã phiếu": "PN-260911-141202",
+        "Ngày nhập": "46254.0",
+        "Nhà cung cấp": "N/A",
+        "Model": "Canon G2010 (1)",
+        "Số lượng": "1.0",
+        "Danh sách Serial": "KPVF12443",
+        "Vị trí kho": "Kho VP"
+      },
+      {
+        "_rowNum": 7,
+        "Mã phiếu": "PN-260911-141233",
+        "Ngày nhập": "46254.0",
+        "Nhà cung cấp": "N/A",
+        "Model": "Brother ADS-4300DN (3)",
+        "Số lượng": "3.0",
+        "Danh sách Serial": "E81467J5X122374, E81467J5X122321, E81467J5X122298",
+        "Vị trí kho": "Kho VP"
+      },
+      {
+        "_rowNum": 8,
+        "Mã phiếu": "PN-260911-141318",
+        "Ngày nhập": "46254.0",
+        "Nhà cung cấp": "N/A",
+        "Model": "HP 108W (1)",
+        "Số lượng": "1.0",
+        "Danh sách Serial": "CNB1T1P98B",
+        "Vị trí kho": "Kho VP"
+      },
+      {
+        "_rowNum": 9,
+        "Mã phiếu": "PN-260911-141413",
+        "Ngày nhập": "46272.0",
+        "Nhà cung cấp": "N/A",
+        "Model": "Canon LBP 243dw II (1)",
+        "Số lượng": "1.0",
+        "Danh sách Serial": "PHRA105934",
+        "Vị trí kho": "Kho VP"
+      },
+      {
+        "_rowNum": 10,
+        "Mã phiếu": "PN-260911-141500",
+        "Ngày nhập": "46255.0",
+        "Nhà cung cấp": "N/A",
+        "Model": "Halloya (5)",
+        "Số lượng": "5.0",
+        "Danh sách Serial": "TA-260911-001, TA-260911-002, TA-260911-003, TA-260911-004, TA-260911-005",
+        "Vị trí kho": "Kho VP"
+      },
+      {
+        "_rowNum": 11,
+        "Mã phiếu": "PN-260911-141624",
+        "Ngày nhập": "46276.0",
+        "Nhà cung cấp": "N/A",
+        "Model": "TJ INK (2)",
+        "Số lượng": "2.0",
+        "Danh sách Serial": "TA-260911-006, TA-260911-007",
+        "Vị trí kho": "Kho VP"
+      },
+      {
+        "_rowNum": 12,
+        "Mã phiếu": "PN-260911-141701",
+        "Ngày nhập": "46272.0",
+        "Nhà cung cấp": "N/A",
+        "Model": "Canon LBP246dw II (1)",
+        "Số lượng": "1.0",
+        "Danh sách Serial": "PHEA127806",
+        "Vị trí kho": "Kho VP"
+      },
+      {
+        "_rowNum": 13,
+        "Mã phiếu": "PN-260911-153249",
+        "Ngày nhập": "46254.0",
+        "Nhà cung cấp": "N/A",
+        "Model": "Canon LBP 6030w (1)",
+        "Số lượng": "1.0",
+        "Danh sách Serial": "NTMA779070",
+        "Vị trí kho": "Kho VP"
+      },
+      {
+        "_rowNum": 14,
+        "Mã phiếu": "PN-260911-155551",
+        "Ngày nhập": "46254.0",
+        "Nhà cung cấp": "FPS",
+        "Model": "Bàn phím LK185 (9)",
+        "Số lượng": "9.0",
+        "Danh sách Serial": "LK185BSEA260127061, LK185BSEA260127062, LK185BSEA260127064, LK185BSEA260127065, LK185BSEA260127067, LK185BSEA260127068, LK185BSEA260127069, LK185BSEA260127070, LK185BSEA260127071",
+        "Vị trí kho": "Văn Phòng"
+      },
+      {
+        "_rowNum": 15,
+        "Mã phiếu": "PN-260912-083643",
+        "Ngày nhập": "46277.0",
+        "Nhà cung cấp": "FPS",
+        "Model": "Hp Laserjet M211DW (1)",
+        "Số lượng": "1.0",
+        "Danh sách Serial": "VNM0WW42908",
+        "Vị trí kho": "Kho VP"
+      },
+      {
+        "_rowNum": 16,
+        "Mã phiếu": "PN-260912-083809",
+        "Ngày nhập": "46254.0",
+        "Nhà cung cấp": "N/A",
+        "Model": "Hp Laserjet M211DW (1)",
+        "Số lượng": "1.0",
+        "Danh sách Serial": "VNM0WW42908",
+        "Vị trí kho": "Kho VP"
+      },
+      {
+        "_rowNum": 17,
+        "Mã phiếu": "PN-260912-205001",
+        "Ngày nhập": "46277.0",
+        "Nhà cung cấp": "Hưng Hà",
+        "Model": "Lenovo ThinkPad E14 GEN 7 (1)",
+        "Số lượng": "1.0",
+        "Danh sách Serial": "PF685QNZ",
+        "Vị trí kho": "Kho VP"
+      },
+      {
+        "_rowNum": 18,
+        "Mã phiếu": "PN-260913-191519",
+        "Ngày nhập": "46275.0",
+        "Nhà cung cấp": "Nam Phát",
+        "Model": "HP Laserjet Pro 4003dw (14)",
+        "Số lượng": "14.0",
+        "Danh sách Serial": "VNMOY11287, VNMOY10210, VNMOY10215, VNMOY10292, VNM1904374, VNM1904390, VNM1904400, VNM1904910, VNM1904918, VNM1904947, VNM1904953, VNM1904963, VNM1906781, VNMOY10206",
+        "Vị trí kho": "Nhà"
+      },
+      {
+        "_rowNum": 19,
+        "Mã phiếu": "PN-260915-171953",
+        "Ngày nhập": "46249.0",
+        "Nhà cung cấp": "N/A",
+        "Model": "Hp Laserjet M211DW (3)",
+        "Số lượng": "3.0",
+        "Danh sách Serial": "VNM0W42889, VNM0W12908, VNM0W40960",
+        "Vị trí kho": "Kho VP"
+      },
+      {
+        "_rowNum": 20,
+        "Mã phiếu": "PN-260915-172547",
+        "Ngày nhập": "46280.0",
+        "Nhà cung cấp": "Trí Việt",
+        "Model": "DAHUA DHI-LM22-A210Y (2)",
+        "Số lượng": "2.0",
+        "Danh sách Serial": "BM501913352103212, BM501913352100975",
+        "Vị trí kho": "Kho VP"
+      },
+      {
+        "_rowNum": 21,
+        "Mã phiếu": "PN-260915-180940",
+        "Ngày nhập": "46280.0",
+        "Nhà cung cấp": "FPS",
+        "Model": "Bộ vi xử lý Intel Core i5-12400 (1)",
+        "Số lượng": "1.0",
+        "Danh sách Serial": "U60F4Q2500498",
+        "Vị trí kho": "Kho VP"
+      },
+      {
+        "_rowNum": 22,
+        "Mã phiếu": "PN-260915-181137",
+        "Ngày nhập": "46280.0",
+        "Nhà cung cấp": "Song Hùng",
+        "Model": "Ram PC Hiksemi Armor 16GB DDR4 bus 3200Mhz (1)",
+        "Số lượng": "1.0",
+        "Danh sách Serial": "3.0188230248E10",
+        "Vị trí kho": "Văn Phòng"
+      },
+      {
+        "_rowNum": 23,
+        "Mã phiếu": "PN-260915-181217",
+        "Ngày nhập": "46280.0",
+        "Nhà cung cấp": "Song Hùng",
+        "Model": "Mainboard DarkFlash H610M (1)",
+        "Số lượng": "1.0",
+        "Danh sách Serial": "H610M2511201388",
+        "Vị trí kho": "Kho VP"
+      },
+      {
+        "_rowNum": 24,
+        "Mã phiếu": "PN-260915-181257",
+        "Ngày nhập": "46280.0",
+        "Nhà cung cấp": "Song Hùng",
+        "Model": "VGA MSI GeForce RTX 3050 (1)",
+        "Số lượng": "1.0",
+        "Danh sách Serial": "602-V809-2885S02601001478",
+        "Vị trí kho": "Văn Phòng"
+      },
+      {
+        "_rowNum": 25,
+        "Mã phiếu": "PN-260915-181456",
+        "Ngày nhập": "46280.0",
+        "Nhà cung cấp": "FPS",
+        "Model": "SSD CUSU 512GB (1)",
+        "Số lượng": "1.0",
+        "Danh sách Serial": "TKSMC25C8X01266",
+        "Vị trí kho": "Kho VP"
+      },
+      {
+        "_rowNum": 26,
+        "Mã phiếu": "PN-260915-181623",
+        "Ngày nhập": "46280.0",
+        "Nhà cung cấp": "Song Hùng",
+        "Model": "Nguồn máy tính AIGO VK550, CST 550W, (1)",
+        "Số lượng": "1.0",
+        "Danh sách Serial": "GHD887363300087",
+        "Vị trí kho": "Văn Phòng"
+      },
+      {
+        "_rowNum": 27,
+        "Mã phiếu": "PN-260917-134355",
+        "Ngày nhập": "46282.0",
+        "Nhà cung cấp": "NAKIO",
+        "Model": "SSD Kingston KC600 512 (2)",
+        "Số lượng": "2.0",
+        "Danh sách Serial": "5002687687698BFF, 50026876876979D6",
+        "Vị trí kho": "Kho VP"
+      },
+      {
+        "_rowNum": 28,
+        "Mã phiếu": "PN-260917-173635",
+        "Ngày nhập": "46282.0",
+        "Nhà cung cấp": "Song Hùng",
+        "Model": "i3-12100 (1) + Mainboard DarkFlash H610M (1) + Ram PC Hiksemi Armor 8GB DDR4 (1) + SSD Hiksemi  256GB (1) + Nguồn máy tính AIGO VK350   350W (1)",
+        "Số lượng": "5.0",
+        "Danh sách Serial": "U6QP281903042, H610M2511201381, 30199802874, 30200802591, GHD887264200966",
+        "Vị trí kho": "Văn Phòng"
+      },
+      {
+        "_rowNum": 29,
+        "Mã phiếu": "PN-260917-175158",
+        "Ngày nhập": "46254.0",
+        "Nhà cung cấp": "FPS",
+        "Model": "Chuột LM103 (1)",
+        "Số lượng": "1.0",
+        "Danh sách Serial": "LM103BT260212588",
+        "Vị trí kho": "Văn Phòng"
+      },
+      {
+        "_rowNum": 30,
+        "Mã phiếu": "PN-260918-095134",
+        "Ngày nhập": "46283.0",
+        "Nhà cung cấp": "Thanh Nga",
+        "Model": "Hp Laserjet M211DW (5)",
+        "Số lượng": "5.0",
+        "Danh sách Serial": "VNM0W45624, VNM0W43917, VNM0W45618, VNM0W45625, VNM0W42658",
+        "Vị trí kho": "Kho VP"
+      },
+      {
+        "_rowNum": 31,
+        "Mã phiếu": "PN-260918-100016",
+        "Ngày nhập": "46254.0",
+        "Nhà cung cấp": "FPS",
+        "Model": "Chuột LM103 (5)",
+        "Số lượng": "5.0",
+        "Danh sách Serial": "LM103BT260212572, LM103BT260212577, LM103BT260212578, LM103BT260212590, LM103BT260212589",
+        "Vị trí kho": "Kho VP"
+      },
+      {
+        "_rowNum": 32,
+        "Mã phiếu": "PN-260918-120738",
+        "Ngày nhập": "46283.0",
+        "Nhà cung cấp": "Trí Việt",
+        "Model": "DAHUA DHI-LM22-A210Y (3)",
+        "Số lượng": "3.0",
+        "Danh sách Serial": "BM501913352103213, BM501913352100021, BM501913352103194",
+        "Vị trí kho": "Văn Phòng"
+      },
+      {
+        "_rowNum": 33,
+        "Mã phiếu": "PN-260919-081800",
+        "Ngày nhập": "46283.0",
+        "Nhà cung cấp": "N/A",
+        "Model": "HDD 8GB (1)",
+        "Số lượng": "1.0",
+        "Danh sách Serial": "WRD0LQRY",
+        "Vị trí kho": "Văn Phòng"
+      },
+      {
+        "_rowNum": 34,
+        "Mã phiếu": "PN-260919-090539",
+        "Ngày nhập": "46283.0",
+        "Nhà cung cấp": "EASY",
+        "Model": "Bộ mở rộng HDMI qua dây LAN (1)",
+        "Số lượng": "1.0",
+        "Danh sách Serial": "123456.0",
+        "Vị trí kho": "Văn Phòng"
+      },
+      {
+        "_rowNum": 35,
+        "Mã phiếu": "PN-260921-155542",
+        "Ngày nhập": "46286.0",
+        "Nhà cung cấp": "Hưng Phúc",
+        "Model": "Canon LBP 243dw II (2)",
+        "Số lượng": "2.0",
+        "Danh sách Serial": "PHPA117934, PHPA118726",
+        "Vị trí kho": "Văn Phòng"
+      }
+    ]
+  },
+  "LICH_SU_XUAT": {
+    "headers": [
+      "Mã phiếu",
+      "Ngày xuất",
+      "Khách hàng",
+      "Số lượng",
+      "Danh sách Serial",
+      "Thời hạn BH",
+      "Ghi chú"
+    ],
+    "rows": [
+      {
+        "_rowNum": 2,
+        "Mã phiếu": "PX-260912-083937",
+        "Ngày xuất": "46277.0",
+        "Khách hàng": "CÔNG TY TNHH THƯƠNG MẠI VÀ DỊCH VỤ KHOA NHÂN (KACAJOIN) (0963093555)",
+        "Số lượng": "1.0",
+        "Danh sách Serial": "VNM0WW42908",
+        "Thời hạn BH": "12 tháng",
+        "Ghi chú": "Khách hàng qua vp lấy"
+      },
+      {
+        "_rowNum": 3,
+        "Mã phiếu": "PX-260912-214430",
+        "Ngày xuất": "46277.0",
+        "Khách hàng": "Công ty cổ phần giải pháp công nghệ và truyền Thông Việt (C Hà) (097202266)",
+        "Số lượng": "1.0",
+        "Danh sách Serial": "PF685QNZ",
+        "Thời hạn BH": "12 tháng"
+      },
+      {
+        "_rowNum": 4,
+        "Mã phiếu": "PX-260915-172950",
+        "Ngày xuất": "46280.0",
+        "Khách hàng": "CÔNG TY TNHH X.E VIỆT NAM (A Dương) (0909689886)",
+        "Số lượng": "2.0",
+        "Danh sách Serial": "BM501913352100975, NTLA863393",
+        "Thời hạn BH": "12 tháng"
+      },
+      {
+        "_rowNum": 5,
+        "Mã phiếu": "PX-260915-174408",
+        "Ngày xuất": "46280.0",
+        "Khách hàng": "e Vân (0383500018)",
+        "Số lượng": "1.0",
+        "Danh sách Serial": "VNM0W40960",
+        "Thời hạn BH": "12 tháng"
+      },
+      {
+        "_rowNum": 6,
+        "Mã phiếu": "PX-260916-154235",
+        "Ngày xuất": "46280.0",
+        "Khách hàng": "CÔNG TY TNHH X.E VIỆT NAM (A Dương) (909689886)",
+        "Số lượng": "1.0",
+        "Danh sách Serial": "U60F4Q2500498",
+        "Thời hạn BH": "12 tháng"
+      },
+      {
+        "_rowNum": 7,
+        "Mã phiếu": "PX-260916-154906",
+        "Ngày xuất": "46280.0",
+        "Khách hàng": "CÔNG TY TNHH X.E VIỆT NAM (A Dương) (909689886)",
+        "Số lượng": "1.0",
+        "Danh sách Serial": "3.0188230248E10",
+        "Thời hạn BH": "12 tháng"
+      },
+      {
+        "_rowNum": 8,
+        "Mã phiếu": "PX-260916-155029",
+        "Ngày xuất": "46281.0",
+        "Khách hàng": "CÔNG TY TNHH X.E VIỆT NAM (A Dương) (909689886)",
+        "Số lượng": "1.0",
+        "Danh sách Serial": "H610M2511201388",
+        "Thời hạn BH": "12 tháng"
+      },
+      {
+        "_rowNum": 9,
+        "Mã phiếu": "PX-260916-155311",
+        "Ngày xuất": "46280.0",
+        "Khách hàng": "CÔNG TY TNHH X.E VIỆT NAM (A Dương) (909689886)",
+        "Số lượng": "3.0",
+        "Danh sách Serial": "602-V809-2885S02601001478, TKSMC25C8X01266, GHD887363300087",
+        "Thời hạn BH": "12 tháng"
+      },
+      {
+        "_rowNum": 10,
+        "Mã phiếu": "PX-260917-092624",
+        "Ngày xuất": "46262.0",
+        "Khách hàng": "Quang ('0976147203)",
+        "Số lượng": "2.0",
+        "Danh sách Serial": "NTLA863405, NTLA776136",
+        "Thời hạn BH": "12 tháng"
+      },
+      {
+        "_rowNum": 11,
+        "Mã phiếu": "PX-260917-175255",
+        "Ngày xuất": "46282.0",
+        "Khách hàng": "Chị Phương (0325470077)",
+        "Số lượng": "8.0",
+        "Danh sách Serial": "U6QP281903042, H610M2511201381, 30199802874, 30200802591, GHD887264200966, BM501913352103212, LK185BSEA260127062, LM103BT260212588",
+        "Thời hạn BH": "24 Tháng"
+      },
+      {
+        "_rowNum": 12,
+        "Mã phiếu": "PX-260919-082129",
+        "Ngày xuất": "46283.0",
+        "Khách hàng": "Nguyễn Thanh Tùng ('0989966619)",
+        "Số lượng": "1.0",
+        "Danh sách Serial": "WRD0LQRY",
+        "Thời hạn BH": "12 tháng"
+      },
+      {
+        "_rowNum": 13,
+        "Mã phiếu": "PX-260919-085717",
+        "Ngày xuất": "46284.0",
+        "Khách hàng": "CÔNG TY TNHH THƯƠNG MẠI DƯỢC PHẨM TRUNG TÍN (0868749555 - Chị Giang)",
+        "Số lượng": "1.0",
+        "Danh sách Serial": "VNM0W42889",
+        "Thời hạn BH": "12 tháng"
+      },
+      {
+        "_rowNum": 14,
+        "Mã phiếu": "PX-260921-162918",
+        "Ngày xuất": "46286.0",
+        "Khách hàng": "Mr. Đỉnh: 096 9898168 Số L3-125 đường Limoni, Khu đô thị New An Thới, Đặc khu Phú Quốc, Tỉnh An Giang ()",
+        "Số lượng": "2.0",
+        "Danh sách Serial": "PHRA105934, PHPA118726",
+        "Thời hạn BH": "12 tháng"
+      },
+      {
+        "_rowNum": 15,
+        "Mã phiếu": "PX-260921-164736",
+        "Ngày xuất": "46286.0",
+        "Khách hàng": "anh Luận ('0963732891)",
+        "Số lượng": "1.0",
+        "Danh sách Serial": "123456.0",
+        "Thời hạn BH": "12 tháng"
+      }
+    ]
+  },
+  "USERS": {
+    "headers": [
+      "Tên đăng nhập",
+      "Mật khẩu",
+      "Họ và tên",
+      "Vai trò",
+      "Trạng thái"
+    ],
+    "rows": [
+      {
+        "_rowNum": 2,
+        "Tên đăng nhập": "admin",
+        "Mật khẩu": "654321.0",
+        "Họ và tên": "Khổng Mạnh Cường",
+        "Vai trò": "Admin",
+        "Trạng thái": "Kích hoạt"
+      },
+      {
+        "_rowNum": 3,
+        "Tên đăng nhập": "KHO1",
+        "Mật khẩu": "654321.0",
+        "Họ và tên": "Khổng Minh Quân",
+        "Vai trò": "Kho",
+        "Trạng thái": "Kích hoạt"
+      }
+    ]
+  },
+  "CAU_HINH": {
+    "headers": [
+      "Tên tham số",
+      "Giá trị mặc định",
+      "Diễn giải"
+    ],
+    "rows": [
+      {
+        "_rowNum": 2,
+        "Tên tham số": "TEN_CONG_TY",
+        "Giá trị mặc định": "CÔNG TY TNHH THƯƠNG MẠI VÀ ĐẦU TƯ CÔNG NGHỆ THÀNH AN",
+        "Diễn giải": "Tên doanh nghiệp đầy đủ"
+      },
+      {
+        "_rowNum": 3,
+        "Tên tham số": "TEN_VIET_TAT",
+        "Giá trị mặc định": "THÀNH AN",
+        "Diễn giải": "Tên viết tắt hiển thị"
+      },
+      {
+        "_rowNum": 4,
+        "Tên tham số": "MST",
+        "Giá trị mặc định": "1.11253119E8",
+        "Diễn giải": "Mã số thuế"
+      },
+      {
+        "_rowNum": 5,
+        "Tên tham số": "DIA_CHI",
+        "Giá trị mặc định": "Số 18 Ngõ 241 Phố Chợ Khâm Thiên, Phường Văn Miếu - Quốc Tử Giám, TP Hà Nội, Việt Nam",
+        "Diễn giải": "Địa chỉ trụ sở / kho"
+      },
+      {
+        "_rowNum": 6,
+        "Tên tham số": "HOTLINE",
+        "Giá trị mặc định": "9.12592803E8",
+        "Diễn giải": "Hotline kỹ thuật"
+      },
+      {
+        "_rowNum": 7,
+        "Tên tham số": "STK_NGAN_HANG",
+        "Diễn giải": "Số tài khoản ngân hàng"
+      },
+      {
+        "_rowNum": 8,
+        "Tên tham số": "CANH_BAO_BH_NGAY",
+        "Giá trị mặc định": "30.0",
+        "Diễn giải": "Mốc báo vàng BH"
+      },
+      {
+        "_rowNum": 9,
+        "Tên tham số": "CANH_BAO_TON_KHO_NGAY",
+        "Giá trị mặc định": "60.0",
+        "Diễn giải": "Mốc báo đỏ tồn kho"
+      },
+      {
+        "_rowNum": 10,
+        "Tên tham số": "TIEN_TO_SERIAL",
+        "Giá trị mặc định": "TA-",
+        "Diễn giải": "Tiền tố tự sinh Serial"
+      }
+    ]
+  }
+}

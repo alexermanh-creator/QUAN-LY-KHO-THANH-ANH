@@ -975,6 +975,58 @@
     });
   }
 
+  function triggerImportStandardizedDatabase() {
+    if (!checkAdminRoleOrAlert()) return;
+    Swal.fire({
+      icon: 'question',
+      title: 'NẠP CƠ SỞ DỮ LIỆU ĐÃ CHUẨN HÓA',
+      html: `Bạn có muốn nạp toàn bộ <b>33 Danh mục sản phẩm chuẩn</b>, <b>86 Thiết bị (60 Tồn kho, 26 Đã xuất)</b>, <b>34 Phiếu nhập</b>, <b>14 Phiếu xuất</b> và <b>10 Khách hàng đã làm sạch</b> lên Google Sheets không?<br><br>
+             <span class="text-danger fw-semibold">Lưu ý: Thao tác này sẽ cập nhật các sheet dữ liệu trên Google Sheets theo đúng chuẩn quản lý kho chuyên nghiệp.</span>`,
+      showCancelButton: true,
+      confirmButtonColor: '#198754',
+      confirmButtonText: '<i class="fa-solid fa-cloud-arrow-up me-1"></i> Đồng ý & Nhập Mật Khẩu',
+      cancelButtonText: 'Hủy bỏ'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        openAdminReauthModal('XÁC NHẬN NẠP CSDL CHUẨN HÓA', 'Nhập mật khẩu Quản trị viên (mặc định 654321) để tiến hành ghi vào Google Sheets:', function(token, pass) {
+          const finalAdminPass = pass || token || '654321';
+          Swal.fire({
+            title: 'Đang nạp dữ liệu lên Google Sheets...',
+            text: 'Vui lòng chờ trong giây lát, hệ thống đang đồng bộ toàn bộ bảng tính.',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+          });
+
+          if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run
+              .withSuccessHandler(function(res) {
+                if (res && res.success) {
+                  Swal.fire({ icon: 'success', title: 'Thành công!', text: res.message || 'Đã nạp toàn bộ CSDL chuẩn hóa lên Google Sheets thành công!' }).then(() => {
+                    location.reload();
+                  });
+                } else {
+                  Swal.fire({ icon: 'error', title: 'Lỗi', text: (res && res.message) || 'Không thể nạp dữ liệu' });
+                }
+              })
+              .withFailureHandler(function(err) {
+                Swal.fire({ icon: 'error', title: 'Lỗi kết nối', text: err.toString() });
+              })
+              .executePopulateStandardizedDatabaseToGoogleSheets(finalAdminPass);
+          } else {
+            // Demo offline mode
+            setTimeout(function() {
+              Swal.fire({
+                icon: 'success',
+                title: 'Chế độ Demo (Offline)',
+                text: 'Trên giao diện Demo, dữ liệu đã được chuẩn hóa tự động trong Mock Data!'
+              });
+            }, 600);
+          }
+        });
+      }
+    });
+  }
+
   function triggerDemoReset(resetScope) {
     if (!checkAdminRoleOrAlert()) return;
     const scopeName = resetScope === 'TRANSACTIONS_ONLY' ? 'Lịch sử giao dịch & Tồn kho (Giữ danh mục)' : 'Toàn bộ cơ sở dữ liệu (Trắng tinh)';

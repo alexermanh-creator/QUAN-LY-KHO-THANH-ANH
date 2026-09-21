@@ -104,63 +104,136 @@
   }
 
   function addSerialToXuatDraft(rawInput) {
-    const sn = (rawInput || '').trim();
-    if (!sn) {
+    const text = (rawInput || '').trim();
+    if (!text) {
       Swal.fire('Thiếu thông tin', 'Vui lòng nhập hoặc quét Serial hãng / Mã nội bộ!', 'warning');
       return;
     }
 
-    const target = SERIAL_DB.find(s => 
-      s.serial.toLowerCase() === sn.toLowerCase() || 
-      (s.internalId && s.internalId.toLowerCase() === sn.toLowerCase())
-    );
+    // Hỗ trợ quét hoặc dán nhiều mã cùng lúc (ngăn cách bởi xuống dòng, dấu phẩy, chấm phẩy)
+    const rawTokens = text.split(/[\r\n,;]+/).map(s => s.trim()).filter(Boolean);
+    if (rawTokens.length === 0) return;
 
-    if (!target) {
-      playBeepSound();
-      Swal.fire('Không tìm thấy', `Serial hoặc Mã nội bộ "${sn}" chưa từng xuất hiện trong hệ thống kho!`, 'error');
-      return;
-    }
+    if (rawTokens.length === 1) {
+      // 1. Quét hoặc nhập 1 mã
+      const sn = rawTokens[0];
+      const target = SERIAL_DB.find(s => 
+        s.serial.toLowerCase() === sn.toLowerCase() || 
+        (s.internalId && s.internalId.toLowerCase() === sn.toLowerCase())
+      );
 
-    if (target.status !== 'IN_STOCK') {
+      if (!target) {
+        playBeepSound();
+        Swal.fire('Không tìm thấy', `Serial hoặc Mã nội bộ "${sn}" chưa từng xuất hiện trong hệ thống kho!`, 'error');
+        return;
+      }
+
+      if (target.status !== 'IN_STOCK') {
+        playBeepSound();
+        let reason = target.status;
+        if (target.status === 'SOLD') reason = `Máy này đã được xuất bán cho khách "${target.khachHang}" theo phiếu ${target.maPhieuXuat} ngày ${target.ngayXuat}`;
+        else if (target.status === 'IN_WARRANTY') reason = 'Máy này hiện đang trong quá trình bảo hành, không có sẵn trong kho';
+        else if (target.status === 'CANCELLED_IMPORT') reason = 'Serial này thuộc phiếu nhập đã bị hủy';
+
+        Swal.fire({
+          icon: 'warning',
+          title: 'Không thể xuất thiết bị này!',
+          html: `<p class="mb-1">Serial: <strong class="font-monospace text-primary">${target.serial}</strong> (${target.model})</p><p class="text-danger small mb-0">Lý do: ${reason}</p>`
+        });
+        return;
+      }
+
+      const alreadyInList = CURRENT_DRAFT_XUAT_ITEMS.some(i => i.serial.toLowerCase() === target.serial.toLowerCase());
+      if (alreadyInList) {
+        playBeepSound();
+        Swal.fire('Trùng lặp', `Serial ${target.serial} đã có trong danh sách chuẩn bị xuất của phiếu này!`, 'info');
+        return;
+      }
+
+      const prod = INITIAL_PRODUCTS.find(p => p.model === target.model);
+      const defaultWarranty = prod ? prod.defaultBh : (target.soThangBh || 12);
+      const ngayXuat = document.getElementById('xuat-ngay').value;
+      const expiryDate = calculateExpiryDate(ngayXuat, defaultWarranty);
+
+      CURRENT_DRAFT_XUAT_ITEMS.push({
+        id: 'xuat_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+        serial: target.serial,
+        internalId: target.internalId,
+        model: target.model,
+        kho: target.kho,
+        soThangBh: defaultWarranty,
+        ngayHetHanBh: expiryDate
+      });
+
+      const inp = document.getElementById('xuat-serial-input');
+      if (inp) {
+        inp.value = '';
+        inp.focus();
+      }
+      renderDraftXuatTable();
       playBeepSound();
-      let reason = target.status;
-      if (target.status === 'SOLD') reason = `Máy này đã được xuất bán cho khách "${target.khachHang}" theo phiếu ${target.maPhieuXuat} ngày ${target.ngayXuat}`;
-      else if (target.status === 'IN_WARRANTY') reason = 'Máy này hiện đang trong quá trình bảo hành, không có sẵn trong kho';
-      else if (target.status === 'CANCELLED_IMPORT') reason = 'Serial này thuộc phiếu nhập đã bị hủy';
+    } else {
+      // 2. Nhập hoặc quét hàng loạt nhiều mã (Bộ PC hoặc dán nhiều serial)
+      let addedCount = 0;
+      let notFoundList = [];
+      let notInStockList = [];
+      let duplicateList = [];
+
+      rawTokens.forEach(sn => {
+        const target = SERIAL_DB.find(s => 
+          s.serial.toLowerCase() === sn.toLowerCase() || 
+          (s.internalId && s.internalId.toLowerCase() === sn.toLowerCase())
+        );
+        if (!target) {
+          notFoundList.push(sn);
+          return;
+        }
+        if (target.status !== 'IN_STOCK') {
+          notInStockList.push(target.serial);
+          return;
+        }
+        const alreadyInList = CURRENT_DRAFT_XUAT_ITEMS.some(i => i.serial.toLowerCase() === target.serial.toLowerCase());
+        if (alreadyInList) {
+          duplicateList.push(target.serial);
+          return;
+        }
+
+        const prod = INITIAL_PRODUCTS.find(p => p.model === target.model);
+        const defaultWarranty = prod ? prod.defaultBh : (target.soThangBh || 12);
+        const ngayXuat = document.getElementById('xuat-ngay').value;
+        const expiryDate = calculateExpiryDate(ngayXuat, defaultWarranty);
+
+        CURRENT_DRAFT_XUAT_ITEMS.push({
+          id: 'xuat_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+          serial: target.serial,
+          internalId: target.internalId,
+          model: target.model,
+          kho: target.kho,
+          soThangBh: defaultWarranty,
+          ngayHetHanBh: expiryDate
+        });
+        addedCount++;
+      });
+
+      const inp = document.getElementById('xuat-serial-input');
+      if (inp) {
+        inp.value = '';
+        inp.focus();
+      }
+      renderDraftXuatTable();
+      playBeepSound();
+
+      let msg = `Đã đưa thành công <b>${addedCount}</b> thiết bị / linh kiện vào phiếu xuất.`;
+      if (duplicateList.length > 0) msg += `<br><span class="text-info">• Đã có trong phiếu (${duplicateList.length}): ${duplicateList.slice(0, 5).join(', ')}${duplicateList.length > 5 ? '...' : ''}</span>`;
+      if (notInStockList.length > 0) msg += `<br><span class="text-warning">• Không còn tồn kho (${notInStockList.length}): ${notInStockList.slice(0, 5).join(', ')}${notInStockList.length > 5 ? '...' : ''}</span>`;
+      if (notFoundList.length > 0) msg += `<br><span class="text-danger">• Không tìm thấy (${notFoundList.length}): ${notFoundList.slice(0, 5).join(', ')}${notFoundList.length > 5 ? '...' : ''}</span>`;
 
       Swal.fire({
-        icon: 'warning',
-        title: 'Không thể xuất thiết bị này!',
-        html: `<p class="mb-1">Serial: <strong class="font-monospace text-primary">${target.serial}</strong> (${target.model})</p><p class="text-danger small mb-0">Lý do: ${reason}</p>`
+        icon: addedCount > 0 ? 'success' : 'warning',
+        title: addedCount > 0 ? 'Đã thêm nhiều mã vào phiếu xuất' : 'Không có mã hợp lệ',
+        html: msg
       });
-      return;
     }
-
-    const alreadyInList = CURRENT_DRAFT_XUAT_ITEMS.some(i => i.serial.toLowerCase() === target.serial.toLowerCase());
-    if (alreadyInList) {
-      playBeepSound();
-      Swal.fire('Trùng lặp', `Serial ${target.serial} đã có trong danh sách chuẩn bị xuất của phiếu này!`, 'info');
-      return;
-    }
-
-    const prod = INITIAL_PRODUCTS.find(p => p.model === target.model);
-    const defaultWarranty = prod ? prod.defaultBh : (target.soThangBh || 12);
-    const ngayXuat = document.getElementById('xuat-ngay').value;
-    const expiryDate = calculateExpiryDate(ngayXuat, defaultWarranty);
-
-    CURRENT_DRAFT_XUAT_ITEMS.push({
-      id: 'xuat_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
-      serial: target.serial,
-      internalId: target.internalId,
-      model: target.model,
-      kho: target.kho,
-      soThangBh: defaultWarranty,
-      ngayHetHanBh: expiryDate
-    });
-
-    document.getElementById('xuat-serial-input').value = '';
-    renderDraftXuatTable();
-    playBeepSound();
   }
 
   function updateXuatItemWarranty(itemId, months) {
@@ -250,7 +323,7 @@
     const khach = document.getElementById('xuat-khach-select').value;
     const sdt = document.getElementById('xuat-sdt').value.trim();
     const diachi = document.getElementById('xuat-diachi').value.trim();
-    const kho = document.getElementById('xuat-kho').value;
+    const kho = (document.getElementById('xuat-kho')?.value) || (CURRENT_DRAFT_XUAT_ITEMS[0]?.kho) || 'Kho Chính';
     const ngay = formatDateDisplay(document.getElementById('xuat-ngay').value) || formatDateDisplay(getLocalDateStr());
 
     if (!khach) {
@@ -260,7 +333,7 @@
 
     document.getElementById('prev-xuat-khach').textContent = khach;
     document.getElementById('prev-xuat-sdt').textContent = sdt || 'Chưa có SĐT';
-    document.getElementById('prev-xuat-kho').textContent = kho;
+    if (document.getElementById('prev-xuat-kho')) document.getElementById('prev-xuat-kho').textContent = kho;
     document.getElementById('prev-xuat-ngay').textContent = ngay;
     document.getElementById('prev-xuat-diachi').textContent = diachi || 'Nhận tại văn phòng Thành An';
 
@@ -279,6 +352,7 @@
           <td><strong>${it.model}</strong></td>
           <td><span class="font-monospace fw-bold">${it.serial}</span></td>
           <td><span class="badge bg-secondary font-monospace">${it.internalId}</span></td>
+          <td><span class="badge bg-light text-dark border">${it.kho || 'Kho Chính'}</span></td>
           <td>${it.soThangBh > 0 ? `${it.soThangBh} tháng` : '<span class="text-muted">Không BH</span>'}</td>
           <td class="font-monospace">${it.ngayHetHanBh}</td>
           <td>
@@ -310,7 +384,7 @@
     const khach = document.getElementById('xuat-khach-select').value;
     const sdt = document.getElementById('xuat-sdt').value.trim();
     const diachi = document.getElementById('xuat-diachi').value.trim();
-    const kho = document.getElementById('xuat-kho').value;
+    const kho = (document.getElementById('xuat-kho')?.value) || (CURRENT_DRAFT_XUAT_ITEMS[0]?.kho) || 'Kho Chính';
     const ngay = formatDateDisplay(document.getElementById('xuat-ngay').value) || formatDateDisplay(getLocalDateStr());
     const maPhieu = generateVoucherCode('PX');
     const nowStr = `${ngay} ${new Date().toLocaleTimeString('vi-VN')}`;
@@ -390,7 +464,7 @@
     const khach = document.getElementById('xuat-khach-select').value || 'Khách hàng dự thảo';
     const sdt = document.getElementById('xuat-sdt').value.trim();
     const diachi = document.getElementById('xuat-diachi').value.trim();
-    const kho = document.getElementById('xuat-kho').value;
+    const kho = (document.getElementById('xuat-kho')?.value) || (CURRENT_DRAFT_XUAT_ITEMS[0]?.kho) || 'Kho Chính';
     const ngay = formatDateDisplay(document.getElementById('xuat-ngay').value) || formatDateDisplay(getLocalDateStr());
     const maPhieu = generateVoucherCode('PX');
     const nowStr = `${ngay} ${new Date().toLocaleTimeString('vi-VN')}`;
@@ -437,30 +511,240 @@
     });
   }
 
+  // =========================================================================
+  // CHỨC NĂNG: TÍCH CHỌN HÀNG LOẠT THIẾT BỊ / LINH KIỆN TỒN KHO (BỘ PC & NHIỀU MÁY)
+  // =========================================================================
+  let SELECTED_BATCH_STOCK_SERIALS = new Set();
+
   function openSelectStockModalForXuat() {
-    const available = SERIAL_DB.filter(s => s.status === 'IN_STOCK');
-    if (available.length === 0) {
+    SELECTED_BATCH_STOCK_SERIALS.clear();
+
+    const inStockList = SERIAL_DB.filter(s => s.status === 'IN_STOCK');
+    if (inStockList.length === 0) {
       Swal.fire('Kho trống', 'Hiện tại không còn thiết bị nào ở trạng thái Tồn Kho (IN_STOCK)!', 'info');
       return;
     }
 
-    let optionsHtml = available.map(s => `
-      <div class="d-flex justify-content-between align-items-center p-2 border-bottom">
-        <div>
-          <strong class="text-primary font-monospace">${s.serial}</strong> 
-          <span class="badge bg-secondary font-monospace ms-1">${s.internalId}</span>
-          <div class="small text-muted">${s.model} - ${s.kho} (Nhập: ${s.ngayNhap})</div>
-        </div>
-        <button class="btn btn-sm btn-outline-primary" onclick="addSerialToXuatDraft('${s.serial}')">
-          <i class="fa-solid fa-plus"></i> Chọn
-        </button>
-      </div>
-    `).join('');
+    // Nạp dropdown nhóm hàng
+    const nhomSelect = document.getElementById('batch-stock-filter-nhom');
+    if (nhomSelect) {
+      const categories = [...new Set(INITIAL_PRODUCTS.map(p => p.nhom).filter(Boolean))].sort();
+      nhomSelect.innerHTML = '<option value="">-- Tất cả nhóm hàng / linh kiện --</option>' + 
+        categories.map(c => `<option value="${c}">${c}</option>`).join('');
+    }
+
+    // Nạp dropdown kho
+    const khoSelect = document.getElementById('batch-stock-filter-kho');
+    if (khoSelect) {
+      const warehouses = [...new Set(SERIAL_DB.map(s => s.kho).filter(Boolean))].sort();
+      khoSelect.innerHTML = '<option value="">-- Tất cả kho --</option>' + 
+        warehouses.map(k => `<option value="${k}">${k}</option>`).join('');
+    }
+
+    const searchInput = document.getElementById('batch-stock-search');
+    if (searchInput) searchInput.value = '';
+
+    const checkAll = document.getElementById('batch-stock-check-all');
+    if (checkAll) checkAll.checked = false;
+
+    renderBatchStockTable();
+
+    const modalEl = document.getElementById('selectStockBatchModal');
+    if (modalEl) {
+      const modal = new bootstrap.Modal(modalEl);
+      modal.show();
+
+      setTimeout(() => {
+        if (searchInput) searchInput.focus();
+      }, 350);
+    }
+  }
+
+  function filterBatchStockTable() {
+    renderBatchStockTable();
+  }
+
+  function renderBatchStockTable() {
+    const tbody = document.getElementById('batch-stock-table-body');
+    if (!tbody) return;
+
+    const q = (document.getElementById('batch-stock-search')?.value || '').trim().toLowerCase();
+    const filterNhom = document.getElementById('batch-stock-filter-nhom')?.value || '';
+    const filterKho = document.getElementById('batch-stock-filter-kho')?.value || '';
+
+    // Lọc thiết bị tồn kho
+    const inStockList = SERIAL_DB.filter(s => s.status === 'IN_STOCK');
+
+    const filtered = inStockList.filter(s => {
+      if (filterKho && s.kho !== filterKho) return false;
+      const prod = INITIAL_PRODUCTS.find(p => p.model === s.model);
+      if (filterNhom && (!prod || prod.nhom !== filterNhom)) return false;
+
+      if (q) {
+        const matchModel = s.model && s.model.toLowerCase().includes(q);
+        const matchSn = s.serial && s.serial.toLowerCase().includes(q);
+        const matchInternal = s.internalId && s.internalId.toLowerCase().includes(q);
+        const matchName = prod && prod.ten && prod.ten.toLowerCase().includes(q);
+        const matchNhom = prod && prod.nhom && prod.nhom.toLowerCase().includes(q);
+        if (!matchModel && !matchSn && !matchInternal && !matchName && !matchNhom) return false;
+      }
+      return true;
+    });
+
+    const infoEl = document.getElementById('batch-stock-total-info');
+    if (infoEl) infoEl.textContent = `${filtered.length} / ${inStockList.length} thiết bị`;
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-4"><i class="fa-solid fa-box-open me-1"></i> Không tìm thấy thiết bị phù hợp trong kho</td></tr>';
+      updateBatchStockSelectedBadge();
+      return;
+    }
+
+    let html = '';
+    filtered.forEach((s, idx) => {
+      const prod = INITIAL_PRODUCTS.find(p => p.model === s.model);
+      const isAlreadyInDraft = CURRENT_DRAFT_XUAT_ITEMS.some(i => i.serial.toLowerCase() === s.serial.toLowerCase());
+      const isChecked = SELECTED_BATCH_STOCK_SERIALS.has(s.serial);
+
+      html += `
+        <tr class="${isChecked ? 'table-primary' : ''} ${isAlreadyInDraft ? 'table-light text-muted opacity-75' : 'cursor-pointer'}" 
+            onclick="handleBatchStockRowClick(event, '${s.serial}', ${isAlreadyInDraft})">
+          <td class="text-center" onclick="event.stopPropagation()">
+            <input type="checkbox" class="form-check-input batch-stock-item-chk" 
+                   value="${s.serial}" 
+                   ${isChecked ? 'checked' : ''} 
+                   ${isAlreadyInDraft ? 'disabled' : ''}
+                   onchange="toggleBatchStockItem('${s.serial}', this.checked)">
+          </td>
+          <td>${idx + 1}</td>
+          <td>
+            <strong class="text-dark">${s.model}</strong>
+            <div class="small text-secondary text-truncate" style="max-width: 240px;">${prod ? prod.ten : ''}</div>
+            ${prod && prod.nhom ? `<span class="badge bg-light text-primary border" style="font-size:0.68rem;">${prod.nhom}</span>` : ''}
+          </td>
+          <td>
+            <span class="font-monospace fw-bold text-primary">${s.serial}</span>
+          </td>
+          <td>
+            <span class="badge bg-secondary font-monospace">${s.internalId || '--'}</span>
+          </td>
+          <td>
+            <span class="badge bg-info text-dark font-monospace">${s.kho || 'Kho Chính'}</span>
+          </td>
+          <td>
+            <span class="small">${prod?.defaultBh ? prod.defaultBh + ' tháng' : (s.soThangBh ? s.soThangBh + ' tháng' : '12 tháng')}</span>
+          </td>
+          <td class="font-monospace small text-muted">${s.ngayNhap || '--'}</td>
+          <td class="text-center" onclick="event.stopPropagation()">
+            ${isAlreadyInDraft 
+              ? '<span class="badge bg-secondary small">Đã trong phiếu</span>' 
+              : `<button class="btn btn-xs btn-outline-primary py-0 px-2" style="font-size:0.75rem;" onclick="addSingleBatchStockToDraft('${s.serial}')"><i class="fa-solid fa-plus"></i> Thêm</button>`}
+          </td>
+        </tr>
+      `;
+    });
+
+    tbody.innerHTML = html;
+    updateBatchStockSelectedBadge();
+  }
+
+  function handleBatchStockRowClick(evt, serial, isAlreadyInDraft) {
+    if (isAlreadyInDraft) return;
+    const isChecked = SELECTED_BATCH_STOCK_SERIALS.has(serial);
+    toggleBatchStockItem(serial, !isChecked);
+    renderBatchStockTable();
+  }
+
+  function toggleBatchStockItem(serial, checked) {
+    if (checked) {
+      SELECTED_BATCH_STOCK_SERIALS.add(serial);
+    } else {
+      SELECTED_BATCH_STOCK_SERIALS.delete(serial);
+    }
+    updateBatchStockSelectedBadge();
+
+    const chk = document.querySelector(`.batch-stock-item-chk[value="${serial}"]`);
+    if (chk) chk.checked = checked;
+  }
+
+  function toggleSelectAllBatchStock(checked) {
+    const chks = document.querySelectorAll('.batch-stock-item-chk:not(:disabled)');
+    chks.forEach(c => {
+      c.checked = checked;
+      if (checked) {
+        SELECTED_BATCH_STOCK_SERIALS.add(c.value);
+      } else {
+        SELECTED_BATCH_STOCK_SERIALS.delete(c.value);
+      }
+    });
+    renderBatchStockTable();
+  }
+
+  function clearAllBatchStockSelection() {
+    SELECTED_BATCH_STOCK_SERIALS.clear();
+    const checkAll = document.getElementById('batch-stock-check-all');
+    if (checkAll) checkAll.checked = false;
+    renderBatchStockTable();
+  }
+
+  function updateBatchStockSelectedBadge() {
+    const count = SELECTED_BATCH_STOCK_SERIALS.size;
+    const badge = document.getElementById('batch-stock-selected-badge');
+    if (badge) badge.innerHTML = `<i class="fa-solid fa-check-circle me-1"></i>Đã chọn: <b>${count}</b> linh kiện`;
+    const btnCount = document.getElementById('batch-stock-btn-count');
+    if (btnCount) btnCount.textContent = count;
+    const applyBtn = document.getElementById('btn-apply-batch-stock');
+    if (applyBtn) applyBtn.disabled = count === 0;
+  }
+
+  function addSingleBatchStockToDraft(serial) {
+    addSerialToXuatDraft(serial);
+    renderBatchStockTable();
+  }
+
+  function applyBatchStockToXuatDraft() {
+    if (SELECTED_BATCH_STOCK_SERIALS.size === 0) {
+      Swal.fire('Chưa chọn', 'Vui lòng tích chọn ít nhất 1 linh kiện/thiết bị!', 'warning');
+      return;
+    }
+
+    let addedCount = 0;
+    SELECTED_BATCH_STOCK_SERIALS.forEach(sn => {
+      const target = SERIAL_DB.find(s => s.serial.toLowerCase() === sn.toLowerCase() && s.status === 'IN_STOCK');
+      if (target) {
+        const alreadyInList = CURRENT_DRAFT_XUAT_ITEMS.some(i => i.serial.toLowerCase() === target.serial.toLowerCase());
+        if (!alreadyInList) {
+          const prod = INITIAL_PRODUCTS.find(p => p.model === target.model);
+          const defaultWarranty = prod ? prod.defaultBh : (target.soThangBh || 12);
+          const ngayXuat = document.getElementById('xuat-ngay').value;
+          const expiryDate = calculateExpiryDate(ngayXuat, defaultWarranty);
+
+          CURRENT_DRAFT_XUAT_ITEMS.push({
+            id: 'xuat_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+            serial: target.serial,
+            internalId: target.internalId,
+            model: target.model,
+            kho: target.kho,
+            soThangBh: defaultWarranty,
+            ngayHetHanBh: expiryDate
+          });
+          addedCount++;
+        }
+      }
+    });
+
+    renderDraftXuatTable();
+    playBeepSound();
+
+    const modalEl = document.getElementById('selectStockBatchModal');
+    const modal = bootstrap.Modal.getInstance(modalEl);
+    if (modal) modal.hide();
 
     Swal.fire({
-      title: 'Chọn thiết bị có sẵn trong kho',
-      html: `<div class="text-start" style="max-height: 350px; overflow-y: auto;">${optionsHtml}</div>`,
-      showConfirmButton: false,
-      showCloseButton: true
+      icon: 'success',
+      title: 'Đã thêm vào phiếu xuất!',
+      html: `Đã đưa thành công <strong>${addedCount} linh kiện / thiết bị</strong> vào danh sách xuất kho.`,
+      timer: 1800,
+      showConfirmButton: false
     });
   }

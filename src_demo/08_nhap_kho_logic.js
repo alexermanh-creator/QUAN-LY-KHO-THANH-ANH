@@ -750,14 +750,18 @@
     INITIAL_PRODUCTS.push(newProd);
 
     // Cập nhật lại dropdown và tự chọn bản ghi vừa thêm (Yêu cầu B5)
-    const select = document.getElementById('nhap-select-model');
-    if (select) {
-      const opt = document.createElement('option');
-      opt.value = model;
-      opt.textContent = `${model} (${nhom})`;
-      opt.selected = true;
-      select.appendChild(opt);
-      onSelectModelNhap();
+    if (typeof setupNhapKhoForm === 'function') {
+      setupNhapKhoForm();
+    }
+    const modelInput = document.getElementById('nhap-model-input');
+    const modelHidden = document.getElementById('nhap-select-model');
+    if (modelInput) modelInput.value = model;
+    if (modelHidden) modelHidden.value = model;
+    if (typeof onSelectModelNhap === 'function') {
+      onSelectModelNhap(model);
+    }
+    if (modelInput) {
+      modelInput.focus();
     }
 
     recordAuditLog('THÊM MODEL MỚI', `Model ${model} (${prdId})`, 'None', `${ten} (${defaultBh}th)`, 'Thêm vào danh mục sản phẩm', [], 'Danh mục');

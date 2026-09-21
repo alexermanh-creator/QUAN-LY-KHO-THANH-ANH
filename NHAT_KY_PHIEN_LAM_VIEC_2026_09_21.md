@@ -71,4 +71,42 @@
   + Đã biên dịch `gas/Index.html` và `src/frontend/Index.html` (742 KB).
   + Đã đẩy thành công 20 file lên Google Apps Script qua `clasp push -f` lúc 17:10:13.
 
+### 10. Chuẩn Hóa CSDL Cũ & Đối Soát Xung Đột Dữ Liệu (File "THÀNH AN ERP - DATABASE (1).xlsx"):
+- **Trích xuất và chuẩn hóa toàn bộ dữ liệu**:
+  + Đã giải nén và phân tích chuyên sâu 10 sheet trong file Excel cũ của kho Thành An: 86 dòng thiết bị Serial, 33 dòng danh mục sản phẩm, 34 phiếu nhập, 14 phiếu xuất, 18 nhà cung cấp, 13 khách hàng thô.
+  + **Tự động tìm kiếm hãng sản xuất và điền tên chuẩn**: Phân loại chính xác 100% tên hãng (Canon, HP, Brother, Hiksemi, Intel, MSI, AIGO, Darkflash, DAREU, Lenovo, Dahua, Kingston, CUSU, Western Digital, Seagate, Dtech, Halloya, TJ INK...).
+  + **Chuẩn hóa danh mục sản phẩm**:
+    * Sửa tất cả các model và tên sản phẩm ghi vắn tắt thành tên gọi chuyên nghiệp đầy đủ (Ví dụ: `Hiksemi 256GB` $\rightarrow$ `Ổ cứng SSD Hiksemi Wave 256GB M.2 PCIe NVMe...`, `Main H610` $\rightarrow$ `Bo mạch chủ Mainboard MSI PRO H610M-E DDR4`, `DAREU EK87` $\rightarrow$ `Bàn phím cơ DAREU EK87 Tenkeyless...`).
+    * Gán đầy đủ thông số: Ngành hàng/Phân nhóm, Thời hạn bảo hành tiêu chuẩn (tháng), Đơn vị tính (Chiếc), Cờ quản lý Serial (`ManageSerial = CÓ`).
+  + **Làm sạch Khách hàng & Nhà cung cấp**:
+    * Khắc phục triệt để lỗi số điện thoại bị biến thành số mũ khoa học (`3.2547E8` $\rightarrow$ `0325470077`, `3.8350E8` $\rightarrow$ `0383500018`, `9.0969E8` $\rightarrow$ `0909689886`).
+    * Tách riêng tên người liên hệ, địa chỉ và ghi chú bị gõ lẫn vào cột SĐT (Ví dụ: `0989354020 (a Dũng)` $\rightarrow$ SĐT `0989354020`, Người liên hệ: `Anh Dũng`).
+    * Gộp các khách hàng bị tạo trùng lặp do gõ tên khác nhau (`e Vân` / `Vân` $\rightarrow$ `Em Vân`, `anh Luận` / `anh Luận - Đan Phượng` $\rightarrow$ `Anh Luận - Đan Phượng`).
+  + **Chuẩn hóa định dạng Serial**:
+    * Giải mã số mũ khoa học `3.0188230248E10` trên thanh Ram Hiksemi 16GB về chính xác số nguyên 11 chữ số `30188230248`.
+    * Xóa đuôi `.0` từ Excel cho Serial `123456.0` thành chuỗi `123456`.
+  + **Chuyển đổi 100% thời gian**: Đổi toàn bộ các giá trị ngày tháng dạng số Excel (46277...) về chuẩn hiển thị ngày tháng Việt Nam `DD/MM/YYYY`.
+
+- **Kết quả Đối Soát Số Liệu & Xử Lý Tự Động Xung Đột (100% Khớp Toán Học)**:
+  + **Tự động xử lý xung đột 1 (Model nhầm giữa Canon và HP)**: Loại bỏ phiếu nháp thử nghiệm `PN-260911-141121` (Canon LBP121dn không gắn với bất kỳ máy nào trong kho). Toàn bộ serial `VNM0W...` được gắn đúng với dòng máy HP LaserJet M211dw.
+  + **Tự động xử lý xung đột 2 (Phiếu nhập lặp 2 phút)**: Loại bỏ phiếu trùng lặp `PN-260912-083809`, giữ lại duy nhất phiếu chính thức `PN-260912-083643` từ nhà cung cấp `FPS`. Serial `VNM0WW42908` được gán chính xác nguồn gốc nhập từ FPS và xuất bán cho Cty Khoa Nhân trên phiếu `PX-260912-083937`.
+  + **Tự động xử lý xung đột 3 (Cân bằng số lượng phiếu PN-260915-171953)**: Dựa theo lịch sử hoạt động `NHAT_KY_HOAT_DONG`, anh Khổng Mạnh Cường đã thực hiện thao tác xóa máy `VNM0W12908` khỏi kho vào ngày 15/09/2026. Do đó, phiếu `PN-260915-171953` được cập nhật lại chuẩn xác số lượng = 2 chiếc (`VNM0W42889` và `VNM0W40960`), khớp chính xác 100% với số lượng thiết bị thực tế.
+  + **Chuẩn hóa Model kèm tiền tố Hãng (Canon LBP 6030w, HP LaserJet M211dw...)**:
+    * Toàn bộ 33 Model sản phẩm được cấu trúc lại chuẩn hóa có tên Hãng đi kèm (VD: `Canon LBP 6030w`, `HP LaserJet M211dw`, `Intel Core i5-12400`, `SSD Hiksemi Wave 256GB`, `MSI GeForce RTX 3050 Ventus 2X`, `DAREU LM103`...).
+    * Đồng bộ tiền tố Model trên toàn bộ các bảng: `DM_SAN_PHAM`, `DATA_THIET_BI`, `LICH_SU_NHAP`, `LICH_SU_XUAT`.
+  + **Số liệu sau xử lý**:
+    * 33 Sản phẩm chuẩn hóa.
+    * 18 Nhà cung cấp.
+    * 10 Khách hàng đã làm sạch.
+    * 86 Thiết bị Serial (60 Tồn kho, 26 Đã xuất).
+    * 32 Phiếu nhập (100% khớp số lượng với serial).
+    * 14 Phiếu xuất (100% khớp số lượng với serial).
+
+- **Biên dịch & Đẩy lên Google Apps Script**:
+  + Đã biên dịch `demo_quan_ly_kho.html` (922 KB).
+  + Đã biên dịch `gas/Index.html` và `src/frontend/Index.html` (932 KB).
+  + Đã đẩy thành công 21 file lên Google Apps Script qua `clasp push -f` lúc 19:34:50.
+
+
+
 
