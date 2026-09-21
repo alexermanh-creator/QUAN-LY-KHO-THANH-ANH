@@ -4543,29 +4543,115 @@
   }
 
   function goToHistoryVoucher(type, code) {
+    if (!code) return;
     if (typeof switchTab === 'function') switchTab('LichSu');
     setTimeout(() => {
       if (type === 'XUAT') {
         if (typeof switchHistoryTab === 'function') switchHistoryTab('XUAT');
-        const inp = document.getElementById('filter-history-xuat-search');
-        if (inp && code) {
+        const inp = document.getElementById('filter-xuat-search') || document.getElementById('filter-history-xuat-search');
+        if (inp) {
           inp.value = code;
-          if (typeof applyHistoryXuatFilter === 'function') applyHistoryXuatFilter();
+          if (typeof renderHistoryXuatTable === 'function') renderHistoryXuatTable();
+          else if (typeof applyXuatHistoryFilters === 'function') applyXuatHistoryFilters();
+          else if (typeof applyHistoryXuatFilter === 'function') applyHistoryXuatFilter();
         }
       } else if (type === 'NHAP') {
         if (typeof switchHistoryTab === 'function') switchHistoryTab('NHAP');
-        const inp = document.getElementById('filter-history-nhap-search');
-        if (inp && code) {
+        const inp = document.getElementById('filter-nhap-search') || document.getElementById('filter-history-nhap-search');
+        if (inp) {
           inp.value = code;
-          if (typeof applyHistoryNhapFilter === 'function') applyHistoryNhapFilter();
+          if (typeof renderHistoryNhapTable === 'function') renderHistoryNhapTable();
+          else if (typeof applyNhapHistoryFilters === 'function') applyNhapHistoryFilters();
+          else if (typeof applyHistoryNhapFilter === 'function') applyHistoryNhapFilter();
         }
       } else {
         if (typeof switchHistoryTab === 'function') switchHistoryTab('AUDIT');
       }
     }, 150);
   }
+
+  function goToSupplierHistory(nccName) {
+    if (!nccName || nccName === 'N/A') return;
+    if (typeof switchTab === 'function') switchTab('LichSu');
+    setTimeout(() => {
+      if (typeof switchHistoryTab === 'function') switchHistoryTab('NHAP');
+      const inp = document.getElementById('filter-nhap-search') || document.getElementById('filter-history-nhap-search');
+      if (inp) {
+        inp.value = nccName;
+        if (typeof renderHistoryNhapTable === 'function') renderHistoryNhapTable();
+        else if (typeof applyNhapHistoryFilters === 'function') applyNhapHistoryFilters();
+      }
+    }, 150);
+  }
+
+  function goToCustomerHistory(khachName) {
+    if (!khachName || khachName === 'N/A') return;
+    if (typeof switchTab === 'function') switchTab('LichSu');
+    setTimeout(() => {
+      if (typeof switchHistoryTab === 'function') switchHistoryTab('XUAT');
+      const inp = document.getElementById('filter-xuat-search') || document.getElementById('filter-history-xuat-search');
+      if (inp) {
+        inp.value = khachName;
+        if (typeof renderHistoryXuatTable === 'function') renderHistoryXuatTable();
+        else if (typeof applyXuatHistoryFilters === 'function') applyXuatHistoryFilters();
+      }
+    }, 150);
+  }
+
+  function goToTonKhoByKho(khoName) {
+    if (!khoName) return;
+    if (typeof switchTab === 'function') switchTab('TonKho');
+    if (typeof setStockViewMode === 'function') setStockViewMode('SERIAL');
+    const elKho = document.getElementById('filter-stock-kho');
+    const elNhom = document.getElementById('filter-stock-nhom');
+    const elKw = document.getElementById('filter-stock-keyword');
+    const elAging = document.getElementById('filter-stock-aging');
+    const elSt = document.getElementById('filter-stock-status');
+    if (elNhom) elNhom.value = '';
+    if (elKw) elKw.value = '';
+    if (elAging) elAging.value = '';
+    if (elSt) elSt.value = 'IN_STOCK';
+    if (elKho) elKho.value = khoName;
+    if (typeof renderTonKho === 'function') renderTonKho();
+  }
+
+  function goToWarrantyCaseDetail(caseId) {
+    if (!caseId) return;
+    if (typeof switchTab === 'function') switchTab('BaoHanh');
+    setTimeout(() => {
+      const elSearch = document.getElementById('filter-warranty-search');
+      if (elSearch) {
+        elSearch.value = caseId;
+        if (typeof renderWarrantyCasesTable === 'function') renderWarrantyCasesTable();
+      }
+    }, 150);
+  }
+
+  function copyTextToClipboard(text, label) {
+    if (!text) return;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => {
+        if (typeof Swal !== 'undefined') {
+          Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'success',
+            title: `Đã sao chép ${label || ''}: ${text}`,
+            showConfirmButton: false,
+            timer: 2000
+          });
+        }
+      }).catch(() => {});
+    }
+  }
+
   if (typeof window !== 'undefined') {
     window.goToHistoryVoucher = goToHistoryVoucher;
+    window.goToSupplierHistory = goToSupplierHistory;
+    window.goToCustomerHistory = goToCustomerHistory;
+    window.goToTonKhoByKho = goToTonKhoByKho;
+    window.goToWarrantyCaseDetail = goToWarrantyCaseDetail;
+    window.copyTextToClipboard = copyTextToClipboard;
     window.goToTonKhoAll = goToTonKhoAll;
     window.goToHistoryNhap = goToHistoryNhap;
     window.goToHistoryXuat = goToHistoryXuat;

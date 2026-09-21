@@ -223,8 +223,8 @@
     tbody.innerHTML = html;
   }
 
-  function openCreateWarrantyCaseModal() {
-    document.getElementById('case-serial').value = '';
+  function openCreateWarrantyCaseModal(prefillSerial) {
+    document.getElementById('case-serial').value = prefillSerial || '';
     document.getElementById('case-issue').value = '';
     document.getElementById('case-accessories').value = '';
     document.getElementById('case-technician').value = '';
@@ -236,6 +236,10 @@
     const promised = new Date();
     promised.setDate(promised.getDate() + 5);
     document.getElementById('case-promised-date').value = getLocalDateStr(promised);
+
+    if (prefillSerial && typeof onWarrantySerialChange === 'function') {
+      onWarrantySerialChange(prefillSerial);
+    }
 
     const modal = new bootstrap.Modal(document.getElementById('warrantyCaseModal'));
     modal.show();
