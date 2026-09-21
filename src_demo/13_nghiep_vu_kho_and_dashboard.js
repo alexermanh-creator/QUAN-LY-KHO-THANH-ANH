@@ -2614,11 +2614,152 @@
     renderDashboard();
   }
 
+  function goToTonKhoAll() {
+    if (typeof switchTab === 'function') switchTab('TonKho');
+    if (typeof setStockViewMode === 'function') setStockViewMode('MODEL');
+    const elKho = document.getElementById('filter-stock-kho');
+    const elNhom = document.getElementById('filter-stock-nhom');
+    const elKw = document.getElementById('filter-stock-keyword');
+    const elAging = document.getElementById('filter-stock-aging');
+    const elSt = document.getElementById('filter-stock-status');
+    if (elKho) elKho.value = '';
+    if (elNhom) elNhom.value = '';
+    if (elKw) elKw.value = '';
+    if (elAging) elAging.value = '';
+    if (elSt) elSt.value = 'IN_STOCK';
+    if (typeof renderTonKho === 'function') renderTonKho();
+  }
+
+  function goToHistoryNhap() {
+    if (typeof switchTab === 'function') switchTab('LichSu');
+    setTimeout(() => {
+      if (typeof switchHistoryTab === 'function') switchHistoryTab('NHAP');
+    }, 120);
+  }
+
+  function goToHistoryXuat() {
+    if (typeof switchTab === 'function') switchTab('LichSu');
+    setTimeout(() => {
+      if (typeof switchHistoryTab === 'function') switchHistoryTab('XUAT');
+    }, 120);
+  }
+
+  function goToStockAgingDetail() {
+    let count60Plus = 0;
+    if (typeof SERIAL_DB !== 'undefined' && Array.isArray(SERIAL_DB)) {
+      count60Plus = SERIAL_DB.filter(s => s.status === 'IN_STOCK' && typeof calculateStockAging === 'function' && calculateStockAging(s.ngayNhap) > 60).length;
+    }
+    if (count60Plus > 0) {
+      openStockAgingAction(60);
+    } else {
+      goToTonKhoByAgingRange('31-60');
+      if (typeof Swal !== 'undefined') {
+        Swal.fire({
+          toast: true,
+          position: 'top-end',
+          icon: 'info',
+          title: 'Kho chưa có máy tồn > 60 ngày. Đang hiển thị nhóm tồn lâu nhất (31-60 ngày).',
+          showConfirmButton: false,
+          timer: 3500
+        });
+      }
+    }
+  }
+
+  function goToStockAgingWarning() {
+    let countWarning = 0;
+    const thresh = (typeof ALERT_SETTINGS !== 'undefined' && ALERT_SETTINGS.agingDays) ? ALERT_SETTINGS.agingDays : 60;
+    if (typeof SERIAL_DB !== 'undefined' && Array.isArray(SERIAL_DB)) {
+      countWarning = SERIAL_DB.filter(s => s.status === 'IN_STOCK' && typeof calculateStockAging === 'function' && calculateStockAging(s.ngayNhap) > thresh).length;
+    }
+    if (countWarning > 0) {
+      openStockAgingAction(thresh);
+    } else {
+      goToTonKhoAll();
+      if (typeof Swal !== 'undefined') {
+        Swal.fire({
+          toast: true,
+          position: 'top-end',
+          icon: 'success',
+          title: `Tuyệt vời! Hiện không có thiết bị nào bị tồn quá hạn cảnh báo (> ${thresh} ngày).`,
+          showConfirmButton: false,
+          timer: 3500
+        });
+      }
+    }
+  }
+
+  function goToTonKhoByCategory(catName) {
+    if (typeof switchTab === 'function') switchTab('TonKho');
+    if (typeof setStockViewMode === 'function') setStockViewMode('SERIAL');
+    const elKho = document.getElementById('filter-stock-kho');
+    const elNhom = document.getElementById('filter-stock-nhom');
+    const elKw = document.getElementById('filter-stock-keyword');
+    const elAging = document.getElementById('filter-stock-aging');
+    const elSt = document.getElementById('filter-stock-status');
+    if (elKho) elKho.value = '';
+    if (elKw) elKw.value = '';
+    if (elAging) elAging.value = '';
+    if (elSt) elSt.value = 'IN_STOCK';
+    if (elNhom && catName) elNhom.value = catName;
+    if (typeof renderTonKho === 'function') renderTonKho();
+  }
+
+  function goToTonKhoByAgingRange(rangeVal) {
+    if (typeof switchTab === 'function') switchTab('TonKho');
+    if (typeof setStockViewMode === 'function') setStockViewMode('SERIAL');
+    const elKho = document.getElementById('filter-stock-kho');
+    const elNhom = document.getElementById('filter-stock-nhom');
+    const elKw = document.getElementById('filter-stock-keyword');
+    const elAging = document.getElementById('filter-stock-aging');
+    const elSt = document.getElementById('filter-stock-status');
+    if (elKho) elKho.value = '';
+    if (elNhom) elNhom.value = '';
+    if (elKw) elKw.value = '';
+    if (elSt) elSt.value = 'IN_STOCK';
+    if (elAging) {
+      let opt = Array.from(elAging.options).find(o => o.value === String(rangeVal));
+      if (!opt) {
+        opt = document.createElement('option');
+        opt.value = String(rangeVal);
+        opt.textContent = `Tồn ${rangeVal} ngày`;
+        elAging.appendChild(opt);
+      }
+      elAging.value = String(rangeVal);
+    }
+    if (typeof renderTonKho === 'function') renderTonKho();
+  }
+
+  function goToTonKhoByModel(modelName) {
+    if (typeof switchTab === 'function') switchTab('TonKho');
+    if (typeof setStockViewMode === 'function') setStockViewMode('SERIAL');
+    const elKho = document.getElementById('filter-stock-kho');
+    const elNhom = document.getElementById('filter-stock-nhom');
+    const elKw = document.getElementById('filter-stock-keyword');
+    const elAging = document.getElementById('filter-stock-aging');
+    const elSt = document.getElementById('filter-stock-status');
+    if (elKho) elKho.value = '';
+    if (elNhom) elNhom.value = '';
+    if (elAging) elAging.value = '';
+    if (elSt) elSt.value = 'IN_STOCK';
+    if (elKw && modelName) elKw.value = modelName;
+    if (typeof renderTonKho === 'function') renderTonKho();
+  }
+
   function openStockAgingAction(days) {
     switchTab('TonKho');
     if (typeof setStockViewMode === 'function') {
       setStockViewMode('SERIAL');
     }
+    const elKho = document.getElementById('filter-stock-kho');
+    const elNhom = document.getElementById('filter-stock-nhom');
+    const elKw = document.getElementById('filter-stock-keyword');
+    const elSt = document.getElementById('filter-stock-status');
+    if (elKho) elKho.value = '';
+    if (elNhom) elNhom.value = '';
+    if (elKw) elKw.value = '';
+    if (elSt) elSt.value = 'IN_STOCK';
+
     const filterAging = document.getElementById('filter-stock-aging');
     if (filterAging) {
       let opt = Array.from(filterAging.options).find(o => o.value == days);
@@ -4101,7 +4242,7 @@
             const pct = Math.round((val / total) * 100);
             const c = colors[idx % colors.length];
             return `
-              <div class="d-flex align-items-center justify-content-between py-1 border-bottom border-light">
+              <div class="d-flex align-items-center justify-content-between py-1 border-bottom border-light cursor-pointer hover-bg-light rounded px-1" onclick="goToTonKhoByCategory('${lbl}')" title="Nhấn để xem danh sách tồn nhóm ${lbl}" style="cursor: pointer;">
                 <div class="d-flex align-items-center gap-2">
                   <span style="display:inline-block; width:8px; height:8px; border-radius:2px; background:${c};"></span>
                   <span class="text-secondary">${lbl}</span>
@@ -4261,7 +4402,7 @@
                        CURRENT_TOP_MODEL_TAB === 'export' ? '#f97316' : '#ef4444';
 
       return `
-        <div>
+        <div class="cursor-pointer hover-bg-light rounded p-1" onclick="goToTonKhoByModel('${item.model}')" title="Nhấn để xem chi tiết tồn kho model ${item.model}" style="cursor: pointer;">
           <div class="d-flex justify-content-between align-items-center" style="font-size: 0.74rem;">
             <span class="fw-semibold text-dark text-truncate" style="max-width: 170px;" title="${item.model}">
               <span class="text-muted me-1">#${idx + 1}</span> ${item.model}
@@ -4423,7 +4564,18 @@
       }
     }, 150);
   }
-  if (typeof window !== 'undefined') window.goToHistoryVoucher = goToHistoryVoucher;
+  if (typeof window !== 'undefined') {
+    window.goToHistoryVoucher = goToHistoryVoucher;
+    window.goToTonKhoAll = goToTonKhoAll;
+    window.goToHistoryNhap = goToHistoryNhap;
+    window.goToHistoryXuat = goToHistoryXuat;
+    window.goToStockAgingDetail = goToStockAgingDetail;
+    window.goToStockAgingWarning = goToStockAgingWarning;
+    window.goToTonKhoByCategory = goToTonKhoByCategory;
+    window.goToTonKhoByAgingRange = goToTonKhoByAgingRange;
+    window.goToTonKhoByModel = goToTonKhoByModel;
+    window.openStockAgingAction = openStockAgingAction;
+  }
 
   // KHỞI ĐỘNG HỆ THỐNG KHI TẢI TRANG
   window.addEventListener('DOMContentLoaded', () => {

@@ -1271,8 +1271,7 @@
   // Danh sách tài khoản nhân sự RBAC
   let INITIAL_USERS = [
     { username: 'admin', fullName: 'Khổng Mạnh Cường', role: 'ADMIN', status: 'ACTIVE', password: '***' },
-    { username: 'minhquan', fullName: 'Khổng Minh Quân', role: 'THỦ KHO', status: 'ACTIVE', password: '***' },
-    { username: 'KHO1', fullName: 'Khổng Minh Quân', role: 'THỦ KHO', status: 'ACTIVE', password: '***' }
+    { username: 'minhquan', fullName: 'Khổng Minh Quân', role: 'THỦ KHO', status: 'ACTIVE', password: '***' }
   ];
   let USERS_DB = JSON.parse(JSON.stringify(INITIAL_USERS));
 

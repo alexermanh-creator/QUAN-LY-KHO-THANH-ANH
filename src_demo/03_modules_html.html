@@ -40,7 +40,7 @@
         <!-- ============================================== -->
         <div class="kpi-grid-5">
           <!-- 1. TỔNG TỒN HIỆN TẠI -->
-          <div class="kpi-card-v4" onclick="switchTab('TonKho')" style="cursor: pointer;">
+          <div class="kpi-card-v4" onclick="goToTonKhoAll()" style="cursor: pointer;" title="Nhấn để xem toàn bộ danh sách tồn kho">
             <div class="d-flex align-items-center gap-3">
               <div class="kpi-icon-box bg-blue">
                 <i class="fa-solid fa-cube"></i>
@@ -62,7 +62,7 @@
           </div>
 
           <!-- 2. NHẬP TRONG KỲ -->
-          <div class="kpi-card-v4" onclick="switchTab('NhapKho')" style="cursor: pointer;">
+          <div class="kpi-card-v4" onclick="goToHistoryNhap()" style="cursor: pointer;" title="Nhấn để xem lịch sử phiếu nhập">
             <div class="d-flex align-items-center gap-3">
               <div class="kpi-icon-box bg-green">
                 <i class="fa-solid fa-arrow-down"></i>
@@ -82,7 +82,7 @@
           </div>
 
           <!-- 3. XUẤT TRONG KỲ -->
-          <div class="kpi-card-v4" onclick="switchTab('XuatKho')" style="cursor: pointer;">
+          <div class="kpi-card-v4" onclick="goToHistoryXuat()" style="cursor: pointer;" title="Nhấn để xem lịch sử phiếu xuất">
             <div class="d-flex align-items-center gap-3">
               <div class="kpi-icon-box bg-orange">
                 <i class="fa-solid fa-arrow-up"></i>
@@ -102,7 +102,7 @@
           </div>
 
           <!-- 4. BIẾN ĐỘNG TỒN (THAY CHO SỐ MODEL ĐANG TỒN CŨ) -->
-          <div class="kpi-card-v4" onclick="switchTab('TonKho')" style="cursor: pointer;">
+          <div class="kpi-card-v4" onclick="goToTonKhoAll()" style="cursor: pointer;" title="Nhấn để xem biến động tồn">
             <div class="d-flex align-items-center gap-3">
               <div class="kpi-icon-box bg-purple">
                 <i class="fa-solid fa-chart-simple"></i>
@@ -133,7 +133,7 @@
                   <i class="fa-solid fa-chevron-right text-muted" style="font-size:0.68rem;"></i>
                 </span>
               </div>
-              <div class="d-flex align-items-center justify-content-between py-1 px-1 rounded hover-bg-light cursor-pointer" onclick="switchTab('TonKho')">
+              <div class="d-flex align-items-center justify-content-between py-1 px-1 rounded hover-bg-light cursor-pointer" onclick="goToStockAgingWarning()">
                 <span class="d-flex align-items-center gap-2 text-dark" style="font-size:0.78rem;">
                   <i class="fa-solid fa-circle-exclamation text-warning" style="font-size:0.9rem;"></i> Cảnh báo tồn lâu
                 </span>
@@ -142,7 +142,7 @@
                   <i class="fa-solid fa-chevron-right text-muted" style="font-size:0.68rem;"></i>
                 </span>
               </div>
-              <div class="d-flex align-items-center justify-content-between py-1 px-1 rounded hover-bg-light cursor-pointer" onclick="switchTab('LichSu')">
+              <div class="d-flex align-items-center justify-content-between py-1 px-1 rounded hover-bg-light cursor-pointer" onclick="goToHistoryNhap()">
                 <span class="d-flex align-items-center gap-2 text-dark" style="font-size:0.78rem;">
                   <i class="fa-solid fa-file-lines text-secondary" style="font-size:0.9rem;"></i> Phiếu nhập
                 </span>
@@ -222,7 +222,7 @@
                 </div>
               </div>
               <div class="px-3 pb-1">
-                <a href="javascript:void(0)" onclick="switchTab('TonKho')" class="card-footer-link">Xem chi tiết →</a>
+                <a href="javascript:void(0)" onclick="goToTonKhoAll()" class="card-footer-link">Xem chi tiết →</a>
               </div>
             </div>
           </div>
@@ -240,28 +240,28 @@
                   <div style="height: 110px; position: relative;">
                     <canvas id="chart-stock-aging"></canvas>
                   </div>
-                  <!-- Thống kê dải ngày -->
+                  <!-- Thống kê dải ngày (Bấm vào để lọc ngay thiết bị theo dải ngày) -->
                   <div class="row g-1 text-center mt-1" id="aging-summary-grid">
                     <div class="col-3">
-                      <div class="p-1 rounded bg-light border">
+                      <div class="p-1 rounded bg-light border cursor-pointer hover-bg-light" onclick="goToTonKhoByAgingRange('0-30')" title="Xem thiết bị tồn 0-30 ngày" style="cursor: pointer;">
                         <div class="fw-bold text-success" style="font-size:0.82rem;" id="aging-count-0-30">0</div>
                         <div style="font-size:0.65rem; color:#64748b;">0-30 ngày</div>
                       </div>
                     </div>
                     <div class="col-3">
-                      <div class="p-1 rounded bg-light border">
+                      <div class="p-1 rounded bg-light border cursor-pointer hover-bg-light" onclick="goToTonKhoByAgingRange('31-60')" title="Xem thiết bị tồn 31-60 ngày" style="cursor: pointer;">
                         <div class="fw-bold text-primary" style="font-size:0.82rem;" id="aging-count-31-60">0</div>
                         <div style="font-size:0.65rem; color:#64748b;">31-60 ngày</div>
                       </div>
                     </div>
                     <div class="col-3">
-                      <div class="p-1 rounded bg-light border">
+                      <div class="p-1 rounded bg-light border cursor-pointer hover-bg-light" onclick="goToTonKhoByAgingRange('61-90')" title="Xem thiết bị tồn 61-90 ngày" style="cursor: pointer;">
                         <div class="fw-bold text-warning" style="font-size:0.82rem;" id="aging-count-61-90">0</div>
                         <div style="font-size:0.65rem; color:#64748b;">61-90 ngày</div>
                       </div>
                     </div>
                     <div class="col-3">
-                      <div class="p-1 rounded bg-light border">
+                      <div class="p-1 rounded bg-light border cursor-pointer hover-bg-light" onclick="goToTonKhoByAgingRange('90+')" title="Xem thiết bị tồn >90 ngày" style="cursor: pointer;">
                         <div class="fw-bold text-danger" style="font-size:0.82rem;" id="aging-count-90plus">0</div>
                         <div style="font-size:0.65rem; color:#64748b;">&gt;90 ngày</div>
                       </div>
@@ -270,7 +270,7 @@
                 </div>
               </div>
               <div class="px-3 pb-1">
-                <a href="javascript:void(0)" onclick="openStockAgingAction(60)" class="card-footer-link">Xem chi tiết →</a>
+                <a href="javascript:void(0)" onclick="goToStockAgingDetail()" class="card-footer-link">Xem chi tiết →</a>
               </div>
             </div>
           </div>
@@ -298,7 +298,7 @@
                 </div>
               </div>
               <div class="px-3 pb-1">
-                <a href="javascript:void(0)" onclick="switchTab('TonKho')" class="card-footer-link">Xem tất cả →</a>
+                <a href="javascript:void(0)" onclick="goToTonKhoAll()" class="card-footer-link">Xem tất cả →</a>
               </div>
             </div>
           </div>
@@ -384,11 +384,13 @@
                 <label class="form-label small fw-semibold text-muted mb-1">Tuổi tồn kho</label>
                 <select id="filter-stock-aging" class="form-select form-select-sm" onchange="applyStockFilter()">
                   <option value="">-- Tất cả thời gian --</option>
+                  <option value="0-30">Tồn 0 - 30 ngày</option>
+                  <option value="31-60">Tồn 31 - 60 ngày</option>
+                  <option value="61-90">Tồn 61 - 90 ngày</option>
+                  <option value="90+">Tồn > 90 ngày</option>
                   <option value="30">Tồn > 30 ngày</option>
-                  <option value="45">Tồn > 45 ngày</option>
                   <option value="60">Tồn > 60 ngày</option>
                   <option value="90">Tồn > 90 ngày</option>
-                  <option value="120">Tồn > 120 ngày</option>
                 </select>
               </div>
               <div class="col-6 col-md-2">

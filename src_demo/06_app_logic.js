@@ -1497,7 +1497,7 @@
     }
     if (!matched) {
       if (u === 'admin') matched = { username: 'admin', fullName: 'Khổng Mạnh Cường', role: 'ADMIN' };
-      else if (u === 'minhquan' || u === 'kho1' || u === 'thukho') matched = { username: 'minhquan', fullName: 'Khổng Minh Quân', role: 'THỦ KHO' };
+      else if (u === 'minhquan') matched = { username: 'minhquan', fullName: 'Khổng Minh Quân', role: 'THỦ KHO' };
     }
 
     if (matched) {
@@ -1630,11 +1630,11 @@
       btnCloseInv.disabled = !canCloseStocktake;
     }
 
-    // 5. Quyền cài đặt
-    const canManagePerms = hasPermission('Permissions.Manage');
+    // 5. Quyền cài đặt & Phân quyền: Chỉ ADMIN hoặc có quyền Permissions.Manage mới thấy
+    const canManagePerms = (CURRENT_ROLE === 'ADMIN') || hasPermission('Permissions.Manage');
     const navCaiDat = document.getElementById('sidebar-nav-caidat');
     if (navCaiDat) {
-      navCaiDat.style.opacity = canManagePerms ? '1' : '0.6';
+      navCaiDat.style.display = canManagePerms ? 'block' : 'none';
     }
   }
 
@@ -1686,6 +1686,21 @@
 
   function switchTab(tabId) {
     if (!tabId) return;
+
+    // Kiểm tra quyền truy cập module Cài đặt & Phân quyền
+    if (tabId === 'CaiDat') {
+      const canManagePerms = (CURRENT_ROLE === 'ADMIN') || hasPermission('Permissions.Manage');
+      if (!canManagePerms) {
+        if (typeof Swal !== 'undefined') {
+          Swal.fire({
+            icon: 'error',
+            title: 'Từ chối quyền truy cập!',
+            html: `Module <b>Cài Đặt & Phân Quyền</b> chỉ dành riêng cho Quản trị viên (Admin).<br>Vai trò hiện tại của bạn là: <strong>${CURRENT_ROLE}</strong>.`
+          });
+        }
+        return;
+      }
+    }
 
     // 0. Chống bấm lại tab đang mở & chống rapid-click
     if (CURRENT_ACTIVE_MODULE === tabId) return;

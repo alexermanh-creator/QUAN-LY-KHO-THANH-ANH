@@ -424,10 +424,8 @@ function authenticateUser(username, password) {
   if (!foundUser) {
     const defaultAccounts = {
       'admin': { role: 'ADMIN', name: 'Khổng Mạnh Cường', pass: '123456', status: 'Hoạt động' },
-      'minhquan': { role: 'THỦ KHO', name: 'Khổng Minh Quân', pass: '123456', status: 'Hoạt động' },
-      'thukho': { role: 'THỦ KHO', name: 'Khổng Minh Quân', pass: '123456', status: 'Hoạt động' },
-      'kho1': { role: 'THỦ KHO', name: 'Khổng Minh Quân', pass: '123456', status: 'Hoạt động' }
-     };
+      'minhquan': { role: 'THỦ KHO', name: 'Khổng Minh Quân', pass: '123456', status: 'Hoạt động' }
+    };
 
     if (defaultAccounts[user]) {
       if (pass === defaultAccounts[user].pass || pass === 'admin' || pass === 'admin123') {

@@ -176,11 +176,35 @@
 
     // Lọc theo tuổi tồn kho (Aging - Yêu cầu E)
     if (agingFilter) {
-      const minDays = parseInt(agingFilter);
-      list = list.filter(s => {
-        const days = calculateStockAging(s.ngayNhap);
-        return days > minDays;
-      });
+      if (agingFilter === '0-30') {
+        list = list.filter(s => {
+          const days = calculateStockAging(s.ngayNhap);
+          return days >= 0 && days <= 30;
+        });
+      } else if (agingFilter === '31-60') {
+        list = list.filter(s => {
+          const days = calculateStockAging(s.ngayNhap);
+          return days > 30 && days <= 60;
+        });
+      } else if (agingFilter === '61-90') {
+        list = list.filter(s => {
+          const days = calculateStockAging(s.ngayNhap);
+          return days > 60 && days <= 90;
+        });
+      } else if (agingFilter === '90+' || agingFilter === '90plus') {
+        list = list.filter(s => {
+          const days = calculateStockAging(s.ngayNhap);
+          return days > 90;
+        });
+      } else {
+        const minDays = parseInt(agingFilter);
+        if (!isNaN(minDays)) {
+          list = list.filter(s => {
+            const days = calculateStockAging(s.ngayNhap);
+            return days > minDays;
+          });
+        }
+      }
     }
 
     if (list.length === 0) {
