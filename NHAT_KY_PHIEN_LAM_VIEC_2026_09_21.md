@@ -107,6 +107,41 @@
   + Đã biên dịch `gas/Index.html` và `src/frontend/Index.html` (932 KB).
   + Đã đẩy thành công 21 file lên Google Apps Script qua `clasp push -f` lúc 19:34:50.
 
+### 11. Hoàn thiện các yêu cầu tối ưu hóa hệ thống & Chốt phiên bản v4.2.0:
+- **Khắc phục trùng lặp Nhà cung cấp**:
+  + Loại bỏ các bản ghi trùng tên "Trí Việt" và "Song Hùng" trong danh mục `DM_NCC`.
+- **Hoàn thiện Chi tiết sản phẩm trên Phiếu Xuất kho**:
+  + Khắc phục hoàn toàn hiển thị `undefined` trên báo cáo và bảng in phiếu xuất.
+  + Hiển thị đầy đủ Tên sản phẩm, Model, Đơn vị tính, Số lượng máy, Danh sách Serial kèm theo.
+- **Bảo mật Đăng nhập Web App**:
+  + Yêu cầu bắt buộc đăng nhập khi mở liên kết web app.
+  + Loại bỏ việc tự động đăng nhập quyền quản trị hoặc hiển thị sẵn gợi ý tài khoản/mật khẩu trên màn hình đăng nhập.
+- **Tính năng Gợi ý thông minh (Search-as-you-type) khi Nhập / Xuất kho**:
+  + Tự động gợi ý tức thì khi gõ vài ký tự: Model thiết bị, Nhà cung cấp (Nhập kho), Khách hàng, Serial trong kho (Xuất kho).
+  + Không cần phải cuộn chuột tìm kiếm trong danh sách dài.
+- **Loại bỏ triệt để tài khoản mặc định `KHO1`**:
+  + Xóa tài khoản `KHO1` và `thukho` khỏi hệ thống, đồng bộ đúng danh sách nhân sự thực tế:
+    * `admin`: Khổng Mạnh Cường (Admin)
+    * `minhquan`: Khổng Minh Quân (Thủ kho)
+- **Kích hoạt hiệu lực Ma trận Phân quyền (RBAC)**:
+  + Ẩn menu "Cài đặt & Phân quyền" trên Sidebar đối với các tài khoản không có quyền Admin.
+  + Chặn cứng cấp hệ thống trong hàm `switchTab('CaiDat')`: người dùng không có quyền truy cập sẽ bị từ chối ngay lập tức kèm thông báo lỗi.
+- **Sửa triệt để các tương tác trên Bảng điều khiển (Dashboard) không bị lỗi màn hình trắng**:
+  + Xử lý nguyên nhân gốc rễ: Nút "Tuổi tồn kho: Xem chi tiết" trước đây gán cứng lọc `> 60 ngày` (trong khi kho chỉ có máy 0-30 ngày và 31-60 ngày) dẫn đến bảng tồn kho trống trơn.
+  + Cập nhật các liên kết trên Dashboard:
+    * *Thẻ Tổng tồn hiện tại / Biến động tồn*: Gọi `goToTonKhoAll()`, tự động reset toàn bộ bộ lọc để hiển thị ngay 60 thiết bị trong kho.
+    * *Thẻ Nhập trong kỳ / Xuất trong kỳ*: Mở trực tiếp tab Lịch sử tương ứng.
+    * *Khối Cơ cấu nhóm thiết bị*: Bấm vào từng nhóm để lọc nhanh kho theo nhóm hàng tương ứng.
+    * *Khối Tuổi tồn kho*: Bấm vào các ô `0-30 ngày`, `31-60 ngày`, `61-90 ngày`, `>90 ngày` để lọc đúng dải tuổi tồn.
+    * *Khối Top Model*: Bấm vào từng dòng Model để lọc ngay danh sách máy của Model đó trong kho.
+- **Biên dịch & Đẩy lên hệ thống**:
+  + Đã biên dịch toàn bộ `demo_quan_ly_kho.html` (969 KB) và `gas/Index.html` (983 KB).
+  + Đã kiểm tra cú pháp toàn diện: **0 lỗi**.
+  + Đã đẩy 21 file lên Google Apps Script thành công qua `clasp push -f`.
+  + Đã commit và đồng bộ lên GitHub repo `origin main`.
+- **Gắn Tag Phiên Bản**: `v4.2.0` - Bản ổn định tích hợp RBAC, Dashboard Drill-down và Dữ liệu thực tế chuẩn hóa.
+
+
 
 
 
