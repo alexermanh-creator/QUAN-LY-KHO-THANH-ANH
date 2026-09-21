@@ -3589,13 +3589,15 @@
                 <table class="table table-sm table-bordered align-middle mb-0">
                   <thead class="table-light small">
                     <tr id="view-voucher-table-header-row">
-                      <th>#</th>
+                      <th style="width: 45px;" class="text-center">STT</th>
+                      <th>Mã Serial (SN)</th>
                       <th>Model</th>
-                      <th>Serial Hãng (Click mở 360°)</th>
-                      <th>Mã Nội Bộ</th>
-                      <th>Vị Trí / Kho Hiện Tại</th>
-                      <th>Bảo Hành</th>
-                      <th>Trạng Thái & Vết Nghiệp Vụ Sau Phiếu</th>
+                      <th>Tên thiết bị / Linh kiện</th>
+                      <th>Nhóm hàng</th>
+                      <th>Mã nội bộ</th>
+                      <th>Kho xuất / Vị trí</th>
+                      <th>Hạn BH đến</th>
+                      <th>Trạng Thái Sau Phiếu</th>
                     </tr>
                   </thead>
                   <tbody id="view-voucher-items-body" class="small">
@@ -17040,23 +17042,45 @@
       <span class="badge ${v.status === 'CONFIRMED' ? 'bg-success' : (v.status === 'CANCELLED' ? 'bg-danger' : 'bg-secondary')} ms-2">${v.status}</span>
     `;
 
-    // Tiêu đề & Thông tin bổ sung (Thời gian tạo, người sửa gần nhất, thời gian sửa - Yêu cầu 2)
+    // Tiêu đề & Thông tin bổ sung (Thời gian tạo, người sửa gần nhất, thời gian sửa)
     const headerBox = document.getElementById('view-voucher-header-info');
+    const nguoiLap = v.nguoiTao || v.nguoiXuat || v.user || 'Khổng Mạnh Cường';
+    const khoGiaoDich = v.kho || (v.items && v.items[0] && v.items[0].kho) || 'Kho VP';
+    let custName = v.khachHang || (isNhap ? (v.ncc || 'Chính hãng') : 'Khách lẻ');
+    let custPhone = v.sdtKhach || v.sdt || '';
+    let custAddress = v.diaChi || '';
+
+    // Tìm kiếm thêm thông tin khách hàng nếu chưa có đủ
+    if (!isNhap) {
+      const foundCust = (typeof INITIAL_CUSTOMERS !== 'undefined' ? INITIAL_CUSTOMERS : []).find(c => 
+        (c.ten && (c.ten.toLowerCase() === custName.toLowerCase() || custName.toLowerCase().includes(c.ten.toLowerCase()))) ||
+        (c.name && (c.name.toLowerCase() === custName.toLowerCase() || custName.toLowerCase().includes(c.name.toLowerCase())))
+      );
+      if (foundCust) {
+        if (!custPhone && (foundCust.sdt || foundCust.phone)) custPhone = foundCust.sdt || foundCust.phone;
+        if (!custAddress && (foundCust.diaChi || foundCust.address)) custAddress = foundCust.diaChi || foundCust.address;
+      }
+      if (!custPhone) {
+        const m = custName.match(/(\d{9,11})/);
+        if (m) custPhone = m[1];
+      }
+    }
+
     headerBox.innerHTML = `
       <div class="row g-2">
-        <div class="col-6 col-md-3"><strong>Ngày lập phiếu:</strong> ${v.ngay}</div>
-        <div class="col-6 col-md-3"><strong>Thời gian tạo:</strong> ${v.createdAt || v.ngay}</div>
-        <div class="col-6 col-md-3"><strong>Người lập:</strong> ${v.nguoiTao}</div>
-        <div class="col-6 col-md-3"><strong>Kho giao dịch:</strong> ${v.kho}</div>
+        <div class="col-6 col-md-3"><strong>Ngày lập phiếu:</strong> ${v.ngay || v.ngayXuat || v.ngayNhap || '--'}</div>
+        <div class="col-6 col-md-3"><strong>Thời gian tạo:</strong> ${v.createdAt || v.ngay || '--'}</div>
+        <div class="col-6 col-md-3"><strong>Người lập:</strong> ${nguoiLap}</div>
+        <div class="col-6 col-md-3"><strong>${isNhap ? 'Kho nhập:' : 'Kho xuất:'}</strong> <span class="badge bg-light text-primary border">${khoGiaoDich}</span></div>
         <div class="col-12 col-md-6">
           <strong>${isNhap ? 'Nhà cung cấp:' : 'Khách hàng:'}</strong> 
-          ${isNhap ? v.ncc : `<strong>${v.khachHang}</strong> (SĐT: <span class="font-monospace text-primary">${v.sdtKhach || ''}</span>)`}
+          ${isNhap ? `<strong>${v.ncc || 'Chính hãng'}</strong>` : `<strong>${custName}</strong> ${custPhone ? `(SĐT: <span class="font-monospace text-primary fw-bold">${custPhone}</span>)` : ''}`}
         </div>
-        ${!isNhap ? `<div class="col-12 col-md-6"><strong>Địa chỉ giao nhận:</strong> ${v.diaChi || 'Nhận tại văn phòng Thành An'}</div>` : ''}
-        <div class="col-12 col-md-6"><strong>Ghi chú:</strong> ${v.ghiChu || '--'}</div>
+        ${!isNhap ? `<div class="col-12 col-md-6"><strong>Địa chỉ giao nhận:</strong> ${custAddress || 'Nhận tại văn phòng Thành An'}</div>` : ''}
+        <div class="col-12"><strong>Ghi chú:</strong> ${v.ghiChu || '--'}</div>
         ${v.updatedAt ? `
           <div class="col-12 p-2 bg-info-subtle text-dark rounded border border-info">
-            <i class="fa-solid fa-pen-nib me-1"></i> <strong>Sửa gần nhất:</strong> bởi <strong>${v.updatedBy}</strong> lúc <strong>${v.updatedAt}</strong>
+            <i class="fa-solid fa-pen-nib me-1"></i> <strong>Sửa gần nhất:</strong> bởi <strong>${v.updatedBy || nguoiLap}</strong> lúc <strong>${v.updatedAt}</strong>
           </div>
         ` : ''}
         ${v.lyDoHuy ? `
@@ -17069,22 +17093,38 @@
       </div>
     `;
 
-    // Tab 1: Danh sách thiết bị (Serial clickable mở 360, vị trí hiện tại, nghiệp vụ sau phiếu - Yêu cầu 2)
+    // Tab 1: Danh sách thiết bị (Hiển thị đầy đủ Model, Tên thiết bị, Nhóm hàng, Kho xuất, Hạn BH như bản chuẩn)
     const tbody = document.getElementById('view-voucher-items-body');
     let html = '';
     (v.items || []).forEach((it, idx) => {
-      const curDb = SERIAL_DB.find(s => s.serial === it.serial);
-      const curLocation = curDb ? curDb.kho : v.kho;
-      const curStatus = curDb ? curDb.status : '--';
+      const snClean = String(it.serial || '').trim().toUpperCase();
+      const curDb = (typeof SERIAL_DB !== 'undefined' ? SERIAL_DB : []).find(s => 
+        String(s.serial || '').trim().toUpperCase() === snClean
+      ) || {};
+
+      const modelVal = it.model || curDb.model || '--';
+      const prodInfo = (typeof INITIAL_PRODUCTS !== 'undefined' ? INITIAL_PRODUCTS : []).find(p => 
+        p.model && modelVal && p.model.toLowerCase() === modelVal.toLowerCase()
+      ) || {};
+
+      const nameVal = it.name || it.tenHang || curDb.name || curDb.tenHang || prodInfo.name || prodInfo.ten || modelVal;
+      const catVal = it.category || it.nhomHang || it.nhom || curDb.category || curDb.nhomHang || curDb.nhom || prodInfo.category || prodInfo.nhomHang || prodInfo.nhom || 'Khác';
+      const internalIdVal = it.internalId || curDb.internalId || curDb.maNoiBo || snClean;
+      const curLocation = it.kho || curDb.kho || curDb.warehouse || v.kho || 'Kho VP';
+      const curStatus = curDb.status || (isNhap ? 'IN_STOCK' : 'SOLD');
+      const expDateVal = it.ngayHetHanBh || curDb.ngayHetHanBh || '--';
+      const warrantyMonthsVal = it.soThangBh || curDb.soThangBh || curDb.warrantyMonths || prodInfo.defaultBh || 12;
 
       // Kiểm tra nghiệp vụ sau phiếu (Yêu cầu 2)
       let postActivities = [];
       if (isNhap) {
-        if (curDb && curDb.status === 'SOLD') postActivities.push(`Đã xuất bán cho ${curDb.khachHang} (PX: ${curDb.maPhieuXuat})`);
+        if (curDb && curDb.status === 'SOLD') postActivities.push(`Đã xuất bán cho ${curDb.khachHang || 'Khách'} (PX: ${curDb.maPhieuXuat || '--'})`);
         if (curDb && curDb.status === 'IN_WARRANTY') postActivities.push('Đang trong quy trình bảo hành');
-        if (curDb && curDb.kho !== v.kho) postActivities.push(`Đã chuyển sang kho [${curDb.kho}]`);
+        if (curDb && curDb.kho && curDb.kho !== curLocation) postActivities.push(`Đã chuyển sang kho [${curDb.kho}]`);
       } else {
-        const relatedCase = WARRANTY_CASES_DB.find(c => c.serial.toLowerCase() === it.serial.toLowerCase());
+        const relatedCase = (typeof WARRANTY_CASES_DB !== 'undefined' ? WARRANTY_CASES_DB : []).find(c => 
+          c.serial && snClean && c.serial.toLowerCase() === snClean.toLowerCase()
+        );
         if (relatedCase) {
           postActivities.push(`Có Ca Bảo Hành <strong>${relatedCase.caseId}</strong> (${relatedCase.status})`);
         }
@@ -17092,17 +17132,22 @@
 
       html += `
         <tr>
-          <td>${idx + 1}</td>
-          <td><strong>${it.model}</strong></td>
-          <!-- Serial clickable mở Serial 360 (Yêu cầu 2) -->
+          <td class="text-center fw-bold">${idx + 1}</td>
+          <!-- Serial clickable mở Serial 360 -->
           <td>
-            <a href="javascript:void(0)" class="font-monospace fw-bold text-primary text-decoration-underline" onclick="closeVoucherAndOpen360('${it.serial}')" title="Bấm để xem hồ sơ lý lịch Serial 360°">
-              <i class="fa-solid fa-fingerprint me-1"></i>${it.serial}
+            <a href="javascript:void(0)" class="font-monospace fw-bold text-danger text-decoration-underline" onclick="closeVoucherAndOpen360('${snClean}')" title="Bấm để xem hồ sơ lý lịch Serial 360°">
+              <i class="fa-solid fa-fingerprint me-1"></i>${snClean}
             </a>
           </td>
-          <td><span class="badge bg-secondary font-monospace">${it.internalId}</span></td>
+          <td class="fw-bold text-primary">${modelVal}</td>
+          <td>${nameVal}</td>
+          <td><span class="badge bg-secondary-subtle text-dark border">${catVal}</span></td>
+          <td><span class="badge bg-light text-secondary font-monospace border">${internalIdVal}</span></td>
           <td><span class="badge bg-light text-dark border"><i class="fa-solid fa-location-dot me-1 text-danger"></i>${curLocation}</span></td>
-          <td>${it.soThangBh !== undefined ? `${it.soThangBh} tháng (Hạn: ${it.ngayHetHanBh})` : '--'}</td>
+          <td>
+            <span class="text-success fw-bold">${expDateVal}</span> 
+            ${warrantyMonthsVal ? `<small class="text-muted">(${warrantyMonthsVal}T)</small>` : ''}
+          </td>
           <td>
             <span class="badge-status ${getBadgeClass(curStatus)} mb-1">${curStatus}</span>
             ${postActivities.length > 0 ? `<div class="small text-info mt-1">• ${postActivities.join('<br>• ')}</div>` : '<div class="small text-muted">Chưa phát sinh thêm</div>'}
@@ -22785,18 +22830,18 @@
       if (typeof window !== 'undefined') window.INITIAL_CONDITIONS = INITIAL_CONDITIONS;
     }
 
-    // 8. Äá»“ng bá»™ Tá»“n kho vÃ  Thiáº¿t bá»‹ thá»±c táº¿
-    if (Array.isArray(serverData.tonKhoList) && serverData.tonKhoList.length > 0) {
-      SERIAL_DATA = serverData.tonKhoList.map(t => ({
+    // 8. Äá»“ng bá»™ Tá»“n kho vÃ  Thiáº¿t bá»‹ thá»±c táº¿ (Giá»¯ trá»n váº¹n toÃ n bá»™ Serial Tá»“n kho & ÄÃ£ xuáº¥t)
+    if (Array.isArray(serverData.allSerials) && serverData.allSerials.length > 0) {
+      SERIAL_DATA = serverData.allSerials.map(t => ({
         serial: t.serial,
         internalId: t.internalId || t.maNoiBo || t.serial,
         maNoiBo: t.internalId || t.maNoiBo || t.serial,
         model: t.model,
-        name: t.tenHang,
-        tenHang: t.tenHang,
+        name: t.tenHang || t.name,
+        tenHang: t.tenHang || t.name,
         nhom: t.nhom || t.nhomHang || 'KhÃ¡c',
         nhomHang: t.nhomHang || t.nhom || 'KhÃ¡c',
-        category: t.nhomHang || 'KhÃ¡c',
+        category: t.nhomHang || t.nhom || 'KhÃ¡c',
         warehouse: t.kho || 'Kho VP',
         kho: t.kho || 'Kho VP',
         supplier: t.ncc || 'ChÃ­nh hÃ£ng',
@@ -22806,46 +22851,94 @@
         importVoucher: t.maPhieuNhap || t.maPhieu,
         maPhieu: t.maPhieu || t.maPhieuNhap,
         maPhieuNhap: t.maPhieuNhap || t.maPhieu,
-        status: 'IN_STOCK',
+        status: t.status || 'IN_STOCK',
         daysInStock: t.soNgayLuuKho || 0,
         soNgayLuuKho: t.soNgayLuuKho || 0,
         condition: t.loaiHang || 'Má»›i 100%',
         loaiHang: t.loaiHang || 'Má»›i 100%',
         soThangBh: t.soThangBh || t.warrantyMonths || 12,
         warrantyMonths: t.warrantyMonths || t.soThangBh || 12,
-        ngayHetHanBh: t.ngayHetHanBh || ''
+        ngayHetHanBh: t.ngayHetHanBh || '',
+        ngayXuat: t.ngayXuat || '',
+        maPhieuXuat: t.maPhieuXuat || '',
+        khachHang: t.khachHang || '',
+        sdtKhach: t.sdtKhach || ''
       }));
+      if (typeof SERIAL_DB !== 'undefined') SERIAL_DB = SERIAL_DATA;
+    } else if (Array.isArray(serverData.tonKhoList) && serverData.tonKhoList.length > 0) {
+      // Há»£p nháº¥t tonKhoList vá»›i SERIAL_DB Ä‘á»ƒ khÃ´ng lÃ m máº¥t cÃ¡c serial Ä‘Ã£ xuáº¥t
+      const map = new Map();
+      (typeof SERIAL_DB !== 'undefined' ? SERIAL_DB : []).forEach(s => map.set(s.serial, s));
+      serverData.tonKhoList.forEach(t => {
+        map.set(t.serial, Object.assign({}, map.get(t.serial) || {}, t, { status: 'IN_STOCK' }));
+      });
+      if (Array.isArray(serverData.baoHanhList)) {
+        serverData.baoHanhList.forEach(b => {
+          map.set(b.serial, Object.assign({}, map.get(b.serial) || {}, b, { status: 'SOLD' }));
+        });
+      }
+      SERIAL_DATA = Array.from(map.values());
       if (typeof SERIAL_DB !== 'undefined') SERIAL_DB = SERIAL_DATA;
     }
 
-    // 9. Äá»“ng bá»™ Phiáº¿u Nháº­p & Phiáº¿u Xuáº¥t (VOUCHERS_DB)
+    // 9. Äá»“ng bá»™ Phiáº¿u Nháº­p & Phiáº¿u Xuáº¥t (VOUCHERS_DB) - Náº¡p Ä‘áº§y Ä‘á»§ Model, TÃªn hÃ ng, Kho, BH
     if (typeof VOUCHERS_DB !== 'undefined') {
       if (Array.isArray(serverData.lsNhap) && serverData.lsNhap.length > 0) {
         VOUCHERS_DB.nhap = serverData.lsNhap.map(v => ({
           maPhieu: v.maPhieu,
           ngay: v.ngayNhap || v.ngay,
           ncc: v.ncc,
-          kho: v.kho,
+          kho: v.kho || 'Kho VP',
           status: 'CONFIRMED',
           ghiChu: v.ghiChu || '',
-          items: (v.serials || '').split(',').map(sn => ({
-            model: (v.modelSummary || '').split('(')[0].trim(),
-            serial: sn.trim(),
-            kho: v.kho
-          }))
+          items: (v.serials || '').split(',').map(sn => {
+            const cleanSn = sn.trim();
+            const found = (typeof SERIAL_DB !== 'undefined' ? SERIAL_DB : []).find(s => s.serial === cleanSn);
+            return {
+              model: (found && found.model) ? found.model : ((v.modelSummary || '').split('(')[0].trim()),
+              serial: cleanSn,
+              internalId: (found && (found.internalId || found.maNoiBo)) ? (found.internalId || found.maNoiBo) : cleanSn,
+              name: (found && (found.name || found.tenHang)) ? (found.name || found.tenHang) : '',
+              tenHang: (found && (found.name || found.tenHang)) ? (found.name || found.tenHang) : '',
+              category: (found && (found.category || found.nhomHang)) ? (found.category || found.nhomHang) : '',
+              kho: v.kho || (found && found.kho) || 'Kho VP'
+            };
+          })
         }));
       }
       if (Array.isArray(serverData.lsXuat) && serverData.lsXuat.length > 0) {
-        VOUCHERS_DB.xuat = serverData.lsXuat.map(v => ({
-          maPhieu: v.maPhieu,
-          ngay: v.ngayXuat || v.ngay,
-          khachHang: v.khachHang,
-          status: 'CONFIRMED',
-          ghiChu: v.ghiChu || '',
-          items: (v.serials || '').split(',').map(sn => ({
-            serial: sn.trim()
-          }))
-        }));
+        VOUCHERS_DB.xuat = serverData.lsXuat.map(v => {
+          const serials = (v.serials || '').split(',').map(sn => sn.trim()).filter(Boolean);
+          const items = serials.map(sn => {
+            const found = (typeof SERIAL_DB !== 'undefined' ? SERIAL_DB : []).find(s => s.serial === sn);
+            return {
+              serial: sn,
+              model: (found && found.model) ? found.model : '',
+              name: (found && (found.name || found.tenHang)) ? (found.name || found.tenHang) : '',
+              tenHang: (found && (found.name || found.tenHang)) ? (found.name || found.tenHang) : '',
+              category: (found && (found.category || found.nhomHang || found.nhom)) ? (found.category || found.nhomHang || found.nhom) : '',
+              nhomHang: (found && (found.category || found.nhomHang || found.nhom)) ? (found.category || found.nhomHang || found.nhom) : '',
+              internalId: (found && (found.internalId || found.maNoiBo)) ? (found.internalId || found.maNoiBo) : sn,
+              kho: (found && found.kho) ? found.kho : (v.kho || 'Kho VP'),
+              soThangBh: (found && found.soThangBh) ? found.soThangBh : 12,
+              ngayHetHanBh: (found && found.ngayHetHanBh) ? found.ngayHetHanBh : ''
+            };
+          });
+
+          return {
+            maPhieu: v.maPhieu,
+            ngay: v.ngayXuat || v.ngay,
+            ngayXuat: v.ngayXuat || v.ngay,
+            khachHang: v.khachHang,
+            sdtKhach: v.sdtKhach || '',
+            diaChi: v.diaChi || '',
+            kho: v.kho || (items[0] && items[0].kho) || 'Kho VP',
+            nguoiTao: v.nguoiTao || 'Khá»•ng Máº¡nh CÆ°á»ng',
+            status: 'CONFIRMED',
+            ghiChu: v.ghiChu || '',
+            items: items
+          };
+        });
       }
       try {
         localStorage.setItem('THANH_AN_VOUCHERS_DB', JSON.stringify(VOUCHERS_DB));

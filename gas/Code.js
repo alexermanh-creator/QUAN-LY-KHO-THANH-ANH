@@ -117,6 +117,7 @@ function getInitAppData(options) {
   const existingSerials = [];
   const tonKhoList = [];
   const baoHanhList = [];
+  const allSerialsList = [];
 
   if (tbSheet && tbSheet.getLastRow() > 1) {
     const numRows = tbSheet.getLastRow() - 1;
@@ -129,31 +130,46 @@ function getInitAppData(options) {
 
       const statusVal = String(r[9] || '').trim();
       const modelVal = String(r[1] || '').trim();
+      const isSold = (statusVal === "Đã xuất" || statusVal === "SOLD");
+      const isStock = (statusVal === "Tồn kho" || statusVal === "IN_STOCK");
 
-      if (statusVal === "Tồn kho" || statusVal === "IN_STOCK") {
+      const serialItem = {
+        rowId: idx + 2,
+        serial: sn,
+        internalId: String(r[17] || r[0] || ''),
+        maNoiBo: String(r[17] || r[0] || ''),
+        model: modelVal,
+        tenHang: String(r[2] || ''),
+        name: String(r[2] || ''),
+        nhom: String(r[3] || 'Khác'),
+        nhomHang: String(r[3] || 'Khác'),
+        category: String(r[3] || 'Khác'),
+        loaiHang: String(r[4] || ''),
+        kho: String(r[5] || 'Kho VP'),
+        warehouse: String(r[5] || 'Kho VP'),
+        ncc: String(r[6] || ''),
+        supplier: String(r[6] || ''),
+        ngayNhap: r[7] instanceof Date ? Utilities.formatDate(r[7], "GMT+7", "dd/MM/yyyy") : String(r[7] || ''),
+        maPhieuNhap: String(r[8] || ''),
+        maPhieu: String(r[8] || ''),
+        status: isSold ? 'SOLD' : 'IN_STOCK',
+        ngayXuat: r[10] instanceof Date ? Utilities.formatDate(r[10], "GMT+7", "dd/MM/yyyy") : String(r[10] || ''),
+        maPhieuXuat: String(r[11] || ''),
+        khachHang: String(r[12] || ''),
+        sdtKhach: formatPhoneNumberBackend(r[13]),
+        soThangBh: parseInt(String(r[14] || '').replace(/\D/g, '')) || 12,
+        warrantyMonths: parseInt(String(r[14] || '').replace(/\D/g, '')) || 12,
+        ngayHetHanBh: r[15] instanceof Date ? Utilities.formatDate(r[15], "GMT+7", "dd/MM/yyyy") : String(r[15] || ''),
+        ghiChu: String(r[16] || '')
+      };
+
+      allSerialsList.push(serialItem);
+
+      if (isStock) {
         totalStock++;
         if (modelVal) distinctModelsSet.add(modelVal);
-        tonKhoList.push({
-          rowId: idx + 2,
-          serial: sn,
-          internalId: String(r[17] || r[0] || ''),
-          maNoiBo: String(r[17] || r[0] || ''),
-          model: modelVal,
-          tenHang: String(r[2] || ''),
-          nhom: String(r[3] || 'Khác'),
-          nhomHang: String(r[3] || 'Khác'),
-          loaiHang: String(r[4] || ''),
-          kho: String(r[5] || ''),
-          ncc: String(r[6] || ''),
-          ngayNhap: r[7] instanceof Date ? Utilities.formatDate(r[7], "GMT+7", "dd/MM/yyyy") : String(r[7] || ''),
-          maPhieu: String(r[8] || ''),
-          maPhieuNhap: String(r[8] || ''),
-          soThangBh: parseInt(String(r[14] || '').replace(/\D/g, '')) || 12,
-          warrantyMonths: parseInt(String(r[14] || '').replace(/\D/g, '')) || 12,
-          ngayHetHanBh: r[15] instanceof Date ? Utilities.formatDate(r[15], "GMT+7", "dd/MM/yyyy") : String(r[15] || ''),
-          ghiChu: String(r[16] || '')
-        });
-      } else if (statusVal === "Đã xuất" || statusVal === "SOLD") {
+        tonKhoList.push(serialItem);
+      } else if (isSold) {
         totalSold++;
         const expVal = r[15];
         if (expVal) {
@@ -176,16 +192,7 @@ function getInitAppData(options) {
           }
         }
 
-        baoHanhList.push({
-          serial: sn,
-          model: modelVal,
-          tenHang: String(r[2] || ''),
-          kho: String(r[5] || ''),
-          ngayXuat: r[10] instanceof Date ? Utilities.formatDate(r[10], "GMT+7", "dd/MM/yyyy") : String(r[10] || ''),
-          khachHang: String(r[12] || ''),
-          sdtKhach: formatPhoneNumberBackend(r[13]),
-          ngayHetHanBh: r[15] instanceof Date ? Utilities.formatDate(r[15], "GMT+7", "dd/MM/yyyy") : String(r[15] || '')
-        });
+        baoHanhList.push(serialItem);
       }
     });
   }
@@ -229,11 +236,16 @@ function getInitAppData(options) {
       const mp = String(r[0] || '').trim();
       if (!mp) continue;
       const ngayVal = r[1] instanceof Date ? Utilities.formatDate(r[1], "GMT+7", "dd/MM/yyyy") : String(r[1] || '');
+      const firstSn = String(r[4] || '').split(',')[0].trim().toUpperCase();
+      const refItem = allSerialsList.find(s => s.serial === firstSn) || {};
       lsXuatList.push({
         maPhieu: mp,
         ngayXuat: ngayVal,
         ngay: ngayVal,
         khachHang: String(r[2] || ''),
+        sdtKhach: refItem.sdtKhach || '',
+        kho: refItem.kho || 'Kho VP',
+        nguoiTao: 'Khổng Mạnh Cường',
         soLuong: parseInt(r[3], 10) || 1,
         serials: String(r[4] || ''),
         baoHanh: String(r[5] || ''),
@@ -327,6 +339,7 @@ function getInitAppData(options) {
     hangSx: hangSx,
     alertSettings: alertSettings,
     existingSerials: existingSerials,
+    allSerials: allSerialsList,
     tonKhoList: tonKhoList,
     baoHanhList: baoHanhList,
     lsNhap: lsNhapList,

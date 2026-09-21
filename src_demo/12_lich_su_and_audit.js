@@ -398,23 +398,45 @@
       <span class="badge ${v.status === 'CONFIRMED' ? 'bg-success' : (v.status === 'CANCELLED' ? 'bg-danger' : 'bg-secondary')} ms-2">${v.status}</span>
     `;
 
-    // Tiêu đề & Thông tin bổ sung (Thời gian tạo, người sửa gần nhất, thời gian sửa - Yêu cầu 2)
+    // Tiêu đề & Thông tin bổ sung (Thời gian tạo, người sửa gần nhất, thời gian sửa)
     const headerBox = document.getElementById('view-voucher-header-info');
+    const nguoiLap = v.nguoiTao || v.nguoiXuat || v.user || 'Khổng Mạnh Cường';
+    const khoGiaoDich = v.kho || (v.items && v.items[0] && v.items[0].kho) || 'Kho VP';
+    let custName = v.khachHang || (isNhap ? (v.ncc || 'Chính hãng') : 'Khách lẻ');
+    let custPhone = v.sdtKhach || v.sdt || '';
+    let custAddress = v.diaChi || '';
+
+    // Tìm kiếm thêm thông tin khách hàng nếu chưa có đủ
+    if (!isNhap) {
+      const foundCust = (typeof INITIAL_CUSTOMERS !== 'undefined' ? INITIAL_CUSTOMERS : []).find(c => 
+        (c.ten && (c.ten.toLowerCase() === custName.toLowerCase() || custName.toLowerCase().includes(c.ten.toLowerCase()))) ||
+        (c.name && (c.name.toLowerCase() === custName.toLowerCase() || custName.toLowerCase().includes(c.name.toLowerCase())))
+      );
+      if (foundCust) {
+        if (!custPhone && (foundCust.sdt || foundCust.phone)) custPhone = foundCust.sdt || foundCust.phone;
+        if (!custAddress && (foundCust.diaChi || foundCust.address)) custAddress = foundCust.diaChi || foundCust.address;
+      }
+      if (!custPhone) {
+        const m = custName.match(/(\d{9,11})/);
+        if (m) custPhone = m[1];
+      }
+    }
+
     headerBox.innerHTML = `
       <div class="row g-2">
-        <div class="col-6 col-md-3"><strong>Ngày lập phiếu:</strong> ${v.ngay}</div>
-        <div class="col-6 col-md-3"><strong>Thời gian tạo:</strong> ${v.createdAt || v.ngay}</div>
-        <div class="col-6 col-md-3"><strong>Người lập:</strong> ${v.nguoiTao}</div>
-        <div class="col-6 col-md-3"><strong>Kho giao dịch:</strong> ${v.kho}</div>
+        <div class="col-6 col-md-3"><strong>Ngày lập phiếu:</strong> ${v.ngay || v.ngayXuat || v.ngayNhap || '--'}</div>
+        <div class="col-6 col-md-3"><strong>Thời gian tạo:</strong> ${v.createdAt || v.ngay || '--'}</div>
+        <div class="col-6 col-md-3"><strong>Người lập:</strong> ${nguoiLap}</div>
+        <div class="col-6 col-md-3"><strong>${isNhap ? 'Kho nhập:' : 'Kho xuất:'}</strong> <span class="badge bg-light text-primary border">${khoGiaoDich}</span></div>
         <div class="col-12 col-md-6">
           <strong>${isNhap ? 'Nhà cung cấp:' : 'Khách hàng:'}</strong> 
-          ${isNhap ? v.ncc : `<strong>${v.khachHang}</strong> (SĐT: <span class="font-monospace text-primary">${v.sdtKhach || ''}</span>)`}
+          ${isNhap ? `<strong>${v.ncc || 'Chính hãng'}</strong>` : `<strong>${custName}</strong> ${custPhone ? `(SĐT: <span class="font-monospace text-primary fw-bold">${custPhone}</span>)` : ''}`}
         </div>
-        ${!isNhap ? `<div class="col-12 col-md-6"><strong>Địa chỉ giao nhận:</strong> ${v.diaChi || 'Nhận tại văn phòng Thành An'}</div>` : ''}
-        <div class="col-12 col-md-6"><strong>Ghi chú:</strong> ${v.ghiChu || '--'}</div>
+        ${!isNhap ? `<div class="col-12 col-md-6"><strong>Địa chỉ giao nhận:</strong> ${custAddress || 'Nhận tại văn phòng Thành An'}</div>` : ''}
+        <div class="col-12"><strong>Ghi chú:</strong> ${v.ghiChu || '--'}</div>
         ${v.updatedAt ? `
           <div class="col-12 p-2 bg-info-subtle text-dark rounded border border-info">
-            <i class="fa-solid fa-pen-nib me-1"></i> <strong>Sửa gần nhất:</strong> bởi <strong>${v.updatedBy}</strong> lúc <strong>${v.updatedAt}</strong>
+            <i class="fa-solid fa-pen-nib me-1"></i> <strong>Sửa gần nhất:</strong> bởi <strong>${v.updatedBy || nguoiLap}</strong> lúc <strong>${v.updatedAt}</strong>
           </div>
         ` : ''}
         ${v.lyDoHuy ? `
@@ -427,22 +449,38 @@
       </div>
     `;
 
-    // Tab 1: Danh sách thiết bị (Serial clickable mở 360, vị trí hiện tại, nghiệp vụ sau phiếu - Yêu cầu 2)
+    // Tab 1: Danh sách thiết bị (Hiển thị đầy đủ Model, Tên thiết bị, Nhóm hàng, Kho xuất, Hạn BH như bản chuẩn)
     const tbody = document.getElementById('view-voucher-items-body');
     let html = '';
     (v.items || []).forEach((it, idx) => {
-      const curDb = SERIAL_DB.find(s => s.serial === it.serial);
-      const curLocation = curDb ? curDb.kho : v.kho;
-      const curStatus = curDb ? curDb.status : '--';
+      const snClean = String(it.serial || '').trim().toUpperCase();
+      const curDb = (typeof SERIAL_DB !== 'undefined' ? SERIAL_DB : []).find(s => 
+        String(s.serial || '').trim().toUpperCase() === snClean
+      ) || {};
+
+      const modelVal = it.model || curDb.model || '--';
+      const prodInfo = (typeof INITIAL_PRODUCTS !== 'undefined' ? INITIAL_PRODUCTS : []).find(p => 
+        p.model && modelVal && p.model.toLowerCase() === modelVal.toLowerCase()
+      ) || {};
+
+      const nameVal = it.name || it.tenHang || curDb.name || curDb.tenHang || prodInfo.name || prodInfo.ten || modelVal;
+      const catVal = it.category || it.nhomHang || it.nhom || curDb.category || curDb.nhomHang || curDb.nhom || prodInfo.category || prodInfo.nhomHang || prodInfo.nhom || 'Khác';
+      const internalIdVal = it.internalId || curDb.internalId || curDb.maNoiBo || snClean;
+      const curLocation = it.kho || curDb.kho || curDb.warehouse || v.kho || 'Kho VP';
+      const curStatus = curDb.status || (isNhap ? 'IN_STOCK' : 'SOLD');
+      const expDateVal = it.ngayHetHanBh || curDb.ngayHetHanBh || '--';
+      const warrantyMonthsVal = it.soThangBh || curDb.soThangBh || curDb.warrantyMonths || prodInfo.defaultBh || 12;
 
       // Kiểm tra nghiệp vụ sau phiếu (Yêu cầu 2)
       let postActivities = [];
       if (isNhap) {
-        if (curDb && curDb.status === 'SOLD') postActivities.push(`Đã xuất bán cho ${curDb.khachHang} (PX: ${curDb.maPhieuXuat})`);
+        if (curDb && curDb.status === 'SOLD') postActivities.push(`Đã xuất bán cho ${curDb.khachHang || 'Khách'} (PX: ${curDb.maPhieuXuat || '--'})`);
         if (curDb && curDb.status === 'IN_WARRANTY') postActivities.push('Đang trong quy trình bảo hành');
-        if (curDb && curDb.kho !== v.kho) postActivities.push(`Đã chuyển sang kho [${curDb.kho}]`);
+        if (curDb && curDb.kho && curDb.kho !== curLocation) postActivities.push(`Đã chuyển sang kho [${curDb.kho}]`);
       } else {
-        const relatedCase = WARRANTY_CASES_DB.find(c => c.serial.toLowerCase() === it.serial.toLowerCase());
+        const relatedCase = (typeof WARRANTY_CASES_DB !== 'undefined' ? WARRANTY_CASES_DB : []).find(c => 
+          c.serial && snClean && c.serial.toLowerCase() === snClean.toLowerCase()
+        );
         if (relatedCase) {
           postActivities.push(`Có Ca Bảo Hành <strong>${relatedCase.caseId}</strong> (${relatedCase.status})`);
         }
@@ -450,17 +488,22 @@
 
       html += `
         <tr>
-          <td>${idx + 1}</td>
-          <td><strong>${it.model}</strong></td>
-          <!-- Serial clickable mở Serial 360 (Yêu cầu 2) -->
+          <td class="text-center fw-bold">${idx + 1}</td>
+          <!-- Serial clickable mở Serial 360 -->
           <td>
-            <a href="javascript:void(0)" class="font-monospace fw-bold text-primary text-decoration-underline" onclick="closeVoucherAndOpen360('${it.serial}')" title="Bấm để xem hồ sơ lý lịch Serial 360°">
-              <i class="fa-solid fa-fingerprint me-1"></i>${it.serial}
+            <a href="javascript:void(0)" class="font-monospace fw-bold text-danger text-decoration-underline" onclick="closeVoucherAndOpen360('${snClean}')" title="Bấm để xem hồ sơ lý lịch Serial 360°">
+              <i class="fa-solid fa-fingerprint me-1"></i>${snClean}
             </a>
           </td>
-          <td><span class="badge bg-secondary font-monospace">${it.internalId}</span></td>
+          <td class="fw-bold text-primary">${modelVal}</td>
+          <td>${nameVal}</td>
+          <td><span class="badge bg-secondary-subtle text-dark border">${catVal}</span></td>
+          <td><span class="badge bg-light text-secondary font-monospace border">${internalIdVal}</span></td>
           <td><span class="badge bg-light text-dark border"><i class="fa-solid fa-location-dot me-1 text-danger"></i>${curLocation}</span></td>
-          <td>${it.soThangBh !== undefined ? `${it.soThangBh} tháng (Hạn: ${it.ngayHetHanBh})` : '--'}</td>
+          <td>
+            <span class="text-success fw-bold">${expDateVal}</span> 
+            ${warrantyMonthsVal ? `<small class="text-muted">(${warrantyMonthsVal}T)</small>` : ''}
+          </td>
           <td>
             <span class="badge-status ${getBadgeClass(curStatus)} mb-1">${curStatus}</span>
             ${postActivities.length > 0 ? `<div class="small text-info mt-1">• ${postActivities.join('<br>• ')}</div>` : '<div class="small text-muted">Chưa phát sinh thêm</div>'}

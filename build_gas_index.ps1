@@ -158,18 +158,18 @@ $bridge = @'
       if (typeof window !== 'undefined') window.INITIAL_CONDITIONS = INITIAL_CONDITIONS;
     }
 
-    // 8. Đồng bộ Tồn kho và Thiết bị thực tế
-    if (Array.isArray(serverData.tonKhoList) && serverData.tonKhoList.length > 0) {
-      SERIAL_DATA = serverData.tonKhoList.map(t => ({
+    // 8. Đồng bộ Tồn kho và Thiết bị thực tế (Giữ trọn vẹn toàn bộ Serial Tồn kho & Đã xuất)
+    if (Array.isArray(serverData.allSerials) && serverData.allSerials.length > 0) {
+      SERIAL_DATA = serverData.allSerials.map(t => ({
         serial: t.serial,
         internalId: t.internalId || t.maNoiBo || t.serial,
         maNoiBo: t.internalId || t.maNoiBo || t.serial,
         model: t.model,
-        name: t.tenHang,
-        tenHang: t.tenHang,
+        name: t.tenHang || t.name,
+        tenHang: t.tenHang || t.name,
         nhom: t.nhom || t.nhomHang || 'Khác',
         nhomHang: t.nhomHang || t.nhom || 'Khác',
-        category: t.nhomHang || 'Khác',
+        category: t.nhomHang || t.nhom || 'Khác',
         warehouse: t.kho || 'Kho VP',
         kho: t.kho || 'Kho VP',
         supplier: t.ncc || 'Chính hãng',
@@ -179,46 +179,94 @@ $bridge = @'
         importVoucher: t.maPhieuNhap || t.maPhieu,
         maPhieu: t.maPhieu || t.maPhieuNhap,
         maPhieuNhap: t.maPhieuNhap || t.maPhieu,
-        status: 'IN_STOCK',
+        status: t.status || 'IN_STOCK',
         daysInStock: t.soNgayLuuKho || 0,
         soNgayLuuKho: t.soNgayLuuKho || 0,
         condition: t.loaiHang || 'Mới 100%',
         loaiHang: t.loaiHang || 'Mới 100%',
         soThangBh: t.soThangBh || t.warrantyMonths || 12,
         warrantyMonths: t.warrantyMonths || t.soThangBh || 12,
-        ngayHetHanBh: t.ngayHetHanBh || ''
+        ngayHetHanBh: t.ngayHetHanBh || '',
+        ngayXuat: t.ngayXuat || '',
+        maPhieuXuat: t.maPhieuXuat || '',
+        khachHang: t.khachHang || '',
+        sdtKhach: t.sdtKhach || ''
       }));
+      if (typeof SERIAL_DB !== 'undefined') SERIAL_DB = SERIAL_DATA;
+    } else if (Array.isArray(serverData.tonKhoList) && serverData.tonKhoList.length > 0) {
+      // Hợp nhất tonKhoList với SERIAL_DB để không làm mất các serial đã xuất
+      const map = new Map();
+      (typeof SERIAL_DB !== 'undefined' ? SERIAL_DB : []).forEach(s => map.set(s.serial, s));
+      serverData.tonKhoList.forEach(t => {
+        map.set(t.serial, Object.assign({}, map.get(t.serial) || {}, t, { status: 'IN_STOCK' }));
+      });
+      if (Array.isArray(serverData.baoHanhList)) {
+        serverData.baoHanhList.forEach(b => {
+          map.set(b.serial, Object.assign({}, map.get(b.serial) || {}, b, { status: 'SOLD' }));
+        });
+      }
+      SERIAL_DATA = Array.from(map.values());
       if (typeof SERIAL_DB !== 'undefined') SERIAL_DB = SERIAL_DATA;
     }
 
-    // 9. Đồng bộ Phiếu Nhập & Phiếu Xuất (VOUCHERS_DB)
+    // 9. Đồng bộ Phiếu Nhập & Phiếu Xuất (VOUCHERS_DB) - Nạp đầy đủ Model, Tên hàng, Kho, BH
     if (typeof VOUCHERS_DB !== 'undefined') {
       if (Array.isArray(serverData.lsNhap) && serverData.lsNhap.length > 0) {
         VOUCHERS_DB.nhap = serverData.lsNhap.map(v => ({
           maPhieu: v.maPhieu,
           ngay: v.ngayNhap || v.ngay,
           ncc: v.ncc,
-          kho: v.kho,
+          kho: v.kho || 'Kho VP',
           status: 'CONFIRMED',
           ghiChu: v.ghiChu || '',
-          items: (v.serials || '').split(',').map(sn => ({
-            model: (v.modelSummary || '').split('(')[0].trim(),
-            serial: sn.trim(),
-            kho: v.kho
-          }))
+          items: (v.serials || '').split(',').map(sn => {
+            const cleanSn = sn.trim();
+            const found = (typeof SERIAL_DB !== 'undefined' ? SERIAL_DB : []).find(s => s.serial === cleanSn);
+            return {
+              model: (found && found.model) ? found.model : ((v.modelSummary || '').split('(')[0].trim()),
+              serial: cleanSn,
+              internalId: (found && (found.internalId || found.maNoiBo)) ? (found.internalId || found.maNoiBo) : cleanSn,
+              name: (found && (found.name || found.tenHang)) ? (found.name || found.tenHang) : '',
+              tenHang: (found && (found.name || found.tenHang)) ? (found.name || found.tenHang) : '',
+              category: (found && (found.category || found.nhomHang)) ? (found.category || found.nhomHang) : '',
+              kho: v.kho || (found && found.kho) || 'Kho VP'
+            };
+          })
         }));
       }
       if (Array.isArray(serverData.lsXuat) && serverData.lsXuat.length > 0) {
-        VOUCHERS_DB.xuat = serverData.lsXuat.map(v => ({
-          maPhieu: v.maPhieu,
-          ngay: v.ngayXuat || v.ngay,
-          khachHang: v.khachHang,
-          status: 'CONFIRMED',
-          ghiChu: v.ghiChu || '',
-          items: (v.serials || '').split(',').map(sn => ({
-            serial: sn.trim()
-          }))
-        }));
+        VOUCHERS_DB.xuat = serverData.lsXuat.map(v => {
+          const serials = (v.serials || '').split(',').map(sn => sn.trim()).filter(Boolean);
+          const items = serials.map(sn => {
+            const found = (typeof SERIAL_DB !== 'undefined' ? SERIAL_DB : []).find(s => s.serial === sn);
+            return {
+              serial: sn,
+              model: (found && found.model) ? found.model : '',
+              name: (found && (found.name || found.tenHang)) ? (found.name || found.tenHang) : '',
+              tenHang: (found && (found.name || found.tenHang)) ? (found.name || found.tenHang) : '',
+              category: (found && (found.category || found.nhomHang || found.nhom)) ? (found.category || found.nhomHang || found.nhom) : '',
+              nhomHang: (found && (found.category || found.nhomHang || found.nhom)) ? (found.category || found.nhomHang || found.nhom) : '',
+              internalId: (found && (found.internalId || found.maNoiBo)) ? (found.internalId || found.maNoiBo) : sn,
+              kho: (found && found.kho) ? found.kho : (v.kho || 'Kho VP'),
+              soThangBh: (found && found.soThangBh) ? found.soThangBh : 12,
+              ngayHetHanBh: (found && found.ngayHetHanBh) ? found.ngayHetHanBh : ''
+            };
+          });
+
+          return {
+            maPhieu: v.maPhieu,
+            ngay: v.ngayXuat || v.ngay,
+            ngayXuat: v.ngayXuat || v.ngay,
+            khachHang: v.khachHang,
+            sdtKhach: v.sdtKhach || '',
+            diaChi: v.diaChi || '',
+            kho: v.kho || (items[0] && items[0].kho) || 'Kho VP',
+            nguoiTao: v.nguoiTao || 'Khổng Mạnh Cường',
+            status: 'CONFIRMED',
+            ghiChu: v.ghiChu || '',
+            items: items
+          };
+        });
       }
       try {
         localStorage.setItem('THANH_AN_VOUCHERS_DB', JSON.stringify(VOUCHERS_DB));
