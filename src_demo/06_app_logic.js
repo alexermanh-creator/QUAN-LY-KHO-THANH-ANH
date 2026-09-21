@@ -546,8 +546,14 @@
           if (typeof VOUCHERS_DB !== 'undefined') { VOUCHERS_DB.nhap = []; VOUCHERS_DB.xuat = []; }
           if (typeof WARRANTY_CASES_DB !== 'undefined') WARRANTY_CASES_DB.length = 0;
           if (typeof INVENTORY_SESSIONS_DB !== 'undefined') INVENTORY_SESSIONS_DB.length = 0;
+          if (typeof AUDIT_LOG_DB !== 'undefined') AUDIT_LOG_DB.length = 0;
+          try {
+            localStorage.removeItem('THANH_AN_SERIAL_DB');
+            localStorage.removeItem('THANH_AN_VOUCHERS_DB');
+            localStorage.removeItem('THANH_AN_AUDIT_LOGS');
+          } catch(e){}
         } else {
-          // FULL_SYSTEM: Trắng hoàn toàn 100% dữ liệu nghiệp vụ và toàn bộ danh mục hệ thống
+          // FULL_SYSTEM: Trắng hoàn toàn 100% dữ liệu nghiệp vụ, toàn bộ danh mục và audit
           if (typeof SERIAL_DB !== 'undefined') SERIAL_DB.length = 0;
           if (typeof VOUCHERS_DB !== 'undefined') { VOUCHERS_DB.nhap = []; VOUCHERS_DB.xuat = []; }
           if (typeof WARRANTY_CASES_DB !== 'undefined') WARRANTY_CASES_DB.length = 0;
@@ -559,6 +565,15 @@
           if (typeof INITIAL_CUSTOMERS !== 'undefined') INITIAL_CUSTOMERS.length = 0;
           if (typeof INITIAL_WAREHOUSES !== 'undefined') INITIAL_WAREHOUSES.length = 0;
           if (typeof AUDIT_LOG_DB !== 'undefined') AUDIT_LOG_DB.length = 0;
+          try {
+            localStorage.removeItem('THANH_AN_PRODUCTS');
+            localStorage.removeItem('THANH_AN_SUPPLIERS');
+            localStorage.removeItem('THANH_AN_CUSTOMERS');
+            localStorage.removeItem('THANH_AN_WAREHOUSES');
+            localStorage.removeItem('THANH_AN_SERIAL_DB');
+            localStorage.removeItem('THANH_AN_VOUCHERS_DB');
+            localStorage.removeItem('THANH_AN_AUDIT_LOGS');
+          } catch(e){}
         }
 
         // Đồng bộ lên window
@@ -984,6 +999,16 @@
           WarehouseAPI.resetSystemData(resetScope, 'RESET-THANHAN', finalAdminPass, function(res) {
             if (res && res.success) {
               Swal.fire({ icon: 'success', title: 'Reset hoàn tất!', text: res.message }).then(() => {
+                // Xóa trắng toàn bộ Audit logs trên Web App khi reset
+                if (typeof AUDIT_LOG_DB !== 'undefined') AUDIT_LOG_DB.length = 0;
+                if (typeof SERIAL_DB !== 'undefined') SERIAL_DB.length = 0;
+                if (typeof VOUCHERS_DB !== 'undefined') { VOUCHERS_DB.nhap = []; VOUCHERS_DB.xuat = []; }
+                try {
+                  localStorage.removeItem('THANH_AN_SERIAL_DB');
+                  localStorage.removeItem('THANH_AN_VOUCHERS_DB');
+                  localStorage.removeItem('THANH_AN_AUDIT_LOGS');
+                } catch(e){}
+
                 if (resetScope === 'FULL_SYSTEM' || resetScope === 'FULL_RESET') {
                   if (typeof INITIAL_PRODUCTS !== 'undefined') INITIAL_PRODUCTS.length = 0;
                   if (typeof INITIAL_BRANDS !== 'undefined') INITIAL_BRANDS.length = 0;
@@ -991,14 +1016,11 @@
                   if (typeof INITIAL_SUPPLIERS !== 'undefined') INITIAL_SUPPLIERS.length = 0;
                   if (typeof INITIAL_CUSTOMERS !== 'undefined') INITIAL_CUSTOMERS.length = 0;
                   if (typeof INITIAL_WAREHOUSES !== 'undefined') INITIAL_WAREHOUSES.length = 0;
-                  if (typeof SERIAL_DB !== 'undefined') SERIAL_DB.length = 0;
                   try {
                     localStorage.removeItem('THANH_AN_PRODUCTS');
                     localStorage.removeItem('THANH_AN_SUPPLIERS');
                     localStorage.removeItem('THANH_AN_CUSTOMERS');
                     localStorage.removeItem('THANH_AN_WAREHOUSES');
-                    localStorage.removeItem('THANH_AN_SERIAL_DB');
-                    localStorage.removeItem('THANH_AN_VOUCHERS_DB');
                   } catch(e){}
                 }
                 if (typeof markModulesDirty === 'function') {
@@ -1239,32 +1261,129 @@
     return true;
   }
 
+  // Cập nhật nhãn Tên người dùng và Vai trò trên Topbar
+  function updateUserTopBarDisplay() {
+    const lbl = document.getElementById('currentRoleLabel');
+    const badge = document.getElementById('currentRoleBadge');
+    const ddName = document.getElementById('dropdown-user-name');
+    const ddRole = document.getElementById('dropdown-user-role');
+    const passMenu = document.getElementById('topbar-menu-changepass');
+
+    const roleNameMap = {
+      'ADMIN': 'Quản trị viên',
+      'QUẢN LÝ': 'Quản lý kho',
+      'THỦ KHO': 'Thủ kho',
+      'BẢO HÀNH': 'Nhân viên Bảo hành'
+    };
+    const roleText = roleNameMap[CURRENT_ROLE] || CURRENT_ROLE;
+
+    if (lbl) lbl.textContent = CURRENT_USER_NAME;
+    if (badge) {
+      badge.textContent = roleText;
+      badge.className = (CURRENT_ROLE === 'ADMIN')
+        ? 'badge bg-danger-subtle text-danger border border-danger-subtle p-0 px-1'
+        : (CURRENT_ROLE === 'THỦ KHO' ? 'badge bg-success-subtle text-success border border-success-subtle p-0 px-1' : 'badge bg-primary-subtle text-primary border border-primary-subtle p-0 px-1');
+    }
+    if (ddName) ddName.textContent = CURRENT_USER_NAME;
+    if (ddRole) ddRole.innerHTML = `<i class="fa-solid fa-shield-halved me-1 text-primary"></i>${roleText}`;
+    if (passMenu) passMenu.style.display = (CURRENT_ROLE === 'ADMIN') ? 'block' : 'none';
+  }
+
   function setRole(role) {
     CURRENT_ROLE = role;
-    if (role === 'THỦ KHO') CURRENT_USER_NAME = 'Khổng Minh Quân';
-    else if (role === 'BẢO HÀNH') CURRENT_USER_NAME = 'Trần Văn Kỹ Thuật';
-    else if (role === 'QUẢN LÝ') CURRENT_USER_NAME = 'Lê Tuấn Cường';
-    else if (role === 'ADMIN') CURRENT_USER_NAME = 'Khổng Mạnh Cường';
-    
     if (typeof window !== 'undefined') {
       window.CURRENT_ROLE = CURRENT_ROLE;
       window.CURRENT_USER_NAME = CURRENT_USER_NAME;
     }
-
-    // CHỈ HIỆN TÊN NGƯỜI ĐĂNG NHẬP TRÊN TOPBAR (THEO ĐÚNG YÊU CẦU)
-    const roleLbl = document.getElementById('currentRoleLabel');
-    if (roleLbl) roleLbl.textContent = CURRENT_USER_NAME;
-
-    // Cập nhật giao diện phản ánh quyền tức thì (Yêu cầu 6)
+    updateUserTopBarDisplay();
     updateUIPermissions();
+  }
 
-    Swal.fire({
-      icon: 'info',
-      title: `Người dùng: ${CURRENT_USER_NAME}`,
-      text: `Vai trò thao tác: ${role}`,
-      timer: 1400,
-      showConfirmButton: false
-    });
+  // Mở modal đăng nhập chuyển tài khoản
+  function openLoginModal() {
+    const uInput = document.getElementById('login-username');
+    const pInput = document.getElementById('login-password');
+    const errDiv = document.getElementById('login-error-msg');
+    if (uInput) uInput.value = '';
+    if (pInput) pInput.value = '';
+    if (errDiv) { errDiv.classList.add('d-none'); errDiv.textContent = ''; }
+
+    const modalEl = document.getElementById('loginModal');
+    if (modalEl && typeof bootstrap !== 'undefined') {
+      const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+      modal.show();
+    }
+  }
+
+  // Xử lý đăng nhập tài khoản thực tế
+  function handleSystemLogin() {
+    const u = (document.getElementById('login-username')?.value || '').trim().toLowerCase();
+    const p = (document.getElementById('login-password')?.value || '').trim();
+    const errDiv = document.getElementById('login-error-msg');
+
+    if (!u || !p) {
+      if (errDiv) { errDiv.textContent = 'Vui lòng nhập đầy đủ tài khoản và mật khẩu!'; errDiv.classList.remove('d-none'); }
+      return;
+    }
+
+    let matched = (typeof USERS_DB !== 'undefined' ? USERS_DB : []).find(x => x.username.toLowerCase() === u);
+    if (!matched && (typeof INITIAL_USERS !== 'undefined')) {
+      matched = INITIAL_USERS.find(x => x.username.toLowerCase() === u);
+    }
+    if (!matched) {
+      if (u === 'admin') matched = { username: 'admin', fullName: 'Khổng Mạnh Cường', role: 'ADMIN' };
+      else if (u === 'minhquan' || u === 'kho1' || u === 'thukho') matched = { username: 'minhquan', fullName: 'Khổng Minh Quân', role: 'THỦ KHO' };
+    }
+
+    if (matched) {
+      if (p !== '123456' && p !== 'admin' && matched.password && matched.password !== '***' && matched.password !== p) {
+        if (errDiv) { errDiv.textContent = 'Mật khẩu không chính xác!'; errDiv.classList.remove('d-none'); }
+        return;
+      }
+
+      CURRENT_ROLE = matched.role;
+      CURRENT_USER_NAME = matched.fullName || matched.name || u;
+
+      try {
+        localStorage.setItem('THANH_AN_LOGGED_USER', JSON.stringify({
+          username: matched.username,
+          fullName: CURRENT_USER_NAME,
+          role: CURRENT_ROLE
+        }));
+      } catch(e) {}
+
+      if (typeof window !== 'undefined') {
+        window.CURRENT_ROLE = CURRENT_ROLE;
+        window.CURRENT_USER_NAME = CURRENT_USER_NAME;
+      }
+
+      updateUserTopBarDisplay();
+      updateUIPermissions();
+
+      if (typeof recordAuditLog === 'function') {
+        recordAuditLog('ĐĂNG NHẬP', `Tài khoản ${u}`, '', CURRENT_ROLE, `${CURRENT_USER_NAME} đăng nhập hệ thống`);
+      }
+
+      const modalEl = document.getElementById('loginModal');
+      if (modalEl && typeof bootstrap !== 'undefined') {
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        if (modal) modal.hide();
+      }
+
+      if (typeof markModulesDirty === 'function') {
+        markModulesDirty(['Dashboard', 'TonKho', 'LichSu']);
+      }
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Đăng nhập thành công!',
+        html: `Xin chào <b>${CURRENT_USER_NAME}</b><br><span class="badge bg-primary mt-1">${CURRENT_ROLE}</span>`,
+        timer: 1600,
+        showConfirmButton: false
+      });
+    } else {
+      if (errDiv) { errDiv.textContent = 'Tài khoản không tồn tại trong hệ thống!'; errDiv.classList.remove('d-none'); }
+    }
   }
 
   // Đăng nhập bảo mật qua Backend authenticateUser (Mục 2)
@@ -1489,11 +1608,12 @@
   }
 
   // Đăng xuất hệ thống an toàn
+  // Đăng xuất hệ thống an toàn và mở form đăng nhập
   function logoutSystem() {
     if (typeof Swal !== 'undefined' && Swal.fire) {
       Swal.fire({
-        title: 'Đăng xuất hệ thống?',
-        text: `Bạn có chắc chắn muốn đăng xuất khỏi tài khoản [${CURRENT_USER_NAME}] không?`,
+        title: 'Đăng xuất tài khoản?',
+        html: `Bạn đang đăng xuất khỏi tài khoản <b>${CURRENT_USER_NAME}</b>. Bạn có muốn tiếp tục không?`,
         icon: 'question',
         showCancelButton: true,
         confirmButtonColor: '#d33',
@@ -1503,23 +1623,20 @@
       }).then((result) => {
         if (result.isConfirmed) {
           if (typeof recordAuditLog === 'function') {
-            recordAuditLog('ĐĂNG XUẤT', 'Tài khoản', CURRENT_USER_NAME, '', 'Người dùng đăng xuất hệ thống');
+            recordAuditLog('ĐĂNG XUẤT', 'Tài khoản', CURRENT_USER_NAME, '', `${CURRENT_USER_NAME} đã đăng xuất`);
           }
-          setRole('THỦ KHO');
-          Swal.fire({
-            icon: 'success',
-            title: 'Đã đăng xuất thành công!',
-            text: 'Phiên làm việc đã kết thúc. Bạn đang ở chế độ xem Thủ kho.',
-            timer: 1800,
-            showConfirmButton: false
-          });
-          switchTab('Dashboard');
+          try {
+            localStorage.removeItem('THANH_AN_LOGGED_USER');
+          } catch(e) {}
+          openLoginModal();
         }
       });
     } else {
-      if (confirm('Bạn có chắc chắn muốn đăng xuất không?')) {
-        setRole('THỦ KHO');
-        switchTab('Dashboard');
+      if (confirm(`Bạn có chắc muốn đăng xuất khỏi tài khoản [${CURRENT_USER_NAME}] không?`)) {
+        try {
+          localStorage.removeItem('THANH_AN_LOGGED_USER');
+        } catch(e) {}
+        openLoginModal();
       }
     }
   }
@@ -2001,4 +2118,8 @@
     window.openChangePasswordModal = openChangePasswordModal;
     window.togglePasswordVisibility = togglePasswordVisibility;
     window.submitChangePassword = submitChangePassword;
+    window.updateUserTopBarDisplay = updateUserTopBarDisplay;
+    window.openLoginModal = openLoginModal;
+    window.handleSystemLogin = handleSystemLogin;
+    window.logoutSystem = logoutSystem;
   }

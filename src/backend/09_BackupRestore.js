@@ -627,21 +627,12 @@ function resetSystemData(arg1, arg2, arg3, arg4) {
         }
       });
 
-      // Đặt lại DM_QUY_CHUAN về 5 cột chuẩn mực và sạch sẽ
+      // Đặt lại DM_QUY_CHUAN về 5 cột chuẩn mực, sạch sẽ 100% (KHÔNG CHÈN DỮ LIỆU MẪU)
       const qcSheet = ss.getSheetByName("DM_QUY_CHUAN");
       if (qcSheet) {
         qcSheet.clear();
         qcSheet.getRange(1, 1, 1, 5).setValues([["Nhóm Hàng", "Kho Hàng", "Loại Hàng", "Bảo Hành", "Hãng SX"]]);
         qcSheet.getRange(1, 1, 1, 5).setBackground("#0f766e").setFontColor("#ffffff").setFontWeight("bold");
-        const defaultQc = [
-          ["Máy in", "Kho Tổng Hà Nội", "Hàng Mới 100%", "0 Tháng", "CANON"],
-          ["Máy photocopy", "Kho Đà Nẵng", "Hàng Đã Qua Sử Dụng (Like New)", "3 Tháng", "RICOH"],
-          ["Laptop", "Kho TP.HCM", "Hàng Đổi Trả / Demo", "6 Tháng", "HP"],
-          ["Máy scan", "Kho VP", "", "12 Tháng", "EPSON"],
-          ["Máy chủ", "Kho Cách Ly", "", "24 Tháng", "DELL"],
-          ["", "", "", "36 Tháng", "LENOVO"]
-        ];
-        qcSheet.getRange(2, 1, defaultQc.length, 5).setValues(defaultQc);
       }
 
       // Xóa master cache để client lập tức nhận dữ liệu sạch
@@ -670,16 +661,19 @@ function resetSystemData(arg1, arg2, arg3, arg4) {
       }
     } catch(e){}
 
-    // 7. Ghi Audit Log thành công
+    // 7. Làm sạch nhật ký cũ trên Google Sheet và chỉ ghi nhận DUY NHẤT 1 dòng xác nhận Reset
     const logSheet = ss.getSheetByName("NHAT_KY_HOAT_DONG");
     if (logSheet) {
+      logSheet.clear();
+      logSheet.getRange(1, 1, 1, 5).setValues([["Thời gian", "Người dùng", "Hành động", "Mục tiêu", "Chi tiết"]]);
+      logSheet.getRange(1, 1, 1, 5).setBackground("#1e293b").setFontColor("#ffffff").setFontWeight("bold");
       const timeStr = Utilities.formatDate(new Date(), "GMT+7", "dd/MM/yyyy HH:mm:ss");
       logSheet.appendRow([
         timeStr,
-        adminUser,
-        "RESET_SUCCESS",
-        "HỆ THỐNG",
-        `Đã Reset hệ thống (${resetType}). Bản sao lưu phòng ngừa: [${preResetBackupId}].`
+        adminUser || "Quản trị viên",
+        "RESET_HỆ_THỐNG",
+        "TOÀN BỘ CƠ SỞ DỮ LIỆU",
+        `Đã dọn dẹp sạch toàn bộ dữ liệu kho (${resetType}). Dữ liệu trắng tinh 100%. Bản sao lưu: [${preResetBackupId}].`
       ]);
     }
 

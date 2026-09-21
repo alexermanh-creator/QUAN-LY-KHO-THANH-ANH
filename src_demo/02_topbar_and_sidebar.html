@@ -112,23 +112,25 @@
 
       <!-- 3 NÚT THAO TÁC TOPBAR: QUẢN LÝ, QUÉT SN, KHO MOBILE -->
       <div class="d-flex align-items-center gap-2">
-        <!-- 1. QUẢN LÝ DROPDOWN (CHỈ HIỆN TÊN NGƯỜI ĐĂNG NHẬP CHUẨN YÊU CẦU) -->
+        <!-- 1. TÀI KHOẢN NGƯỜI ĐĂNG NHẬP (HIỂN THỊ ĐÚNG TÊN & VAI TRÒ) -->
         <div class="dropdown">
-          <button class="btn-topbar-role dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown" id="roleDropdownBtn" title="Tài khoản người đăng nhập">
+          <button class="btn-topbar-role dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown" id="roleDropdownBtn" title="Tài khoản đang đăng nhập">
             <i class="fa-solid fa-circle-user text-primary fs-5"></i>
-            <span id="currentRoleLabel" class="d-none d-md-inline fw-bold text-dark">Khổng Mạnh Cường</span>
+            <div class="d-none d-md-flex flex-column text-start" style="line-height: 1.2;">
+              <span id="currentRoleLabel" class="fw-bold text-dark" style="font-size: 0.85rem;">Khổng Mạnh Cường</span>
+              <span id="currentRoleBadge" class="badge bg-danger-subtle text-danger border border-danger-subtle p-0 px-1" style="font-size: 0.68rem; width: fit-content;">Quản trị viên</span>
+            </div>
           </button>
-          <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="min-width: 260px;">
-            <li><h6 class="dropdown-header text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.5px;">Chọn vai trò thao tác</h6></li>
-            <li><a class="dropdown-item py-2 d-flex align-items-center" href="javascript:void(0)" onclick="setRole('THỦ KHO')"><i class="fa-solid fa-cart-shopping me-3 text-info fs-6"></i> <span><b>Thủ kho</b> (Nhập/Xuất/Tồn/Scan)</span></a></li>
-            <li><a class="dropdown-item py-2 d-flex align-items-center" href="javascript:void(0)" onclick="setRole('BẢO HÀNH')"><i class="fa-solid fa-wrench me-3 text-warning fs-6"></i> <span><b>Nhân viên Bảo hành</b></span></a></li>
-            <li><a class="dropdown-item py-2 d-flex align-items-center" href="javascript:void(0)" onclick="setRole('QUẢN LÝ')"><i class="fa-solid fa-user-tie me-3 text-primary fs-6"></i> <span><b>Quản lý kho</b> (Hủy/Sửa/Kiểm kê)</span></a></li>
-            <li><a class="dropdown-item py-2 d-flex align-items-center" href="javascript:void(0)" onclick="setRole('ADMIN')"><i class="fa-solid fa-crown me-3 text-danger fs-6"></i> <span><b>Quản trị viên</b> (Toàn quyền)</span></a></li>
-            <li><hr class="dropdown-divider my-1"></li>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="min-width: 250px;">
+            <li class="px-3 py-2 border-bottom bg-light">
+              <div class="text-muted" style="font-size: 0.72rem;">ĐANG ĐĂNG NHẬP:</div>
+              <div class="fw-bold text-dark fs-6" id="dropdown-user-name">Khổng Mạnh Cường</div>
+              <div class="text-secondary small mt-0" id="dropdown-user-role"><i class="fa-solid fa-shield-halved me-1 text-primary"></i>Quản trị viên</div>
+            </li>
             <li><a class="dropdown-item py-2 d-flex align-items-center text-primary" href="huong_dan_su_dung.html" target="_blank"><i class="fa-solid fa-book-open-reader me-3 fs-6"></i> <span><b>Hướng dẫn sử dụng</b></span></a></li>
-            <li><a class="dropdown-item py-2 d-flex align-items-center text-dark" href="javascript:void(0)" onclick="openChangePasswordModal()"><i class="fa-solid fa-key me-3 text-warning fs-6"></i> <span><b>Đổi mật khẩu Admin</b></span></a></li>
+            <li id="topbar-menu-changepass"><a class="dropdown-item py-2 d-flex align-items-center text-dark" href="javascript:void(0)" onclick="openChangePasswordModal()"><i class="fa-solid fa-key me-3 text-warning fs-6"></i> <span><b>Đổi mật khẩu Admin</b></span></a></li>
             <li><hr class="dropdown-divider my-1"></li>
-            <li><a class="dropdown-item py-2 text-danger d-flex align-items-center" href="javascript:void(0)" onclick="logoutSystem()"><i class="fa-solid fa-right-from-bracket me-3 fs-6"></i> <span><b>Đăng xuất hệ thống</b></span></a></li>
+            <li><a class="dropdown-item py-2 text-danger d-flex align-items-center" href="javascript:void(0)" onclick="openLoginModal()"><i class="fa-solid fa-right-from-bracket me-3 fs-6"></i> <span><b>Đăng xuất / Đổi tài khoản</b></span></a></li>
           </ul>
         </div>
 

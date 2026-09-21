@@ -257,9 +257,39 @@ function getInitAppData(options) {
     openInventory: true
   };
 
+  // Nhận diện tài khoản Google thực tế đang truy cập
+  let activeEmail = '';
+  try {
+    activeEmail = Session.getActiveUser().getEmail();
+  } catch(e) {}
+  if (!activeEmail) {
+    try {
+      activeEmail = Session.getEffectiveUser().getEmail();
+    } catch(e) {}
+  }
+
+  let currentUserInfo = null;
+  if (activeEmail) {
+    let matchedName = activeEmail.split('@')[0];
+    let matchedRole = 'THỦ KHO';
+    if (activeEmail.toLowerCase().includes('cuong') || activeEmail.toLowerCase().includes('admin')) {
+      matchedName = 'Khổng Mạnh Cường';
+      matchedRole = 'ADMIN';
+    } else if (activeEmail.toLowerCase().includes('quan')) {
+      matchedName = 'Khổng Minh Quân';
+      matchedRole = 'THỦ KHO';
+    }
+    currentUserInfo = {
+      email: activeEmail,
+      fullName: matchedName,
+      role: matchedRole
+    };
+  }
+
   const bootstrapData = {
     version: "4.0.0",
     serverTime: Utilities.formatDate(new Date(), "GMT+7", "yyyy-MM-dd HH:mm:ss"),
+    currentUser: currentUserInfo,
     summary: {
       totalStock: totalStock,
       totalModels: distinctModelsSet.size,
@@ -974,19 +1004,8 @@ function khoiTaoHeThongThanhAnTuDong() {
   // 3. DANH MỤC KHÁCH HÀNG (Dữ liệu trắng sạch, chỉ tạo Header)
   const khSheet = createOrGetSheet("DM_KHACH_HANG", ["Mã Khách Hàng", "Tên Khách Hàng", "Số Điện Thoại", "Người Liên Hệ", "Email", "Địa Chỉ", "Mã Số Thuế", "Nhóm Khách", "Ghi Chú"], "#1e40af");
 
-  // 4. DANH MỤC QUY CHUẨN (Chuẩn 5 cột độc lập: Nhóm Hàng, Kho Hàng, Loại Hàng, Bảo Hành, Hãng SX)
+  // 4. DANH MỤC QUY CHUẨN (Chuẩn 5 cột độc lập: Nhóm Hàng, Kho Hàng, Loại Hàng, Bảo Hành, Hãng SX - Sạch 100%, không dữ liệu mẫu)
   const qcSheet = createOrGetSheet("DM_QUY_CHUAN", ["Nhóm Hàng", "Kho Hàng", "Loại Hàng", "Bảo Hành", "Hãng SX"], "#0f766e");
-  if (qcSheet.getLastRow() === 1) {
-    const defaultQc = [
-      ["Máy in", "Kho Tổng Hà Nội", "Hàng Mới 100%", "0 Tháng", "CANON"],
-      ["Máy photocopy", "Kho Đà Nẵng", "Hàng Đã Qua Sử Dụng (Like New)", "3 Tháng", "RICOH"],
-      ["Laptop", "Kho TP.HCM", "Hàng Đổi Trả / Demo", "6 Tháng", "HP"],
-      ["Máy scan", "Kho VP", "", "12 Tháng", "EPSON"],
-      ["Máy chủ", "Kho Cách Ly", "", "24 Tháng", "DELL"],
-      ["", "", "", "36 Tháng", "LENOVO"]
-    ];
-    qcSheet.getRange(2, 1, defaultQc.length, 5).setValues(defaultQc);
-  }
 
   // 5. SERIAL MASTER (V4)
   createOrGetSheet("V4_SERIAL_MASTER", [

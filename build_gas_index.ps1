@@ -10,6 +10,14 @@ $bridge = @'
     if (!serverData) return;
     console.log("[GAS Bridge] Hydrating live data from Google Sheets...", serverData);
     
+    // 0. Đồng bộ tài khoản người dùng đăng nhập thực tế từ Google
+    if (serverData.currentUser) {
+      if (typeof CURRENT_USER_NAME !== 'undefined') CURRENT_USER_NAME = serverData.currentUser.fullName || serverData.currentUser.email;
+      if (typeof CURRENT_ROLE !== 'undefined') CURRENT_ROLE = serverData.currentUser.role || 'THỦ KHO';
+      if (typeof updateUserTopBarDisplay === 'function') updateUserTopBarDisplay();
+      if (typeof updateUIPermissions === 'function') updateUIPermissions();
+    }
+
     // 1. Đồng bộ Danh mục Sản phẩm / Model (Dữ liệu trắng nếu server trả rỗng)
     if (Array.isArray(serverData.products)) {
       INITIAL_PRODUCTS = serverData.products.map(p => ({
@@ -217,8 +225,8 @@ $bridge = @'
       } catch(e) {}
     }
 
-    // 10. Đồng bộ Nhật ký kiểm toán (AUDIT_LOG_DB)
-    if (Array.isArray(serverData.auditLogs) && serverData.auditLogs.length > 0) {
+    // 10. Đồng bộ Nhật ký kiểm toán (AUDIT_LOG_DB) - Làm sạch đồng bộ nếu server reset
+    if (Array.isArray(serverData.auditLogs)) {
       if (typeof AUDIT_LOG_DB !== 'undefined') {
         AUDIT_LOG_DB = serverData.auditLogs.map(a => ({
           id: a.id || ('AUD-' + Math.floor(Math.random()*10000)),

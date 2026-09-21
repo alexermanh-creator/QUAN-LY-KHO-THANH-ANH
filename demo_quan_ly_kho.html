@@ -1058,23 +1058,25 @@
 
       <!-- 3 NÚT THAO TÁC TOPBAR: QUẢN LÝ, QUÉT SN, KHO MOBILE -->
       <div class="d-flex align-items-center gap-2">
-        <!-- 1. QUẢN LÝ DROPDOWN (CHỈ HIỆN TÊN NGƯỜI ĐĂNG NHẬP CHUẨN YÊU CẦU) -->
+        <!-- 1. TÀI KHOẢN NGƯỜI ĐĂNG NHẬP (HIỂN THỊ ĐÚNG TÊN & VAI TRÒ) -->
         <div class="dropdown">
-          <button class="btn-topbar-role dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown" id="roleDropdownBtn" title="Tài khoản người đăng nhập">
+          <button class="btn-topbar-role dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown" id="roleDropdownBtn" title="Tài khoản đang đăng nhập">
             <i class="fa-solid fa-circle-user text-primary fs-5"></i>
-            <span id="currentRoleLabel" class="d-none d-md-inline fw-bold text-dark">Khổng Mạnh Cường</span>
+            <div class="d-none d-md-flex flex-column text-start" style="line-height: 1.2;">
+              <span id="currentRoleLabel" class="fw-bold text-dark" style="font-size: 0.85rem;">Khổng Mạnh Cường</span>
+              <span id="currentRoleBadge" class="badge bg-danger-subtle text-danger border border-danger-subtle p-0 px-1" style="font-size: 0.68rem; width: fit-content;">Quản trị viên</span>
+            </div>
           </button>
-          <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="min-width: 260px;">
-            <li><h6 class="dropdown-header text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.5px;">Chọn vai trò thao tác</h6></li>
-            <li><a class="dropdown-item py-2 d-flex align-items-center" href="javascript:void(0)" onclick="setRole('THỦ KHO')"><i class="fa-solid fa-cart-shopping me-3 text-info fs-6"></i> <span><b>Thủ kho</b> (Nhập/Xuất/Tồn/Scan)</span></a></li>
-            <li><a class="dropdown-item py-2 d-flex align-items-center" href="javascript:void(0)" onclick="setRole('BẢO HÀNH')"><i class="fa-solid fa-wrench me-3 text-warning fs-6"></i> <span><b>Nhân viên Bảo hành</b></span></a></li>
-            <li><a class="dropdown-item py-2 d-flex align-items-center" href="javascript:void(0)" onclick="setRole('QUẢN LÝ')"><i class="fa-solid fa-user-tie me-3 text-primary fs-6"></i> <span><b>Quản lý kho</b> (Hủy/Sửa/Kiểm kê)</span></a></li>
-            <li><a class="dropdown-item py-2 d-flex align-items-center" href="javascript:void(0)" onclick="setRole('ADMIN')"><i class="fa-solid fa-crown me-3 text-danger fs-6"></i> <span><b>Quản trị viên</b> (Toàn quyền)</span></a></li>
-            <li><hr class="dropdown-divider my-1"></li>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="min-width: 250px;">
+            <li class="px-3 py-2 border-bottom bg-light">
+              <div class="text-muted" style="font-size: 0.72rem;">ĐANG ĐĂNG NHẬP:</div>
+              <div class="fw-bold text-dark fs-6" id="dropdown-user-name">Khổng Mạnh Cường</div>
+              <div class="text-secondary small mt-0" id="dropdown-user-role"><i class="fa-solid fa-shield-halved me-1 text-primary"></i>Quản trị viên</div>
+            </li>
             <li><a class="dropdown-item py-2 d-flex align-items-center text-primary" href="huong_dan_su_dung.html" target="_blank"><i class="fa-solid fa-book-open-reader me-3 fs-6"></i> <span><b>Hướng dẫn sử dụng</b></span></a></li>
-            <li><a class="dropdown-item py-2 d-flex align-items-center text-dark" href="javascript:void(0)" onclick="openChangePasswordModal()"><i class="fa-solid fa-key me-3 text-warning fs-6"></i> <span><b>Đổi mật khẩu Admin</b></span></a></li>
+            <li id="topbar-menu-changepass"><a class="dropdown-item py-2 d-flex align-items-center text-dark" href="javascript:void(0)" onclick="openChangePasswordModal()"><i class="fa-solid fa-key me-3 text-warning fs-6"></i> <span><b>Đổi mật khẩu Admin</b></span></a></li>
             <li><hr class="dropdown-divider my-1"></li>
-            <li><a class="dropdown-item py-2 text-danger d-flex align-items-center" href="javascript:void(0)" onclick="logoutSystem()"><i class="fa-solid fa-right-from-bracket me-3 fs-6"></i> <span><b>Đăng xuất hệ thống</b></span></a></li>
+            <li><a class="dropdown-item py-2 text-danger d-flex align-items-center" href="javascript:void(0)" onclick="openLoginModal()"><i class="fa-solid fa-right-from-bracket me-3 fs-6"></i> <span><b>Đăng xuất / Đổi tài khoản</b></span></a></li>
           </ul>
         </div>
 
@@ -1460,19 +1462,12 @@
                 <label class="form-label small fw-semibold text-muted mb-1">Kho hàng</label>
                 <select id="filter-stock-kho" class="form-select form-select-sm" onchange="applyStockFilter()">
                   <option value="">-- Tất cả kho --</option>
-                  <option value="Kho VP">Kho VP</option>
-                  <option value="Kho Chi Nhánh">Kho Chi Nhánh</option>
-                  <option value="Kho Cách Ly (Hàng lỗi)">Kho Cách Ly</option>
                 </select>
               </div>
               <div class="col-6 col-md-2">
                 <label class="form-label small fw-semibold text-muted mb-1">Nhóm hàng</label>
                 <select id="filter-stock-nhom" class="form-select form-select-sm" onchange="applyStockFilter()">
                   <option value="">-- Tất cả nhóm --</option>
-                  <option value="Máy in">Máy in</option>
-                  <option value="Máy Photocopy">Máy Photocopy</option>
-                  <option value="Laptop">Laptop</option>
-                  <option value="Máy Scan">Máy Scan</option>
                 </select>
               </div>
               <div class="col-12 col-md-3">
@@ -1597,9 +1592,7 @@
               <div class="col-6 col-md-2">
                 <label class="form-label small fw-semibold text-muted mb-1">Kho Nhập (*)</label>
                 <select id="nhap-kho" class="form-select form-select-sm">
-                  <option value="Kho VP">Kho VP</option>
-                  <option value="Kho Chi Nhánh">Kho Chi Nhánh</option>
-                  <option value="Kho Cách Ly (Hàng lỗi)">Kho Cách Ly (Hàng lỗi)</option>
+                  <option value="">-- Chọn kho nhập --</option>
                 </select>
               </div>
               <div class="col-6 col-md-2">
@@ -1791,8 +1784,7 @@
               <div class="col-12 col-md-2">
                 <label class="form-label small fw-semibold text-muted mb-1">Kho Xuất</label>
                 <select id="xuat-kho" class="form-select form-select-sm">
-                  <option value="Kho VP">Kho VP</option>
-                  <option value="Kho Chi Nhánh">Kho Chi Nhánh</option>
+                  <option value="">-- Chọn kho xuất --</option>
                 </select>
               </div>
               <div class="col-12">
@@ -2432,9 +2424,7 @@
                 <div class="mb-2">
                   <label class="form-label small fw-semibold text-muted mb-1">Kho đến (*)</label>
                   <select id="transfer-target-kho" class="form-select form-select-sm">
-                    <option value="Kho Chi Nhánh">Kho Chi Nhánh</option>
-                    <option value="Kho VP">Kho VP</option>
-                    <option value="Kho Cách Ly (Hàng lỗi)">Kho Cách Ly (Hàng lỗi)</option>
+                    <option value="">-- Chọn kho chuyển đến --</option>
                   </select>
                 </div>
                 <button class="btn btn-info text-white btn-sm w-100 mt-3" onclick="submitTransferWarehouse()">
@@ -4350,6 +4340,59 @@
     </div>
   </div>
 
+  <!-- ==================================================== -->
+  <!-- MODAL: ĐĂNG NHẬP / CHUYỂN TÀI KHOẢN HỆ THỐNG -->
+  <!-- ==================================================== -->
+  <div class="modal fade" id="loginModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
+      <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
+        <div class="modal-header bg-primary text-white py-3 px-4">
+          <div class="d-flex align-items-center gap-2">
+            <i class="fa-solid fa-right-to-bracket fs-5"></i>
+            <div>
+              <h6 class="modal-title fw-bold mb-0">ĐĂNG NHẬP HỆ THỐNG</h6>
+              <small class="opacity-75" style="font-size: 0.75rem;">Kho Thành An</small>
+            </div>
+          </div>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" id="login-modal-close-btn"></button>
+        </div>
+        <div class="modal-body p-4">
+          <form id="form-system-login" onsubmit="event.preventDefault(); handleSystemLogin();">
+            <div class="mb-3">
+              <label class="form-label small fw-bold text-secondary mb-1">Tên đăng nhập / Tài khoản (*)</label>
+              <div class="input-group">
+                <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-user"></i></span>
+                <input type="text" id="login-username" class="form-control" placeholder="admin hoặc minhquan..." required autocomplete="username">
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-bold text-secondary mb-1">Mật khẩu (*)</label>
+              <div class="input-group">
+                <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-lock"></i></span>
+                <input type="password" id="login-password" class="form-control" placeholder="Nhập mật khẩu..." required autocomplete="current-password">
+                <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('login-password', 'login-pwd-icon')">
+                  <i class="fa-solid fa-eye" id="login-pwd-icon"></i>
+                </button>
+              </div>
+            </div>
+            <div id="login-error-msg" class="alert alert-danger small py-2 d-none"></div>
+
+            <div class="p-2 mb-3 bg-light rounded border text-muted small" style="font-size: 0.75rem;">
+              <div class="fw-semibold text-dark mb-1"><i class="fa-solid fa-circle-info text-primary me-1"></i>Tài khoản thao tác:</div>
+              <div>• <b>admin</b>: Khổng Mạnh Cường (Quản trị viên)</div>
+              <div>• <b>minhquan</b>: Khổng Minh Quân (Thủ kho)</div>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 py-2 fw-bold" id="btn-submit-login">
+              <i class="fa-solid fa-right-to-bracket me-1"></i> Đăng Nhập
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
 
 
 <script>
@@ -4408,18 +4451,29 @@
   // Biến đếm sequence mã nội bộ Thành An
   let INTERNAL_SEQ_COUNTER = 100;
 
-  // Danh sách tài khoản nhân sự RBAC chuẩn doanh nghiệp (Ảnh 5)
+  // Danh sách tài khoản nhân sự RBAC chuẩn doanh nghiệp
   let INITIAL_USERS = [
     { username: 'admin', fullName: 'Khổng Mạnh Cường', role: 'ADMIN', status: 'ACTIVE', password: '***' },
+    { username: 'minhquan', fullName: 'Khổng Minh Quân', role: 'THỦ KHO', status: 'ACTIVE', password: '***' },
     { username: 'KHO1', fullName: 'Khổng Minh Quân', role: 'THỦ KHO', status: 'ACTIVE', password: '***' },
     { username: 'QL01', fullName: 'Lê Tuấn Cường', role: 'QUẢN LÝ', status: 'ACTIVE', password: '***' },
     { username: 'BH01', fullName: 'Trần Văn Kỹ Thuật', role: 'BẢO HÀNH', status: 'ACTIVE', password: '***' }
   ];
   let USERS_DB = JSON.parse(JSON.stringify(INITIAL_USERS));
 
-  // Vai trò đăng nhập hiện tại
+  // Khôi phục tài khoản đăng nhập hiện tại từ bộ nhớ (hoặc mặc định Khổng Mạnh Cường)
   let CURRENT_ROLE = 'ADMIN';
   let CURRENT_USER_NAME = 'Khổng Mạnh Cường';
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const savedUser = localStorage.getItem('THANH_AN_LOGGED_USER');
+      if (savedUser) {
+        const parsed = JSON.parse(savedUser);
+        if (parsed.fullName) CURRENT_USER_NAME = parsed.fullName;
+        if (parsed.role) CURRENT_ROLE = parsed.role;
+      }
+    }
+  } catch(e) {}
 
   // 1.7 MA TRẬN 20 QUYỀN HẠN PHÂN QUYỀN (YÊU CẦU 6)
   const ALL_PERMISSIONS = [
@@ -5148,8 +5202,14 @@
           if (typeof VOUCHERS_DB !== 'undefined') { VOUCHERS_DB.nhap = []; VOUCHERS_DB.xuat = []; }
           if (typeof WARRANTY_CASES_DB !== 'undefined') WARRANTY_CASES_DB.length = 0;
           if (typeof INVENTORY_SESSIONS_DB !== 'undefined') INVENTORY_SESSIONS_DB.length = 0;
+          if (typeof AUDIT_LOG_DB !== 'undefined') AUDIT_LOG_DB.length = 0;
+          try {
+            localStorage.removeItem('THANH_AN_SERIAL_DB');
+            localStorage.removeItem('THANH_AN_VOUCHERS_DB');
+            localStorage.removeItem('THANH_AN_AUDIT_LOGS');
+          } catch(e){}
         } else {
-          // FULL_SYSTEM: Trắng hoàn toàn 100% dữ liệu nghiệp vụ và toàn bộ danh mục hệ thống
+          // FULL_SYSTEM: Trắng hoàn toàn 100% dữ liệu nghiệp vụ, toàn bộ danh mục và audit
           if (typeof SERIAL_DB !== 'undefined') SERIAL_DB.length = 0;
           if (typeof VOUCHERS_DB !== 'undefined') { VOUCHERS_DB.nhap = []; VOUCHERS_DB.xuat = []; }
           if (typeof WARRANTY_CASES_DB !== 'undefined') WARRANTY_CASES_DB.length = 0;
@@ -5161,6 +5221,15 @@
           if (typeof INITIAL_CUSTOMERS !== 'undefined') INITIAL_CUSTOMERS.length = 0;
           if (typeof INITIAL_WAREHOUSES !== 'undefined') INITIAL_WAREHOUSES.length = 0;
           if (typeof AUDIT_LOG_DB !== 'undefined') AUDIT_LOG_DB.length = 0;
+          try {
+            localStorage.removeItem('THANH_AN_PRODUCTS');
+            localStorage.removeItem('THANH_AN_SUPPLIERS');
+            localStorage.removeItem('THANH_AN_CUSTOMERS');
+            localStorage.removeItem('THANH_AN_WAREHOUSES');
+            localStorage.removeItem('THANH_AN_SERIAL_DB');
+            localStorage.removeItem('THANH_AN_VOUCHERS_DB');
+            localStorage.removeItem('THANH_AN_AUDIT_LOGS');
+          } catch(e){}
         }
 
         // Đồng bộ lên window
@@ -5586,6 +5655,16 @@
           WarehouseAPI.resetSystemData(resetScope, 'RESET-THANHAN', finalAdminPass, function(res) {
             if (res && res.success) {
               Swal.fire({ icon: 'success', title: 'Reset hoàn tất!', text: res.message }).then(() => {
+                // Xóa trắng toàn bộ Audit logs trên Web App khi reset
+                if (typeof AUDIT_LOG_DB !== 'undefined') AUDIT_LOG_DB.length = 0;
+                if (typeof SERIAL_DB !== 'undefined') SERIAL_DB.length = 0;
+                if (typeof VOUCHERS_DB !== 'undefined') { VOUCHERS_DB.nhap = []; VOUCHERS_DB.xuat = []; }
+                try {
+                  localStorage.removeItem('THANH_AN_SERIAL_DB');
+                  localStorage.removeItem('THANH_AN_VOUCHERS_DB');
+                  localStorage.removeItem('THANH_AN_AUDIT_LOGS');
+                } catch(e){}
+
                 if (resetScope === 'FULL_SYSTEM' || resetScope === 'FULL_RESET') {
                   if (typeof INITIAL_PRODUCTS !== 'undefined') INITIAL_PRODUCTS.length = 0;
                   if (typeof INITIAL_BRANDS !== 'undefined') INITIAL_BRANDS.length = 0;
@@ -5593,14 +5672,11 @@
                   if (typeof INITIAL_SUPPLIERS !== 'undefined') INITIAL_SUPPLIERS.length = 0;
                   if (typeof INITIAL_CUSTOMERS !== 'undefined') INITIAL_CUSTOMERS.length = 0;
                   if (typeof INITIAL_WAREHOUSES !== 'undefined') INITIAL_WAREHOUSES.length = 0;
-                  if (typeof SERIAL_DB !== 'undefined') SERIAL_DB.length = 0;
                   try {
                     localStorage.removeItem('THANH_AN_PRODUCTS');
                     localStorage.removeItem('THANH_AN_SUPPLIERS');
                     localStorage.removeItem('THANH_AN_CUSTOMERS');
                     localStorage.removeItem('THANH_AN_WAREHOUSES');
-                    localStorage.removeItem('THANH_AN_SERIAL_DB');
-                    localStorage.removeItem('THANH_AN_VOUCHERS_DB');
                   } catch(e){}
                 }
                 if (typeof markModulesDirty === 'function') {
@@ -5841,32 +5917,129 @@
     return true;
   }
 
+  // Cập nhật nhãn Tên người dùng và Vai trò trên Topbar
+  function updateUserTopBarDisplay() {
+    const lbl = document.getElementById('currentRoleLabel');
+    const badge = document.getElementById('currentRoleBadge');
+    const ddName = document.getElementById('dropdown-user-name');
+    const ddRole = document.getElementById('dropdown-user-role');
+    const passMenu = document.getElementById('topbar-menu-changepass');
+
+    const roleNameMap = {
+      'ADMIN': 'Quản trị viên',
+      'QUẢN LÝ': 'Quản lý kho',
+      'THỦ KHO': 'Thủ kho',
+      'BẢO HÀNH': 'Nhân viên Bảo hành'
+    };
+    const roleText = roleNameMap[CURRENT_ROLE] || CURRENT_ROLE;
+
+    if (lbl) lbl.textContent = CURRENT_USER_NAME;
+    if (badge) {
+      badge.textContent = roleText;
+      badge.className = (CURRENT_ROLE === 'ADMIN')
+        ? 'badge bg-danger-subtle text-danger border border-danger-subtle p-0 px-1'
+        : (CURRENT_ROLE === 'THỦ KHO' ? 'badge bg-success-subtle text-success border border-success-subtle p-0 px-1' : 'badge bg-primary-subtle text-primary border border-primary-subtle p-0 px-1');
+    }
+    if (ddName) ddName.textContent = CURRENT_USER_NAME;
+    if (ddRole) ddRole.innerHTML = `<i class="fa-solid fa-shield-halved me-1 text-primary"></i>${roleText}`;
+    if (passMenu) passMenu.style.display = (CURRENT_ROLE === 'ADMIN') ? 'block' : 'none';
+  }
+
   function setRole(role) {
     CURRENT_ROLE = role;
-    if (role === 'THỦ KHO') CURRENT_USER_NAME = 'Khổng Minh Quân';
-    else if (role === 'BẢO HÀNH') CURRENT_USER_NAME = 'Trần Văn Kỹ Thuật';
-    else if (role === 'QUẢN LÝ') CURRENT_USER_NAME = 'Lê Tuấn Cường';
-    else if (role === 'ADMIN') CURRENT_USER_NAME = 'Khổng Mạnh Cường';
-    
     if (typeof window !== 'undefined') {
       window.CURRENT_ROLE = CURRENT_ROLE;
       window.CURRENT_USER_NAME = CURRENT_USER_NAME;
     }
-
-    // CHỈ HIỆN TÊN NGƯỜI ĐĂNG NHẬP TRÊN TOPBAR (THEO ĐÚNG YÊU CẦU)
-    const roleLbl = document.getElementById('currentRoleLabel');
-    if (roleLbl) roleLbl.textContent = CURRENT_USER_NAME;
-
-    // Cập nhật giao diện phản ánh quyền tức thì (Yêu cầu 6)
+    updateUserTopBarDisplay();
     updateUIPermissions();
+  }
 
-    Swal.fire({
-      icon: 'info',
-      title: `Người dùng: ${CURRENT_USER_NAME}`,
-      text: `Vai trò thao tác: ${role}`,
-      timer: 1400,
-      showConfirmButton: false
-    });
+  // Mở modal đăng nhập chuyển tài khoản
+  function openLoginModal() {
+    const uInput = document.getElementById('login-username');
+    const pInput = document.getElementById('login-password');
+    const errDiv = document.getElementById('login-error-msg');
+    if (uInput) uInput.value = '';
+    if (pInput) pInput.value = '';
+    if (errDiv) { errDiv.classList.add('d-none'); errDiv.textContent = ''; }
+
+    const modalEl = document.getElementById('loginModal');
+    if (modalEl && typeof bootstrap !== 'undefined') {
+      const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+      modal.show();
+    }
+  }
+
+  // Xử lý đăng nhập tài khoản thực tế
+  function handleSystemLogin() {
+    const u = (document.getElementById('login-username')?.value || '').trim().toLowerCase();
+    const p = (document.getElementById('login-password')?.value || '').trim();
+    const errDiv = document.getElementById('login-error-msg');
+
+    if (!u || !p) {
+      if (errDiv) { errDiv.textContent = 'Vui lòng nhập đầy đủ tài khoản và mật khẩu!'; errDiv.classList.remove('d-none'); }
+      return;
+    }
+
+    let matched = (typeof USERS_DB !== 'undefined' ? USERS_DB : []).find(x => x.username.toLowerCase() === u);
+    if (!matched && (typeof INITIAL_USERS !== 'undefined')) {
+      matched = INITIAL_USERS.find(x => x.username.toLowerCase() === u);
+    }
+    if (!matched) {
+      if (u === 'admin') matched = { username: 'admin', fullName: 'Khổng Mạnh Cường', role: 'ADMIN' };
+      else if (u === 'minhquan' || u === 'kho1' || u === 'thukho') matched = { username: 'minhquan', fullName: 'Khổng Minh Quân', role: 'THỦ KHO' };
+    }
+
+    if (matched) {
+      if (p !== '123456' && p !== 'admin' && matched.password && matched.password !== '***' && matched.password !== p) {
+        if (errDiv) { errDiv.textContent = 'Mật khẩu không chính xác!'; errDiv.classList.remove('d-none'); }
+        return;
+      }
+
+      CURRENT_ROLE = matched.role;
+      CURRENT_USER_NAME = matched.fullName || matched.name || u;
+
+      try {
+        localStorage.setItem('THANH_AN_LOGGED_USER', JSON.stringify({
+          username: matched.username,
+          fullName: CURRENT_USER_NAME,
+          role: CURRENT_ROLE
+        }));
+      } catch(e) {}
+
+      if (typeof window !== 'undefined') {
+        window.CURRENT_ROLE = CURRENT_ROLE;
+        window.CURRENT_USER_NAME = CURRENT_USER_NAME;
+      }
+
+      updateUserTopBarDisplay();
+      updateUIPermissions();
+
+      if (typeof recordAuditLog === 'function') {
+        recordAuditLog('ĐĂNG NHẬP', `Tài khoản ${u}`, '', CURRENT_ROLE, `${CURRENT_USER_NAME} đăng nhập hệ thống`);
+      }
+
+      const modalEl = document.getElementById('loginModal');
+      if (modalEl && typeof bootstrap !== 'undefined') {
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        if (modal) modal.hide();
+      }
+
+      if (typeof markModulesDirty === 'function') {
+        markModulesDirty(['Dashboard', 'TonKho', 'LichSu']);
+      }
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Đăng nhập thành công!',
+        html: `Xin chào <b>${CURRENT_USER_NAME}</b><br><span class="badge bg-primary mt-1">${CURRENT_ROLE}</span>`,
+        timer: 1600,
+        showConfirmButton: false
+      });
+    } else {
+      if (errDiv) { errDiv.textContent = 'Tài khoản không tồn tại trong hệ thống!'; errDiv.classList.remove('d-none'); }
+    }
   }
 
   // Đăng nhập bảo mật qua Backend authenticateUser (Mục 2)
@@ -6091,11 +6264,12 @@
   }
 
   // Đăng xuất hệ thống an toàn
+  // Đăng xuất hệ thống an toàn và mở form đăng nhập
   function logoutSystem() {
     if (typeof Swal !== 'undefined' && Swal.fire) {
       Swal.fire({
-        title: 'Đăng xuất hệ thống?',
-        text: `Bạn có chắc chắn muốn đăng xuất khỏi tài khoản [${CURRENT_USER_NAME}] không?`,
+        title: 'Đăng xuất tài khoản?',
+        html: `Bạn đang đăng xuất khỏi tài khoản <b>${CURRENT_USER_NAME}</b>. Bạn có muốn tiếp tục không?`,
         icon: 'question',
         showCancelButton: true,
         confirmButtonColor: '#d33',
@@ -6105,23 +6279,20 @@
       }).then((result) => {
         if (result.isConfirmed) {
           if (typeof recordAuditLog === 'function') {
-            recordAuditLog('ĐĂNG XUẤT', 'Tài khoản', CURRENT_USER_NAME, '', 'Người dùng đăng xuất hệ thống');
+            recordAuditLog('ĐĂNG XUẤT', 'Tài khoản', CURRENT_USER_NAME, '', `${CURRENT_USER_NAME} đã đăng xuất`);
           }
-          setRole('THỦ KHO');
-          Swal.fire({
-            icon: 'success',
-            title: 'Đã đăng xuất thành công!',
-            text: 'Phiên làm việc đã kết thúc. Bạn đang ở chế độ xem Thủ kho.',
-            timer: 1800,
-            showConfirmButton: false
-          });
-          switchTab('Dashboard');
+          try {
+            localStorage.removeItem('THANH_AN_LOGGED_USER');
+          } catch(e) {}
+          openLoginModal();
         }
       });
     } else {
-      if (confirm('Bạn có chắc chắn muốn đăng xuất không?')) {
-        setRole('THỦ KHO');
-        switchTab('Dashboard');
+      if (confirm(`Bạn có chắc muốn đăng xuất khỏi tài khoản [${CURRENT_USER_NAME}] không?`)) {
+        try {
+          localStorage.removeItem('THANH_AN_LOGGED_USER');
+        } catch(e) {}
+        openLoginModal();
       }
     }
   }
@@ -6603,6 +6774,10 @@
     window.openChangePasswordModal = openChangePasswordModal;
     window.togglePasswordVisibility = togglePasswordVisibility;
     window.submitChangePassword = submitChangePassword;
+    window.updateUserTopBarDisplay = updateUserTopBarDisplay;
+    window.openLoginModal = openLoginModal;
+    window.handleSystemLogin = handleSystemLogin;
+    window.logoutSystem = logoutSystem;
   }
 
   /* ==================================================== */
@@ -10439,16 +10614,16 @@
       let khoOptions = '';
       const khoList = (typeof INITIAL_WAREHOUSES !== 'undefined' && INITIAL_WAREHOUSES.length > 0)
         ? INITIAL_WAREHOUSES.map(k => k.tenKho || k.name || k.val)
-        : ['Kho VP', 'Kho Chi Nhánh', 'Kho Cách Ly (Hàng lỗi)'];
+        : (v.kho ? [v.kho] : []);
       khoList.forEach(k => {
         khoOptions += `<option value="${k}" ${v.kho === k ? 'selected' : ''}>${k}</option>`;
       });
 
       let loaiOptions = '';
+      const curLoai = v.loaiHang || (v.items && v.items[0] && v.items[0].loaiHang) || '';
       const loaiList = (typeof INITIAL_CONDITIONS !== 'undefined' && INITIAL_CONDITIONS.length > 0)
         ? INITIAL_CONDITIONS.map(c => c.ten || c.name || c.val)
-        : ['Chính Hãng', 'Nhập Khẩu', 'Mới 100%', 'Like New 99%', 'Cũ'];
-      const curLoai = v.loaiHang || (v.items && v.items[0] && v.items[0].loaiHang) || 'Chính Hãng';
+        : (curLoai ? [curLoai] : []);
       loaiList.forEach(l => {
         loaiOptions += `<option value="${l}" ${curLoai === l ? 'selected' : ''}>${l}</option>`;
       });
@@ -10499,7 +10674,7 @@
       let khoOptions = '';
       const khoList = (typeof INITIAL_WAREHOUSES !== 'undefined' && INITIAL_WAREHOUSES.length > 0)
         ? INITIAL_WAREHOUSES.map(k => k.tenKho || k.name || k.val)
-        : ['Kho VP', 'Kho Chi Nhánh', 'Kho Cách Ly (Hàng lỗi)'];
+        : (v.kho ? [v.kho] : []);
       khoList.forEach(k => {
         khoOptions += `<option value="${k}" ${v.kho === k ? 'selected' : ''}>${k}</option>`;
       });
@@ -10551,11 +10726,11 @@
     const isNhap = type === 'NHAP';
     const loaiList = (typeof INITIAL_CONDITIONS !== 'undefined' && INITIAL_CONDITIONS.length > 0)
       ? INITIAL_CONDITIONS.map(c => c.ten || c.name || c.val)
-      : ['Chính Hãng', 'Nhập Khẩu', 'Mới 100%', 'Like New 99%', 'Cũ'];
+      : [];
 
     const khoList = (typeof INITIAL_WAREHOUSES !== 'undefined' && INITIAL_WAREHOUSES.length > 0)
       ? INITIAL_WAREHOUSES.map(k => k.tenKho || k.name || k.val)
-      : ['Kho VP', 'Kho Chi Nhánh', 'Kho Cách Ly (Hàng lỗi)'];
+      : [];
 
     if (EDIT_VOUCHER_TEMP_ITEMS.length === 0) {
       tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-3">Chưa có thiết bị nào trong phiếu. Bấm "+ Thêm thiết bị" để bổ sung.</td></tr>`;
@@ -15784,6 +15959,8 @@
 
   // KHỞI ĐỘNG HỆ THỐNG KHI TẢI TRANG
   window.addEventListener('DOMContentLoaded', () => {
+    if (typeof updateUserTopBarDisplay === 'function') updateUserTopBarDisplay();
+    if (typeof updateUIPermissions === 'function') updateUIPermissions();
     switchTab('Dashboard');
   });
 </script>

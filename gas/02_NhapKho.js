@@ -29,8 +29,8 @@ function getFormNhapKhoData() {
   return {
     products: spData.map(r => ({ model: r[0], ten: r[1], nhom: r[2] })),
     ncc: nccData.map(r => r[0]),
-    kho: khoList.length > 0 ? khoList : ['Kho VP', 'Kho Chi Nhánh'],
-    loaiHang: loaiHangList.length > 0 ? loaiHangList : ['Mới 100%', 'Chính hãng', 'Thanh lý'],
+    kho: khoList,
+    loaiHang: loaiHangList,
     existingSerials: existingSerials
   };
 }

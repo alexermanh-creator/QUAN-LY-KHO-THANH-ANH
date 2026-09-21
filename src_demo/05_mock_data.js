@@ -54,18 +54,29 @@
   // Biến đếm sequence mã nội bộ Thành An
   let INTERNAL_SEQ_COUNTER = 100;
 
-  // Danh sách tài khoản nhân sự RBAC chuẩn doanh nghiệp (Ảnh 5)
+  // Danh sách tài khoản nhân sự RBAC chuẩn doanh nghiệp
   let INITIAL_USERS = [
     { username: 'admin', fullName: 'Khổng Mạnh Cường', role: 'ADMIN', status: 'ACTIVE', password: '***' },
+    { username: 'minhquan', fullName: 'Khổng Minh Quân', role: 'THỦ KHO', status: 'ACTIVE', password: '***' },
     { username: 'KHO1', fullName: 'Khổng Minh Quân', role: 'THỦ KHO', status: 'ACTIVE', password: '***' },
     { username: 'QL01', fullName: 'Lê Tuấn Cường', role: 'QUẢN LÝ', status: 'ACTIVE', password: '***' },
     { username: 'BH01', fullName: 'Trần Văn Kỹ Thuật', role: 'BẢO HÀNH', status: 'ACTIVE', password: '***' }
   ];
   let USERS_DB = JSON.parse(JSON.stringify(INITIAL_USERS));
 
-  // Vai trò đăng nhập hiện tại
+  // Khôi phục tài khoản đăng nhập hiện tại từ bộ nhớ (hoặc mặc định Khổng Mạnh Cường)
   let CURRENT_ROLE = 'ADMIN';
   let CURRENT_USER_NAME = 'Khổng Mạnh Cường';
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const savedUser = localStorage.getItem('THANH_AN_LOGGED_USER');
+      if (savedUser) {
+        const parsed = JSON.parse(savedUser);
+        if (parsed.fullName) CURRENT_USER_NAME = parsed.fullName;
+        if (parsed.role) CURRENT_ROLE = parsed.role;
+      }
+    }
+  } catch(e) {}
 
   // 1.7 MA TRẬN 20 QUYỀN HẠN PHÂN QUYỀN (YÊU CẦU 6)
   const ALL_PERMISSIONS = [

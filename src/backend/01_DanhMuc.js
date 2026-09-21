@@ -423,12 +423,11 @@ function authenticateUser(username, password) {
   // 2. Tài khoản hệ thống dự phòng chuẩn
   if (!foundUser) {
     const defaultAccounts = {
-      'admin': { role: 'ADMIN', name: 'Quản Trị Viên Hệ Thống', pass: '123456', status: 'Hoạt động' },
-      'quanly': { role: 'QUẢN LÝ', name: 'Lê Tuấn Cường (Quản lý kho)', pass: '123456', status: 'Hoạt động' },
-      'thukho': { role: 'THỦ KHO', name: 'Nguyễn Văn Kho (Thủ kho)', pass: '123456', status: 'Hoạt động' },
-      'baohanh': { role: 'BẢO HÀNH', name: 'Trần Văn Minh (Kỹ thuật BH)', pass: '123456', status: 'Hoạt động' },
-      'sale': { role: 'SALE', name: 'Nhân Viên Kinh Doanh', pass: '123456', status: 'Hoạt động' }
-    };
+      'admin': { role: 'ADMIN', name: 'Khổng Mạnh Cường', pass: '123456', status: 'Hoạt động' },
+      'minhquan': { role: 'THỦ KHO', name: 'Khổng Minh Quân', pass: '123456', status: 'Hoạt động' },
+      'thukho': { role: 'THỦ KHO', name: 'Khổng Minh Quân', pass: '123456', status: 'Hoạt động' },
+      'kho1': { role: 'THỦ KHO', name: 'Khổng Minh Quân', pass: '123456', status: 'Hoạt động' }
+     };
 
     if (defaultAccounts[user]) {
       if (pass === defaultAccounts[user].pass || pass === 'admin' || pass === 'admin123') {

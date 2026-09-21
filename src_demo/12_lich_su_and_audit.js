@@ -636,16 +636,16 @@
       let khoOptions = '';
       const khoList = (typeof INITIAL_WAREHOUSES !== 'undefined' && INITIAL_WAREHOUSES.length > 0)
         ? INITIAL_WAREHOUSES.map(k => k.tenKho || k.name || k.val)
-        : ['Kho VP', 'Kho Chi Nhánh', 'Kho Cách Ly (Hàng lỗi)'];
+        : (v.kho ? [v.kho] : []);
       khoList.forEach(k => {
         khoOptions += `<option value="${k}" ${v.kho === k ? 'selected' : ''}>${k}</option>`;
       });
 
       let loaiOptions = '';
+      const curLoai = v.loaiHang || (v.items && v.items[0] && v.items[0].loaiHang) || '';
       const loaiList = (typeof INITIAL_CONDITIONS !== 'undefined' && INITIAL_CONDITIONS.length > 0)
         ? INITIAL_CONDITIONS.map(c => c.ten || c.name || c.val)
-        : ['Chính Hãng', 'Nhập Khẩu', 'Mới 100%', 'Like New 99%', 'Cũ'];
-      const curLoai = v.loaiHang || (v.items && v.items[0] && v.items[0].loaiHang) || 'Chính Hãng';
+        : (curLoai ? [curLoai] : []);
       loaiList.forEach(l => {
         loaiOptions += `<option value="${l}" ${curLoai === l ? 'selected' : ''}>${l}</option>`;
       });
@@ -696,7 +696,7 @@
       let khoOptions = '';
       const khoList = (typeof INITIAL_WAREHOUSES !== 'undefined' && INITIAL_WAREHOUSES.length > 0)
         ? INITIAL_WAREHOUSES.map(k => k.tenKho || k.name || k.val)
-        : ['Kho VP', 'Kho Chi Nhánh', 'Kho Cách Ly (Hàng lỗi)'];
+        : (v.kho ? [v.kho] : []);
       khoList.forEach(k => {
         khoOptions += `<option value="${k}" ${v.kho === k ? 'selected' : ''}>${k}</option>`;
       });
@@ -748,11 +748,11 @@
     const isNhap = type === 'NHAP';
     const loaiList = (typeof INITIAL_CONDITIONS !== 'undefined' && INITIAL_CONDITIONS.length > 0)
       ? INITIAL_CONDITIONS.map(c => c.ten || c.name || c.val)
-      : ['Chính Hãng', 'Nhập Khẩu', 'Mới 100%', 'Like New 99%', 'Cũ'];
+      : [];
 
     const khoList = (typeof INITIAL_WAREHOUSES !== 'undefined' && INITIAL_WAREHOUSES.length > 0)
       ? INITIAL_WAREHOUSES.map(k => k.tenKho || k.name || k.val)
-      : ['Kho VP', 'Kho Chi Nhánh', 'Kho Cách Ly (Hàng lỗi)'];
+      : [];
 
     if (EDIT_VOUCHER_TEMP_ITEMS.length === 0) {
       tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-3">Chưa có thiết bị nào trong phiếu. Bấm "+ Thêm thiết bị" để bổ sung.</td></tr>`;

@@ -368,19 +368,12 @@
                 <label class="form-label small fw-semibold text-muted mb-1">Kho hàng</label>
                 <select id="filter-stock-kho" class="form-select form-select-sm" onchange="applyStockFilter()">
                   <option value="">-- Tất cả kho --</option>
-                  <option value="Kho VP">Kho VP</option>
-                  <option value="Kho Chi Nhánh">Kho Chi Nhánh</option>
-                  <option value="Kho Cách Ly (Hàng lỗi)">Kho Cách Ly</option>
                 </select>
               </div>
               <div class="col-6 col-md-2">
                 <label class="form-label small fw-semibold text-muted mb-1">Nhóm hàng</label>
                 <select id="filter-stock-nhom" class="form-select form-select-sm" onchange="applyStockFilter()">
                   <option value="">-- Tất cả nhóm --</option>
-                  <option value="Máy in">Máy in</option>
-                  <option value="Máy Photocopy">Máy Photocopy</option>
-                  <option value="Laptop">Laptop</option>
-                  <option value="Máy Scan">Máy Scan</option>
                 </select>
               </div>
               <div class="col-12 col-md-3">
@@ -505,9 +498,7 @@
               <div class="col-6 col-md-2">
                 <label class="form-label small fw-semibold text-muted mb-1">Kho Nhập (*)</label>
                 <select id="nhap-kho" class="form-select form-select-sm">
-                  <option value="Kho VP">Kho VP</option>
-                  <option value="Kho Chi Nhánh">Kho Chi Nhánh</option>
-                  <option value="Kho Cách Ly (Hàng lỗi)">Kho Cách Ly (Hàng lỗi)</option>
+                  <option value="">-- Chọn kho nhập --</option>
                 </select>
               </div>
               <div class="col-6 col-md-2">
@@ -699,8 +690,7 @@
               <div class="col-12 col-md-2">
                 <label class="form-label small fw-semibold text-muted mb-1">Kho Xuất</label>
                 <select id="xuat-kho" class="form-select form-select-sm">
-                  <option value="Kho VP">Kho VP</option>
-                  <option value="Kho Chi Nhánh">Kho Chi Nhánh</option>
+                  <option value="">-- Chọn kho xuất --</option>
                 </select>
               </div>
               <div class="col-12">
@@ -1340,9 +1330,7 @@
                 <div class="mb-2">
                   <label class="form-label small fw-semibold text-muted mb-1">Kho đến (*)</label>
                   <select id="transfer-target-kho" class="form-select form-select-sm">
-                    <option value="Kho Chi Nhánh">Kho Chi Nhánh</option>
-                    <option value="Kho VP">Kho VP</option>
-                    <option value="Kho Cách Ly (Hàng lỗi)">Kho Cách Ly (Hàng lỗi)</option>
+                    <option value="">-- Chọn kho chuyển đến --</option>
                   </select>
                 </div>
                 <button class="btn btn-info text-white btn-sm w-100 mt-3" onclick="submitTransferWarehouse()">
