@@ -10,12 +10,9 @@ $bridge = @'
     if (!serverData) return;
     console.log("[GAS Bridge] Hydrating live data from Google Sheets...", serverData);
     
-    // 0. Đồng bộ tài khoản người dùng đăng nhập thực tế từ Google
-    if (serverData.currentUser) {
-      if (typeof CURRENT_USER_NAME !== 'undefined') CURRENT_USER_NAME = serverData.currentUser.fullName || serverData.currentUser.email;
-      if (typeof CURRENT_ROLE !== 'undefined') CURRENT_ROLE = serverData.currentUser.role || 'THỦ KHO';
-      if (typeof updateUserTopBarDisplay === 'function') updateUserTopBarDisplay();
-      if (typeof updateUIPermissions === 'function') updateUIPermissions();
+    // 0. Kiểm tra phiên đăng nhập an toàn, không tự động bypass vai trò
+    if (typeof checkAuthOnStartup === 'function') {
+      checkAuthOnStartup();
     }
 
     // 1. Đồng bộ Danh mục Sản phẩm / Model (Chỉ ghi đè nếu server có dữ liệu thật)

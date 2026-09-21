@@ -4438,8 +4438,12 @@
 
   // KHỞI ĐỘNG HỆ THỐNG KHI TẢI TRANG
   window.addEventListener('DOMContentLoaded', () => {
-    if (typeof updateUserTopBarDisplay === 'function') updateUserTopBarDisplay();
-    if (typeof updateUIPermissions === 'function') updateUIPermissions();
+    if (typeof checkAuthOnStartup === 'function') {
+      checkAuthOnStartup();
+    } else {
+      if (typeof updateUserTopBarDisplay === 'function') updateUserTopBarDisplay();
+      if (typeof updateUIPermissions === 'function') updateUIPermissions();
+    }
     switchTab('Dashboard');
   });
 </script>

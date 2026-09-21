@@ -1321,6 +1321,18 @@
     const ddRole = document.getElementById('dropdown-user-role');
     const passMenu = document.getElementById('topbar-menu-changepass');
 
+    if (!CURRENT_USER_NAME || CURRENT_ROLE === 'GUEST') {
+      if (lbl) lbl.textContent = 'Chưa đăng nhập';
+      if (badge) {
+        badge.textContent = 'Khách';
+        badge.className = 'badge bg-secondary-subtle text-secondary border border-secondary-subtle p-0 px-1';
+      }
+      if (ddName) ddName.textContent = 'Chưa đăng nhập';
+      if (ddRole) ddRole.innerHTML = '<i class="fa-solid fa-user-lock me-1 text-secondary"></i>Vui lòng đăng nhập';
+      if (passMenu) passMenu.style.display = 'none';
+      return;
+    }
+
     const roleNameMap = {
       'ADMIN': 'Quản trị viên',
       'QUẢN LÝ': 'Quản lý kho',
@@ -1351,10 +1363,100 @@
     updateUIPermissions();
   }
 
+  // Kiểm tra phiên đăng nhập khi khởi động trang web
+  function checkAuthOnStartup() {
+    let hasSession = false;
+    try {
+      if (typeof sessionStorage !== 'undefined') {
+        const savedSession = sessionStorage.getItem('THANH_AN_LOGGED_SESSION');
+        if (savedSession) {
+          const parsed = JSON.parse(savedSession);
+          if (parsed && parsed.username && parsed.role && parsed.role !== 'GUEST') {
+            CURRENT_ROLE = parsed.role;
+            CURRENT_USER_NAME = parsed.fullName || parsed.username;
+            hasSession = true;
+          }
+        }
+      }
+    } catch(e) {}
+
+    const screenOverlay = document.getElementById('app-login-screen');
+    if (hasSession) {
+      if (screenOverlay) {
+        screenOverlay.classList.add('d-none-fade');
+        setTimeout(() => { screenOverlay.style.display = 'none'; }, 300);
+      }
+      updateUserTopBarDisplay();
+      updateUIPermissions();
+    } else {
+      // Chưa đăng nhập -> Hiển thị màn hình đăng nhập khóa toàn bộ hệ thống
+      CURRENT_ROLE = 'GUEST';
+      CURRENT_USER_NAME = '';
+      if (screenOverlay) {
+        screenOverlay.style.display = 'flex';
+        screenOverlay.classList.remove('d-none-fade');
+      }
+      updateUserTopBarDisplay();
+      updateUIPermissions();
+      const uField = document.getElementById('screen-login-username');
+      if (uField) setTimeout(() => uField.focus(), 300);
+    }
+  }
+
+  // Đăng xuất khỏi hệ thống
+  function handleSystemLogout() {
+    try {
+      if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.removeItem('THANH_AN_LOGGED_SESSION');
+      }
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem('THANH_AN_LOGGED_USER');
+      }
+    } catch(e) {}
+
+    const oldUser = CURRENT_USER_NAME || 'Người dùng';
+    CURRENT_ROLE = 'GUEST';
+    CURRENT_USER_NAME = '';
+    if (typeof window !== 'undefined') {
+      window.CURRENT_ROLE = 'GUEST';
+      window.CURRENT_USER_NAME = '';
+    }
+
+    updateUserTopBarDisplay();
+    updateUIPermissions();
+
+    const screenOverlay = document.getElementById('app-login-screen');
+    if (screenOverlay) {
+      screenOverlay.style.display = 'flex';
+      setTimeout(() => screenOverlay.classList.remove('d-none-fade'), 10);
+      const uInput = document.getElementById('screen-login-username');
+      const pInput = document.getElementById('screen-login-password');
+      const errBox = document.getElementById('login-screen-error-msg');
+      if (uInput) uInput.value = '';
+      if (pInput) pInput.value = '';
+      if (errBox) errBox.classList.add('d-none');
+      if (uInput) uInput.focus();
+    }
+
+    if (typeof recordAuditLog === 'function') {
+      recordAuditLog('ĐĂNG XUẤT', oldUser, '', 'GUEST', `${oldUser} đã đăng xuất khỏi hệ thống`);
+    }
+
+    if (typeof Swal !== 'undefined') {
+      Swal.fire({
+        icon: 'info',
+        title: 'Đã đăng xuất',
+        text: 'Bạn đã đăng xuất an toàn khỏi hệ thống Kho Thành An.',
+        timer: 1500,
+        showConfirmButton: false
+      });
+    }
+  }
+
   // Mở modal đăng nhập chuyển tài khoản
   function openLoginModal() {
-    const uInput = document.getElementById('login-username');
-    const pInput = document.getElementById('login-password');
+    const uInput = document.getElementById('modal-login-username');
+    const pInput = document.getElementById('modal-login-password');
     const errDiv = document.getElementById('login-error-msg');
     if (uInput) uInput.value = '';
     if (pInput) pInput.value = '';
@@ -1364,17 +1466,28 @@
     if (modalEl && typeof bootstrap !== 'undefined') {
       const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
       modal.show();
+      setTimeout(() => { if (uInput) uInput.focus(); }, 300);
     }
   }
 
-  // Xử lý đăng nhập tài khoản thực tế
-  function handleSystemLogin() {
-    const u = (document.getElementById('login-username')?.value || '').trim().toLowerCase();
-    const p = (document.getElementById('login-password')?.value || '').trim();
-    const errDiv = document.getElementById('login-error-msg');
+  // Xử lý đăng nhập tài khoản thực tế (từ màn hình khóa hoặc modal)
+  function handleSystemLogin(source) {
+    const isScreen = (source !== 'modal');
+    const uId = isScreen ? 'screen-login-username' : 'modal-login-username';
+    const pId = isScreen ? 'screen-login-password' : 'modal-login-password';
+    const errDiv = isScreen ? document.getElementById('login-screen-error-msg') : document.getElementById('login-error-msg');
+    const errText = isScreen ? document.getElementById('login-screen-error-text') : errDiv;
+
+    const u = (document.getElementById(uId)?.value || '').trim().toLowerCase();
+    const p = (document.getElementById(pId)?.value || '').trim();
+
+    const showErrMsg = (msg) => {
+      if (errText) errText.textContent = msg;
+      if (errDiv) errDiv.classList.remove('d-none');
+    };
 
     if (!u || !p) {
-      if (errDiv) { errDiv.textContent = 'Vui lòng nhập đầy đủ tài khoản và mật khẩu!'; errDiv.classList.remove('d-none'); }
+      showErrMsg('Vui lòng nhập đầy đủ tài khoản và mật khẩu!');
       return;
     }
 
@@ -1389,7 +1502,7 @@
 
     if (matched) {
       if (p !== '123456' && p !== 'admin' && matched.password && matched.password !== '***' && matched.password !== p) {
-        if (errDiv) { errDiv.textContent = 'Mật khẩu không chính xác!'; errDiv.classList.remove('d-none'); }
+        showErrMsg('Tài khoản hoặc mật khẩu không chính xác!');
         return;
       }
 
@@ -1397,11 +1510,14 @@
       CURRENT_USER_NAME = matched.fullName || matched.name || u;
 
       try {
-        localStorage.setItem('THANH_AN_LOGGED_USER', JSON.stringify({
+        const sessionPayload = JSON.stringify({
           username: matched.username,
           fullName: CURRENT_USER_NAME,
-          role: CURRENT_ROLE
-        }));
+          role: CURRENT_ROLE,
+          timestamp: new Date().toISOString()
+        });
+        sessionStorage.setItem('THANH_AN_LOGGED_SESSION', sessionPayload);
+        localStorage.setItem('THANH_AN_LOGGED_USER', sessionPayload);
       } catch(e) {}
 
       if (typeof window !== 'undefined') {
@@ -1412,29 +1528,39 @@
       updateUserTopBarDisplay();
       updateUIPermissions();
 
-      if (typeof recordAuditLog === 'function') {
-        recordAuditLog('ĐĂNG NHẬP', `Tài khoản ${u}`, '', CURRENT_ROLE, `${CURRENT_USER_NAME} đăng nhập hệ thống`);
+      // Ẩn màn hình đăng nhập nếu đang hiện
+      const screenOverlay = document.getElementById('app-login-screen');
+      if (screenOverlay) {
+        screenOverlay.classList.add('d-none-fade');
+        setTimeout(() => { screenOverlay.style.display = 'none'; }, 300);
       }
 
+      // Đóng modal đăng nhập nếu có
       const modalEl = document.getElementById('loginModal');
       if (modalEl && typeof bootstrap !== 'undefined') {
         const modal = bootstrap.Modal.getInstance(modalEl);
         if (modal) modal.hide();
       }
 
+      if (typeof recordAuditLog === 'function') {
+        recordAuditLog('ĐĂNG NHẬP', `Tài khoản ${u}`, '', CURRENT_ROLE, `${CURRENT_USER_NAME} đăng nhập hệ thống`);
+      }
+
       if (typeof markModulesDirty === 'function') {
         markModulesDirty(['Dashboard', 'TonKho', 'LichSu']);
       }
 
-      Swal.fire({
-        icon: 'success',
-        title: 'Đăng nhập thành công!',
-        html: `Xin chào <b>${CURRENT_USER_NAME}</b><br><span class="badge bg-primary mt-1">${CURRENT_ROLE}</span>`,
-        timer: 1600,
-        showConfirmButton: false
-      });
+      if (typeof Swal !== 'undefined') {
+        Swal.fire({
+          icon: 'success',
+          title: 'Đăng nhập thành công!',
+          html: `Xin chào <b>${CURRENT_USER_NAME}</b><br><span class="badge bg-primary mt-1">${CURRENT_ROLE}</span>`,
+          timer: 1600,
+          showConfirmButton: false
+        });
+      }
     } else {
-      if (errDiv) { errDiv.textContent = 'Tài khoản không tồn tại trong hệ thống!'; errDiv.classList.remove('d-none'); }
+      showErrMsg('Tài khoản hoặc mật khẩu không chính xác!');
     }
   }
 
@@ -1660,37 +1786,9 @@
   }
 
   // Đăng xuất hệ thống an toàn
-  // Đăng xuất hệ thống an toàn và mở form đăng nhập
+  // Đăng xuất hệ thống an toàn và trở về màn hình đăng nhập
   function logoutSystem() {
-    if (typeof Swal !== 'undefined' && Swal.fire) {
-      Swal.fire({
-        title: 'Đăng xuất tài khoản?',
-        html: `Bạn đang đăng xuất khỏi tài khoản <b>${CURRENT_USER_NAME}</b>. Bạn có muốn tiếp tục không?`,
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonColor: '#d33',
-        cancelButtonColor: '#6c757d',
-        confirmButtonText: '<i class="fa-solid fa-right-from-bracket me-1"></i> Đăng xuất',
-        cancelButtonText: 'Hủy'
-      }).then((result) => {
-        if (result.isConfirmed) {
-          if (typeof recordAuditLog === 'function') {
-            recordAuditLog('ĐĂNG XUẤT', 'Tài khoản', CURRENT_USER_NAME, '', `${CURRENT_USER_NAME} đã đăng xuất`);
-          }
-          try {
-            localStorage.removeItem('THANH_AN_LOGGED_USER');
-          } catch(e) {}
-          openLoginModal();
-        }
-      });
-    } else {
-      if (confirm(`Bạn có chắc muốn đăng xuất khỏi tài khoản [${CURRENT_USER_NAME}] không?`)) {
-        try {
-          localStorage.removeItem('THANH_AN_LOGGED_USER');
-        } catch(e) {}
-        openLoginModal();
-      }
-    }
+    handleSystemLogout();
   }
 
   // Phím tắt Spotlight Search Ctrl+K / Cmd+K
@@ -2334,5 +2432,7 @@
     window.updateUserTopBarDisplay = updateUserTopBarDisplay;
     window.openLoginModal = openLoginModal;
     window.handleSystemLogin = handleSystemLogin;
+    window.handleSystemLogout = handleSystemLogout;
     window.logoutSystem = logoutSystem;
+    window.checkAuthOnStartup = checkAuthOnStartup;
   }

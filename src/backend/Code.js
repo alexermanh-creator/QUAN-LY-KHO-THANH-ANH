@@ -298,24 +298,7 @@ function getInitAppData(options) {
     } catch(e) {}
   }
 
-  let currentUserInfo = null;
-  if (activeEmail) {
-    let matchedName = activeEmail.split('@')[0];
-    let matchedRole = 'THỦ KHO';
-    // Nếu là admin email hoặc email chủ sở hữu
-    if (activeEmail.toLowerCase().includes('cuong') || activeEmail.toLowerCase().includes('admin')) {
-      matchedName = 'Khổng Mạnh Cường';
-      matchedRole = 'ADMIN';
-    } else if (activeEmail.toLowerCase().includes('quan')) {
-      matchedName = 'Khổng Minh Quân';
-      matchedRole = 'THỦ KHO';
-    }
-    currentUserInfo = {
-      email: activeEmail,
-      fullName: matchedName,
-      role: matchedRole
-    };
-  }
+  let currentUserInfo = null; // Bắt buộc người dùng phải đăng nhập qua màn hình đăng nhập hệ thống
 
   const bootstrapData = {
     version: "4.0.0",

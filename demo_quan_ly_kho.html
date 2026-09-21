@@ -952,9 +952,237 @@
         font-size: 0.8rem;
       }
     }
+
+    /* ==================================================== */
+    /* FULLSCREEN LOGIN WALL (MÀN HÌNH ĐĂNG NHẬP BẮT BUỘC) */
+    /* ==================================================== */
+    #app-login-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: radial-gradient(circle at top center, #1e293b 0%, #0f172a 100%);
+      z-index: 999999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      box-sizing: border-box;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+    #app-login-screen.d-none-fade {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+    .login-box-card {
+      width: 100%;
+      max-width: 440px;
+      background: rgba(30, 41, 59, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 16px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
+      padding: 32px 28px;
+      color: #f8fafc;
+    }
+    .login-brand-logo {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 24px;
+      text-align: center;
+    }
+    .login-brand-logo svg {
+      height: 44px;
+      width: auto;
+      margin-bottom: 12px;
+    }
+    .login-title-h1 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: #ffffff;
+      margin: 0;
+    }
+    .login-subtitle {
+      font-size: 0.8rem;
+      color: #94a3b8;
+      margin-top: 4px;
+    }
+    .login-form-group {
+      margin-bottom: 18px;
+    }
+    .login-form-label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #cbd5e1;
+      margin-bottom: 6px;
+    }
+    .login-input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .login-input-icon {
+      position: absolute;
+      left: 14px;
+      color: #64748b;
+      font-size: 0.95rem;
+      pointer-events: none;
+    }
+    .login-field-input {
+      width: 100%;
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 11px 40px 11px 40px;
+      color: #ffffff;
+      font-size: 0.9rem;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+    }
+    .login-field-input:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+      background: rgba(15, 23, 42, 0.9);
+    }
+    .login-field-input::placeholder {
+      color: #64748b;
+      font-size: 0.85rem;
+    }
+    .login-eye-btn {
+      position: absolute;
+      right: 12px;
+      background: transparent;
+      border: none;
+      color: #64748b;
+      cursor: pointer;
+      padding: 4px;
+      font-size: 0.95rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .login-eye-btn:hover {
+      color: #94a3b8;
+    }
+    .login-action-btn {
+      width: 100%;
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+      color: #ffffff;
+      border: none;
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .login-action-btn:hover {
+      background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4);
+    }
+    .login-action-btn:active {
+      transform: translateY(0);
+    }
+    .login-alert-banner {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      color: #fca5a5;
+      font-size: 0.82rem;
+      padding: 8px 12px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .login-footer-info {
+      margin-top: 24px;
+      text-align: center;
+      font-size: 0.75rem;
+      color: #64748b;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding-top: 16px;
+    }
   </style>
 </head>
 <body>
+
+  <!-- ==================================================== -->
+  <!-- MÀN HÌNH ĐĂNG NHẬP TOÀN DIỆN (BẮT BUỘC TRƯỚC KHI VÀO) -->
+  <!-- ==================================================== -->
+  <div id="app-login-screen">
+    <div class="login-box-card">
+      <div class="login-brand-logo">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2360 800" role="img" aria-label="THÀNH AN">
+          <title>THÀNH AN</title>
+          <path id="T_login" fill="#FFFFFF" fill-rule="evenodd" transform="translate(0 25) scale(0.88 0.88)" d="M 204 70 L 678 70 L 633 178 L 501 178 L 461 563 L 306 633 L 351 178 L 191 178 Z"/>
+          <path id="A_up_login" fill="#FFFFFF" fill-rule="evenodd" transform="translate(0 25) scale(0.88 0.88)" d="M 541 529 L 730 79 Q 733 70 743 70 L 911 70 L 1004 303 L 891 358 L 824 197 L 722 442 Z"/>
+          <path id="A_lo_login" fill="#FFFFFF" fill-rule="evenodd" transform="translate(0 25) scale(0.88 0.88)" d="M 824 609 L 1059 442 L 1177 736 L 1011 736 L 960 609 Z"/>
+          <path id="sw_b_login" fill="#FFFFFF" fill-rule="evenodd" transform="translate(0 25) scale(0.88 0.88)" d="M 78 762 C 394 644 667 509 974 356 C 1089 299 1179 233 1226 163 C 1172 277 1040 372 894 453 C 631 597 349 724 78 762 Z"/>
+          <path id="sw_y_login" fill="#FFC420" fill-rule="evenodd" transform="translate(0 25) scale(0.88 0.88)" d="M 432 742 C 624 632 826 514 1005 394 C 1102 329 1176 266 1212 211 C 1158 328 1080 403 974 482 L 662 709 C 644 724 519 736 432 742 Z"/>
+          <path id="T0_login" fill="#FFFFFF" fill-rule="evenodd" transform="translate(1160.0 340) scale(0.9 0.9)" d="M0 0 H136 V32 H88 V153 H47 V32 H0 Z"/>
+          <path id="H1_login" fill="#FFFFFF" fill-rule="evenodd" transform="translate(1298.6 340) scale(0.9 0.9)" d="M0 0 H42 V60 H103 V0 H145 V153 H103 V94 H42 V153 H0 Z"/>
+          <path id="A2_login" fill="#FFFFFF" fill-rule="evenodd" transform="translate(1443.5 340) scale(0.9 0.9)" d="M0 153 L65 0 H111 L176 153 H130 L116 121 H56 L42 153 Z M67 91 H108 L87 40 Z"/>
+          <path id="N3_login" fill="#FFFFFF" fill-rule="evenodd" transform="translate(1613.6 340) scale(0.9 0.9)" d="M0 153 V0 H37 L107 87 V0 H148 V153 H111 L41 65 V153 Z"/>
+          <path id="H4_login" fill="#FFFFFF" fill-rule="evenodd" transform="translate(1773.8 340) scale(0.9 0.9)" d="M0 0 H42 V60 H103 V0 H145 V153 H103 V94 H42 V153 H0 Z"/>
+          <path id="A5_login" fill="#FFFFFF" fill-rule="evenodd" transform="translate(1966.4 340) scale(0.9 0.9)" d="M0 153 L65 0 H111 L176 153 H130 L116 121 H56 L42 153 Z M67 91 H108 L87 40 Z"/>
+          <path id="N6_login" fill="#FFFFFF" fill-rule="evenodd" transform="translate(2135.6 340) scale(0.9 0.9)" d="M0 153 V0 H37 L107 87 V0 H148 V153 H111 L41 65 V153 Z"/>
+        </svg>
+        <h1 class="login-title-h1">HỆ THỐNG QUẢN LÝ KHO</h1>
+        <div class="login-subtitle">Vui lòng đăng nhập để truy cập hệ thống</div>
+      </div>
+
+      <div id="login-screen-error-msg" class="login-alert-banner d-none">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <span id="login-screen-error-text">Tài khoản hoặc mật khẩu không chính xác!</span>
+      </div>
+
+      <form id="form-screen-login" onsubmit="event.preventDefault(); handleSystemLogin('screen');" autocomplete="off">
+        <div class="login-form-group">
+          <label class="login-form-label" for="screen-login-username">Tên tài khoản</label>
+          <div class="login-input-wrap">
+            <i class="fa-solid fa-user login-input-icon"></i>
+            <input type="text" id="screen-login-username" class="login-field-input" placeholder="Nhập tên tài khoản..." required autocomplete="off" spellcheck="false">
+          </div>
+        </div>
+
+        <div class="login-form-group">
+          <label class="login-form-label" for="screen-login-password">Mật khẩu</label>
+          <div class="login-input-wrap">
+            <i class="fa-solid fa-lock login-input-icon"></i>
+            <input type="password" id="screen-login-password" class="login-field-input" placeholder="Nhập mật khẩu..." required autocomplete="new-password">
+            <button type="button" class="login-eye-btn" onclick="togglePasswordVisibility('screen-login-password', 'login-screen-pwd-icon')" tabindex="-1">
+              <i class="fa-solid fa-eye" id="login-screen-pwd-icon"></i>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" class="login-action-btn" id="btn-submit-screen-login">
+          <i class="fa-solid fa-right-to-bracket"></i> Đăng Nhập Hệ Thống
+        </button>
+      </form>
+
+      <div class="login-footer-info">
+        <div>Công ty TNHH Thương mại và Dịch vụ Tin học Thành An</div>
+        <div style="font-size: 0.7rem; opacity: 0.75; margin-top: 2px;">Bảo mật thông tin nội bộ • Phiên bản 4.0</div>
+      </div>
+    </div>
+  </div>
 
   <!-- ==================================================== -->
   <!-- SIDEBAR BÊN TRÁI ĐẨY LÊN TRÊN CÙNG (100VH TỪ TOP:0)  -->
@@ -1076,20 +1304,20 @@
           <button class="btn-topbar-role dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown" id="roleDropdownBtn" title="Tài khoản đang đăng nhập">
             <i class="fa-solid fa-circle-user text-primary fs-5"></i>
             <div class="d-none d-md-flex flex-column text-start" style="line-height: 1.2;">
-              <span id="currentRoleLabel" class="fw-bold text-dark" style="font-size: 0.85rem;">Khổng Mạnh Cường</span>
-              <span id="currentRoleBadge" class="badge bg-danger-subtle text-danger border border-danger-subtle p-0 px-1" style="font-size: 0.68rem; width: fit-content;">Quản trị viên</span>
+              <span id="currentRoleLabel" class="fw-bold text-dark" style="font-size: 0.85rem;">Chưa đăng nhập</span>
+              <span id="currentRoleBadge" class="badge bg-secondary-subtle text-secondary border border-secondary-subtle p-0 px-1" style="font-size: 0.68rem; width: fit-content;">Khách</span>
             </div>
           </button>
           <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="min-width: 250px;">
             <li class="px-3 py-2 border-bottom bg-light">
               <div class="text-muted" style="font-size: 0.72rem;">ĐANG ĐĂNG NHẬP:</div>
-              <div class="fw-bold text-dark fs-6" id="dropdown-user-name">Khổng Mạnh Cường</div>
-              <div class="text-secondary small mt-0" id="dropdown-user-role"><i class="fa-solid fa-shield-halved me-1 text-primary"></i>Quản trị viên</div>
+              <div class="fw-bold text-dark fs-6" id="dropdown-user-name">Chưa đăng nhập</div>
+              <div class="text-secondary small mt-0" id="dropdown-user-role"><i class="fa-solid fa-user-lock me-1 text-secondary"></i>Vui lòng đăng nhập</div>
             </li>
             <li><a class="dropdown-item py-2 d-flex align-items-center text-primary" href="huong_dan_su_dung.html" target="_blank"><i class="fa-solid fa-book-open-reader me-3 fs-6"></i> <span><b>Hướng dẫn sử dụng</b></span></a></li>
             <li id="topbar-menu-changepass"><a class="dropdown-item py-2 d-flex align-items-center text-dark" href="javascript:void(0)" onclick="openChangePasswordModal()"><i class="fa-solid fa-key me-3 text-warning fs-6"></i> <span><b>Đổi mật khẩu Admin</b></span></a></li>
             <li><hr class="dropdown-divider my-1"></li>
-            <li><a class="dropdown-item py-2 text-danger d-flex align-items-center" href="javascript:void(0)" onclick="openLoginModal()"><i class="fa-solid fa-right-from-bracket me-3 fs-6"></i> <span><b>Đăng xuất / Đổi tài khoản</b></span></a></li>
+            <li><a class="dropdown-item py-2 text-danger d-flex align-items-center" href="javascript:void(0)" onclick="handleSystemLogout()"><i class="fa-solid fa-right-from-bracket me-3 fs-6"></i> <span><b>Đăng xuất</b></span></a></li>
           </ul>
         </div>
 
@@ -4366,31 +4594,25 @@
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" id="login-modal-close-btn"></button>
         </div>
         <div class="modal-body p-4">
-          <form id="form-system-login" onsubmit="event.preventDefault(); handleSystemLogin();">
+          <form id="form-system-login" onsubmit="event.preventDefault(); handleSystemLogin('modal');" autocomplete="off">
             <div class="mb-3">
               <label class="form-label small fw-bold text-secondary mb-1">Tên đăng nhập / Tài khoản (*)</label>
               <div class="input-group">
                 <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-user"></i></span>
-                <input type="text" id="login-username" class="form-control" placeholder="admin hoặc minhquan..." required autocomplete="username">
+                <input type="text" id="modal-login-username" class="form-control" placeholder="Nhập tên tài khoản..." required autocomplete="off" spellcheck="false">
               </div>
             </div>
             <div class="mb-3">
               <label class="form-label small fw-bold text-secondary mb-1">Mật khẩu (*)</label>
               <div class="input-group">
                 <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-lock"></i></span>
-                <input type="password" id="login-password" class="form-control" placeholder="Nhập mật khẩu..." required autocomplete="current-password">
-                <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('login-password', 'login-pwd-icon')">
-                  <i class="fa-solid fa-eye" id="login-pwd-icon"></i>
+                <input type="password" id="modal-login-password" class="form-control" placeholder="Nhập mật khẩu..." required autocomplete="new-password">
+                <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('modal-login-password', 'modal-login-pwd-icon')">
+                  <i class="fa-solid fa-eye" id="modal-login-pwd-icon"></i>
                 </button>
               </div>
             </div>
             <div id="login-error-msg" class="alert alert-danger small py-2 d-none"></div>
-
-            <div class="p-2 mb-3 bg-light rounded border text-muted small" style="font-size: 0.75rem;">
-              <div class="fw-semibold text-dark mb-1"><i class="fa-solid fa-circle-info text-primary me-1"></i>Tài khoản thao tác:</div>
-              <div>• <b>admin</b>: Khổng Mạnh Cường (Quản trị viên)</div>
-              <div>• <b>minhquan</b>: Khổng Minh Quân (Thủ kho)</div>
-            </div>
 
             <button type="submit" class="btn btn-primary w-100 py-2 fw-bold" id="btn-submit-login">
               <i class="fa-solid fa-right-to-bracket me-1"></i> Đăng Nhập
@@ -5766,14 +5988,14 @@
   ];
   let USERS_DB = JSON.parse(JSON.stringify(INITIAL_USERS));
 
-  // Tài khoản đăng nhập
-  let CURRENT_ROLE = 'ADMIN';
-  let CURRENT_USER_NAME = 'Khổng Mạnh Cường';
+  // Tài khoản đăng nhập (mặc định chưa đăng nhập / Khách)
+  let CURRENT_ROLE = 'GUEST';
+  let CURRENT_USER_NAME = '';
   try {
-    if (typeof localStorage !== 'undefined') {
-      const savedUser = localStorage.getItem('THANH_AN_LOGGED_USER');
-      if (savedUser) {
-        const parsed = JSON.parse(savedUser);
+    if (typeof sessionStorage !== 'undefined') {
+      const savedSession = sessionStorage.getItem('THANH_AN_LOGGED_SESSION');
+      if (savedSession) {
+        const parsed = JSON.parse(savedSession);
         if (parsed.fullName) CURRENT_USER_NAME = parsed.fullName;
         if (parsed.role) CURRENT_ROLE = parsed.role;
       }
@@ -12142,6 +12364,18 @@
     const ddRole = document.getElementById('dropdown-user-role');
     const passMenu = document.getElementById('topbar-menu-changepass');
 
+    if (!CURRENT_USER_NAME || CURRENT_ROLE === 'GUEST') {
+      if (lbl) lbl.textContent = 'Chưa đăng nhập';
+      if (badge) {
+        badge.textContent = 'Khách';
+        badge.className = 'badge bg-secondary-subtle text-secondary border border-secondary-subtle p-0 px-1';
+      }
+      if (ddName) ddName.textContent = 'Chưa đăng nhập';
+      if (ddRole) ddRole.innerHTML = '<i class="fa-solid fa-user-lock me-1 text-secondary"></i>Vui lòng đăng nhập';
+      if (passMenu) passMenu.style.display = 'none';
+      return;
+    }
+
     const roleNameMap = {
       'ADMIN': 'Quản trị viên',
       'QUẢN LÝ': 'Quản lý kho',
@@ -12172,10 +12406,100 @@
     updateUIPermissions();
   }
 
+  // Kiểm tra phiên đăng nhập khi khởi động trang web
+  function checkAuthOnStartup() {
+    let hasSession = false;
+    try {
+      if (typeof sessionStorage !== 'undefined') {
+        const savedSession = sessionStorage.getItem('THANH_AN_LOGGED_SESSION');
+        if (savedSession) {
+          const parsed = JSON.parse(savedSession);
+          if (parsed && parsed.username && parsed.role && parsed.role !== 'GUEST') {
+            CURRENT_ROLE = parsed.role;
+            CURRENT_USER_NAME = parsed.fullName || parsed.username;
+            hasSession = true;
+          }
+        }
+      }
+    } catch(e) {}
+
+    const screenOverlay = document.getElementById('app-login-screen');
+    if (hasSession) {
+      if (screenOverlay) {
+        screenOverlay.classList.add('d-none-fade');
+        setTimeout(() => { screenOverlay.style.display = 'none'; }, 300);
+      }
+      updateUserTopBarDisplay();
+      updateUIPermissions();
+    } else {
+      // Chưa đăng nhập -> Hiển thị màn hình đăng nhập khóa toàn bộ hệ thống
+      CURRENT_ROLE = 'GUEST';
+      CURRENT_USER_NAME = '';
+      if (screenOverlay) {
+        screenOverlay.style.display = 'flex';
+        screenOverlay.classList.remove('d-none-fade');
+      }
+      updateUserTopBarDisplay();
+      updateUIPermissions();
+      const uField = document.getElementById('screen-login-username');
+      if (uField) setTimeout(() => uField.focus(), 300);
+    }
+  }
+
+  // Đăng xuất khỏi hệ thống
+  function handleSystemLogout() {
+    try {
+      if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.removeItem('THANH_AN_LOGGED_SESSION');
+      }
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem('THANH_AN_LOGGED_USER');
+      }
+    } catch(e) {}
+
+    const oldUser = CURRENT_USER_NAME || 'Người dùng';
+    CURRENT_ROLE = 'GUEST';
+    CURRENT_USER_NAME = '';
+    if (typeof window !== 'undefined') {
+      window.CURRENT_ROLE = 'GUEST';
+      window.CURRENT_USER_NAME = '';
+    }
+
+    updateUserTopBarDisplay();
+    updateUIPermissions();
+
+    const screenOverlay = document.getElementById('app-login-screen');
+    if (screenOverlay) {
+      screenOverlay.style.display = 'flex';
+      setTimeout(() => screenOverlay.classList.remove('d-none-fade'), 10);
+      const uInput = document.getElementById('screen-login-username');
+      const pInput = document.getElementById('screen-login-password');
+      const errBox = document.getElementById('login-screen-error-msg');
+      if (uInput) uInput.value = '';
+      if (pInput) pInput.value = '';
+      if (errBox) errBox.classList.add('d-none');
+      if (uInput) uInput.focus();
+    }
+
+    if (typeof recordAuditLog === 'function') {
+      recordAuditLog('ĐĂNG XUẤT', oldUser, '', 'GUEST', `${oldUser} đã đăng xuất khỏi hệ thống`);
+    }
+
+    if (typeof Swal !== 'undefined') {
+      Swal.fire({
+        icon: 'info',
+        title: 'Đã đăng xuất',
+        text: 'Bạn đã đăng xuất an toàn khỏi hệ thống Kho Thành An.',
+        timer: 1500,
+        showConfirmButton: false
+      });
+    }
+  }
+
   // Mở modal đăng nhập chuyển tài khoản
   function openLoginModal() {
-    const uInput = document.getElementById('login-username');
-    const pInput = document.getElementById('login-password');
+    const uInput = document.getElementById('modal-login-username');
+    const pInput = document.getElementById('modal-login-password');
     const errDiv = document.getElementById('login-error-msg');
     if (uInput) uInput.value = '';
     if (pInput) pInput.value = '';
@@ -12185,17 +12509,28 @@
     if (modalEl && typeof bootstrap !== 'undefined') {
       const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
       modal.show();
+      setTimeout(() => { if (uInput) uInput.focus(); }, 300);
     }
   }
 
-  // Xử lý đăng nhập tài khoản thực tế
-  function handleSystemLogin() {
-    const u = (document.getElementById('login-username')?.value || '').trim().toLowerCase();
-    const p = (document.getElementById('login-password')?.value || '').trim();
-    const errDiv = document.getElementById('login-error-msg');
+  // Xử lý đăng nhập tài khoản thực tế (từ màn hình khóa hoặc modal)
+  function handleSystemLogin(source) {
+    const isScreen = (source !== 'modal');
+    const uId = isScreen ? 'screen-login-username' : 'modal-login-username';
+    const pId = isScreen ? 'screen-login-password' : 'modal-login-password';
+    const errDiv = isScreen ? document.getElementById('login-screen-error-msg') : document.getElementById('login-error-msg');
+    const errText = isScreen ? document.getElementById('login-screen-error-text') : errDiv;
+
+    const u = (document.getElementById(uId)?.value || '').trim().toLowerCase();
+    const p = (document.getElementById(pId)?.value || '').trim();
+
+    const showErrMsg = (msg) => {
+      if (errText) errText.textContent = msg;
+      if (errDiv) errDiv.classList.remove('d-none');
+    };
 
     if (!u || !p) {
-      if (errDiv) { errDiv.textContent = 'Vui lòng nhập đầy đủ tài khoản và mật khẩu!'; errDiv.classList.remove('d-none'); }
+      showErrMsg('Vui lòng nhập đầy đủ tài khoản và mật khẩu!');
       return;
     }
 
@@ -12210,7 +12545,7 @@
 
     if (matched) {
       if (p !== '123456' && p !== 'admin' && matched.password && matched.password !== '***' && matched.password !== p) {
-        if (errDiv) { errDiv.textContent = 'Mật khẩu không chính xác!'; errDiv.classList.remove('d-none'); }
+        showErrMsg('Tài khoản hoặc mật khẩu không chính xác!');
         return;
       }
 
@@ -12218,11 +12553,14 @@
       CURRENT_USER_NAME = matched.fullName || matched.name || u;
 
       try {
-        localStorage.setItem('THANH_AN_LOGGED_USER', JSON.stringify({
+        const sessionPayload = JSON.stringify({
           username: matched.username,
           fullName: CURRENT_USER_NAME,
-          role: CURRENT_ROLE
-        }));
+          role: CURRENT_ROLE,
+          timestamp: new Date().toISOString()
+        });
+        sessionStorage.setItem('THANH_AN_LOGGED_SESSION', sessionPayload);
+        localStorage.setItem('THANH_AN_LOGGED_USER', sessionPayload);
       } catch(e) {}
 
       if (typeof window !== 'undefined') {
@@ -12233,29 +12571,39 @@
       updateUserTopBarDisplay();
       updateUIPermissions();
 
-      if (typeof recordAuditLog === 'function') {
-        recordAuditLog('ĐĂNG NHẬP', `Tài khoản ${u}`, '', CURRENT_ROLE, `${CURRENT_USER_NAME} đăng nhập hệ thống`);
+      // Ẩn màn hình đăng nhập nếu đang hiện
+      const screenOverlay = document.getElementById('app-login-screen');
+      if (screenOverlay) {
+        screenOverlay.classList.add('d-none-fade');
+        setTimeout(() => { screenOverlay.style.display = 'none'; }, 300);
       }
 
+      // Đóng modal đăng nhập nếu có
       const modalEl = document.getElementById('loginModal');
       if (modalEl && typeof bootstrap !== 'undefined') {
         const modal = bootstrap.Modal.getInstance(modalEl);
         if (modal) modal.hide();
       }
 
+      if (typeof recordAuditLog === 'function') {
+        recordAuditLog('ĐĂNG NHẬP', `Tài khoản ${u}`, '', CURRENT_ROLE, `${CURRENT_USER_NAME} đăng nhập hệ thống`);
+      }
+
       if (typeof markModulesDirty === 'function') {
         markModulesDirty(['Dashboard', 'TonKho', 'LichSu']);
       }
 
-      Swal.fire({
-        icon: 'success',
-        title: 'Đăng nhập thành công!',
-        html: `Xin chào <b>${CURRENT_USER_NAME}</b><br><span class="badge bg-primary mt-1">${CURRENT_ROLE}</span>`,
-        timer: 1600,
-        showConfirmButton: false
-      });
+      if (typeof Swal !== 'undefined') {
+        Swal.fire({
+          icon: 'success',
+          title: 'Đăng nhập thành công!',
+          html: `Xin chào <b>${CURRENT_USER_NAME}</b><br><span class="badge bg-primary mt-1">${CURRENT_ROLE}</span>`,
+          timer: 1600,
+          showConfirmButton: false
+        });
+      }
     } else {
-      if (errDiv) { errDiv.textContent = 'Tài khoản không tồn tại trong hệ thống!'; errDiv.classList.remove('d-none'); }
+      showErrMsg('Tài khoản hoặc mật khẩu không chính xác!');
     }
   }
 
@@ -12481,37 +12829,9 @@
   }
 
   // Đăng xuất hệ thống an toàn
-  // Đăng xuất hệ thống an toàn và mở form đăng nhập
+  // Đăng xuất hệ thống an toàn và trở về màn hình đăng nhập
   function logoutSystem() {
-    if (typeof Swal !== 'undefined' && Swal.fire) {
-      Swal.fire({
-        title: 'Đăng xuất tài khoản?',
-        html: `Bạn đang đăng xuất khỏi tài khoản <b>${CURRENT_USER_NAME}</b>. Bạn có muốn tiếp tục không?`,
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonColor: '#d33',
-        cancelButtonColor: '#6c757d',
-        confirmButtonText: '<i class="fa-solid fa-right-from-bracket me-1"></i> Đăng xuất',
-        cancelButtonText: 'Hủy'
-      }).then((result) => {
-        if (result.isConfirmed) {
-          if (typeof recordAuditLog === 'function') {
-            recordAuditLog('ĐĂNG XUẤT', 'Tài khoản', CURRENT_USER_NAME, '', `${CURRENT_USER_NAME} đã đăng xuất`);
-          }
-          try {
-            localStorage.removeItem('THANH_AN_LOGGED_USER');
-          } catch(e) {}
-          openLoginModal();
-        }
-      });
-    } else {
-      if (confirm(`Bạn có chắc muốn đăng xuất khỏi tài khoản [${CURRENT_USER_NAME}] không?`)) {
-        try {
-          localStorage.removeItem('THANH_AN_LOGGED_USER');
-        } catch(e) {}
-        openLoginModal();
-      }
-    }
+    handleSystemLogout();
   }
 
   // Phím tắt Spotlight Search Ctrl+K / Cmd+K
@@ -13155,7 +13475,9 @@
     window.updateUserTopBarDisplay = updateUserTopBarDisplay;
     window.openLoginModal = openLoginModal;
     window.handleSystemLogin = handleSystemLogin;
+    window.handleSystemLogout = handleSystemLogout;
     window.logoutSystem = logoutSystem;
+    window.checkAuthOnStartup = checkAuthOnStartup;
   }
 
   /* ==================================================== */
@@ -22668,8 +22990,12 @@
 
   // KHỞI ĐỘNG HỆ THỐNG KHI TẢI TRANG
   window.addEventListener('DOMContentLoaded', () => {
-    if (typeof updateUserTopBarDisplay === 'function') updateUserTopBarDisplay();
-    if (typeof updateUIPermissions === 'function') updateUIPermissions();
+    if (typeof checkAuthOnStartup === 'function') {
+      checkAuthOnStartup();
+    } else {
+      if (typeof updateUserTopBarDisplay === 'function') updateUserTopBarDisplay();
+      if (typeof updateUIPermissions === 'function') updateUIPermissions();
+    }
     switchTab('Dashboard');
   });
 </script>

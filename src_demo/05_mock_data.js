@@ -1276,14 +1276,14 @@
   ];
   let USERS_DB = JSON.parse(JSON.stringify(INITIAL_USERS));
 
-  // Tài khoản đăng nhập
-  let CURRENT_ROLE = 'ADMIN';
-  let CURRENT_USER_NAME = 'Khổng Mạnh Cường';
+  // Tài khoản đăng nhập (mặc định chưa đăng nhập / Khách)
+  let CURRENT_ROLE = 'GUEST';
+  let CURRENT_USER_NAME = '';
   try {
-    if (typeof localStorage !== 'undefined') {
-      const savedUser = localStorage.getItem('THANH_AN_LOGGED_USER');
-      if (savedUser) {
-        const parsed = JSON.parse(savedUser);
+    if (typeof sessionStorage !== 'undefined') {
+      const savedSession = sessionStorage.getItem('THANH_AN_LOGGED_SESSION');
+      if (savedSession) {
+        const parsed = JSON.parse(savedSession);
         if (parsed.fullName) CURRENT_USER_NAME = parsed.fullName;
         if (parsed.role) CURRENT_ROLE = parsed.role;
       }

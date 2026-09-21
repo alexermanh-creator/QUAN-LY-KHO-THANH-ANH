@@ -1131,31 +1131,25 @@
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" id="login-modal-close-btn"></button>
         </div>
         <div class="modal-body p-4">
-          <form id="form-system-login" onsubmit="event.preventDefault(); handleSystemLogin();">
+          <form id="form-system-login" onsubmit="event.preventDefault(); handleSystemLogin('modal');" autocomplete="off">
             <div class="mb-3">
               <label class="form-label small fw-bold text-secondary mb-1">Tên đăng nhập / Tài khoản (*)</label>
               <div class="input-group">
                 <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-user"></i></span>
-                <input type="text" id="login-username" class="form-control" placeholder="admin hoặc minhquan..." required autocomplete="username">
+                <input type="text" id="modal-login-username" class="form-control" placeholder="Nhập tên tài khoản..." required autocomplete="off" spellcheck="false">
               </div>
             </div>
             <div class="mb-3">
               <label class="form-label small fw-bold text-secondary mb-1">Mật khẩu (*)</label>
               <div class="input-group">
                 <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-lock"></i></span>
-                <input type="password" id="login-password" class="form-control" placeholder="Nhập mật khẩu..." required autocomplete="current-password">
-                <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('login-password', 'login-pwd-icon')">
-                  <i class="fa-solid fa-eye" id="login-pwd-icon"></i>
+                <input type="password" id="modal-login-password" class="form-control" placeholder="Nhập mật khẩu..." required autocomplete="new-password">
+                <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('modal-login-password', 'modal-login-pwd-icon')">
+                  <i class="fa-solid fa-eye" id="modal-login-pwd-icon"></i>
                 </button>
               </div>
             </div>
             <div id="login-error-msg" class="alert alert-danger small py-2 d-none"></div>
-
-            <div class="p-2 mb-3 bg-light rounded border text-muted small" style="font-size: 0.75rem;">
-              <div class="fw-semibold text-dark mb-1"><i class="fa-solid fa-circle-info text-primary me-1"></i>Tài khoản thao tác:</div>
-              <div>• <b>admin</b>: Khổng Mạnh Cường (Quản trị viên)</div>
-              <div>• <b>minhquan</b>: Khổng Minh Quân (Thủ kho)</div>
-            </div>
 
             <button type="submit" class="btn btn-primary w-100 py-2 fw-bold" id="btn-submit-login">
               <i class="fa-solid fa-right-to-bracket me-1"></i> Đăng Nhập
