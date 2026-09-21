@@ -384,30 +384,48 @@ const standardizedProducts = db['DM_SAN_PHAM'].rows.map(p => {
 });
 
 // =========================================================================
-// 2. CHUẨN HÓA DANH MỤC NHÀ CUNG CẤP (DM_NCC)
+// 2. CHUẨN HÓA DANH MỤC NHÀ CUNG CẤP (DM_NCC) - LÀM SẠCH & GỘP TRÙNG
 // =========================================================================
-const standardizedSuppliers = db['DM_NCC'].rows.map(n => {
+const supplierMap = new Map();
+db['DM_NCC'].rows.forEach(n => {
   const code = (n['Tên viết tắt'] || '').trim();
+  if (!code) return;
   const name = (n['Tên đầy đủ công ty'] || code).trim();
   const phone = cleanPhone(n['Số điện thoại']);
   const address = (n['Địa chỉ / Ghi chú'] || '').trim();
+  const key = code.toLowerCase();
 
-  return {
-    supplierId: code,
-    code: code,
-    tenTat: code,
-    name: name,
-    tenDayDu: name,
-    phone: phone,
-    sdt: phone,
-    email: "",
-    diaChi: address,
-    nguoiLienHe: "",
-    mst: "",
-    active: true,
-    ghiChu: ""
-  };
+  if (!supplierMap.has(key)) {
+    supplierMap.set(key, {
+      supplierId: code,
+      code: code,
+      tenTat: code,
+      name: name,
+      tenDayDu: name,
+      phone: phone,
+      sdt: phone,
+      email: "",
+      diaChi: address,
+      nguoiLienHe: "",
+      mst: "",
+      active: true,
+      ghiChu: ""
+    });
+  } else {
+    // Nếu bản ghi hiện tại có thêm thông tin phone/address thì bổ sung vào bản ghi đã có
+    const existing = supplierMap.get(key);
+    if (!existing.phone && phone) {
+      existing.phone = phone;
+      existing.sdt = phone;
+    }
+    if (!existing.diaChi && address) existing.diaChi = address;
+    if (existing.name === existing.code && name !== code) {
+      existing.name = name;
+      existing.tenDayDu = name;
+    }
+  }
 });
+const standardizedSuppliers = Array.from(supplierMap.values());
 
 // =========================================================================
 // 3. CHUẨN HÓA DANH MỤC KHÁCH HÀNG (DM_KHACH_HANG) - LÀM SẠCH & GỘP TRÙNG

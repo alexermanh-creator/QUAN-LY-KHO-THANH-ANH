@@ -5,10 +5,10 @@
 
 const STANDARDIZED_MIGRATION_PAYLOAD = {
   "metadata": {
-    "generatedAt": "2026-09-21T14:23:01.971Z",
+    "generatedAt": "2026-09-21T14:37:56.490Z",
     "sourceFile": "THÀNH AN ERP - DATABASE (1).xlsx",
     "totalProducts": 33,
-    "totalSuppliers": 18,
+    "totalSuppliers": 15,
     "totalCustomers": 10,
     "totalSerials": 86,
     "inStockCount": 60,
@@ -761,36 +761,6 @@ const STANDARDIZED_MIGRATION_PAYLOAD = {
       "ghiChu": ""
     },
     {
-      "supplierId": "Trí Việt",
-      "code": "Trí Việt",
-      "tenTat": "Trí Việt",
-      "name": "Công ty Trí Việt",
-      "tenDayDu": "Công ty Trí Việt",
-      "phone": "",
-      "sdt": "",
-      "email": "",
-      "diaChi": "",
-      "nguoiLienHe": "",
-      "mst": "",
-      "active": true,
-      "ghiChu": ""
-    },
-    {
-      "supplierId": "Song Hùng",
-      "code": "Song Hùng",
-      "tenTat": "Song Hùng",
-      "name": "Công Ty Song Hùng",
-      "tenDayDu": "Công Ty Song Hùng",
-      "phone": "",
-      "sdt": "",
-      "email": "",
-      "diaChi": "",
-      "nguoiLienHe": "",
-      "mst": "",
-      "active": true,
-      "ghiChu": ""
-    },
-    {
       "supplierId": "Song Hùng",
       "code": "Song Hùng",
       "tenTat": "Song Hùng",
@@ -826,21 +796,6 @@ const STANDARDIZED_MIGRATION_PAYLOAD = {
       "tenTat": "EASY",
       "name": "Công ty EASY",
       "tenDayDu": "Công ty EASY",
-      "phone": "",
-      "sdt": "",
-      "email": "",
-      "diaChi": "",
-      "nguoiLienHe": "",
-      "mst": "",
-      "active": true,
-      "ghiChu": ""
-    },
-    {
-      "supplierId": "Hưng Phúc",
-      "code": "Hưng Phúc",
-      "tenTat": "Hưng Phúc",
-      "name": "Công Ty Hưng  Phúc",
-      "tenDayDu": "Công Ty Hưng  Phúc",
       "phone": "",
       "sdt": "",
       "email": "",
