@@ -269,6 +269,9 @@
     .smart-suggest-wrap {
       position: relative;
     }
+    .smart-suggest-wrap:focus-within {
+      z-index: 99999 !important;
+    }
     .smart-suggest-dropdown {
       position: absolute;
       top: calc(100% + 3px);
@@ -277,10 +280,10 @@
       background: #ffffff;
       border: 1px solid #cbd5e1;
       border-radius: 8px;
-      box-shadow: 0 12px 28px -4px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.05);
+      box-shadow: 0 12px 28px -4px rgba(0,0,0,0.22), 0 4px 12px rgba(0,0,0,0.1);
       max-height: 280px;
       overflow-y: auto;
-      z-index: 1060;
+      z-index: 100000 !important;
       display: none;
     }
     .suggest-item {
@@ -603,7 +606,7 @@
       border: 1px solid #e2e8f0;
       box-shadow: 0 1px 4px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.02);
       margin-bottom: 12px;
-      overflow: hidden;
+      overflow: visible;
     }
     .app-card-header {
       padding: 8px 14px;
@@ -774,7 +777,7 @@
       border: 1px solid var(--card-border);
       box-shadow: 0 1px 2px rgba(0,0,0,0.03);
       margin-bottom: 8px;
-      overflow: hidden;
+      overflow: visible;
     }
     .app-card-header {
       padding: 6px 12px;
@@ -2101,27 +2104,56 @@
                 <label class="form-label small fw-semibold text-muted mb-1">Ngày Xuất Kho</label>
                 <input type="date" id="xuat-ngay" class="form-control form-control-sm">
               </div>
-              <div class="col-12">
+              <div class="col-12 col-md-6">
                 <label class="form-label small fw-semibold text-muted mb-1">Địa Chỉ Giao Hàng</label>
                 <input type="text" id="xuat-diachi" class="form-control form-control-sm" placeholder="Địa chỉ giao nhận máy...">
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label small fw-semibold text-muted mb-1">
+                  <i class="fa-solid fa-file-invoice text-primary me-1"></i> Yêu Cầu Giấy Tờ / Chứng Từ Kèm Theo
+                </label>
+                <div class="d-flex flex-wrap align-items-center gap-2 py-1 px-2 border rounded bg-light bg-opacity-50">
+                  <div class="form-check form-check-inline mb-0">
+                    <input class="form-check-input" type="checkbox" id="xuat-giayto-vat" value="Hóa đơn VAT">
+                    <label class="form-check-label small text-dark" for="xuat-giayto-vat">Hóa đơn VAT</label>
+                  </div>
+                  <div class="form-check form-check-inline mb-0">
+                    <input class="form-check-input" type="checkbox" id="xuat-giayto-bbbg" value="Biên bản bàn giao">
+                    <label class="form-check-label small text-dark" for="xuat-giayto-bbbg">Biên bản bàn giao</label>
+                  </div>
+                  <div class="form-check form-check-inline mb-0">
+                    <input class="form-check-input" type="checkbox" id="xuat-giayto-phieubh" value="Phiếu BH">
+                    <label class="form-check-label small text-dark" for="xuat-giayto-phieubh">Phiếu BH</label>
+                  </div>
+                  <div class="form-check form-check-inline mb-0">
+                    <input class="form-check-input" type="checkbox" id="xuat-giayto-cocq" value="CO/CQ">
+                    <label class="form-check-label small text-dark" for="xuat-giayto-cocq">CO/CQ</label>
+                  </div>
+                </div>
+              </div>
+              <div class="col-12">
+                <label class="form-label small fw-semibold text-muted mb-1">
+                  <i class="fa-solid fa-note-sticky text-warning me-1"></i> Ghi Chú Yêu Cầu Giấy Tờ / Lưu Ý Đơn Hàng
+                </label>
+                <input type="text" id="xuat-ghichu-giayto" class="form-control form-control-sm" placeholder="VD: Khách yêu cầu xuất hóa đơn VAT theo thông tin Cty, giao 3 bản BBBG ký đóng dấu...">
               </div>
             </div>
           </div>
         </div>
 
-        <div class="app-card mb-3">
+        <div class="app-card mb-3" style="overflow: visible;">
           <div class="app-card-header bg-light">
             <h6 class="app-card-title mb-0"><i class="fa-solid fa-barcode text-primary"></i> Quét Hoặc Chọn Serial Cần Xuất</h6>
           </div>
-          <div class="app-card-body p-3">
+          <div class="app-card-body p-3" style="overflow: visible;">
             <div class="row g-2 align-items-center">
               <div class="col-12 col-md-6">
-                <div class="smart-suggest-wrap">
+                <div class="smart-suggest-wrap" style="position: relative; z-index: 1055;">
                   <div class="input-group">
                     <input type="text" id="xuat-serial-input" class="form-control" 
                            placeholder="Quét mã vạch / gõ vài ký tự Serial, Model, Tên để chọn xuất..." 
                            autocomplete="off" spellcheck="false"
-                           oninput="handleSuggestSerialXuat(this.value)"
+                           oninput="handleSuggestSerialXuat(this.value)" 
                            onkeydown="handleSerialSuggestKeydown(event)">
                     <button class="btn btn-primary" onclick="addSerialToXuatDraft(document.getElementById('xuat-serial-input').value)">
                       <i class="fa-solid fa-plus"></i> Thêm
@@ -2130,7 +2162,7 @@
                       <i class="fa-solid fa-camera"></i> Scan
                     </button>
                   </div>
-                  <div id="xuat-serial-suggest" class="smart-suggest-dropdown" style="max-height: 320px;"></div>
+                  <div id="xuat-serial-suggest" class="smart-suggest-dropdown" style="max-height: 320px; z-index: 99999;"></div>
                 </div>
               </div>
               <div class="col-12 col-md-6 text-md-end">
@@ -2161,11 +2193,12 @@
                   <th>Kho Xuất</th>
                   <th>Gói Bảo Hành Riêng (* C1)</th>
                   <th>Hạn Bảo Hành (Tự tính)</th>
+                  <th>Ghi Chú Giấy Tờ / Note Riêng</th>
                   <th class="text-end">Xóa</th>
                 </tr>
               </thead>
               <tbody id="draft-xuat-table-body">
-                <tr><td colspan="8" class="text-center text-muted py-3">Chưa có thiết bị nào được chọn để xuất</td></tr>
+                <tr><td colspan="9" class="text-center text-muted py-3">Chưa có thiết bị nào được chọn để xuất</td></tr>
               </tbody>
             </table>
           </div>
@@ -2202,55 +2235,34 @@
         <div class="app-card mb-3">
           <div class="app-card-body p-3">
             <div class="row g-2">
-              <div class="col-12 col-md-8">
-                <div class="input-group">
+              <div class="col-12">
+                <div class="input-group input-group-lg">
                   <input type="text" id="serial-360-search-input" class="form-control" 
                          placeholder="Nhập Serial hãng hoặc Mã nội bộ Thành An..." 
                          onkeydown="if(event.key==='Enter') lookupSerial360(this.value)">
-                  <button class="btn btn-primary" onclick="lookupSerial360(document.getElementById('serial-360-search-input').value)">
-                    <i class="fa-solid fa-magnifying-glass"></i> Tra cứu
+                  <button class="btn btn-primary px-4" onclick="lookupSerial360(document.getElementById('serial-360-search-input').value)">
+                    <i class="fa-solid fa-magnifying-glass me-1"></i> Tra cứu
                   </button>
-                  <button class="btn btn-cam" onclick="openScannerModal('SERIAL_360')">
-                    <i class="fa-solid fa-camera"></i> Scan
+                  <button class="btn btn-cam px-3" onclick="openScannerModal('SERIAL_360')">
+                    <i class="fa-solid fa-camera me-1"></i> Scan
                   </button>
                 </div>
-              </div>
-              <div class="col-12 col-md-4 d-flex align-items-center gap-1 flex-wrap">
-                <span class="small text-muted me-1">Gợi ý tra nhanh:</span>
-                <button class="btn btn-sm btn-outline-primary" onclick="lookupSerial360('U6QP281903042')" title="CPU i3 đã xuất cho Chị Phương">U6QP (Đã bán)</button>
-                <button class="btn btn-sm btn-outline-primary" onclick="lookupSerial360('TKSMC25C8X01266')" title="SSD CUSU đã xuất cho Cty X.E">TKSMC (Đã bán)</button>
-                <button class="btn btn-sm btn-outline-success" onclick="lookupSerial360('CNB1T5GC6X')" title="HP 108a đang còn tồn kho">CNB1 (Còn tồn)</button>
-                <button class="btn btn-sm btn-outline-success" onclick="lookupSerial360('NTMA681531')" title="Canon 6030w đang còn tồn kho">NTMA (Còn tồn)</button>
               </div>
             </div>
           </div>
         </div>
 
         <div id="serial-360-profile-container">
-          <div class="app-card p-4 text-center">
+          <div class="app-card p-5 text-center">
             <div class="mb-3">
               <span class="d-inline-flex p-3 rounded-circle bg-primary bg-opacity-10 text-primary">
                 <i class="fa-solid fa-fingerprint fs-1"></i>
               </span>
             </div>
             <h5 class="fw-bold text-dark">Tra Cứu Hồ Sơ Thiết Bị Toàn Diện (Serial 360°)</h5>
-            <p class="text-muted small mx-auto" style="max-width: 580px;">
-              Nhập Serial in trên tem máy hoặc quét mã vạch để truy vết toàn bộ vòng đời: từ lúc nhập kho, nhà cung cấp, xuất bán cho ai, hạn bảo hành và lịch sử sửa chữa. Mọi trường thông tin đều có thể click để liên kết đến đúng trang nghiệp vụ.
+            <p class="text-muted small mx-auto" style="max-width: 560px;">
+              Nhập Serial in trên tem máy hoặc bấm Quét mã để truy vết toàn bộ vòng đời thiết bị: từ lúc nhập kho, nhà cung cấp, xuất bán cho ai, thời hạn bảo hành và lịch sử xử lý kỹ thuật.
             </p>
-            <div class="d-flex justify-content-center flex-wrap gap-2 mt-3">
-              <button class="btn btn-sm btn-outline-primary" onclick="lookupSerial360('U6QP281903042')">
-                <i class="fa-solid fa-microchip me-1"></i> U6QP281903042 (CPU Đã bán)
-              </button>
-              <button class="btn btn-sm btn-outline-primary" onclick="lookupSerial360('TKSMC25C8X01266')">
-                <i class="fa-solid fa-hard-drive me-1"></i> TKSMC25C8X (SSD Đã bán)
-              </button>
-              <button class="btn btn-sm btn-outline-success" onclick="lookupSerial360('CNB1T5GC6X')">
-                <i class="fa-solid fa-print me-1"></i> CNB1T5GC6X (HP 108a Còn tồn)
-              </button>
-              <button class="btn btn-sm btn-outline-success" onclick="lookupSerial360('NTMA681531')">
-                <i class="fa-solid fa-print me-1"></i> NTMA681531 (Canon Còn tồn)
-              </button>
-            </div>
           </div>
         </div>
       </div>
@@ -15810,13 +15822,21 @@
     });
   }
 
+  function updateXuatItemNote(itemId, note) {
+    const item = CURRENT_DRAFT_XUAT_ITEMS.find(i => i.id === itemId);
+    if (item) {
+      item.ghiChu = (note || '').trim();
+    }
+  }
+  if (typeof window !== 'undefined') window.updateXuatItemNote = updateXuatItemNote;
+
   function renderDraftXuatTable() {
     const tbody = document.getElementById('draft-xuat-table-body');
     const badge = document.getElementById('draft-xuat-total-badge');
     badge.textContent = `${CURRENT_DRAFT_XUAT_ITEMS.length} máy`;
 
     if (CURRENT_DRAFT_XUAT_ITEMS.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-3">Chưa có thiết bị nào được chọn để xuất</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-3">Chưa có thiết bị nào được chọn để xuất</td></tr>';
       return;
     }
 
@@ -15845,6 +15865,10 @@
               ${item.ngayHetHanBh}
             </span>
           </td>
+          <td data-label="Ghi Chú Giấy Tờ">
+            <input type="text" class="form-control form-control-sm" placeholder="Note giấy tờ riêng..." 
+                   value="${item.ghiChu || ''}" onchange="updateXuatItemNote('${item.id}', this.value)">
+          </td>
           <td data-label="Xóa" class="text-end">
             <button class="btn btn-sm btn-outline-danger" onclick="removeDraftXuatItem('${item.id}')">
               <i class="fa-solid fa-xmark"></i>
@@ -15867,6 +15891,13 @@
     const diachi = document.getElementById('xuat-diachi').value.trim();
     const kho = (document.getElementById('xuat-kho')?.value) || (CURRENT_DRAFT_XUAT_ITEMS[0]?.kho) || 'Kho Chính';
     const ngay = formatDateDisplay(document.getElementById('xuat-ngay').value) || formatDateDisplay(getLocalDateStr());
+
+    const giayToArr = [];
+    if (document.getElementById('xuat-giayto-vat')?.checked) giayToArr.push('Hóa đơn VAT');
+    if (document.getElementById('xuat-giayto-bbbg')?.checked) giayToArr.push('Biên bản bàn giao');
+    if (document.getElementById('xuat-giayto-phieubh')?.checked) giayToArr.push('Phiếu BH');
+    if (document.getElementById('xuat-giayto-cocq')?.checked) giayToArr.push('CO/CQ');
+    const ghiChuGiayTo = document.getElementById('xuat-ghichu-giayto')?.value.trim() || '';
 
     if (!khach) {
       Swal.fire('Thiếu khách hàng', 'Vui lòng chọn hoặc nhập tên Khách hàng nhận máy!', 'warning');
@@ -15901,6 +15932,7 @@
             ${isStillInStock 
               ? '<span class="badge bg-success"><i class="fa-solid fa-check"></i> Đủ điều kiện xuất</span>' 
               : '<span class="badge bg-danger"><i class="fa-solid fa-xmark"></i> Không khả dụng</span>'}
+            ${it.ghiChu ? `<div class="small text-muted fst-italic">Note: ${it.ghiChu}</div>` : ''}
           </td>
         </tr>
       `;
@@ -15910,11 +15942,19 @@
     const alertBox = document.getElementById('prev-xuat-alert-box');
     const confirmBtn = document.getElementById('btn-final-confirm-xuat');
 
+    const giayToHtml = (giayToArr.length > 0 || ghiChuGiayTo) ? `
+      <div class="p-2 mb-2 rounded bg-warning bg-opacity-10 border border-warning border-opacity-50 small">
+        <strong class="text-warning-emphasis"><i class="fa-solid fa-file-invoice me-1"></i> Yêu cầu giấy tờ kèm theo:</strong>
+        ${giayToArr.map(g => `<span class="badge bg-warning text-dark border ms-1">${g}</span>`).join('')}
+        ${ghiChuGiayTo ? `<div class="mt-1 text-dark"><strong>Ghi chú:</strong> ${ghiChuGiayTo}</div>` : ''}
+      </div>
+    ` : '';
+
     if (hasInvalid) {
-      alertBox.innerHTML = '<div class="alert alert-danger p-2 small mb-0"><i class="fa-solid fa-triangle-exclamation me-1"></i> Có thiết bị không khả dụng trong kho. Vui lòng kiểm tra lại trước khi xuất!</div>';
+      alertBox.innerHTML = giayToHtml + '<div class="alert alert-danger p-2 small mb-0"><i class="fa-solid fa-triangle-exclamation me-1"></i> Có thiết bị không khả dụng trong kho. Vui lòng kiểm tra lại trước khi xuất!</div>';
       confirmBtn.disabled = true;
     } else {
-      alertBox.innerHTML = '<div class="alert alert-success p-2 small mb-0"><i class="fa-solid fa-circle-check me-1"></i> Tất cả thiết bị đều hợp lệ và sẵn sàng xuất kho chính thức.</div>';
+      alertBox.innerHTML = giayToHtml + '<div class="alert alert-success p-2 small mb-0"><i class="fa-solid fa-circle-check me-1"></i> Tất cả thiết bị đều hợp lệ và sẵn sàng xuất kho chính thức.</div>';
       confirmBtn.disabled = false;
     }
 
@@ -15931,6 +15971,13 @@
     const maPhieu = generateVoucherCode('PX');
     const nowStr = `${ngay} ${new Date().toLocaleTimeString('vi-VN')}`;
 
+    const giayToArr = [];
+    if (document.getElementById('xuat-giayto-vat')?.checked) giayToArr.push('Hóa đơn VAT');
+    if (document.getElementById('xuat-giayto-bbbg')?.checked) giayToArr.push('Biên bản bàn giao');
+    if (document.getElementById('xuat-giayto-phieubh')?.checked) giayToArr.push('Phiếu BH');
+    if (document.getElementById('xuat-giayto-cocq')?.checked) giayToArr.push('CO/CQ');
+    const ghiChuGiayTo = document.getElementById('xuat-ghichu-giayto')?.value.trim() || '';
+
     const voucherRecord = {
       maPhieu: maPhieu,
       ngay: ngay,
@@ -15941,19 +15988,22 @@
       sdtKhach: sdt,
       diaChi: diachi,
       kho: kho,
+      giayTo: giayToArr.join(', '),
+      ghiChuGiayTo: ghiChuGiayTo,
       status: 'CONFIRMED',
       nguoiTao: CURRENT_USER_NAME,
-      ghiChu: 'Xuất bán khách hàng',
+      ghiChu: ghiChuGiayTo ? `Xuất bán (${ghiChuGiayTo})` : 'Xuất bán khách hàng',
       customFields: {},
       items: CURRENT_DRAFT_XUAT_ITEMS.map(i => ({
         model: i.model,
         serial: i.serial,
         internalId: i.internalId,
         soThangBh: i.soThangBh,
-        ngayHetHanBh: i.ngayHetHanBh
+        ngayHetHanBh: i.ngayHetHanBh,
+        ghiChu: i.ghiChu || ''
       })),
       history: [
-        { time: nowStr, user: CURRENT_USER_NAME, action: 'TẠO PHIẾU', note: `Khởi tạo phiếu xuất CONFIRMED cho ${khach}` }
+        { time: nowStr, user: CURRENT_USER_NAME, action: 'TẠO PHIẾU', note: `Khởi tạo phiếu xuất CONFIRMED cho ${khach}. Giấy tờ: ${giayToArr.join(', ') || 'Không'}` }
       ]
     };
 
@@ -15969,16 +16019,17 @@
         serialItem.sdtKhach = sdt;
         serialItem.soThangBh = it.soThangBh;
         serialItem.ngayHetHanBh = it.ngayHetHanBh;
+        if (it.ghiChu) serialItem.ghiChu = it.ghiChu;
         serialItem.timeline.unshift({
           date: nowStr,
           user: CURRENT_USER_NAME,
           action: 'Xuất kho',
-          note: `Xuất cho khách "${khach}" (SĐT: ${sdt}) theo phiếu ${maPhieu}. Hạn BH: ${it.ngayHetHanBh}`
+          note: `Xuất cho khách "${khach}" (SĐT: ${sdt}) theo phiếu ${maPhieu}. Hạn BH: ${it.ngayHetHanBh}${it.ghiChu ? ` [Ghi chú: ${it.ghiChu}]` : ''}`
         });
       }
     });
 
-    recordAuditLog('XÁC NHẬN XUẤT KHO', `Phiếu ${maPhieu} (${CURRENT_DRAFT_XUAT_ITEMS.length} máy)`, 'DRAFT', 'CONFIRMED', `Xuất bán cho ${khach}`, [], 'Xuất kho', '', maPhieu);
+    recordAuditLog('XÁC NHẬN XUẤT KHO', `Phiếu ${maPhieu} (${CURRENT_DRAFT_XUAT_ITEMS.length} máy)`, 'DRAFT', 'CONFIRMED', `Xuất bán cho ${khach}. Giấy tờ: ${giayToArr.join(', ') || 'Không'}`, [], 'Xuất kho', '', maPhieu);
     if (typeof markModulesDirty === 'function') {
       markModulesDirty(['Dashboard', 'TonKho', 'LichSu', 'Serial360']);
     }
@@ -15990,10 +16041,17 @@
     CURRENT_DRAFT_XUAT_ITEMS = [];
     renderDraftXuatTable();
 
+    // Reset các ô giấy tờ
+    if (document.getElementById('xuat-giayto-vat')) document.getElementById('xuat-giayto-vat').checked = false;
+    if (document.getElementById('xuat-giayto-bbbg')) document.getElementById('xuat-giayto-bbbg').checked = false;
+    if (document.getElementById('xuat-giayto-phieubh')) document.getElementById('xuat-giayto-phieubh').checked = false;
+    if (document.getElementById('xuat-giayto-cocq')) document.getElementById('xuat-giayto-cocq').checked = false;
+    if (document.getElementById('xuat-ghichu-giayto')) document.getElementById('xuat-ghichu-giayto').value = '';
+
     Swal.fire({
       icon: 'success',
       title: 'Xuất kho thành công!',
-      html: `Phiếu xuất <strong>${maPhieu}</strong> đã được ghi nhận.<br>Khách hàng: <strong>${khach}</strong> (${sdt})<br>Số lượng: <strong>${voucherRecord.items.length} thiết bị</strong>.`
+      html: `Phiếu xuất <strong>${maPhieu}</strong> đã được ghi nhận.<br>Khách hàng: <strong>${khach}</strong> (${sdt})<br>Số lượng: <strong>${voucherRecord.items.length} thiết bị</strong>.${giayToArr.length > 0 ? `<br>Kèm giấy tờ: <strong>${giayToArr.join(', ')}</strong>` : ''}`
     });
   }
 
@@ -16011,6 +16069,13 @@
     const maPhieu = generateVoucherCode('PX');
     const nowStr = `${ngay} ${new Date().toLocaleTimeString('vi-VN')}`;
 
+    const giayToArr = [];
+    if (document.getElementById('xuat-giayto-vat')?.checked) giayToArr.push('Hóa đơn VAT');
+    if (document.getElementById('xuat-giayto-bbbg')?.checked) giayToArr.push('Biên bản bàn giao');
+    if (document.getElementById('xuat-giayto-phieubh')?.checked) giayToArr.push('Phiếu BH');
+    if (document.getElementById('xuat-giayto-cocq')?.checked) giayToArr.push('CO/CQ');
+    const ghiChuGiayTo = document.getElementById('xuat-ghichu-giayto')?.value.trim() || '';
+
     const voucherRecord = {
       maPhieu: maPhieu,
       ngay: ngay,
@@ -16021,19 +16086,22 @@
       sdtKhach: sdt,
       diaChi: diachi,
       kho: kho,
+      giayTo: giayToArr.join(', '),
+      ghiChuGiayTo: ghiChuGiayTo,
       status: 'DRAFT',
       nguoiTao: CURRENT_USER_NAME,
-      ghiChu: 'Lưu nháp xuất kho',
+      ghiChu: ghiChuGiayTo ? `Lưu nháp (${ghiChuGiayTo})` : 'Lưu nháp xuất kho',
       customFields: {},
       items: CURRENT_DRAFT_XUAT_ITEMS.map(i => ({
         model: i.model,
         serial: i.serial,
         internalId: i.internalId,
         soThangBh: i.soThangBh,
-        ngayHetHanBh: i.ngayHetHanBh
+        ngayHetHanBh: i.ngayHetHanBh,
+        ghiChu: i.ghiChu || ''
       })),
       history: [
-        { time: nowStr, user: CURRENT_USER_NAME, action: 'LƯU NHÁP', note: `Lưu nháp phiếu xuất cho ${khach}` }
+        { time: nowStr, user: CURRENT_USER_NAME, action: 'LƯU NHÁP', note: `Lưu nháp phiếu xuất cho ${khach}. Giấy tờ: ${giayToArr.join(', ') || 'Không'}` }
       ]
     };
 
@@ -16714,33 +16782,18 @@
     if (!container) return;
 
     if (!q) {
-      // Giao diện mặc định: Khung hướng dẫn & Danh sách gợi ý tra cứu nhanh
+      // Giao diện mặc định: Khung hướng dẫn tra cứu
       container.innerHTML = `
-        <div class="app-card p-4 text-center">
+        <div class="app-card p-5 text-center">
           <div class="mb-3">
             <span class="d-inline-flex p-3 rounded-circle bg-primary bg-opacity-10 text-primary">
               <i class="fa-solid fa-fingerprint fs-1"></i>
             </span>
           </div>
           <h5 class="fw-bold text-dark">Tra Cứu Hồ Sơ Thiết Bị Toàn Diện (Serial 360°)</h5>
-          <p class="text-muted small mx-auto" style="max-width: 580px;">
-            Nhập Serial in trên tem máy hoặc quét mã vạch để truy vết toàn bộ vòng đời: từ lúc nhập kho, nhà cung cấp, xuất bán cho ai, hạn bảo hành và lịch sử sửa chữa.
+          <p class="text-muted small mx-auto" style="max-width: 560px;">
+            Nhập Serial in trên tem máy hoặc bấm Quét mã để truy vết toàn bộ vòng đời thiết bị: từ lúc nhập kho, nhà cung cấp, xuất bán cho ai, thời hạn bảo hành và lịch sử xử lý kỹ thuật.
           </p>
-          <div class="d-flex justify-content-center flex-wrap gap-2 mt-3">
-            <span class="small fw-semibold text-muted align-self-center">Gợi ý thiết bị thực tế để trải nghiệm liên kết:</span>
-            <button class="btn btn-sm btn-outline-primary" onclick="lookupSerial360('U6QP281903042')">
-              <i class="fa-solid fa-microchip me-1"></i> U6QP281903042 (CPU Đã bán)
-            </button>
-            <button class="btn btn-sm btn-outline-primary" onclick="lookupSerial360('TKSMC25C8X01266')">
-              <i class="fa-solid fa-hard-drive me-1"></i> TKSMC25C8X (SSD Đã bán)
-            </button>
-            <button class="btn btn-sm btn-outline-success" onclick="lookupSerial360('CNB1T5GC6X')">
-              <i class="fa-solid fa-print me-1"></i> CNB1T5GC6X (HP 108a Còn tồn)
-            </button>
-            <button class="btn btn-sm btn-outline-success" onclick="lookupSerial360('NTMA681531')">
-              <i class="fa-solid fa-print me-1"></i> NTMA681531 (Canon Còn tồn)
-            </button>
-          </div>
         </div>
       `;
       return;
@@ -18053,6 +18106,7 @@
           ${isNhap ? `<strong>${v.ncc || 'Chính hãng'}</strong>` : `<strong>${custName}</strong> ${custPhone ? `(SĐT: <span class="font-monospace text-primary fw-bold">${custPhone}</span>)` : ''}`}
         </div>
         ${!isNhap ? `<div class="col-12 col-md-6"><strong>Địa chỉ giao nhận:</strong> ${custAddress || 'Nhận tại văn phòng Thành An'}</div>` : ''}
+        ${v.giayTo ? `<div class="col-12"><strong class="text-primary"><i class="fa-solid fa-file-invoice me-1"></i>Giấy tờ kèm theo:</strong> <span class="badge bg-warning text-dark border me-1">${v.giayTo}</span> ${v.ghiChuGiayTo ? `<span class="small text-secondary fst-italic">(${v.ghiChuGiayTo})</span>` : ''}</div>` : ''}
         <div class="col-12"><strong>Ghi chú:</strong> ${v.ghiChu || '--'}</div>
         ${v.updatedAt ? `
           <div class="col-12 p-2 bg-info-subtle text-dark rounded border border-info">

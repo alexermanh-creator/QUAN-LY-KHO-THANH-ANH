@@ -269,6 +269,9 @@
     .smart-suggest-wrap {
       position: relative;
     }
+    .smart-suggest-wrap:focus-within {
+      z-index: 99999 !important;
+    }
     .smart-suggest-dropdown {
       position: absolute;
       top: calc(100% + 3px);
@@ -277,10 +280,10 @@
       background: #ffffff;
       border: 1px solid #cbd5e1;
       border-radius: 8px;
-      box-shadow: 0 12px 28px -4px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.05);
+      box-shadow: 0 12px 28px -4px rgba(0,0,0,0.22), 0 4px 12px rgba(0,0,0,0.1);
       max-height: 280px;
       overflow-y: auto;
-      z-index: 1060;
+      z-index: 100000 !important;
       display: none;
     }
     .suggest-item {
@@ -603,7 +606,7 @@
       border: 1px solid #e2e8f0;
       box-shadow: 0 1px 4px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.02);
       margin-bottom: 12px;
-      overflow: hidden;
+      overflow: visible;
     }
     .app-card-header {
       padding: 8px 14px;
@@ -774,7 +777,7 @@
       border: 1px solid var(--card-border);
       box-shadow: 0 1px 2px rgba(0,0,0,0.03);
       margin-bottom: 8px;
-      overflow: hidden;
+      overflow: visible;
     }
     .app-card-header {
       padding: 6px 12px;

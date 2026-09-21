@@ -433,6 +433,7 @@
           ${isNhap ? `<strong>${v.ncc || 'Chính hãng'}</strong>` : `<strong>${custName}</strong> ${custPhone ? `(SĐT: <span class="font-monospace text-primary fw-bold">${custPhone}</span>)` : ''}`}
         </div>
         ${!isNhap ? `<div class="col-12 col-md-6"><strong>Địa chỉ giao nhận:</strong> ${custAddress || 'Nhận tại văn phòng Thành An'}</div>` : ''}
+        ${v.giayTo ? `<div class="col-12"><strong class="text-primary"><i class="fa-solid fa-file-invoice me-1"></i>Giấy tờ kèm theo:</strong> <span class="badge bg-warning text-dark border me-1">${v.giayTo}</span> ${v.ghiChuGiayTo ? `<span class="small text-secondary fst-italic">(${v.ghiChuGiayTo})</span>` : ''}</div>` : ''}
         <div class="col-12"><strong>Ghi chú:</strong> ${v.ghiChu || '--'}</div>
         ${v.updatedAt ? `
           <div class="col-12 p-2 bg-info-subtle text-dark rounded border border-info">

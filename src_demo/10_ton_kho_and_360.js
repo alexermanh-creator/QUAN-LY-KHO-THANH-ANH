@@ -407,33 +407,18 @@
     if (!container) return;
 
     if (!q) {
-      // Giao diện mặc định: Khung hướng dẫn & Danh sách gợi ý tra cứu nhanh
+      // Giao diện mặc định: Khung hướng dẫn tra cứu
       container.innerHTML = `
-        <div class="app-card p-4 text-center">
+        <div class="app-card p-5 text-center">
           <div class="mb-3">
             <span class="d-inline-flex p-3 rounded-circle bg-primary bg-opacity-10 text-primary">
               <i class="fa-solid fa-fingerprint fs-1"></i>
             </span>
           </div>
           <h5 class="fw-bold text-dark">Tra Cứu Hồ Sơ Thiết Bị Toàn Diện (Serial 360°)</h5>
-          <p class="text-muted small mx-auto" style="max-width: 580px;">
-            Nhập Serial in trên tem máy hoặc quét mã vạch để truy vết toàn bộ vòng đời: từ lúc nhập kho, nhà cung cấp, xuất bán cho ai, hạn bảo hành và lịch sử sửa chữa.
+          <p class="text-muted small mx-auto" style="max-width: 560px;">
+            Nhập Serial in trên tem máy hoặc bấm Quét mã để truy vết toàn bộ vòng đời thiết bị: từ lúc nhập kho, nhà cung cấp, xuất bán cho ai, thời hạn bảo hành và lịch sử xử lý kỹ thuật.
           </p>
-          <div class="d-flex justify-content-center flex-wrap gap-2 mt-3">
-            <span class="small fw-semibold text-muted align-self-center">Gợi ý thiết bị thực tế để trải nghiệm liên kết:</span>
-            <button class="btn btn-sm btn-outline-primary" onclick="lookupSerial360('U6QP281903042')">
-              <i class="fa-solid fa-microchip me-1"></i> U6QP281903042 (CPU Đã bán)
-            </button>
-            <button class="btn btn-sm btn-outline-primary" onclick="lookupSerial360('TKSMC25C8X01266')">
-              <i class="fa-solid fa-hard-drive me-1"></i> TKSMC25C8X (SSD Đã bán)
-            </button>
-            <button class="btn btn-sm btn-outline-success" onclick="lookupSerial360('CNB1T5GC6X')">
-              <i class="fa-solid fa-print me-1"></i> CNB1T5GC6X (HP 108a Còn tồn)
-            </button>
-            <button class="btn btn-sm btn-outline-success" onclick="lookupSerial360('NTMA681531')">
-              <i class="fa-solid fa-print me-1"></i> NTMA681531 (Canon Còn tồn)
-            </button>
-          </div>
         </div>
       `;
       return;

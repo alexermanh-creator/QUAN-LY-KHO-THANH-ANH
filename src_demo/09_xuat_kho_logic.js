@@ -445,13 +445,21 @@
     });
   }
 
+  function updateXuatItemNote(itemId, note) {
+    const item = CURRENT_DRAFT_XUAT_ITEMS.find(i => i.id === itemId);
+    if (item) {
+      item.ghiChu = (note || '').trim();
+    }
+  }
+  if (typeof window !== 'undefined') window.updateXuatItemNote = updateXuatItemNote;
+
   function renderDraftXuatTable() {
     const tbody = document.getElementById('draft-xuat-table-body');
     const badge = document.getElementById('draft-xuat-total-badge');
     badge.textContent = `${CURRENT_DRAFT_XUAT_ITEMS.length} máy`;
 
     if (CURRENT_DRAFT_XUAT_ITEMS.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-3">Chưa có thiết bị nào được chọn để xuất</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-3">Chưa có thiết bị nào được chọn để xuất</td></tr>';
       return;
     }
 
@@ -480,6 +488,10 @@
               ${item.ngayHetHanBh}
             </span>
           </td>
+          <td data-label="Ghi Chú Giấy Tờ">
+            <input type="text" class="form-control form-control-sm" placeholder="Note giấy tờ riêng..." 
+                   value="${item.ghiChu || ''}" onchange="updateXuatItemNote('${item.id}', this.value)">
+          </td>
           <td data-label="Xóa" class="text-end">
             <button class="btn btn-sm btn-outline-danger" onclick="removeDraftXuatItem('${item.id}')">
               <i class="fa-solid fa-xmark"></i>
@@ -502,6 +514,13 @@
     const diachi = document.getElementById('xuat-diachi').value.trim();
     const kho = (document.getElementById('xuat-kho')?.value) || (CURRENT_DRAFT_XUAT_ITEMS[0]?.kho) || 'Kho Chính';
     const ngay = formatDateDisplay(document.getElementById('xuat-ngay').value) || formatDateDisplay(getLocalDateStr());
+
+    const giayToArr = [];
+    if (document.getElementById('xuat-giayto-vat')?.checked) giayToArr.push('Hóa đơn VAT');
+    if (document.getElementById('xuat-giayto-bbbg')?.checked) giayToArr.push('Biên bản bàn giao');
+    if (document.getElementById('xuat-giayto-phieubh')?.checked) giayToArr.push('Phiếu BH');
+    if (document.getElementById('xuat-giayto-cocq')?.checked) giayToArr.push('CO/CQ');
+    const ghiChuGiayTo = document.getElementById('xuat-ghichu-giayto')?.value.trim() || '';
 
     if (!khach) {
       Swal.fire('Thiếu khách hàng', 'Vui lòng chọn hoặc nhập tên Khách hàng nhận máy!', 'warning');
@@ -536,6 +555,7 @@
             ${isStillInStock 
               ? '<span class="badge bg-success"><i class="fa-solid fa-check"></i> Đủ điều kiện xuất</span>' 
               : '<span class="badge bg-danger"><i class="fa-solid fa-xmark"></i> Không khả dụng</span>'}
+            ${it.ghiChu ? `<div class="small text-muted fst-italic">Note: ${it.ghiChu}</div>` : ''}
           </td>
         </tr>
       `;
@@ -545,11 +565,19 @@
     const alertBox = document.getElementById('prev-xuat-alert-box');
     const confirmBtn = document.getElementById('btn-final-confirm-xuat');
 
+    const giayToHtml = (giayToArr.length > 0 || ghiChuGiayTo) ? `
+      <div class="p-2 mb-2 rounded bg-warning bg-opacity-10 border border-warning border-opacity-50 small">
+        <strong class="text-warning-emphasis"><i class="fa-solid fa-file-invoice me-1"></i> Yêu cầu giấy tờ kèm theo:</strong>
+        ${giayToArr.map(g => `<span class="badge bg-warning text-dark border ms-1">${g}</span>`).join('')}
+        ${ghiChuGiayTo ? `<div class="mt-1 text-dark"><strong>Ghi chú:</strong> ${ghiChuGiayTo}</div>` : ''}
+      </div>
+    ` : '';
+
     if (hasInvalid) {
-      alertBox.innerHTML = '<div class="alert alert-danger p-2 small mb-0"><i class="fa-solid fa-triangle-exclamation me-1"></i> Có thiết bị không khả dụng trong kho. Vui lòng kiểm tra lại trước khi xuất!</div>';
+      alertBox.innerHTML = giayToHtml + '<div class="alert alert-danger p-2 small mb-0"><i class="fa-solid fa-triangle-exclamation me-1"></i> Có thiết bị không khả dụng trong kho. Vui lòng kiểm tra lại trước khi xuất!</div>';
       confirmBtn.disabled = true;
     } else {
-      alertBox.innerHTML = '<div class="alert alert-success p-2 small mb-0"><i class="fa-solid fa-circle-check me-1"></i> Tất cả thiết bị đều hợp lệ và sẵn sàng xuất kho chính thức.</div>';
+      alertBox.innerHTML = giayToHtml + '<div class="alert alert-success p-2 small mb-0"><i class="fa-solid fa-circle-check me-1"></i> Tất cả thiết bị đều hợp lệ và sẵn sàng xuất kho chính thức.</div>';
       confirmBtn.disabled = false;
     }
 
@@ -566,6 +594,13 @@
     const maPhieu = generateVoucherCode('PX');
     const nowStr = `${ngay} ${new Date().toLocaleTimeString('vi-VN')}`;
 
+    const giayToArr = [];
+    if (document.getElementById('xuat-giayto-vat')?.checked) giayToArr.push('Hóa đơn VAT');
+    if (document.getElementById('xuat-giayto-bbbg')?.checked) giayToArr.push('Biên bản bàn giao');
+    if (document.getElementById('xuat-giayto-phieubh')?.checked) giayToArr.push('Phiếu BH');
+    if (document.getElementById('xuat-giayto-cocq')?.checked) giayToArr.push('CO/CQ');
+    const ghiChuGiayTo = document.getElementById('xuat-ghichu-giayto')?.value.trim() || '';
+
     const voucherRecord = {
       maPhieu: maPhieu,
       ngay: ngay,
@@ -576,19 +611,22 @@
       sdtKhach: sdt,
       diaChi: diachi,
       kho: kho,
+      giayTo: giayToArr.join(', '),
+      ghiChuGiayTo: ghiChuGiayTo,
       status: 'CONFIRMED',
       nguoiTao: CURRENT_USER_NAME,
-      ghiChu: 'Xuất bán khách hàng',
+      ghiChu: ghiChuGiayTo ? `Xuất bán (${ghiChuGiayTo})` : 'Xuất bán khách hàng',
       customFields: {},
       items: CURRENT_DRAFT_XUAT_ITEMS.map(i => ({
         model: i.model,
         serial: i.serial,
         internalId: i.internalId,
         soThangBh: i.soThangBh,
-        ngayHetHanBh: i.ngayHetHanBh
+        ngayHetHanBh: i.ngayHetHanBh,
+        ghiChu: i.ghiChu || ''
       })),
       history: [
-        { time: nowStr, user: CURRENT_USER_NAME, action: 'TẠO PHIẾU', note: `Khởi tạo phiếu xuất CONFIRMED cho ${khach}` }
+        { time: nowStr, user: CURRENT_USER_NAME, action: 'TẠO PHIẾU', note: `Khởi tạo phiếu xuất CONFIRMED cho ${khach}. Giấy tờ: ${giayToArr.join(', ') || 'Không'}` }
       ]
     };
 
@@ -604,16 +642,17 @@
         serialItem.sdtKhach = sdt;
         serialItem.soThangBh = it.soThangBh;
         serialItem.ngayHetHanBh = it.ngayHetHanBh;
+        if (it.ghiChu) serialItem.ghiChu = it.ghiChu;
         serialItem.timeline.unshift({
           date: nowStr,
           user: CURRENT_USER_NAME,
           action: 'Xuất kho',
-          note: `Xuất cho khách "${khach}" (SĐT: ${sdt}) theo phiếu ${maPhieu}. Hạn BH: ${it.ngayHetHanBh}`
+          note: `Xuất cho khách "${khach}" (SĐT: ${sdt}) theo phiếu ${maPhieu}. Hạn BH: ${it.ngayHetHanBh}${it.ghiChu ? ` [Ghi chú: ${it.ghiChu}]` : ''}`
         });
       }
     });
 
-    recordAuditLog('XÁC NHẬN XUẤT KHO', `Phiếu ${maPhieu} (${CURRENT_DRAFT_XUAT_ITEMS.length} máy)`, 'DRAFT', 'CONFIRMED', `Xuất bán cho ${khach}`, [], 'Xuất kho', '', maPhieu);
+    recordAuditLog('XÁC NHẬN XUẤT KHO', `Phiếu ${maPhieu} (${CURRENT_DRAFT_XUAT_ITEMS.length} máy)`, 'DRAFT', 'CONFIRMED', `Xuất bán cho ${khach}. Giấy tờ: ${giayToArr.join(', ') || 'Không'}`, [], 'Xuất kho', '', maPhieu);
     if (typeof markModulesDirty === 'function') {
       markModulesDirty(['Dashboard', 'TonKho', 'LichSu', 'Serial360']);
     }
@@ -625,10 +664,17 @@
     CURRENT_DRAFT_XUAT_ITEMS = [];
     renderDraftXuatTable();
 
+    // Reset các ô giấy tờ
+    if (document.getElementById('xuat-giayto-vat')) document.getElementById('xuat-giayto-vat').checked = false;
+    if (document.getElementById('xuat-giayto-bbbg')) document.getElementById('xuat-giayto-bbbg').checked = false;
+    if (document.getElementById('xuat-giayto-phieubh')) document.getElementById('xuat-giayto-phieubh').checked = false;
+    if (document.getElementById('xuat-giayto-cocq')) document.getElementById('xuat-giayto-cocq').checked = false;
+    if (document.getElementById('xuat-ghichu-giayto')) document.getElementById('xuat-ghichu-giayto').value = '';
+
     Swal.fire({
       icon: 'success',
       title: 'Xuất kho thành công!',
-      html: `Phiếu xuất <strong>${maPhieu}</strong> đã được ghi nhận.<br>Khách hàng: <strong>${khach}</strong> (${sdt})<br>Số lượng: <strong>${voucherRecord.items.length} thiết bị</strong>.`
+      html: `Phiếu xuất <strong>${maPhieu}</strong> đã được ghi nhận.<br>Khách hàng: <strong>${khach}</strong> (${sdt})<br>Số lượng: <strong>${voucherRecord.items.length} thiết bị</strong>.${giayToArr.length > 0 ? `<br>Kèm giấy tờ: <strong>${giayToArr.join(', ')}</strong>` : ''}`
     });
   }
 
@@ -646,6 +692,13 @@
     const maPhieu = generateVoucherCode('PX');
     const nowStr = `${ngay} ${new Date().toLocaleTimeString('vi-VN')}`;
 
+    const giayToArr = [];
+    if (document.getElementById('xuat-giayto-vat')?.checked) giayToArr.push('Hóa đơn VAT');
+    if (document.getElementById('xuat-giayto-bbbg')?.checked) giayToArr.push('Biên bản bàn giao');
+    if (document.getElementById('xuat-giayto-phieubh')?.checked) giayToArr.push('Phiếu BH');
+    if (document.getElementById('xuat-giayto-cocq')?.checked) giayToArr.push('CO/CQ');
+    const ghiChuGiayTo = document.getElementById('xuat-ghichu-giayto')?.value.trim() || '';
+
     const voucherRecord = {
       maPhieu: maPhieu,
       ngay: ngay,
@@ -656,19 +709,22 @@
       sdtKhach: sdt,
       diaChi: diachi,
       kho: kho,
+      giayTo: giayToArr.join(', '),
+      ghiChuGiayTo: ghiChuGiayTo,
       status: 'DRAFT',
       nguoiTao: CURRENT_USER_NAME,
-      ghiChu: 'Lưu nháp xuất kho',
+      ghiChu: ghiChuGiayTo ? `Lưu nháp (${ghiChuGiayTo})` : 'Lưu nháp xuất kho',
       customFields: {},
       items: CURRENT_DRAFT_XUAT_ITEMS.map(i => ({
         model: i.model,
         serial: i.serial,
         internalId: i.internalId,
         soThangBh: i.soThangBh,
-        ngayHetHanBh: i.ngayHetHanBh
+        ngayHetHanBh: i.ngayHetHanBh,
+        ghiChu: i.ghiChu || ''
       })),
       history: [
-        { time: nowStr, user: CURRENT_USER_NAME, action: 'LƯU NHÁP', note: `Lưu nháp phiếu xuất cho ${khach}` }
+        { time: nowStr, user: CURRENT_USER_NAME, action: 'LƯU NHÁP', note: `Lưu nháp phiếu xuất cho ${khach}. Giấy tờ: ${giayToArr.join(', ') || 'Không'}` }
       ]
     };
 
