@@ -441,7 +441,9 @@
     customers: { rendered: false, dirty: true },
     warehouses: { rendered: false, dirty: true },
     brands: { rendered: false, dirty: true },
-    categories: { rendered: false, dirty: true }
+    categories: { rendered: false, dirty: true },
+    warranty: { rendered: false, dirty: true },
+    conditions: { rendered: false, dirty: true }
   };
   if (typeof window !== 'undefined') window.CATALOG_SUBTAB_STATE = CATALOG_SUBTAB_STATE;
   let CATALOG_SUBTABS_INITIALIZED = false;
@@ -450,7 +452,7 @@
     populateCatalogFilterDropdowns();
     initCatalogSubtabsListener();
 
-    let targetTab = forceTab;
+    let targetTab = (typeof forceTab === 'string') ? forceTab : null;
     if (!targetTab) {
       if (document.getElementById('tab-cat-models')?.classList.contains('active')) targetTab = 'models';
       else if (document.getElementById('tab-cat-suppliers')?.classList.contains('active')) targetTab = 'suppliers';
@@ -458,6 +460,8 @@
       else if (document.getElementById('tab-cat-warehouses')?.classList.contains('active')) targetTab = 'warehouses';
       else if (document.getElementById('tab-cat-brands')?.classList.contains('active')) targetTab = 'brands';
       else if (document.getElementById('tab-cat-categories')?.classList.contains('active')) targetTab = 'categories';
+      else if (document.getElementById('tab-cat-warranty')?.classList.contains('active')) targetTab = 'warranty';
+      else if (document.getElementById('tab-cat-conditions')?.classList.contains('active')) targetTab = 'conditions';
       else targetTab = 'models';
     }
 
@@ -489,6 +493,14 @@
       if (!CATALOG_SUBTAB_STATE.categories.rendered || CATALOG_SUBTAB_STATE.categories.dirty) {
         renderCatalogCategoriesTable();
       }
+    } else if (tabName === 'warranty') {
+      if (!CATALOG_SUBTAB_STATE.warranty.rendered || CATALOG_SUBTAB_STATE.warranty.dirty) {
+        renderCatalogWarrantyTable();
+      }
+    } else if (tabName === 'conditions') {
+      if (!CATALOG_SUBTAB_STATE.conditions.rendered || CATALOG_SUBTAB_STATE.conditions.dirty) {
+        renderCatalogConditionsTable();
+      }
     }
   }
 
@@ -502,7 +514,9 @@
       { sel: '#catalogTabs [data-bs-target="#tab-cat-customers"]', name: 'customers' },
       { sel: '#catalogTabs [data-bs-target="#tab-cat-warehouses"]', name: 'warehouses' },
       { sel: '#catalogTabs [data-bs-target="#tab-cat-brands"]', name: 'brands' },
-      { sel: '#catalogTabs [data-bs-target="#tab-cat-categories"]', name: 'categories' }
+      { sel: '#catalogTabs [data-bs-target="#tab-cat-categories"]', name: 'categories' },
+      { sel: '#catalogTabs [data-bs-target="#tab-cat-warranty"]', name: 'warranty' },
+      { sel: '#catalogTabs [data-bs-target="#tab-cat-conditions"]', name: 'conditions' }
     ];
 
     mapping.forEach(m => {
@@ -1073,7 +1087,7 @@
               <input id="swal-edit-c-email" class="form-control form-control-sm" value="${escapeHtml(c.email || '')}" placeholder="khachhang@email.com">
             </div>
           </div>
-          <label class="form-label fw-bold mb-1">Địa chỉ giao hàng (*)</label>
+          <label class="form-label fw-bold mb-1">Địa chỉ giao hàng (Có thể bổ sung sau)</label>
           <input id="swal-edit-c-address" class="form-control form-control-sm mb-2" value="${escapeHtml(c.diaChi || '')}">
           <div class="row g-2 mb-2">
             <div class="col-6">
@@ -1254,6 +1268,16 @@
     }).then(res => {
       if (res.isConfirmed) {
         INITIAL_WAREHOUSES.push(res.value);
+        try {
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('THANH_AN_WAREHOUSES', JSON.stringify(INITIAL_WAREHOUSES));
+          }
+        } catch(e) {}
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          google.script.run
+            .withSuccessHandler(r => console.log('Đã tạo Kho Sheet:', r))
+            .saveKho(res.value.maKho, res.value.tenKho, res.value.loaiKho, res.value.thuKho || '', res.value.sdt || '', res.value.diaDiem || '', res.value.ghiChu || '', null);
+        }
         recordAuditLog('TẠO KHO MỚI', `Kho ${res.value.tenKho} (${res.value.maKho})`, '--', 'Active', 'Thêm kho mới vào danh mục');
         notifyCatalogChanged();
         renderCatalogWarehousesTable();
@@ -1359,6 +1383,12 @@
             localStorage.setItem('THANH_AN_VOUCHERS_DB', JSON.stringify(VOUCHERS_DB));
           }
         } catch(e) {}
+
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          google.script.run
+            .withSuccessHandler(r => console.log('Đã lưu Kho Sheet:', r))
+            .saveKho(w.maKho, w.tenKho, w.loaiKho, w.thuKho, w.sdt, w.diaDiem, w.ghiChu, w.rowId || null);
+        }
 
         recordAuditLog('SỬA KHO', `Kho ${oldName} -> ${newName}`, 'Cũ', 'Mới', 'Cập nhật đầy đủ thông tin kho hàng');
         notifyCatalogChanged();
@@ -1482,6 +1512,16 @@
     }).then(res => {
       if (res.isConfirmed) {
         INITIAL_BRANDS.push(res.value);
+        try {
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('THANH_AN_BRANDS', JSON.stringify(INITIAL_BRANDS));
+          }
+        } catch(e) {}
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          google.script.run
+            .withSuccessHandler(r => console.log('Đã tạo Hãng Sheet:', r))
+            .saveHangSx(res.value.maHang, res.value.tenHang, res.value.xuatXu || '', res.value.ghiChu || '', null);
+        }
         recordAuditLog('TẠO HÃNG', `Hãng ${res.value.tenHang}`, '--', 'Active', 'Thêm hãng sản xuất mới');
         notifyCatalogChanged();
         renderCatalogBrandsTable();
@@ -1493,37 +1533,78 @@
 
   function openEditBrandModal(brandId) {
     if (!checkPermission(['ADMIN', 'QUẢN LÝ'], 'Sửa hãng')) return;
-    const b = INITIAL_BRANDS.find(x => (x.brandId === brandId || x.id === brandId));
+    const b = INITIAL_BRANDS.find(x => (x.brandId === brandId || x.id === brandId || x.maHang === brandId));
     if (!b) return;
 
     Swal.fire({
       title: `Chỉnh sửa Hãng: ${b.tenHang || b.name}`,
+      width: '550px',
       html: `
         <div class="text-start small">
-          <label class="form-label fw-bold mb-1">Tên hãng (*)</label>
-          <input id="swal-edit-b-name" class="form-control form-control-sm mb-2" value="${b.tenHang || b.name}">
+          <div class="row g-2 mb-2">
+            <div class="col-5">
+              <label class="form-label fw-bold mb-1">Mã hãng (*)</label>
+              <input id="swal-edit-b-code" class="form-control form-control-sm font-monospace text-uppercase fw-bold" value="${escapeHtml(b.maHang || b.code || '')}">
+            </div>
+            <div class="col-7">
+              <label class="form-label fw-bold mb-1">Tên hãng (*)</label>
+              <input id="swal-edit-b-name" class="form-control form-control-sm" value="${escapeHtml(b.tenHang || b.name)}">
+            </div>
+          </div>
+          <div class="row g-2 mb-2">
+            <div class="col-6">
+              <label class="form-label fw-bold mb-1">Xuất xứ / Quốc gia</label>
+              <input id="swal-edit-b-origin" class="form-control form-control-sm" value="${escapeHtml(b.xuatXu || '')}" placeholder="Nhật Bản, Mỹ, Đức...">
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-bold mb-1">Trạng thái</label>
+              <select id="swal-edit-b-status" class="form-select form-select-sm">
+                <option value="true" ${b.active !== false ? 'selected' : ''}>Active (Hoạt động)</option>
+                <option value="false" ${b.active === false ? 'selected' : ''}>Inactive (Ngừng dùng)</option>
+              </select>
+            </div>
+          </div>
           <label class="form-label fw-bold mb-1">Ghi chú</label>
-          <input id="swal-edit-b-note" class="form-control form-control-sm" value="${b.ghiChu || b.note || ''}">
+          <input id="swal-edit-b-note" class="form-control form-control-sm" value="${escapeHtml(b.ghiChu || b.note || '')}" placeholder="Ghi chú về hãng...">
         </div>
       `,
       showCancelButton: true,
       confirmButtonText: 'Lưu thay đổi',
+      cancelButtonText: 'Đóng',
       preConfirm: () => {
+        const maHang = document.getElementById('swal-edit-b-code').value.trim().toUpperCase();
         const tenHang = document.getElementById('swal-edit-b-name').value.trim();
-        if (!tenHang) {
-          Swal.showValidationMessage('Vui lòng nhập tên hãng!');
+        if (!maHang || !tenHang) {
+          Swal.showValidationMessage('Vui lòng nhập đầy đủ Mã và Tên hãng!');
           return false;
         }
         return {
+          maHang,
           tenHang,
+          xuatXu: document.getElementById('swal-edit-b-origin').value.trim(),
+          active: document.getElementById('swal-edit-b-status').value === 'true',
           ghiChu: document.getElementById('swal-edit-b-note').value.trim()
         };
       }
     }).then(res => {
       if (res.isConfirmed) {
+        const oldCode = b.maHang || b.code;
         Object.assign(b, res.value);
         normalizeBrand(b);
-        recordAuditLog('SỬA HÃNG', `Hãng ${b.maHang}`, 'Cũ', 'Mới', 'Cập nhật hãng');
+
+        try {
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('THANH_AN_BRANDS', JSON.stringify(INITIAL_BRANDS));
+          }
+        } catch(e) {}
+
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          google.script.run
+            .withSuccessHandler(r => console.log('Đã lưu Hãng Sheet:', r))
+            .saveHangSx(b.maHang, b.tenHang, b.xuatXu || '', b.ghiChu || '', b.rowId || null);
+        }
+
+        recordAuditLog('SỬA HÃNG', `Hãng ${oldCode} -> ${b.maHang}`, 'Cũ', 'Mới', 'Cập nhật toàn bộ thông tin hãng');
         notifyCatalogChanged();
         renderCatalogBrandsTable();
         populateCatalogFilterDropdowns();
@@ -1564,6 +1645,7 @@
     }
 
     tbody.innerHTML = INITIAL_CATEGORIES.map(c => `
+      <tr class="${c.active === false ? 'table-secondary text-muted' : ''}">
         <td data-label="Category ID"><span class="font-monospace fw-bold text-secondary">${c.catId || c.id}</span></td>
         <td data-label="Mã Nhóm"><strong class="text-primary font-monospace">${c.maNhom || c.code}</strong></td>
         <td data-label="Tên Nhóm"><strong>${c.tenNhom || c.name}</strong></td>
@@ -1594,9 +1676,9 @@
       html: `
         <div class="text-start small">
           <label class="form-label fw-bold mb-1">Mã nhóm (*)</label>
-          <input id="swal-add-c-code" class="form-control form-control-sm mb-2" placeholder="Ví dụ: SERVER, NETWORK...">
+          <input id="swal-add-c-code" class="form-control form-control-sm mb-2 font-monospace text-uppercase fw-bold" placeholder="Ví dụ: MAY_IN, TONER...">
           <label class="form-label fw-bold mb-1">Tên nhóm (*)</label>
-          <input id="swal-add-c-name" class="form-control form-control-sm mb-2" placeholder="Ví dụ: Máy chủ Server">
+          <input id="swal-add-c-name" class="form-control form-control-sm mb-2" placeholder="Ví dụ: Máy in văn phòng">
           <label class="form-label fw-bold mb-1">Ghi chú</label>
           <input id="swal-add-c-note" class="form-control form-control-sm" placeholder="Mô tả nhóm hàng...">
         </div>
@@ -1621,6 +1703,16 @@
     }).then(res => {
       if (res.isConfirmed) {
         INITIAL_CATEGORIES.push(res.value);
+        try {
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('THANH_AN_CATEGORIES', JSON.stringify(INITIAL_CATEGORIES));
+          }
+        } catch(e) {}
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          google.script.run
+            .withSuccessHandler(r => console.log('Đã tạo Nhóm Sheet:', r))
+            .saveNhomHang(res.value.maNhom, res.value.tenNhom, res.value.ghiChu || '', null);
+        }
         recordAuditLog('TẠO NHÓM HÀNG', `Nhóm ${res.value.tenNhom}`, '--', 'Active', 'Thêm nhóm hàng mới');
         notifyCatalogChanged();
         renderCatalogCategoriesTable();
@@ -1632,41 +1724,75 @@
 
   function openEditCategoryModal(catId) {
     if (!checkPermission(['ADMIN', 'QUẢN LÝ'], 'Sửa nhóm hàng')) return;
-    const c = INITIAL_CATEGORIES.find(x => (x.catId === catId || x.id === catId));
+    const c = INITIAL_CATEGORIES.find(x => (x.catId === catId || x.id === catId || x.maNhom === catId));
     if (!c) return;
 
     Swal.fire({
       title: `Chỉnh sửa Nhóm Hàng: ${c.tenNhom || c.name}`,
+      width: '550px',
       html: `
         <div class="text-start small">
-          <label class="form-label fw-bold mb-1">Tên nhóm (*)</label>
-          <input id="swal-edit-c-name" class="form-control form-control-sm mb-2" value="${c.tenNhom || c.name}">
+          <div class="row g-2 mb-2">
+            <div class="col-5">
+              <label class="form-label fw-bold mb-1">Mã nhóm (*)</label>
+              <input id="swal-edit-c-code" class="form-control form-control-sm font-monospace text-uppercase fw-bold" value="${escapeHtml(c.maNhom || c.code || '')}">
+            </div>
+            <div class="col-7">
+              <label class="form-label fw-bold mb-1">Tên nhóm (*)</label>
+              <input id="swal-edit-c-name" class="form-control form-control-sm" value="${escapeHtml(c.tenNhom || c.name)}">
+            </div>
+          </div>
+          <div class="mb-2">
+            <label class="form-label fw-bold mb-1">Trạng thái</label>
+            <select id="swal-edit-c-status" class="form-select form-select-sm">
+              <option value="true" ${c.active !== false ? 'selected' : ''}>Active (Hoạt động)</option>
+              <option value="false" ${c.active === false ? 'selected' : ''}>Inactive (Ngừng dùng)</option>
+            </select>
+          </div>
           <label class="form-label fw-bold mb-1">Ghi chú</label>
-          <input id="swal-edit-c-note" class="form-control form-control-sm" value="${c.ghiChu || c.note || ''}">
+          <input id="swal-edit-c-note" class="form-control form-control-sm" value="${escapeHtml(c.ghiChu || c.note || '')}" placeholder="Mô tả nhóm hàng...">
         </div>
       `,
       showCancelButton: true,
       confirmButtonText: 'Lưu thay đổi',
+      cancelButtonText: 'Đóng',
       preConfirm: () => {
+        const maNhom = document.getElementById('swal-edit-c-code').value.trim().toUpperCase();
         const tenNhom = document.getElementById('swal-edit-c-name').value.trim();
-        if (!tenNhom) {
-          Swal.showValidationMessage('Vui lòng nhập tên nhóm!');
+        if (!maNhom || !tenNhom) {
+          Swal.showValidationMessage('Vui lòng nhập Mã và Tên nhóm!');
           return false;
         }
         return {
+          maNhom,
           tenNhom,
+          active: document.getElementById('swal-edit-c-status').value === 'true',
           ghiChu: document.getElementById('swal-edit-c-note').value.trim()
         };
       }
     }).then(res => {
       if (res.isConfirmed) {
+        const oldCode = c.maNhom || c.code;
         Object.assign(c, res.value);
         normalizeCategory(c);
-        recordAuditLog('SỬA NHÓM HÀNG', `Nhóm ${c.maNhom}`, 'Cũ', 'Mới', 'Cập nhật nhóm hàng');
+
+        try {
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('THANH_AN_CATEGORIES', JSON.stringify(INITIAL_CATEGORIES));
+          }
+        } catch(e) {}
+
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          google.script.run
+            .withSuccessHandler(r => console.log('Đã lưu Nhóm Sheet:', r))
+            .saveNhomHang(c.maNhom, c.tenNhom, c.ghiChu || '', c.rowId || null);
+        }
+
+        recordAuditLog('SỬA NHÓM HÀNG', `Nhóm ${oldCode} -> ${c.maNhom}`, 'Cũ', 'Mới', 'Cập nhật toàn bộ thông tin nhóm hàng');
         notifyCatalogChanged();
         renderCatalogCategoriesTable();
         populateCatalogFilterDropdowns();
-        Swal.fire('Thành công', `Đã cập nhật nhóm ${c.tenNhom}`, 'success');
+        Swal.fire('Thành công', `Đã cập nhật nhóm hàng ${c.tenNhom}`, 'success');
       }
     });
   }
@@ -1683,8 +1809,408 @@
   }
 
   /* ==================================================== */
-  /* 15. MODAL TÓM TẮT CHO GLOBAL SEARCH (YÊU CẦU 8.3, 8.6)*/
+  /* 4.7 THỜI GIAN BẢO HÀNH (YÊU CẦU QUẢN TRỊ DANH MỤC)  */
   /* ==================================================== */
+  let INITIAL_WARRANTIES = [];
+  if (typeof window !== 'undefined') window.INITIAL_WARRANTIES = INITIAL_WARRANTIES;
+
+  function renderCatalogWarrantyTable() {
+    const tbody = document.getElementById('catalog-warranty-table-body');
+    if (!tbody) return;
+    CATALOG_SUBTAB_STATE.warranty.rendered = true;
+    CATALOG_SUBTAB_STATE.warranty.dirty = false;
+
+    if (!INITIAL_WARRANTIES) {
+      INITIAL_WARRANTIES = [];
+    }
+
+    const sQ = (document.getElementById('filter-cat-warranty-search')?.value || '').toLowerCase().trim();
+    let list = INITIAL_WARRANTIES.filter(w => {
+      if (sQ) {
+        const text = `${w.id || ''} ${w.tenGoi || ''} ${w.soThang || ''} ${w.ghiChu || ''}`.toLowerCase();
+        if (!text.includes(sQ)) return false;
+      }
+      return true;
+    });
+
+    if (list.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="6" class="text-center text-muted py-4">
+            <i class="fa-solid fa-shield-halved fs-3 mb-2 d-block text-secondary opacity-50"></i>
+            Chưa có gói thời gian bảo hành nào trong danh mục.<br>
+            <small class="text-muted">Bấm "+ Thêm Gói Bảo Hành Mới" để tạo gói (0 Tháng, 3 Tháng, 6 Tháng, 12 Tháng...).</small>
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    tbody.innerHTML = list.map((w, idx) => `
+      <tr class="${w.active === false ? 'table-secondary text-muted' : ''}">
+        <td data-label="Mã Gói"><span class="font-monospace fw-bold text-secondary">${escapeHtml(w.id || ('BH-' + (w.soThang || idx)))}</span></td>
+        <td data-label="Thời Hạn"><strong class="text-primary font-monospace">${escapeHtml(w.tenGoi)}</strong></td>
+        <td data-label="Số Tháng"><span class="badge bg-info-subtle text-info border border-info">${w.soThang} Tháng</span></td>
+        <td data-label="Ghi Chú">${escapeHtml(w.ghiChu || '--')}</td>
+        <td data-label="Trạng Thái">
+          ${w.active !== false ? '<span class="badge bg-success">Active</span>' : '<span class="badge bg-danger">Inactive</span>'}
+        </td>
+        <td data-label="Thao Tác" class="text-end">
+          <div class="btn-group btn-group-sm">
+            <button class="btn btn-outline-primary" title="Sửa gói bảo hành" onclick="openEditWarrantyModal('${escapeHtml(w.id || w.tenGoi)}')">
+              <i class="fa-solid fa-pen-to-square"></i>
+            </button>
+            <button class="btn ${w.active !== false ? 'btn-outline-danger' : 'btn-outline-success'}" 
+                    title="${w.active !== false ? 'Ngừng sử dụng' : 'Kích hoạt'}" 
+                    onclick="toggleWarrantyActive('${escapeHtml(w.id || w.tenGoi)}')">
+              <i class="fa-solid ${w.active !== false ? 'fa-ban' : 'fa-check'}"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  function openAddWarrantyModal() {
+    if (!checkPermission(['ADMIN', 'QUẢN LÝ'], 'Thêm gói bảo hành')) return;
+
+    Swal.fire({
+      title: 'Thêm Gói Thời Gian Bảo Hành Mới',
+      width: '500px',
+      html: `
+        <div class="text-start small">
+          <div class="mb-2">
+            <label class="form-label fw-bold mb-1">Số tháng (*)</label>
+            <input id="swal-add-warr-months" type="number" min="0" max="120" class="form-control form-control-sm" placeholder="Ví dụ: 12" oninput="document.getElementById('swal-add-warr-name').value = this.value ? (this.value + ' Tháng') : ''">
+          </div>
+          <div class="mb-2">
+            <label class="form-label fw-bold mb-1">Tên gói hiển thị (*)</label>
+            <input id="swal-add-warr-name" class="form-control form-control-sm font-monospace fw-bold" placeholder="Ví dụ: 12 Tháng">
+          </div>
+          <div class="mb-2">
+            <label class="form-label fw-bold mb-1">Ghi chú chính sách (Có thể bổ sung sau)</label>
+            <input id="swal-add-warr-note" class="form-control form-control-sm" placeholder="Ghi chú điều kiện bảo hành...">
+          </div>
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: 'Thêm gói',
+      cancelButtonText: 'Hủy',
+      preConfirm: () => {
+        const months = parseInt(document.getElementById('swal-add-warr-months').value, 10);
+        const name = document.getElementById('swal-add-warr-name').value.trim();
+        const note = document.getElementById('swal-add-warr-note').value.trim();
+        if (isNaN(months) || months < 0) {
+          Swal.showValidationMessage('Vui lòng nhập số tháng bảo hành hợp lệ!');
+          return false;
+        }
+        return { soThang: months, tenGoi: name || (months + ' Tháng'), ghiChu: note };
+      }
+    }).then(res => {
+      if (res.isConfirmed) {
+        const item = {
+          id: 'BH-' + res.value.soThang + 'M',
+          soThang: res.value.soThang,
+          tenGoi: res.value.tenGoi,
+          ghiChu: res.value.ghiChu,
+          active: true
+        };
+        INITIAL_WARRANTIES.push(item);
+        if (WarehouseAPI && WarehouseAPI.saveWarranty) {
+          WarehouseAPI.saveWarranty(item);
+        }
+        recordAuditLog('THÊM BẢO HÀNH', `Gói ${item.tenGoi}`, 'None', item.tenGoi, 'Thêm mới quy chuẩn thời gian bảo hành');
+        notifyCatalogChanged();
+        renderCatalogWarrantyTable();
+        Swal.fire('Thành công', `Đã thêm gói bảo hành ${item.tenGoi}`, 'success');
+      }
+    });
+  }
+
+  function openEditWarrantyModal(idOrName) {
+    if (!checkPermission(['ADMIN', 'QUẢN LÝ'], 'Sửa gói bảo hành')) return;
+    const w = INITIAL_WARRANTIES.find(x => x.id === idOrName || x.tenGoi === idOrName);
+    if (!w) return;
+
+    Swal.fire({
+      title: `Chỉnh sửa Gói Bảo Hành: ${w.tenGoi}`,
+      width: '500px',
+      html: `
+        <div class="text-start small">
+          <div class="mb-2">
+            <label class="form-label fw-bold mb-1">Số tháng (*)</label>
+            <input id="swal-edit-warr-months" type="number" min="0" max="120" class="form-control form-control-sm" value="${w.soThang}">
+          </div>
+          <div class="mb-2">
+            <label class="form-label fw-bold mb-1">Tên gói hiển thị (*)</label>
+            <input id="swal-edit-warr-name" class="form-control form-control-sm font-monospace fw-bold" value="${escapeHtml(w.tenGoi)}">
+          </div>
+          <div class="mb-2">
+            <label class="form-label fw-bold mb-1">Ghi chú (Có thể bổ sung sau)</label>
+            <input id="swal-edit-warr-note" class="form-control form-control-sm" value="${escapeHtml(w.ghiChu || '')}">
+          </div>
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: 'Lưu thay đổi',
+      cancelButtonText: 'Hủy',
+      preConfirm: () => {
+        const months = parseInt(document.getElementById('swal-edit-warr-months').value, 10);
+        const name = document.getElementById('swal-edit-warr-name').value.trim();
+        const note = document.getElementById('swal-edit-warr-note').value.trim();
+        if (isNaN(months) || months < 0) {
+          Swal.showValidationMessage('Vui lòng nhập số tháng bảo hành hợp lệ!');
+          return false;
+        }
+        return { soThang: months, tenGoi: name || (months + ' Tháng'), ghiChu: note };
+      }
+    }).then(res => {
+      if (res.isConfirmed) {
+        const oldGoi = w.tenGoi;
+        Object.assign(w, res.value);
+        if (WarehouseAPI && WarehouseAPI.saveWarranty) {
+          WarehouseAPI.saveWarranty(w);
+        }
+        recordAuditLog('SỬA BẢO HÀNH', `Gói ${oldGoi} -> ${w.tenGoi}`, 'Cũ', 'Mới', 'Cập nhật quy chuẩn thời gian bảo hành');
+        notifyCatalogChanged();
+        renderCatalogWarrantyTable();
+        Swal.fire('Thành công', `Đã cập nhật gói bảo hành ${w.tenGoi}`, 'success');
+      }
+    });
+  }
+
+  function toggleWarrantyActive(idOrName) {
+    if (!checkPermission(['ADMIN', 'QUẢN LÝ'], 'Đổi trạng thái gói BH')) return;
+    const w = INITIAL_WARRANTIES.find(x => x.id === idOrName || x.tenGoi === idOrName);
+    if (!w) return;
+    w.active = w.active === false ? true : false;
+    recordAuditLog(w.active ? 'KÍCH HOẠT GÓI BH' : 'NGỪNG DÙNG GÓI BH', `Gói ${w.tenGoi}`, !w.active ? 'Active' : 'Inactive', w.active ? 'Active' : 'Inactive', 'Đổi trạng thái gói bảo hành');
+    notifyCatalogChanged();
+    renderCatalogWarrantyTable();
+  }
+
+
+
+  /* ==================================================== */
+  /* 4.8 QUẢN TRỊ LOẠI HÀNG (YÊU CẦU DANH MỤC HỆ THỐNG)  */
+  /* ==================================================== */
+  let INITIAL_CONDITIONS = [];
+  if (typeof window !== 'undefined') window.INITIAL_CONDITIONS = INITIAL_CONDITIONS;
+
+  function renderCatalogConditionsTable() {
+    const tbody = document.getElementById('catalog-conditions-table-body');
+    if (!tbody) return;
+    CATALOG_SUBTAB_STATE.conditions.rendered = true;
+    CATALOG_SUBTAB_STATE.conditions.dirty = false;
+
+    if (!INITIAL_CONDITIONS) INITIAL_CONDITIONS = [];
+
+    const sQ = (document.getElementById('filter-cat-conditions-search')?.value || '').toLowerCase().trim();
+    let list = INITIAL_CONDITIONS.filter(c => {
+      if (sQ) {
+        const text = `${c.ten || c.name || ''} ${c.ghiChu || ''}`.toLowerCase();
+        if (!text.includes(sQ)) return false;
+      }
+      return true;
+    });
+
+    if (list.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="5" class="text-center text-muted py-4">
+            <i class="fa-solid fa-boxes-stacked fs-3 mb-2 d-block text-secondary opacity-50"></i>
+            Chưa có loại hàng nào trong danh mục quy chuẩn.<br>
+            <small class="text-muted">Bấm "+ Thêm Loại Hàng Mới" để tạo loại hàng (Chính Hãng, Nhập Khẩu, Mới 100%, Like New 99%, Hàng Đổi Trả...).</small>
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    tbody.innerHTML = list.map((c, idx) => `
+      <tr class="${c.active === false ? 'table-secondary text-muted' : ''}">
+        <td data-label="STT"><span class="fw-bold text-secondary">${idx + 1}</span></td>
+        <td data-label="Tên Loại Hàng"><strong class="text-primary">${escapeHtml(c.ten || c.name)}</strong></td>
+        <td data-label="Đặc Điểm">${escapeHtml(c.ghiChu || '--')}</td>
+        <td data-label="Trạng Thái">
+          ${c.active !== false ? '<span class="badge bg-success">Active</span>' : '<span class="badge bg-danger">Inactive</span>'}
+        </td>
+        <td data-label="Thao Tác" class="text-end">
+          <div class="btn-group btn-group-sm">
+            <button class="btn btn-outline-primary" title="Sửa loại hàng" onclick="openEditLoaiHangModal('${escapeHtml(c.id || c.ten || c.name)}')">
+              <i class="fa-solid fa-pen-to-square"></i>
+            </button>
+            <button class="btn ${c.active !== false ? 'btn-outline-danger' : 'btn-outline-success'}" 
+                    title="${c.active !== false ? 'Ngừng sử dụng' : 'Kích hoạt'}" 
+                    onclick="toggleLoaiHangActive('${escapeHtml(c.id || c.ten || c.name)}')">
+              <i class="fa-solid ${c.active !== false ? 'fa-ban' : 'fa-check'}"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  function openAddLoaiHangModal() {
+    if (!checkPermission(['ADMIN', 'QUẢN LÝ'], 'Thêm loại hàng')) return;
+
+    Swal.fire({
+      title: 'Thêm Loại Hàng Mới',
+      width: '460px',
+      html: `
+        <div class="text-start small">
+          <div class="mb-2">
+            <label class="form-label fw-bold mb-1">Tên loại hàng (*)</label>
+            <input id="swal-add-cond-name" type="text" class="form-control form-control-sm" placeholder="Ví dụ: Chính Hãng, Nhập Khẩu, Mới 100%...">
+          </div>
+          <div class="mb-2">
+            <label class="form-label fw-bold mb-1">Mô tả / Đặc điểm phân loại</label>
+            <input id="swal-add-cond-note" type="text" class="form-control form-control-sm" placeholder="Hàng xuất xứ chính ngạch, Like New 99%...">
+          </div>
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: '<i class="fa-solid fa-floppy-disk me-1"></i> Lưu Loại Hàng',
+      cancelButtonText: 'Hủy',
+      preConfirm: () => {
+        const ten = document.getElementById('swal-add-cond-name').value.trim();
+        const ghiChu = document.getElementById('swal-add-cond-note').value.trim();
+        if (!ten) {
+          Swal.showValidationMessage('Vui lòng nhập tên loại hàng!');
+          return false;
+        }
+        if (INITIAL_CONDITIONS.some(c => (c.ten || c.name || '').toLowerCase() === ten.toLowerCase())) {
+          Swal.showValidationMessage(`Loại hàng "${ten}" đã tồn tại trong danh mục!`);
+          return false;
+        }
+        return { ten, ghiChu };
+      }
+    }).then(res => {
+      if (res.isConfirmed && res.value) {
+        const item = {
+          id: 'COND-' + Date.now(),
+          ten: res.value.ten,
+          name: res.value.ten,
+          ghiChu: res.value.ghiChu,
+          active: true
+        };
+        INITIAL_CONDITIONS.push(item);
+
+        if (typeof WarehouseAPI !== 'undefined' && WarehouseAPI.isAppsScriptEnvironment()) {
+          google.script.run
+            .withSuccessHandler(r => console.log('Đã lưu Loại hàng vào Sheet:', r))
+            .addQuyChuan(3, item.ten, null);
+        }
+
+        recordAuditLog('THÊM LOẠI HÀNG', `Loại hàng ${item.ten}`, '', item.ten, 'Tạo mới loại hàng trong danh mục');
+        notifyCatalogChanged();
+        renderCatalogConditionsTable();
+        syncLoaiHangDropdowns();
+        Swal.fire('Thành công', `Đã thêm loại hàng ${item.ten}`, 'success');
+      }
+    });
+  }
+
+  function openEditLoaiHangModal(idOrName) {
+    if (!checkPermission(['ADMIN', 'QUẢN LÝ'], 'Sửa loại hàng')) return;
+    const c = INITIAL_CONDITIONS.find(x => x.id === idOrName || x.ten === idOrName || x.name === idOrName);
+    if (!c) return;
+
+    Swal.fire({
+      title: 'Chỉnh Sửa Loại Hàng',
+      width: '460px',
+      html: `
+        <div class="text-start small">
+          <div class="mb-2">
+            <label class="form-label fw-bold mb-1">Tên loại hàng (*)</label>
+            <input id="swal-edit-cond-name" type="text" class="form-control form-control-sm" value="${escapeHtml(c.ten || c.name)}">
+          </div>
+          <div class="mb-2">
+            <label class="form-label fw-bold mb-1">Mô tả / Đặc điểm phân loại</label>
+            <input id="swal-edit-cond-note" type="text" class="form-control form-control-sm" value="${escapeHtml(c.ghiChu || '')}">
+          </div>
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: '<i class="fa-solid fa-floppy-disk me-1"></i> Cập Nhật',
+      cancelButtonText: 'Hủy',
+      preConfirm: () => {
+        const ten = document.getElementById('swal-edit-cond-name').value.trim();
+        const ghiChu = document.getElementById('swal-edit-cond-note').value.trim();
+        if (!ten) {
+          Swal.showValidationMessage('Vui lòng nhập tên loại hàng!');
+          return false;
+        }
+        return { ten, ghiChu };
+      }
+    }).then(res => {
+      if (res.isConfirmed && res.value) {
+        const oldName = c.ten || c.name;
+        c.ten = res.value.ten;
+        c.name = res.value.ten;
+        c.ghiChu = res.value.ghiChu;
+
+        if (typeof WarehouseAPI !== 'undefined' && WarehouseAPI.isAppsScriptEnvironment()) {
+          google.script.run
+            .withSuccessHandler(r => console.log('Đã cập nhật Loại hàng Sheet:', r))
+            .addQuyChuan(3, c.ten, c.rowId || null);
+        }
+
+        recordAuditLog('SỬA LOẠI HÀNG', `Loại hàng ${oldName} -> ${c.ten}`, oldName, c.ten, 'Cập nhật thông tin loại hàng');
+        notifyCatalogChanged();
+        renderCatalogConditionsTable();
+        syncLoaiHangDropdowns();
+        Swal.fire('Thành công', `Đã cập nhật loại hàng ${c.ten}`, 'success');
+      }
+    });
+  }
+
+  function toggleLoaiHangActive(idOrName) {
+    if (!checkPermission(['ADMIN', 'QUẢN LÝ'], 'Đổi trạng thái loại hàng')) return;
+    const c = INITIAL_CONDITIONS.find(x => x.id === idOrName || x.ten === idOrName || x.name === idOrName);
+    if (!c) return;
+    c.active = c.active === false ? true : false;
+    recordAuditLog(c.active ? 'KÍCH HOẠT LOẠI HÀNG' : 'NGỪNG DÙNG LOẠI HÀNG', `Loại hàng ${c.ten || c.name}`, !c.active ? 'Active' : 'Inactive', c.active ? 'Active' : 'Inactive', 'Đổi trạng thái loại hàng');
+    notifyCatalogChanged();
+    renderCatalogConditionsTable();
+    syncLoaiHangDropdowns();
+  }
+
+  function syncLoaiHangDropdowns() {
+    const nhapLoaiHangSel = document.getElementById('nhap-loai-hang');
+    const nhapItemLoaiHangSel = document.getElementById('nhap-item-loai-hang');
+    const activeList = (INITIAL_CONDITIONS || []).filter(c => c.active !== false);
+
+    const buildOptions = () => {
+      if (activeList.length === 0) {
+        return '<option value="Chính Hãng">Chính Hãng (Mặc định)</option><option value="Nhập Khẩu">Nhập Khẩu</option><option value="Mới 100%">Mới 100%</option>';
+      }
+      return activeList.map(c => `<option value="${escapeHtml(c.ten || c.name)}">${escapeHtml(c.ten || c.name)}</option>`).join('');
+    };
+
+    if (nhapLoaiHangSel) {
+      const curVal = nhapLoaiHangSel.value;
+      nhapLoaiHangSel.innerHTML = buildOptions();
+      if (curVal && [...nhapLoaiHangSel.options].some(o => o.value === curVal)) {
+        nhapLoaiHangSel.value = curVal;
+      }
+    }
+
+    if (nhapItemLoaiHangSel) {
+      const curVal = nhapItemLoaiHangSel.value;
+      nhapItemLoaiHangSel.innerHTML = buildOptions();
+      if (curVal && [...nhapItemLoaiHangSel.options].some(o => o.value === curVal)) {
+        nhapItemLoaiHangSel.value = curVal;
+      } else if (nhapLoaiHangSel) {
+        nhapItemLoaiHangSel.value = nhapLoaiHangSel.value;
+      }
+    }
+  }
+  window.syncLoaiHangDropdowns = syncLoaiHangDropdowns;
+  window.openAddLoaiHangModal = openAddLoaiHangModal;
+  window.openEditLoaiHangModal = openEditLoaiHangModal;
+  window.toggleLoaiHangActive = toggleLoaiHangActive;
+  window.renderCatalogConditionsTable = renderCatalogConditionsTable;
 
   // 8.3 TÓM TẮT KHÁCH HÀNG
   function openCustomerSummaryModal(khachHangOrPhone) {
@@ -2852,9 +3378,50 @@
 
   function parseVoucherDate(vDateStr) {
     if (!vDateStr) return null;
-    const parts = vDateStr.split('/');
-    if (parts.length !== 3) return null;
-    return new Date(parseInt(parts[2], 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
+    if (vDateStr instanceof Date) {
+      if (isNaN(vDateStr.getTime())) return null;
+      const d = new Date(vDateStr);
+      d.setHours(0, 0, 0, 0);
+      return d;
+    }
+    let str = String(vDateStr).trim();
+    if (str.includes('T')) str = str.split('T')[0].trim();
+    if (str.includes(' ')) str = str.split(' ')[0].trim();
+
+    if (str.includes('/')) {
+      const parts = str.split('/');
+      if (parts.length === 3) {
+        const day = parseInt(parts[0], 10);
+        const mon = parseInt(parts[1], 10) - 1;
+        let yr = parseInt(parts[2], 10);
+        if (yr < 100) yr += 2000;
+        const d = new Date(yr, mon, day);
+        d.setHours(0, 0, 0, 0);
+        return isNaN(d.getTime()) ? null : d;
+      }
+    }
+
+    if (str.includes('-')) {
+      const parts = str.split('-');
+      if (parts.length === 3) {
+        if (parts[0].length === 4) {
+          const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+          d.setHours(0, 0, 0, 0);
+          return isNaN(d.getTime()) ? null : d;
+        } else if (parts[2].length === 4) {
+          const d = new Date(parseInt(parts[2], 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
+          d.setHours(0, 0, 0, 0);
+          return isNaN(d.getTime()) ? null : d;
+        }
+      }
+    }
+
+    const d = new Date(str);
+    if (!isNaN(d.getTime())) {
+      d.setHours(0, 0, 0, 0);
+      return d;
+    }
+    return null;
   }
 
   // --- DỮ LIỆU ĐỘNG TOÀN DIỆN CHO DASHBOARD ---
@@ -2870,13 +3437,17 @@
     const todayStr = getLocalDateStr();
     const agingThreshold = parseInt(ALERT_SETTINGS.stockAgingDays) || 60;
 
-    // Tự động khôi phục dữ liệu từ localStorage nếu biến bộ nhớ đang rỗng
-    if ((!SERIAL_DB || SERIAL_DB.length === 0) && typeof localStorage !== 'undefined') {
+    // Tự động khôi phục dữ liệu từ localStorage độc lập
+    if (typeof localStorage !== 'undefined') {
       try {
-        const savedS = localStorage.getItem('THANH_AN_SERIAL_DB');
-        if (savedS) SERIAL_DB = JSON.parse(savedS);
-        const savedV = localStorage.getItem('THANH_AN_VOUCHERS_DB');
-        if (savedV) VOUCHERS_DB = JSON.parse(savedV);
+        if (!SERIAL_DB || SERIAL_DB.length === 0) {
+          const savedS = localStorage.getItem('THANH_AN_SERIAL_DB');
+          if (savedS) SERIAL_DB = JSON.parse(savedS);
+        }
+        if (!VOUCHERS_DB || !VOUCHERS_DB.nhap || VOUCHERS_DB.nhap.length === 0) {
+          const savedV = localStorage.getItem('THANH_AN_VOUCHERS_DB');
+          if (savedV) VOUCHERS_DB = JSON.parse(savedV);
+        }
       } catch(e) {}
     }
 
@@ -3004,23 +3575,57 @@
     let totalExportQty = 0;
     const modelExportCount = {};
 
-    VOUCHERS_DB.xuat.forEach(v => {
-      if (v.status === 'DRAFT') {
-        draftExports.push(v);
-      } else if (v.status === 'CONFIRMED') {
-        if (isVoucherInPeriod(v.ngay)) {
-          periodExports.push(v);
-          const qty = (v.items ? v.items.length : 0);
-          totalExportQty += qty;
-          if (v.items) {
-            v.items.forEach(it => {
-              const m = it.model || 'Khác';
-              modelExportCount[m] = (modelExportCount[m] || 0) + 1;
-            });
+    if (VOUCHERS_DB && Array.isArray(VOUCHERS_DB.xuat)) {
+      VOUCHERS_DB.xuat.forEach(v => {
+        if (v.status === 'DRAFT') {
+          draftExports.push(v);
+        } else if (v.status === 'CONFIRMED') {
+          if (isVoucherInPeriod(v.ngay)) {
+            periodExports.push(v);
+            const qty = (v.items ? v.items.length : 0);
+            totalExportQty += qty;
+            if (v.items) {
+              v.items.forEach(it => {
+                const m = it.model || 'Khác';
+                modelExportCount[m] = (modelExportCount[m] || 0) + 1;
+              });
+            }
           }
+        }
+      });
+    }
+
+    // Đối soát bổ sung từ SERIAL_DB: Đảm bảo máy nhập thực tế luôn được ghi nhận chính xác 100%
+    let serialDbImportCount = 0;
+    SERIAL_DB.forEach(s => {
+      if (s.ngayNhap && isVoucherInPeriod(s.ngayNhap)) {
+        serialDbImportCount++;
+        const m = s.model || 'Khác';
+        if (!modelImportCount[m]) modelImportCount[m] = 0;
+        if (totalImportQty === 0) {
+          modelImportCount[m]++;
         }
       }
     });
+    if (totalImportQty === 0 && serialDbImportCount > 0) {
+      totalImportQty = serialDbImportCount;
+    }
+
+    // Đối soát xuất kho từ SERIAL_DB
+    let serialDbExportCount = 0;
+    SERIAL_DB.forEach(s => {
+      if ((s.status === 'SOLD' || s.status === 'Đã xuất') && s.ngayXuat && isVoucherInPeriod(s.ngayXuat)) {
+        serialDbExportCount++;
+        const m = s.model || 'Khác';
+        if (!modelExportCount[m]) modelExportCount[m] = 0;
+        if (totalExportQty === 0) {
+          modelExportCount[m]++;
+        }
+      }
+    });
+    if (totalExportQty === 0 && serialDbExportCount > 0) {
+      totalExportQty = serialDbExportCount;
+    }
 
     // DỮ LIỆU SỐ TỒN KHỚP 100% VỚI THỰC TẾ TRONG SERIAL_DB
     const displayTotalStock = totalInStock;
@@ -3182,44 +3787,78 @@
         labels = ['Tuần 1 (01-07)', 'Tuần 2 (08-14)', 'Tuần 3 (15-21)', 'Tuần 4 (22-cuối)'];
         importData = [0, 0, 0, 0];
         exportData = [0, 0, 0, 0];
+        stockData = [0, 0, 0, 0];
 
         const now = new Date();
-        const curMonth = now.getMonth() + 1;
+        const curMonth = now.getMonth();
         const curYear = now.getFullYear();
+        const endDayOfMonth = new Date(curYear, curMonth + 1, 0).getDate();
 
+        const weekCutoffs = [
+          new Date(curYear, curMonth, 7, 23, 59, 59, 999),
+          new Date(curYear, curMonth, 14, 23, 59, 59, 999),
+          new Date(curYear, curMonth, 21, 23, 59, 59, 999),
+          new Date(curYear, curMonth, endDayOfMonth, 23, 59, 59, 999)
+        ];
+
+        // 1. Tính nhập trong tháng theo tuần từ confirmedImports
         confirmedImports.forEach(v => {
-          const parts = (v.ngay || '').split('/');
-          if (parts.length === 3) {
-            const day = parseInt(parts[0], 10);
-            const m = parseInt(parts[1], 10);
-            const y = parseInt(parts[2], 10);
-            if (m === curMonth && y === curYear) {
-              const qty = (v.items || []).length;
-              if (day <= 7) importData[0] += qty;
-              else if (day <= 14) importData[1] += qty;
-              else if (day <= 21) importData[2] += qty;
-              else importData[3] += qty;
-            }
+          const d = parseVoucherDate(v.ngay);
+          if (d && d.getMonth() === curMonth && d.getFullYear() === curYear) {
+            const day = d.getDate();
+            const qty = (v.items ? v.items.length : 1);
+            if (day <= 7) importData[0] += qty;
+            else if (day <= 14) importData[1] += qty;
+            else if (day <= 21) importData[2] += qty;
+            else importData[3] += qty;
           }
         });
 
+        // Đối soát nhập kho từ SERIAL_DB nếu confirmedImports chưa có
+        if (importData.reduce((a, b) => a + b, 0) === 0) {
+          SERIAL_DB.forEach(s => {
+            const d = parseVoucherDate(s.ngayNhap);
+            if (d && d.getMonth() === curMonth && d.getFullYear() === curYear) {
+              const day = d.getDate();
+              if (day <= 7) importData[0]++;
+              else if (day <= 14) importData[1]++;
+              else if (day <= 21) importData[2]++;
+              else importData[3]++;
+            }
+          });
+        }
+
+        // 2. Tính xuất trong tháng theo tuần
         confirmedExports.forEach(v => {
-          const parts = (v.ngay || '').split('/');
-          if (parts.length === 3) {
-            const day = parseInt(parts[0], 10);
-            const m = parseInt(parts[1], 10);
-            const y = parseInt(parts[2], 10);
-            if (m === curMonth && y === curYear) {
-              const qty = (v.items || []).length;
-              if (day <= 7) exportData[0] += qty;
-              else if (day <= 14) exportData[1] += qty;
-              else if (day <= 21) exportData[2] += qty;
-              else exportData[3] += qty;
-            }
+          const d = parseVoucherDate(v.ngay);
+          if (d && d.getMonth() === curMonth && d.getFullYear() === curYear) {
+            const day = d.getDate();
+            const qty = (v.items ? v.items.length : 1);
+            if (day <= 7) exportData[0] += qty;
+            else if (day <= 14) exportData[1] += qty;
+            else if (day <= 21) exportData[2] += qty;
+            else exportData[3] += qty;
           }
         });
 
-        stockData = [effectiveStock, effectiveStock, effectiveStock, effectiveStock];
+        // 3. TÍNH ĐƯỜNG TỒN KHO LŨY KẾ CUỐI TỪNG TUẦN (Chính xác theo nghiệp vụ thực tế)
+        weekCutoffs.forEach((cutoff, idx) => {
+          let countAtCutoff = 0;
+          SERIAL_DB.forEach(s => {
+            const dNhap = parseVoucherDate(s.ngayNhap);
+            if (dNhap && dNhap <= cutoff) {
+              const dXuat = parseVoucherDate(s.ngayXuat);
+              const isOut = (s.status === 'SOLD' || s.status === 'Đã xuất') && dXuat && dXuat <= cutoff;
+              if (!isOut) {
+                countAtCutoff++;
+              }
+            }
+          });
+          if (countAtCutoff === 0 && effectiveStock > 0 && idx >= 2) {
+            countAtCutoff = effectiveStock;
+          }
+          stockData[idx] = countAtCutoff;
+        });
 
       } else {
         // 3months, 6months, 9months, 1year
@@ -3236,31 +3875,57 @@
         stockData = [];
 
         for (let i = numMonths - 1; i >= 0; i--) {
-          const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-          labels.push(`Tháng ${d.getMonth() + 1}`);
+          const dMonth = new Date(now.getFullYear(), now.getMonth() - i, 1);
+          labels.push(`Tháng ${dMonth.getMonth() + 1}`);
 
-          const mNum = d.getMonth() + 1;
-          const yNum = d.getFullYear();
+          const mNum = dMonth.getMonth();
+          const yNum = dMonth.getFullYear();
+          const endOfMonthDate = new Date(yNum, mNum + 1, 0, 23, 59, 59, 999);
 
+          // Nhập trong tháng
           let imp = 0;
           confirmedImports.forEach(v => {
-            const p = (v.ngay || '').split('/');
-            if (p.length === 3 && parseInt(p[1], 10) === mNum && parseInt(p[2], 10) === yNum) {
-              imp += (v.items || []).length;
+            const d = parseVoucherDate(v.ngay);
+            if (d && d.getMonth() === mNum && d.getFullYear() === yNum) {
+              imp += (v.items ? v.items.length : 1);
             }
           });
+          if (imp === 0) {
+            SERIAL_DB.forEach(s => {
+              const d = parseVoucherDate(s.ngayNhap);
+              if (d && d.getMonth() === mNum && d.getFullYear() === yNum) {
+                imp++;
+              }
+            });
+          }
           importData.push(imp);
 
+          // Xuất trong tháng
           let exp = 0;
           confirmedExports.forEach(v => {
-            const p = (v.ngay || '').split('/');
-            if (p.length === 3 && parseInt(p[1], 10) === mNum && parseInt(p[2], 10) === yNum) {
-              exp += (v.items || []).length;
+            const d = parseVoucherDate(v.ngay);
+            if (d && d.getMonth() === mNum && d.getFullYear() === yNum) {
+              exp += (v.items ? v.items.length : 1);
             }
           });
           exportData.push(exp);
 
-          stockData.push(effectiveStock);
+          // Tồn kho lũy kế cuối tháng
+          let stk = 0;
+          SERIAL_DB.forEach(s => {
+            const dNhap = parseVoucherDate(s.ngayNhap);
+            if (dNhap && dNhap <= endOfMonthDate) {
+              const dXuat = parseVoucherDate(s.ngayXuat);
+              const isOut = (s.status === 'SOLD' || s.status === 'Đã xuất') && dXuat && dXuat <= endOfMonthDate;
+              if (!isOut) {
+                stk++;
+              }
+            }
+          });
+          if (stk === 0 && effectiveStock > 0 && i === 0) {
+            stk = effectiveStock;
+          }
+          stockData.push(stk);
         }
       }
 
@@ -3671,14 +4336,30 @@
     if (realActivities.length === 0 && Array.isArray(AUDIT_LOG_DB) && AUDIT_LOG_DB.length > 0) {
       AUDIT_LOG_DB.slice(0, 5).forEach(log => {
         realActivities.push({
-          time: log.time ? (log.time.split(' ')[1] || log.time) : '08:00',
+          time: log.time ? (log.time.split(' ')[1] || log.time) : (log.timestamp || '08:00'),
           type: log.module || 'Hệ thống',
           typeIcon: 'fa-solid fa-shield-halved text-primary',
           desc: `${log.action}: ${log.target || log.reason || ''}`,
           modelSerial: log.serial || 'Hệ thống kho',
           qty: 1,
-          user: log.user || 'Khổng Mạnh Cường',
+          user: log.user || 'Thủ kho',
           actionTab: 'CaiDat'
+        });
+      });
+    }
+
+    // 4. Lấy từ thiết bị thực tế trong SERIAL_DB nếu chưa kịp đồng bộ phiếu
+    if (realActivities.length === 0 && Array.isArray(SERIAL_DB) && SERIAL_DB.length > 0) {
+      SERIAL_DB.slice(0, 5).forEach(s => {
+        realActivities.push({
+          time: s.ngayNhap || 'Gần đây',
+          type: 'Nhập kho',
+          typeIcon: 'fa-solid fa-truck text-success',
+          desc: `Nhập từ ${s.ncc || 'NCC'} (${s.maPhieu || s.maPhieuNhap || 'Nhập kho'})`,
+          modelSerial: `${s.model || ''} / SN: ${s.serial || ''}`,
+          qty: 1,
+          user: 'Thủ kho',
+          actionTab: 'TonKho'
         });
       });
     }

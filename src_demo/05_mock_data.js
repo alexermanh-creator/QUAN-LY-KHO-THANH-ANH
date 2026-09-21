@@ -220,8 +220,14 @@
   // 5. CƠ SỞ DỮ LIỆU PHIÊN KIỂM KÊ KHO (RESET RỖNG)
   let INVENTORY_SESSIONS_DB = [];
 
-  // 6. NHẬT KÝ KIỂM TOÁN (RESET RỖNG HOÀN TOÀN)
+  // 6. NHẬT KÝ KIỂM TOÁN (Khôi phục từ localStorage nếu có)
   let AUDIT_LOG_DB = [];
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const savedLogs = localStorage.getItem('THANH_AN_AUDIT_LOGS');
+      if (savedLogs) AUDIT_LOG_DB = JSON.parse(savedLogs);
+    }
+  } catch(e) {}
 
   if (typeof window !== 'undefined') {
     try { if (typeof INITIAL_BRANDS !== 'undefined') window.INITIAL_BRANDS = INITIAL_BRANDS; } catch(e){}

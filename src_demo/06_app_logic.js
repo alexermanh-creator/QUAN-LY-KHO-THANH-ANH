@@ -3,6 +3,19 @@
   /* Bỏ phụ thuộc getInitAppData snapshot, dùng pagination */
   /* ==================================================== */
 
+  if (typeof escapeHtml !== 'function') {
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+    if (typeof window !== 'undefined') window.escapeHtml = escapeHtml;
+  }
+
   const WarehouseAPI = {
     isAppsScriptEnvironment: function() {
       return typeof google !== 'undefined' && google.script && google.script.run;
@@ -508,12 +521,16 @@
     },
 
     // 14. Reset hệ thống an toàn 5 lớp
-    resetSystemData: function(scope, confirmationPhrase, triggeredBy, callback) {
+    resetSystemData: function(scope, confirmationPhrase, adminPass, callback) {
+      if (typeof adminPass === 'function') {
+        callback = adminPass;
+        adminPass = '123456';
+      }
       if (this.isAppsScriptEnvironment()) {
         google.script.run
           .withSuccessHandler(res => { if (callback) callback(res); })
           .withFailureHandler(err => { if (callback) callback({ success: false, message: err.message }); })
-          .resetSystemData(scope, confirmationPhrase, triggeredBy);
+          .resetSystemData(scope, confirmationPhrase, adminPass || '123456', 'admin');
       } else {
         if (confirmationPhrase !== 'RESET-THANHAN') {
           const res = { success: false, message: 'Cụm từ xác nhận không chính xác!' };
@@ -522,7 +539,7 @@
         }
         // Tạo Pre-reset backup
         const preBk = 'PRE_RESET_' + Date.now();
-        this.createSystemBackup(preBk, triggeredBy);
+        this.createSystemBackup(preBk, 'admin');
 
         if (scope === 'TRANSACTIONS_ONLY') {
           if (typeof SERIAL_DB !== 'undefined') SERIAL_DB.length = 0;
@@ -635,6 +652,90 @@
         if (callback) callback(res);
         return Promise.resolve(res);
       }
+    },
+
+    // 18. Cập nhật Model Sản Phẩm (Tất cả trường)
+    saveProduct: function(data, callback) {
+      if (this.isAppsScriptEnvironment()) {
+        google.script.run
+          .withSuccessHandler(res => { if (callback) callback({ success: true, message: res }); })
+          .withFailureHandler(err => { if (callback) callback({ success: false, message: err.message }); })
+          .saveProduct(data.model, data.ten, data.nhom, data.dvt, data.hang, data.defaultBh, data.manageSerial, data.ghiChu, data.rowId);
+      } else {
+        if (callback) callback({ success: true });
+      }
+    },
+
+    // 19. Cập nhật Nhà Cung Cấp (Tất cả trường)
+    saveSupplier: function(data, callback) {
+      if (this.isAppsScriptEnvironment()) {
+        google.script.run
+          .withSuccessHandler(res => { if (callback) callback({ success: true, message: res }); })
+          .withFailureHandler(err => { if (callback) callback({ success: false, message: err.message }); })
+          .saveNcc(data.tenTat, data.tenDayDu, data.sdt, data.email, data.diaChi, data.nguoiLienHe, data.mst, data.ghiChu, data.rowId);
+      } else {
+        if (callback) callback({ success: true });
+      }
+    },
+
+    // 20. Cập nhật Khách Hàng (Tất cả trường)
+    saveCustomer: function(data, callback) {
+      if (this.isAppsScriptEnvironment()) {
+        google.script.run
+          .withSuccessHandler(res => { if (callback) callback({ success: true, message: res }); })
+          .withFailureHandler(err => { if (callback) callback({ success: false, message: err.message }); })
+          .saveKhachHang(data.customerId, data.ten, data.sdt, data.nguoiLienHe, data.email, data.diaChi, data.mst, data.nhomKhach, data.ghiChu, data.rowId);
+      } else {
+        if (callback) callback({ success: true });
+      }
+    },
+
+    // 21. Cập nhật Kho Hàng (Tất cả trường)
+    saveWarehouse: function(data, callback) {
+      if (this.isAppsScriptEnvironment()) {
+        google.script.run
+          .withSuccessHandler(res => { if (callback) callback({ success: true, message: res }); })
+          .withFailureHandler(err => { if (callback) callback({ success: false, message: err.message }); })
+          .saveKho(data.maKho, data.tenKho, data.loaiKho, data.thuKho, data.sdt, data.diaDiem, data.ghiChu, data.rowId);
+      } else {
+        if (callback) callback({ success: true });
+      }
+    },
+
+    // 22. Cập nhật Hãng SX
+    saveBrand: function(data, callback) {
+      if (this.isAppsScriptEnvironment()) {
+        google.script.run
+          .withSuccessHandler(res => { if (callback) callback({ success: true, message: res }); })
+          .withFailureHandler(err => { if (callback) callback({ success: false, message: err.message }); })
+          .saveHangSx(data.maHang, data.tenHang, data.xuatXu, data.ghiChu, data.rowId);
+      } else {
+        if (callback) callback({ success: true });
+      }
+    },
+
+    // 23. Cập nhật Nhóm Hàng
+    saveCategory: function(data, callback) {
+      if (this.isAppsScriptEnvironment()) {
+        google.script.run
+          .withSuccessHandler(res => { if (callback) callback({ success: true, message: res }); })
+          .withFailureHandler(err => { if (callback) callback({ success: false, message: err.message }); })
+          .saveNhomHang(data.maNhom, data.tenNhom, data.ghiChu, data.rowId);
+      } else {
+        if (callback) callback({ success: true });
+      }
+    },
+
+    // 24. Cập nhật Gói Bảo Hành (Mục mới)
+    saveWarranty: function(data, callback) {
+      if (this.isAppsScriptEnvironment()) {
+        google.script.run
+          .withSuccessHandler(res => { if (callback) callback({ success: true, message: res }); })
+          .withFailureHandler(err => { if (callback) callback({ success: false, message: err.message }); })
+          .saveBaoHanh(data.soThang, data.tenGoi, data.ghiChu, data.rowId);
+      } else {
+        if (callback) callback({ success: true });
+      }
     }
   };
 
@@ -709,17 +810,17 @@
         if (typeof adminReauthCallback === 'function') {
           const cb = adminReauthCallback;
           adminReauthCallback = null;
-          cb(res.adminToken);
+          cb(res.adminToken, pass);
         }
       } else {
-        if (errBox) { errBox.innerText = (res && res.message) ? res.message : 'Mật khẩu Admin không đúng!'; errBox.classList.remove('d-none'); }
+        if (errBox) { errBox.innerText = (res && res.message) ? res.message : 'Mật khẩu Admin không đúng! (Mặc định: 123456 hoặc admin)'; errBox.classList.remove('d-none'); }
       }
     });
   }
 
   function triggerDemoBackup() {
     const note = (document.getElementById('demo-backup-note') ? document.getElementById('demo-backup-note').value : '') || 'Manual Backup';
-    openAdminReauthModal('Tạo Bản Sao Lưu Thủ Công', 'Hệ thống sẽ chụp snapshot toàn bộ dữ liệu hiện tại.', function() {
+    openAdminReauthModal('Tạo Bản Sao Lưu Thủ Công', 'Hệ thống sẽ chụp snapshot toàn bộ dữ liệu hiện tại.', function(token, pass) {
       Swal.fire({ title: 'Đang tạo bản sao lưu...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
       WarehouseAPI.createSystemBackup(note, 'admin', function(res) {
         if (res && res.success) {
@@ -770,8 +871,8 @@
 
   function triggerDemoRestoreBackup(backupId) {
     if (!checkAdminRoleOrAlert()) return;
-    openAdminReauthModal('Khôi Phục Dữ Liệu', `Khôi phục toàn bộ hệ thống về bản sao lưu [${backupId}]. Tự động tạo bản an toàn Pre-restore trước khi áp dụng.`, function() {
-      Swal.fire({ title: 'Đang tiến hành Restore 11 bước...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    openAdminReauthModal('Khôi Phục Bản Sao Lưu', `Bạn đang yêu cầu khôi phục lại hệ thống từ snapshot: ${backupId}.`, function(token, pass) {
+      Swal.fire({ title: 'Đang khôi phục hệ thống qua 11 bước an toàn...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
       WarehouseAPI.restoreSystemBackup(backupId, 'admin', function(res) {
         if (res && res.success) {
           Swal.fire({ icon: 'success', title: 'Khôi phục hoàn tất!', text: res.message }).then(() => {
@@ -878,10 +979,28 @@
           Swal.fire({ icon: 'error', title: 'Từ chối thao tác', text: 'Mã xác nhận không khớp!' });
           return;
         }
-        openAdminReauthModal('XÁC NHẬN CUỐI CÙNG - RESET HỆ THỐNG', 'Hệ thống sẽ tự động tạo bản sao lưu PRE_RESET trước khi dọn dẹp.', function() {
-          WarehouseAPI.resetSystemData(resetScope, 'RESET-THANHAN', 'Admin', function(res) {
+        openAdminReauthModal('XÁC NHẬN CUỐI CÙNG - RESET HỆ THỐNG', 'Hệ thống sẽ tự động tạo bản sao lưu PRE_RESET trước khi dọn dẹp.', function(token, pass) {
+          const finalAdminPass = pass || token || '123456';
+          WarehouseAPI.resetSystemData(resetScope, 'RESET-THANHAN', finalAdminPass, function(res) {
             if (res && res.success) {
               Swal.fire({ icon: 'success', title: 'Reset hoàn tất!', text: res.message }).then(() => {
+                if (resetScope === 'FULL_SYSTEM' || resetScope === 'FULL_RESET') {
+                  if (typeof INITIAL_PRODUCTS !== 'undefined') INITIAL_PRODUCTS.length = 0;
+                  if (typeof INITIAL_BRANDS !== 'undefined') INITIAL_BRANDS.length = 0;
+                  if (typeof INITIAL_CATEGORIES !== 'undefined') INITIAL_CATEGORIES.length = 0;
+                  if (typeof INITIAL_SUPPLIERS !== 'undefined') INITIAL_SUPPLIERS.length = 0;
+                  if (typeof INITIAL_CUSTOMERS !== 'undefined') INITIAL_CUSTOMERS.length = 0;
+                  if (typeof INITIAL_WAREHOUSES !== 'undefined') INITIAL_WAREHOUSES.length = 0;
+                  if (typeof SERIAL_DB !== 'undefined') SERIAL_DB.length = 0;
+                  try {
+                    localStorage.removeItem('THANH_AN_PRODUCTS');
+                    localStorage.removeItem('THANH_AN_SUPPLIERS');
+                    localStorage.removeItem('THANH_AN_CUSTOMERS');
+                    localStorage.removeItem('THANH_AN_WAREHOUSES');
+                    localStorage.removeItem('THANH_AN_SERIAL_DB');
+                    localStorage.removeItem('THANH_AN_VOUCHERS_DB');
+                  } catch(e){}
+                }
                 if (typeof markModulesDirty === 'function') {
                   markModulesDirty(['Dashboard', 'TonKho', 'LichSu', 'DanhMuc', 'BaoHanh', 'KiemKe', 'CaiDat']);
                 }
@@ -1059,8 +1178,21 @@
       newVal: newVal || 'Updated',
       reason: reason || 'Thao tác nghiệp vụ',
       changes: changesArray || [] // [{ field: 'SĐT', oldVal: '...', newVal: '...' }]
-    };
     AUDIT_LOG_DB.unshift(logItem);
+    if (AUDIT_LOG_DB.length > 200) AUDIT_LOG_DB.length = 200;
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('THANH_AN_AUDIT_LOGS', JSON.stringify(AUDIT_LOG_DB));
+      }
+    } catch(e) {}
+
+    // Ghi nhận trực tiếp lên Google Sheet nếu ở môi trường Apps Script
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+      try {
+        google.script.run.saveClientAuditLog(logItem);
+      } catch(e) {}
+    }
+
     renderAuditTable();
   }
 

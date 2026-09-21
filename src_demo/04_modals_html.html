@@ -2,51 +2,154 @@
   <!-- MODAL: CAMERA SCANNER (YÊU CẦU I & 11) -->
   <!-- ==================================================== -->
   <div class="modal fade" id="scannerModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content border-0 shadow">
         <div class="modal-header bg-dark text-white py-2">
-          <h6 class="modal-title d-flex align-items-center gap-2">
-            <i class="fa-solid fa-camera text-success"></i>
-            <span id="scanner-modal-title">Camera Quét Barcode / QR Code</span>
+          <h6 class="modal-title d-flex align-items-center gap-2 mb-0">
+            <span id="scanner-modal-title"><i class="fa-solid fa-camera text-success me-1"></i> Camera Quét Barcode / QR Code</span>
           </h6>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" onclick="stopScannerCamera()"></button>
         </div>
         <div class="modal-body p-3">
-          <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded border">
+          <!-- THANH CHUYỂN CHẾ ĐỘ QUÉT -->
+          <ul class="nav nav-pills nav-fill mb-3 bg-light p-1 rounded border" id="scannerMethodTabs" role="tablist">
+            <li class="nav-item">
+              <button class="nav-link active btn-sm py-1" id="scan-tab-photo-btn" data-bs-toggle="pill" data-bs-target="#scan-tab-photo" type="button">
+                <i class="fa-solid fa-camera-retro me-1 text-success"></i> Chụp Tem / Ảnh
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link btn-sm py-1" id="scan-tab-live-btn" data-bs-toggle="pill" data-bs-target="#scan-tab-live" type="button">
+                <i class="fa-solid fa-video me-1 text-primary"></i> Camera Trực Tiếp
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link btn-sm py-1" id="scan-tab-gun-btn" data-bs-toggle="pill" data-bs-target="#scan-tab-gun" type="button">
+                <i class="fa-solid fa-barcode me-1 text-info"></i> Súng Quét USB
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link btn-sm py-1" id="scan-tab-test-btn" data-bs-toggle="pill" data-bs-target="#scan-tab-test" type="button">
+                <i class="fa-solid fa-bolt me-1 text-warning"></i> Thử Nghiệm
+              </button>
+            </li>
+          </ul>
+
+          <div class="d-flex justify-content-between align-items-center mb-2 px-2 py-1 bg-light rounded border">
             <div>
               <span class="fw-bold small d-block">Chế độ quét liên tục (Continuous Scan)</span>
-              <small class="text-muted" style="font-size: 0.72rem;">Không đóng camera sau mỗi mã, tự động bíp & thêm vào danh sách</small>
+              <small class="text-muted" style="font-size: 0.72rem;">Không đóng sau mỗi mã, tự động bíp & thêm vào danh sách</small>
             </div>
             <div class="form-check form-switch m-0">
               <input class="form-check-input" type="checkbox" id="scanner-continuous-toggle" checked style="cursor: pointer;">
             </div>
           </div>
 
-          <!-- Bộ điều khiển thiết bị Camera & Quét ảnh -->
-          <div class="row g-2 mb-2 align-items-center">
-            <div class="col-8">
-              <div class="input-group input-group-sm">
-                <span class="input-group-text bg-light text-secondary"><i class="fa-solid fa-video"></i></span>
-                <select id="scanner-camera-select" class="form-select form-select-sm" onchange="switchCameraDevice(this.value)">
-                  <option value="">Đang tìm camera...</option>
-                </select>
+          <div class="tab-content" id="scannerMethodTabsContent">
+            <!-- TAB 1: CHỤP TEM / ẢNH NATIVE CAMERA (CHUẨN 100% TRÊN ĐIỆN THOẠI & WEB APP GAS) -->
+            <div class="tab-pane fade show active" id="scan-tab-photo">
+              <div class="p-3 bg-light rounded border text-center mb-2">
+                <p class="small text-muted mb-2">
+                  <i class="fa-solid fa-mobile-screen-button me-1 text-primary"></i>
+                  <strong>Khuyên dùng trên Điện Thoại & Máy Tính Bảng:</strong> Bấm nút để mở camera máy chụp tem rõ nét tức thì.
+                </p>
+                <div class="d-grid gap-2 mb-2">
+                  <label class="btn btn-success fw-bold py-3 shadow-sm d-flex align-items-center justify-content-center gap-2" style="cursor:pointer; font-size: 1.05rem;">
+                    <i class="fa-solid fa-camera fs-4"></i>
+                    <span>BẤM VÀO ĐÂY ĐỂ CHỤP TEM QUÉT MÃ</span>
+                    <input type="file" id="scanner-direct-camera-input" accept="image/*" capture="environment" style="display:none;" onchange="scanBarcodeFromFile(this)">
+                  </label>
+                </div>
+                <div class="d-flex justify-content-center gap-2 flex-wrap">
+                  <label class="btn btn-sm btn-outline-secondary" style="cursor:pointer;">
+                    <i class="fa-solid fa-image me-1"></i> Tải ảnh tem từ máy
+                    <input type="file" id="scanner-file-input" accept="image/*" style="display:none;" onchange="scanBarcodeFromFile(this)">
+                  </label>
+                  <button class="btn btn-sm btn-outline-info" type="button" onclick="focusPasteZone()">
+                    <i class="fa-solid fa-paste me-1"></i> Dán ảnh tem (Ctrl+V)
+                  </button>
+                </div>
+                <div id="paste-drop-zone" class="mt-2 p-2 border border-dashed rounded text-muted small" style="display: none; background: #fff;">
+                  <i class="fa-solid fa-clipboard-check me-1 text-info"></i> Nhấn <strong>Ctrl + V</strong> để dán ảnh chụp màn hình/tem máy vào đây
+                </div>
               </div>
             </div>
-            <div class="col-4 text-end">
-              <label class="btn btn-sm btn-outline-secondary w-100 mb-0" style="cursor:pointer;" title="Chọn file ảnh tem mã vạch để quét trực tiếp">
-                <i class="fa-solid fa-image me-1"></i> Quét ảnh
-                <input type="file" id="scanner-file-input" accept="image/*" style="display:none;" onchange="scanBarcodeFromFile(this)">
-              </label>
-            </div>
-          </div>
 
-          <div id="scanner-video-wrapper">
-            <div id="html5-qr-reader" style="width: 100%;"></div>
-            <div class="scanner-laser" id="scanner-laser-line"></div>
+            <!-- TAB 2: CAMERA LIVE STREAM TRỰC TIẾP -->
+            <div class="tab-pane fade" id="scan-tab-live">
+              <div class="alert alert-info py-2 small mb-2 d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div>
+                  <i class="fa-solid fa-circle-info me-1"></i>
+                  <span>Dùng Webcam máy tính/laptop để quét trực tiếp qua khung ngắm.</span>
+                </div>
+                <button class="btn btn-sm btn-primary fw-bold" onclick="openStandaloneCameraWindow()">
+                  <i class="fa-solid fa-arrow-up-right-from-square me-1"></i> Mở Cửa Sổ Camera Ngoài Iframe
+                </button>
+              </div>
+
+              <div class="row g-2 mb-2 align-items-center">
+                <div class="col-12">
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-light text-secondary"><i class="fa-solid fa-video"></i></span>
+                    <select id="scanner-camera-select" class="form-select form-select-sm" onchange="switchCameraDevice(this.value)">
+                      <option value="">Đang tìm camera...</option>
+                    </select>
+                    <button class="btn btn-outline-secondary" onclick="startScannerCamera()" title="Tải lại camera">
+                      <i class="fa-solid fa-rotate-right"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div id="scanner-video-wrapper">
+                <div id="html5-qr-reader" style="width: 100%;"></div>
+                <div class="scanner-laser" id="scanner-laser-line"></div>
+              </div>
+            </div>
+
+            <!-- TAB 3: SÚNG QUÉT MÃ VẠCH BARCODE USB / WIRELESS (TỐI ƯU THỦ KHO PC) -->
+            <div class="tab-pane fade" id="scan-tab-gun">
+              <div class="p-3 bg-light rounded border text-center">
+                <i class="fa-solid fa-barcode fs-1 text-primary mb-2"></i>
+                <h6 class="fw-bold mb-1">Chế Độ Súng Quét Mã Vạch Barcode USB / Bluetooth</h6>
+                <p class="small text-muted mb-3">
+                  Kết nối súng quét vào máy tính. Đưa súng bắn trực tiếp vào tem mã vạch trên vỏ hộp hoặc thân máy.
+                </p>
+                <div class="input-group input-group-lg max-w-400 mx-auto mb-2">
+                  <span class="input-group-text bg-white"><i class="fa-solid fa-barcode text-primary"></i></span>
+                  <input type="text" id="barcode-gun-input" class="form-control font-monospace fw-bold" 
+                         placeholder="Bắn mã tại đây hoặc gõ Serial..." 
+                         autocomplete="off" onkeydown="handleBarcodeGunKeydown(event)">
+                  <button class="btn btn-primary" onclick="submitBarcodeGunInput()">
+                    <i class="fa-solid fa-check"></i> Nhập
+                  </button>
+                </div>
+                <small class="text-success"><i class="fa-solid fa-bolt me-1"></i> Súng quét tự động bấm Enter sau khi quét.</small>
+              </div>
+            </div>
+
+            <!-- TAB 4: THỬ NGHIỆM VÀ MÔ PHỎNG TEST NHANH -->
+            <div class="tab-pane fade" id="scan-tab-test">
+              <div class="p-3 bg-light rounded border">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <small class="fw-bold text-secondary">Mô phỏng máy quét (Dùng test nhanh trên máy tính):</small>
+                </div>
+                <div class="input-group input-group-sm mb-2">
+                  <select id="mock-scanner-select" class="form-select">
+                  </select>
+                  <button class="btn btn-success" onclick="triggerMockScan()">
+                    <i class="fa-solid fa-bolt"></i> Quét mã này
+                  </button>
+                </div>
+                <small class="text-muted d-block">
+                  Giúp kiểm thử luồng nghiệp vụ trên máy tính văn phòng khi chưa có thiết bị phần cứng thật.
+                </small>
+              </div>
+            </div>
           </div>
 
           <div id="scanner-feedback-box" class="mt-2 p-2 rounded small text-center fw-semibold bg-light text-muted">
-            <i class="fa-solid fa-circle-notch fa-spin me-1"></i> Đang hướng camera vào mã vạch / QR tem thiết bị...
+            <i class="fa-solid fa-circle-notch fa-spin me-1"></i> Sẵn sàng quét mã...
           </div>
 
           <div id="scanner-recent-container" class="mt-2" style="display: none;">
@@ -55,19 +158,6 @@
               <span class="badge bg-success" id="scanner-scanned-count">0 mã</span>
             </div>
             <div id="scanner-scanned-list" class="d-flex flex-wrap gap-1 p-2 bg-light border rounded" style="max-height: 80px; overflow-y: auto;">
-            </div>
-          </div>
-
-          <div class="mt-3 pt-2 border-top">
-            <div class="d-flex justify-content-between align-items-center mb-1">
-              <small class="fw-bold text-secondary">Mô phỏng máy quét (Dùng test nhanh trên máy tính):</small>
-            </div>
-            <div class="input-group input-group-sm">
-              <select id="mock-scanner-select" class="form-select">
-              </select>
-              <button class="btn btn-outline-success" onclick="triggerMockScan()">
-                <i class="fa-solid fa-bolt"></i> Quét mã này
-              </button>
             </div>
           </div>
         </div>

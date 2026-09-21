@@ -502,7 +502,7 @@
                 <select id="nhap-ncc" class="form-select form-select-sm">
                 </select>
               </div>
-              <div class="col-6 col-md-3">
+              <div class="col-6 col-md-2">
                 <label class="form-label small fw-semibold text-muted mb-1">Kho Nhập (*)</label>
                 <select id="nhap-kho" class="form-select form-select-sm">
                   <option value="Kho VP">Kho VP</option>
@@ -510,7 +510,17 @@
                   <option value="Kho Cách Ly (Hàng lỗi)">Kho Cách Ly (Hàng lỗi)</option>
                 </select>
               </div>
-              <div class="col-6 col-md-3">
+              <div class="col-6 col-md-2">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <label class="form-label small fw-semibold text-muted mb-0">Loại Hàng (*)</label>
+                  <a href="javascript:void(0)" class="text-primary small text-decoration-none" onclick="openAddLoaiHangModal()" title="Thêm loại hàng mới">
+                    <i class="fa-solid fa-plus-circle"></i>
+                  </a>
+                </div>
+                <select id="nhap-loai-hang" class="form-select form-select-sm" onchange="syncNhapItemLoaiHang(this.value)">
+                </select>
+              </div>
+              <div class="col-6 col-md-2">
                 <label class="form-label small fw-semibold text-muted mb-1">Ngày Nhập</label>
                 <input type="date" id="nhap-ngay" class="form-control form-control-sm">
               </div>
@@ -547,6 +557,11 @@
                       <datalist id="nhap-model-datalist"></datalist>
                       <input type="hidden" id="nhap-select-model">
                     </div>
+                    <div class="mt-2">
+                      <label class="form-label small fw-semibold text-muted mb-1">Loại Hàng Cho Lô Thiết Bị Này (*)</label>
+                      <select id="nhap-item-loai-hang" class="form-select form-select-sm">
+                      </select>
+                    </div>
                     <div id="nhap-model-info" class="mt-2 p-2 bg-light rounded small border">
                     </div>
                   </div>
@@ -558,7 +573,7 @@
                           <i class="fa-solid fa-hashtag"></i> Tạo mã nội bộ
                         </button>
                         <button class="btn btn-sm btn-cam" onclick="openScannerModal('NHAP_KHO_SINGLE')">
-                          <i class="fa-solid fa-camera"></i> 📷 Quét Camera
+                          <i class="fa-solid fa-camera me-1"></i> Quét Camera
                         </button>
                       </div>
                     </div>
@@ -616,6 +631,7 @@
                 <tr>
                   <th>#</th>
                   <th>Model Sản Phẩm</th>
+                  <th>Loại Hàng</th>
                   <th>Serial Hãng (Mfg SN)</th>
                   <th>Mã Nội Bộ Thành An</th>
                   <th>Kho Nhập</th>
@@ -624,7 +640,7 @@
                 </tr>
               </thead>
               <tbody id="draft-nhap-table-body">
-                <tr><td colspan="7" class="text-center text-muted py-3">Chưa có thiết bị nào trong draft phiếu nhập</td></tr>
+                <tr><td colspan="8" class="text-center text-muted py-3">Chưa có thiết bị nào trong draft phiếu nhập</td></tr>
               </tbody>
             </table>
           </div>
@@ -654,7 +670,7 @@
             <p class="text-muted small mb-0">Quét xuất serial, tự động gắn bảo hành riêng từng máy, đối soát trước khi chốt</p>
           </div>
           <button class="btn btn-xuat" onclick="openScannerModal('XUAT_KHO')">
-            <i class="fa-solid fa-camera me-1"></i> 📷 Quét Serial xuất kho
+            <i class="fa-solid fa-camera me-1"></i> Quét Serial xuất kho
           </button>
         </div>
 
@@ -776,7 +792,7 @@
             <p class="text-muted small mb-0">Truy vết trọn vòng đời thiết bị từ khi nhập kho, xuất bán, bảo hành và luân chuyển</p>
           </div>
           <button class="btn btn-cam" onclick="openScannerModal('SERIAL_360')">
-            <i class="fa-solid fa-camera me-1"></i> 📷 Quét Serial
+            <i class="fa-solid fa-camera me-1"></i> Quét Serial
           </button>
         </div>
 
@@ -1378,6 +1394,16 @@
                 <i class="fa-solid fa-layer-group me-1"></i> Nhóm Hàng
               </button>
             </li>
+            <li class="nav-item">
+              <button class="nav-link btn-sm" data-bs-toggle="pill" data-bs-target="#tab-cat-warranty" type="button">
+                <i class="fa-solid fa-shield-halved me-1"></i> Thời Gian Bảo Hành
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link btn-sm" data-bs-toggle="pill" data-bs-target="#tab-cat-conditions" type="button">
+                <i class="fa-solid fa-boxes-stacked me-1"></i> Loại Hàng
+              </button>
+            </li>
           </ul>
         </div>
 
@@ -1588,6 +1614,69 @@
                     </tr>
                   </thead>
                   <tbody id="catalog-categories-table-body">
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4.7 THỜI GIAN BẢO HÀNH (GÓI BẢO HÀNH) -->
+          <div class="tab-pane fade" id="tab-cat-warranty">
+            <div class="app-card mb-3">
+              <div class="app-card-body p-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div class="d-flex align-items-center gap-2 flex-grow-1" style="max-width: 400px;">
+                  <input type="text" id="filter-cat-warranty-search" class="form-control form-control-sm" placeholder="Tìm gói bảo hành..." oninput="renderCatalogWarrantyTable()">
+                </div>
+                <button class="btn btn-sm btn-outline-primary" onclick="openAddWarrantyModal()">
+                  <i class="fa-solid fa-plus"></i> Thêm Gói Bảo Hành Mới
+                </button>
+              </div>
+            </div>
+            <div class="app-card">
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 table-responsive-card">
+                  <thead class="table-light small">
+                    <tr>
+                      <th>Mã / ID Gói</th>
+                      <th>Thời Hạn Hiển Thị</th>
+                      <th>Số Tháng</th>
+                      <th>Ghi Chú</th>
+                      <th>Trạng Thái</th>
+                      <th class="text-end">Thao Tác</th>
+                    </tr>
+                  </thead>
+                  <tbody id="catalog-warranty-table-body">
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4.8 QUẢN TRỊ LOẠI HÀNG (CHÍNH HÃNG, NHẬP KHẨU, MỚI 100%, LIKE NEW...) -->
+          <div class="tab-pane fade" id="tab-cat-conditions">
+            <div class="app-card mb-3">
+              <div class="app-card-body p-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div class="d-flex align-items-center gap-2 flex-grow-1" style="max-width: 400px;">
+                  <input type="text" id="filter-cat-conditions-search" class="form-control form-control-sm" placeholder="Tìm loại hàng (Chính hãng, Nhập khẩu...)..." oninput="renderCatalogConditionsTable()">
+                </div>
+                <button class="btn btn-sm btn-primary" onclick="openAddLoaiHangModal()">
+                  <i class="fa-solid fa-plus"></i> Thêm Loại Hàng Mới
+                </button>
+              </div>
+            </div>
+            <div class="app-card">
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 table-responsive-card">
+                  <thead class="table-light small">
+                    <tr>
+                      <th style="width: 70px;">STT</th>
+                      <th>Tên Loại Hàng</th>
+                      <th>Đặc Điểm / Ghi Chú</th>
+                      <th>Trạng Thái</th>
+                      <th class="text-end">Thao Tác</th>
+                    </tr>
+                  </thead>
+                  <tbody id="catalog-conditions-table-body">
                   </tbody>
                 </table>
               </div>

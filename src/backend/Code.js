@@ -63,15 +63,36 @@ function getInitAppData(options) {
     : [];
 
   const qcSheet = ss.getSheetByName("DM_QUY_CHUAN");
-  const nhomHang = [], kho = [], loaiHang = [], baoHanh = [];
+  const nhomHang = [], kho = [], loaiHang = [], baoHanh = [], hangSx = [];
   if (qcSheet && qcSheet.getLastRow() > 1) {
-    qcSheet.getRange(2, 1, qcSheet.getLastRow() - 1, 4).getValues().forEach((r, i) => {
-      const rowId = i + 2;
-      if (r[0]) nhomHang.push({ rowId, col: 1, val: r[0] });
-      if (r[1]) kho.push({ rowId, col: 2, val: r[1] });
-      if (r[2]) loaiHang.push({ rowId, col: 3, val: r[2] });
-      if (r[3]) baoHanh.push({ rowId, col: 4, val: r[3] });
-    });
+    const headerVal = String(qcSheet.getRange(1, 1).getValue() || '').trim();
+    const maxCols = Math.max(5, qcSheet.getLastColumn());
+    const allQcRows = qcSheet.getRange(2, 1, qcSheet.getLastRow() - 1, maxCols).getValues();
+
+    if (headerVal === "Loại Quy Chuẩn") {
+      // Tương thích ngược: Xử lý dạng dòng Key-Value cũ
+      allQcRows.forEach((r, i) => {
+        const rowId = i + 2;
+        const type = String(r[0] || '').trim().toUpperCase();
+        const val = String(r[1] || '').trim();
+        if (!val) return;
+        if (type === "NHOM_HANG") nhomHang.push({ rowId, col: 1, val });
+        else if (type === "KHO") kho.push({ rowId, col: 2, val });
+        else if (type === "LOAI_HANG") loaiHang.push({ rowId, col: 3, val });
+        else if (type === "BAO_HANH") baoHanh.push({ rowId, col: 4, val });
+        else if (type === "HANG_SX") hangSx.push({ rowId, col: 5, val });
+      });
+    } else {
+      // Cấu trúc 5 cột độc lập chuẩn: Cột 1 Nhóm Hàng, Cột 2 Kho Hàng, Cột 3 Loại Hàng, Cột 4 Bảo Hành, Cột 5 Hãng SX
+      allQcRows.forEach((r, i) => {
+        const rowId = i + 2;
+        if (r[0] && String(r[0]).trim()) nhomHang.push({ rowId, col: 1, val: String(r[0]).trim() });
+        if (r[1] && String(r[1]).trim()) kho.push({ rowId, col: 2, val: String(r[1]).trim() });
+        if (r[2] && String(r[2]).trim()) loaiHang.push({ rowId, col: 3, val: String(r[2]).trim() });
+        if (r[3] && String(r[3]).trim()) baoHanh.push({ rowId, col: 4, val: String(r[3]).trim() });
+        if (r[4] && String(r[4]).trim()) hangSx.push({ rowId, col: 5, val: String(r[4]).trim() });
+      });
+    }
   }
 
   // 2. TÍNH TOÁN METRICS VÀ THU THẬP DỮ LIỆU TỒN KHO/SERIAL (ĐỌC 1 LẦN DUY NHẤT)
@@ -151,6 +172,81 @@ function getInitAppData(options) {
     });
   }
 
+  // 3. LỊCH SỬ PHIẾU NHẬP (Lấy tối đa 200 phiếu gần nhất)
+  const lsNhapList = [];
+  const lsNhapSheet = ss.getSheetByName("LICH_SU_NHAP");
+  if (lsNhapSheet && lsNhapSheet.getLastRow() > 1) {
+    const numRows = Math.min(200, lsNhapSheet.getLastRow() - 1);
+    const startRow = Math.max(2, lsNhapSheet.getLastRow() - numRows + 1);
+    const dataNhap = lsNhapSheet.getRange(startRow, 1, numRows, 8).getValues();
+    for (let i = dataNhap.length - 1; i >= 0; i--) {
+      const r = dataNhap[i];
+      const mp = String(r[0] || '').trim();
+      if (!mp) continue;
+      const ngayVal = r[1] instanceof Date ? Utilities.formatDate(r[1], "GMT+7", "dd/MM/yyyy") : String(r[1] || '');
+      lsNhapList.push({
+        maPhieu: mp,
+        ngayNhap: ngayVal,
+        ngay: ngayVal,
+        ncc: String(r[2] || ''),
+        modelSummary: String(r[3] || ''),
+        soLuong: parseInt(r[4], 10) || 1,
+        serials: String(r[5] || ''),
+        kho: String(r[6] || 'Kho VP'),
+        ghiChu: String(r[7] || ''),
+        status: 'CONFIRMED'
+      });
+    }
+  }
+
+  // 4. LỊCH SỬ PHIẾU XUẤT (Lấy tối đa 200 phiếu gần nhất)
+  const lsXuatList = [];
+  const lsXuatSheet = ss.getSheetByName("LICH_SU_XUAT");
+  if (lsXuatSheet && lsXuatSheet.getLastRow() > 1) {
+    const numRows = Math.min(200, lsXuatSheet.getLastRow() - 1);
+    const startRow = Math.max(2, lsXuatSheet.getLastRow() - numRows + 1);
+    const dataXuat = lsXuatSheet.getRange(startRow, 1, numRows, 7).getValues();
+    for (let i = dataXuat.length - 1; i >= 0; i--) {
+      const r = dataXuat[i];
+      const mp = String(r[0] || '').trim();
+      if (!mp) continue;
+      const ngayVal = r[1] instanceof Date ? Utilities.formatDate(r[1], "GMT+7", "dd/MM/yyyy") : String(r[1] || '');
+      lsXuatList.push({
+        maPhieu: mp,
+        ngayXuat: ngayVal,
+        ngay: ngayVal,
+        khachHang: String(r[2] || ''),
+        soLuong: parseInt(r[3], 10) || 1,
+        serials: String(r[4] || ''),
+        baoHanh: String(r[5] || ''),
+        ghiChu: String(r[6] || ''),
+        status: 'CONFIRMED'
+      });
+    }
+  }
+
+  // 5. NHẬT KÝ HOẠT ĐỘNG HỆ THỐNG (Lấy 100 log mới nhất)
+  const auditLogsList = [];
+  const logSheet = ss.getSheetByName("NHAT_KY_HOAT_DONG");
+  if (logSheet && logSheet.getLastRow() > 1) {
+    const numRows = Math.min(100, logSheet.getLastRow() - 1);
+    const startRow = Math.max(2, logSheet.getLastRow() - numRows + 1);
+    const dataLog = logSheet.getRange(startRow, 1, numRows, 5).getValues();
+    for (let i = dataLog.length - 1; i >= 0; i--) {
+      const r = dataLog[i];
+      const timeStr = r[0] instanceof Date ? Utilities.formatDate(r[0], "GMT+7", "dd/MM/yyyy HH:mm:ss") : String(r[0] || '');
+      auditLogsList.push({
+        id: 'LOG-' + (startRow + i),
+        time: timeStr,
+        timestamp: timeStr,
+        user: String(r[1] || 'Thủ Kho'),
+        action: String(r[2] || 'HỆ THỐNG'),
+        target: String(r[3] || ''),
+        detail: String(r[4] || '')
+      });
+    }
+  }
+
   // Cấu hình cảnh báo & hệ thống
   const alertSettings = {
     draftVoucher: true,
@@ -179,10 +275,14 @@ function getInitAppData(options) {
     kho: kho,
     loaiHang: loaiHang,
     baoHanh: baoHanh,
+    hangSx: hangSx,
     alertSettings: alertSettings,
     existingSerials: existingSerials,
     tonKhoList: tonKhoList,
-    baoHanhList: baoHanhList
+    baoHanhList: baoHanhList,
+    lsNhap: lsNhapList,
+    lsXuat: lsXuatList,
+    auditLogs: auditLogsList
   };
 
   return bootstrapData;
@@ -617,6 +717,21 @@ function getDashboardSummary(period, customFrom, customTo) {
   let fromDate = null;
   let toDate = null;
 
+  function parseGasDate(val) {
+    if (!val) return null;
+    if (val instanceof Date) return val;
+    const str = String(val).trim();
+    if (str.includes('/')) {
+      const parts = str.split('/');
+      if (parts.length === 3) return new Date(parts[2], parts[1] - 1, parts[0]);
+    }
+    if (str.includes('-')) {
+      const parts = str.split('-');
+      if (parts.length === 3 && parts[0].length === 4) return new Date(parts[0], parts[1] - 1, parts[2]);
+    }
+    return null;
+  }
+
   if (period === 'today') {
     fromDate = new Date(today);
     toDate = new Date(today);
@@ -626,13 +741,27 @@ function getDashboardSummary(period, customFrom, customTo) {
     toDate = new Date(today);
     toDate.setHours(23, 59, 59, 999);
   } else if (period === 'month') {
-    fromDate = new Date(today.getFullYear(), today.getMonth(), 1);
+    fromDate = new Date(today.getFullYear(), today.getMonth(), 1, 0, 0, 0, 0);
     toDate = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59, 999);
+  } else if (period === '3months') {
+    fromDate = new Date(today.getFullYear(), today.getMonth() - 2, 1, 0, 0, 0, 0);
+    toDate = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59, 999);
+  } else if (period === '6months') {
+    fromDate = new Date(today.getFullYear(), today.getMonth() - 5, 1, 0, 0, 0, 0);
+    toDate = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59, 999);
+  } else if (period === '9months') {
+    fromDate = new Date(today.getFullYear(), today.getMonth() - 8, 1, 0, 0, 0, 0);
+    toDate = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59, 999);
+  } else if (period === '1year') {
+    fromDate = new Date(today.getFullYear() - 1, today.getMonth(), 1, 0, 0, 0, 0);
+    toDate = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59, 999);
+  } else if (period === 'all') {
+    fromDate = null;
+    toDate = null;
   } else if (period === 'custom' && customFrom && customTo) {
-    const fParts = customFrom.split('-');
-    fromDate = new Date(fParts[0], fParts[1] - 1, fParts[2]);
-    const tParts = customTo.split('-');
-    toDate = new Date(tParts[0], tParts[1] - 1, tParts[2], 23, 59, 59, 999);
+    fromDate = parseGasDate(customFrom);
+    toDate = parseGasDate(customTo);
+    if (toDate) toDate.setHours(23, 59, 59, 999);
   }
 
   // Đếm tồn kho hiện tại
@@ -649,17 +778,10 @@ function getDashboardSummary(period, customFrom, customTo) {
   let importCount = 0;
   if (vSheet && vSheet.getLastRow() > 1) {
     const isV4Header = (vSheet.getName() === "V4_RECEIPT_HEADERS");
-    // Nếu V4_RECEIPT_HEADERS: col 2 (ngày), col 6 (số lượng) -> lấy 5 cột từ col 2: r[0]=ngày, r[4]=số lượng
-    // Nếu LICH_SU_NHAP: col 2 (ngày), col 5 (số lượng) -> lấy 4 cột từ col 2: r[0]=ngày, r[3]=số lượng
     const numColsToRead = isV4Header ? 5 : 4;
     const vData = vSheet.getRange(2, 2, vSheet.getLastRow() - 1, numColsToRead).getValues();
     vData.forEach(r => {
-      let d = null;
-      if (r[0] instanceof Date) d = r[0];
-      else if (r[0]) {
-        const parts = String(r[0]).split('/');
-        if (parts.length === 3) d = new Date(parts[2], parts[1] - 1, parts[0]);
-      }
+      const d = parseGasDate(r[0]);
       if (d) {
         if (fromDate && d < fromDate) return;
         if (toDate && d > toDate) return;
@@ -669,17 +791,25 @@ function getDashboardSummary(period, customFrom, customTo) {
     });
   }
 
+  // Fallback: Nếu vSheet không có dữ liệu phiếu nhập, đếm trực tiếp từ SERIAL_MASTER
+  if (importCount === 0 && tbSheet && tbSheet.getLastRow() > 1) {
+    const datesCol = tbSheet.getRange(2, 8, tbSheet.getLastRow() - 1, 1).getValues();
+    datesCol.forEach(r => {
+      const d = parseGasDate(r[0]);
+      if (d) {
+        if (fromDate && d < fromDate) return;
+        if (toDate && d > toDate) return;
+        importCount++;
+      }
+    });
+  }
+
   // Đếm xuất trong kỳ
   let exportCount = 0;
   if (xSheet && xSheet.getLastRow() > 1) {
     const xData = xSheet.getRange(2, 2, xSheet.getLastRow() - 1, 4).getValues();
     xData.forEach(r => {
-      let d = null;
-      if (r[0] instanceof Date) d = r[0];
-      else if (r[0]) {
-        const parts = String(r[0]).split('/');
-        if (parts.length === 3) d = new Date(parts[2], parts[1] - 1, parts[0]);
-      }
+      const d = parseGasDate(r[0]);
       if (d) {
         if (fromDate && d < fromDate) return;
         if (toDate && d > toDate) return;
@@ -835,45 +965,27 @@ function khoiTaoHeThongThanhAnTuDong() {
     return sheet;
   };
 
-  // 1. DANH MỤC SẢN PHẨM
-  const spSheet = createOrGetSheet("DM_SAN_PHAM", ["Model", "Tên Sản Phẩm", "Nhóm Hàng", "Ghi Chú"], "#1e40af");
-  if (spSheet.getLastRow() === 1) {
-    spSheet.appendRow(["CANON-2900", "Máy in Laser Canon LBP 2900", "Máy in", "Hàng chính hãng"]);
-    spSheet.appendRow(["RICOH-MP3054", "Máy photocopy Ricoh Aficio MP 3054", "Máy photocopy", "Hàng bãi Nhật"]);
-    spSheet.appendRow(["THINKPAD-T480", "Laptop Lenovo Thinkpad T480 Core i5", "Laptop", "Bảo hành 12T"]);
-  }
+  // 1. DANH MỤC SẢN PHẨM (Dữ liệu trắng sạch, chỉ tạo Header)
+  const spSheet = createOrGetSheet("DM_SAN_PHAM", ["Mã Model", "Tên Sản Phẩm", "Nhóm Hàng", "ĐVT", "Hãng SX", "Bảo Hành (Tháng)", "Ghi Chú"], "#1e40af");
 
-  // 2. DANH MỤC NHÀ CUNG CẤP
-  const nccSheet = createOrGetSheet("DM_NCC", ["Tên Viết Tắt", "Tên Đầy Đủ", "Số Điện Thoại", "Ghi Chú"], "#1e40af");
-  if (nccSheet.getLastRow() === 1) {
-    nccSheet.appendRow(["LE_BAO_MINH", "Công ty Cổ phần Lê Bảo Minh", "'02838386688", "Nhà phân phối Canon chính hãng"]);
-    nccSheet.appendRow(["RICOH_VN", "Công ty TNHH Ricoh Việt Nam", "'02439366666", "Máy văn phòng Ricoh"]);
-    nccSheet.appendRow(["FPT_SYNEX", "Công ty TNHH Phân Phối FPT Synnex", "'02473006666", "Laptop & Linh kiện"]);
-  }
+  // 2. DANH MỤC NHÀ CUNG CẤP (Dữ liệu trắng sạch, chỉ tạo Header)
+  const nccSheet = createOrGetSheet("DM_NCC", ["Mã NCC", "Tên Đầy Đủ", "Số Điện Thoại", "Email", "Địa Chỉ", "Người Liên Hệ", "Mã Số Thuế", "Ghi Chú"], "#1e40af");
 
-  // 3. DANH MỤC KHÁCH HÀNG
-  const khSheet = createOrGetSheet("DM_KHACH_HANG", ["Tên Khách Hàng", "Số Điện Thoại", "Địa Chỉ", "Ghi Chú"], "#1e40af");
-  if (khSheet.getLastRow() === 1) {
-    khSheet.appendRow(["Trường THPT Chu Văn An", "'0912345678", "Thụy Khuê, Tây Hồ, Hà Nội", "Dự án phòng tin học"]);
-    khSheet.appendRow(["UBND Quận Cầu Giấy", "'0987654321", "Cầu Giấy, Hà Nội", "Hợp đồng máy in văn phòng"]);
-    khSheet.appendRow(["Ngân hàng Vietcombank", "'0903123456", "Trần Quang Khải, Hoàn Kiếm", "Máy photocopy chi nhánh"]);
-  }
+  // 3. DANH MỤC KHÁCH HÀNG (Dữ liệu trắng sạch, chỉ tạo Header)
+  const khSheet = createOrGetSheet("DM_KHACH_HANG", ["Mã Khách Hàng", "Tên Khách Hàng", "Số Điện Thoại", "Người Liên Hệ", "Email", "Địa Chỉ", "Mã Số Thuế", "Nhóm Khách", "Ghi Chú"], "#1e40af");
 
-  // 4. DANH MỤC QUY CHUẨN
-  const qcSheet = createOrGetSheet("DM_QUY_CHUAN", ["Loại Quy Chuẩn", "Giá Trị", "Mã / Viết Tắt", "Ghi Chú"], "#0f766e");
+  // 4. DANH MỤC QUY CHUẨN (Chuẩn 5 cột độc lập: Nhóm Hàng, Kho Hàng, Loại Hàng, Bảo Hành, Hãng SX)
+  const qcSheet = createOrGetSheet("DM_QUY_CHUAN", ["Nhóm Hàng", "Kho Hàng", "Loại Hàng", "Bảo Hành", "Hãng SX"], "#0f766e");
   if (qcSheet.getLastRow() === 1) {
-    qcSheet.appendRow(["NHOM_HANG", "Máy in", "IN", "Thiết bị in ấn"]);
-    qcSheet.appendRow(["NHOM_HANG", "Máy photocopy", "PHOTO", "Thiết bị sao chụp"]);
-    qcSheet.appendRow(["NHOM_HANG", "Laptop", "LAPTOP", "Máy tính xách tay"]);
-    qcSheet.appendRow(["KHO", "Kho Tổng Hà Nội", "KHO_HN", "Kho chính trung tâm"]);
-    qcSheet.appendRow(["KHO", "Kho Đà Nẵng", "KHO_DN", "Kho miền Trung"]);
-    qcSheet.appendRow(["KHO", "Kho TP.HCM", "KHO_HCM", "Kho miền Nam"]);
-    qcSheet.appendRow(["LOAI_HANG", "Hàng Mới 100%", "NEW", "Nguyên seal"]);
-    qcSheet.appendRow(["LOAI_HANG", "Hàng Đã Qua Sử Dụng (Like New)", "USED", "Hàng lướt 99%"]);
-    qcSheet.appendRow(["LOAI_HANG", "Hàng Đổi Trả / Demo", "DEMO", "Trưng bày"]);
-    qcSheet.appendRow(["BAO_HANH", "6 Tháng", "6M", "Bảo hành 6 tháng"]);
-    qcSheet.appendRow(["BAO_HANH", "12 Tháng", "12M", "Bảo hành tiêu chuẩn 1 năm"]);
-    qcSheet.appendRow(["BAO_HANH", "24 Tháng", "24M", "Bảo hành 2 năm"]);
+    const defaultQc = [
+      ["Máy in", "Kho Tổng Hà Nội", "Hàng Mới 100%", "0 Tháng", "CANON"],
+      ["Máy photocopy", "Kho Đà Nẵng", "Hàng Đã Qua Sử Dụng (Like New)", "3 Tháng", "RICOH"],
+      ["Laptop", "Kho TP.HCM", "Hàng Đổi Trả / Demo", "6 Tháng", "HP"],
+      ["Máy scan", "Kho VP", "", "12 Tháng", "EPSON"],
+      ["Máy chủ", "Kho Cách Ly", "", "24 Tháng", "DELL"],
+      ["", "", "", "36 Tháng", "LENOVO"]
+    ];
+    qcSheet.getRange(2, 1, defaultQc.length, 5).setValues(defaultQc);
   }
 
   // 5. SERIAL MASTER (V4)
@@ -987,5 +1099,31 @@ function toChucThuMucGoogleDriveThanhAn() {
     thanhAnFolderUrl: thanhAnFolder.getUrl(),
     backupFolderUrl: backupFolder.getUrl()
   };
+}
+
+/**
+ * Ghi nhận nhật ký kiểm toán từ Client lên Google Sheet NHAT_KY_HOAT_DONG
+ */
+function saveClientAuditLog(logItem) {
+  try {
+    if (!logItem) return { success: false };
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let logSheet = ss.getSheetByName("NHAT_KY_HOAT_DONG");
+    if (!logSheet) {
+      logSheet = ss.insertSheet("NHAT_KY_HOAT_DONG");
+      logSheet.appendRow(["Thời gian", "Người dùng", "Hành động", "Mục tiêu", "Chi tiết"]);
+    }
+    const timeStr = logItem.time || logItem.timestamp || Utilities.formatDate(new Date(), "GMT+7", "dd/MM/yyyy HH:mm:ss");
+    logSheet.appendRow([
+      timeStr,
+      logItem.user || 'Thủ Kho',
+      logItem.action || 'THAO TÁC',
+      logItem.target || logItem.voucherCode || '',
+      logItem.detail || logItem.reason || ''
+    ]);
+    return { success: true };
+  } catch(e) {
+    return { success: false, error: e.message };
+  }
 }
 

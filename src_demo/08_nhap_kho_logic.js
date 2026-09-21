@@ -81,10 +81,23 @@
     const today = getLocalDateStr();
     document.getElementById('nhap-ngay').value = today;
 
-    // 5. Cập nhật info model đang chọn
+    // 5. Khởi tạo danh sách Loại Hàng
+    if (typeof syncLoaiHangDropdowns === 'function') {
+      syncLoaiHangDropdowns();
+    }
+
+    // 6. Cập nhật info model đang chọn
     onSelectModelNhap();
     renderDraftNhapTable();
   }
+
+  function syncNhapItemLoaiHang(val) {
+    const itemSel = document.getElementById('nhap-item-loai-hang');
+    if (itemSel && val) {
+      itemSel.value = val;
+    }
+  }
+  window.syncNhapItemLoaiHang = syncNhapItemLoaiHang;
 
   function selectModelFromDropdown(modelCode) {
     const modelHidden = document.getElementById('nhap-select-model');
@@ -173,6 +186,7 @@
   function addModelToDraftList() {
     const model = document.getElementById('nhap-select-model').value;
     const kho = document.getElementById('nhap-kho').value;
+    const loaiHang = document.getElementById('nhap-item-loai-hang')?.value || document.getElementById('nhap-loai-hang')?.value || 'Chính Hãng';
     const text = document.getElementById('nhap-serial-input').value;
     const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
 
@@ -203,6 +217,7 @@
         model: model,
         tenHang: prod ? prod.ten : model,
         nhom: prod ? prod.nhom : 'Thiết bị',
+        loaiHang: loaiHang,
         serial: mfgSerial,
         internalId: internalId,
         kho: kho,
@@ -283,14 +298,15 @@
       html += `
         <tr class="${!item.isValid ? 'table-danger' : ''}">
           <td data-label="#">${idx + 1}</td>
-          <td data-label="Model"><strong class="text-primary">${item.model}</strong></td>
-          <td data-label="Serial Hãng"><span class="font-monospace fw-bold">${item.serial}</span></td>
-          <td data-label="Mã Nội Bộ"><span class="badge bg-secondary font-monospace">${item.internalId}</span></td>
-          <td data-label="Kho Nhập">${item.kho}</td>
+          <td data-label="Model"><strong class="text-primary">${escapeHtml(item.model)}</strong></td>
+          <td data-label="Loại Hàng"><span class="badge bg-secondary-subtle text-dark border">${escapeHtml(item.loaiHang || 'Chính Hãng')}</span></td>
+          <td data-label="Serial Hãng"><span class="font-monospace fw-bold">${escapeHtml(item.serial)}</span></td>
+          <td data-label="Mã Nội Bộ"><span class="badge bg-secondary font-monospace">${escapeHtml(item.internalId)}</span></td>
+          <td data-label="Kho Nhập">${escapeHtml(item.kho)}</td>
           <td data-label="Validation">
             ${item.isValid 
               ? '<span class="badge bg-success"><i class="fa-solid fa-check"></i> Hợp lệ</span>' 
-              : `<span class="badge bg-danger mb-1"><i class="fa-solid fa-xmark"></i> Trùng lặp</span><br><small class="text-danger">${item.errorMessage}</small>`}
+              : `<span class="badge bg-danger mb-1"><i class="fa-solid fa-xmark"></i> Trùng lặp</span><br><small class="text-danger">${escapeHtml(item.errorMessage)}</small>`}
           </td>
           <td data-label="Thao Tác" class="text-end">
             <button class="btn btn-sm btn-outline-danger" onclick="removeDraftNhapItem('${item.id}')" title="Xóa máy này">
@@ -351,6 +367,7 @@
 
     const ncc = document.getElementById('nhap-ncc').value;
     const kho = document.getElementById('nhap-kho').value;
+    const generalLoaiHang = document.getElementById('nhap-loai-hang')?.value || 'Chính Hãng';
     const ngay = formatDateDisplay(document.getElementById('nhap-ngay').value) || formatDateDisplay(getLocalDateStr());
     const ghiChu = document.getElementById('nhap-ghichu').value.trim();
     const maPhieu = generateVoucherCode('PN');
@@ -364,6 +381,7 @@
       updatedBy: '',
       ncc: ncc,
       kho: kho,
+      loaiHang: generalLoaiHang,
       status: isConfirmed ? 'CONFIRMED' : 'DRAFT',
       nguoiTao: CURRENT_USER_NAME,
       ghiChu: ghiChu,
@@ -372,7 +390,8 @@
         model: i.model,
         serial: i.serial,
         internalId: i.internalId,
-        kho: i.kho
+        kho: i.kho,
+        loaiHang: i.loaiHang || generalLoaiHang
       })),
       history: [
         { time: nowStr, user: CURRENT_USER_NAME, action: isConfirmed ? 'TẠO PHIẾU' : 'LƯU NHÁP', note: isConfirmed ? `Khởi tạo phiếu nhập CONFIRMED từ NCC ${ncc}` : 'Lưu nháp DRAFT phiếu nhập' }
@@ -384,12 +403,15 @@
     if (isConfirmed) {
       CURRENT_DRAFT_NHAP_ITEMS.forEach(item => {
         const prod = INITIAL_PRODUCTS.find(p => p.model === item.model);
+        const itemLoaiHang = item.loaiHang || generalLoaiHang;
         SERIAL_DB.unshift({
           serial: item.serial,
           internalId: item.internalId,
           model: item.model,
           tenHang: item.tenHang,
           nhom: item.nhom,
+          loaiHang: itemLoaiHang,
+          condition: itemLoaiHang,
           kho: item.kho,
           ncc: ncc,
           ngayNhap: ngay,
@@ -404,12 +426,12 @@
           ghiChu: ghiChu,
           customFields: {},
           timeline: [
-            { date: nowStr, user: CURRENT_USER_NAME, action: 'Nhập kho', note: `Nhập kho theo phiếu ${maPhieu} từ NCC ${ncc}` }
+            { date: nowStr, user: CURRENT_USER_NAME, action: 'Nhập kho', note: `Nhập kho theo phiếu ${maPhieu} (${itemLoaiHang}) từ NCC ${ncc}` }
           ]
         });
       });
 
-      recordAuditLog('XÁC NHẬN NHẬP KHO', `Phiếu ${maPhieu} (${CURRENT_DRAFT_NHAP_ITEMS.length} máy)`, 'DRAFT', 'CONFIRMED', `Nhập kho từ ${ncc}`, [], 'Nhập kho', '', maPhieu);
+      recordAuditLog('XÁC NHẬN NHẬP KHO', `Phiếu ${maPhieu} (${CURRENT_DRAFT_NHAP_ITEMS.length} máy - ${generalLoaiHang})`, 'DRAFT', 'CONFIRMED', `Nhập kho từ ${ncc}`, [], 'Nhập kho', '', maPhieu);
       
       // 1. Lưu trữ bền vững vào localStorage để không bị mất khi F5
       try {
@@ -439,7 +461,9 @@
             maPhieu: maPhieu,
             ncc: ncc,
             kho: kho,
+            loaiHang: generalLoaiHang,
             ngay: ngay,
+            ngayNhap: ngay,
             ghiChu: ghiChu,
             items: Object.values(itemsByModel)
           };

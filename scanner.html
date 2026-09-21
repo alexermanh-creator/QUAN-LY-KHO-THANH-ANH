@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Camera Quét Mã Vạch / QR - Kho Thành An</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      background: #0b0f19;
+      color: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      margin: 0;
+      padding: 12px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .camera-card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5);
+      width: 100%;
+      max-width: 480px;
+    }
+    #reader-container {
+      position: relative;
+      width: 100%;
+      background: #000000;
+      border-radius: 12px;
+      overflow: hidden;
+      min-height: 280px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #reader {
+      width: 100%;
+    }
+    #reader video {
+      border-radius: 12px;
+      object-fit: cover;
+      width: 100% !important;
+    }
+    .flash-scan {
+      animation: flashSuccess 0.4s ease-out;
+    }
+    @keyframes flashSuccess {
+      0% { background-color: rgba(34, 197, 94, 0.45); }
+      100% { background-color: transparent; }
+    }
+    .badge-live {
+      animation: pulseLive 1.5s infinite;
+    }
+    @keyframes pulseLive {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.9); }
+    }
+    .scan-guide-box {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 75%;
+      height: 45%;
+      border: 2px dashed rgba(34, 197, 94, 0.7);
+      border-radius: 10px;
+      pointer-events: none;
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.35);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="camera-card">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <span class="badge bg-success py-2 px-3 fw-bold d-flex align-items-center gap-1 shadow-sm">
+        <i class="fa-solid fa-circle text-white badge-live" style="font-size: 0.6rem;"></i>
+        CAMERA TRỰC TIẾP
+      </span>
+      <button class="btn btn-sm btn-outline-light py-1 px-3" onclick="window.close()">
+        <i class="fa-solid fa-xmark me-1"></i> Đóng
+      </button>
+    </div>
+
+    <p class="text-secondary small mb-2 text-center">
+      Hướng tem <strong>Barcode</strong> hoặc <strong>QR Code</strong> vào khung ngắm để tự động quét:
+    </p>
+
+    <div id="reader-container">
+      <div id="reader"></div>
+      <div class="scan-guide-box"></div>
+    </div>
+
+    <div id="scan-status" class="alert alert-secondary py-2 small mt-2 mb-2 font-monospace fw-bold text-center">
+      <i class="fa-solid fa-circle-notch fa-spin me-1"></i> Đang kết nối máy ảnh...
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top border-secondary">
+      <small class="text-muted">Đã quét: <strong id="scanned-count" class="text-success fs-6">0</strong> mã</small>
+      <div class="d-flex gap-1">
+        <select id="camera-select" class="form-select form-select-sm bg-dark text-white border-secondary" style="max-width: 170px;" onchange="onSelectCamera(this.value)">
+          <option value="">Đang tìm camera...</option>
+        </select>
+        <button class="btn btn-sm btn-outline-warning" onclick="switchCamera()" title="Đổi camera">
+          <i class="fa-solid fa-rotate"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let bc = null;
+    try { bc = new BroadcastChannel('THANH_AN_BARCODE_CHANNEL'); } catch(e){}
+
+    let html5QrCode = null;
+    let availableCameras = [];
+    let currentCameraId = null;
+    let currentFacingMode = "environment";
+    let lastCode = "";
+    let lastTime = 0;
+    let count = 0;
+
+    function playBeep() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(1800, ctx.currentTime);
+        gain.gain.setValueAtTime(0.2, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.12);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.12);
+      } catch(e){}
+    }
+
+    function onScanSuccess(decodedText) {
+      const now = Date.now();
+      if (decodedText === lastCode && (now - lastTime) < 2000) return;
+      lastCode = decodedText;
+      lastTime = now;
+      count++;
+
+      playBeep();
+      document.body.classList.add('flash-scan');
+      setTimeout(() => document.body.classList.remove('flash-scan'), 400);
+
+      document.getElementById('scanned-count').innerText = count;
+      const statusEl = document.getElementById('scan-status');
+      statusEl.className = "alert alert-success py-2 small mt-2 mb-2 font-monospace fw-bold text-center";
+      statusEl.innerHTML = '<i class="fa-solid fa-check-circle me-1"></i> ĐÃ QUÉT: ' + decodedText;
+
+      // KÊNH 1: Gửi qua window.opener (Chuẩn Cross-Origin quốc tế)
+      try {
+        if (window.opener) {
+          window.opener.postMessage({ type: 'SCAN_BARCODE', code: decodedText }, '*');
+          if (typeof window.opener.handleDecodedBarcode === 'function') {
+            window.opener.handleDecodedBarcode(decodedText);
+          }
+        }
+      } catch(e){}
+
+      // KÊNH 2: Gửi qua BroadcastChannel
+      if (bc) {
+        try { bc.postMessage({ type: 'SCAN_BARCODE', code: decodedText }); } catch(e){}
+      }
+
+      // KÊNH 3: Gửi qua localStorage event
+      try {
+        localStorage.setItem('THANH_AN_LAST_SCAN', JSON.stringify({ code: decodedText, time: Date.now() }));
+      } catch(e){}
+    }
+
+    async function initCameraScanner() {
+      const statusEl = document.getElementById('scan-status');
+      const camSelect = document.getElementById('camera-select');
+      html5QrCode = new Html5Qrcode("reader");
+
+      try {
+        const devices = await Html5Qrcode.getCameras();
+        availableCameras = devices || [];
+        if (camSelect) {
+          camSelect.innerHTML = '';
+          if (availableCameras.length === 0) {
+            camSelect.innerHTML = '<option value="">Camera mặc định</option>';
+          } else {
+            availableCameras.forEach((c, idx) => {
+              const opt = document.createElement('option');
+              opt.value = c.id;
+              opt.textContent = c.label || `Camera ${idx + 1}`;
+              camSelect.appendChild(opt);
+            });
+          }
+        }
+
+        let selectedId = null;
+        if (availableCameras.length > 0) {
+          const backCam = availableCameras.find(c => {
+            const l = (c.label || '').toLowerCase();
+            return l.includes('back') || l.includes('rear') || l.includes('sau') || l.includes('environment');
+          });
+          selectedId = backCam ? backCam.id : availableCameras[0].id;
+          if (camSelect) camSelect.value = selectedId;
+        }
+
+        currentCameraId = selectedId;
+        await startActiveCamera(selectedId);
+
+      } catch (err) {
+        console.warn("Không lấy được danh sách camera:", err);
+        // Fallback dùng facingMode
+        startActiveCamera(null);
+      }
+    }
+
+    async function startActiveCamera(cameraId) {
+      const statusEl = document.getElementById('scan-status');
+      statusEl.className = "alert alert-secondary py-2 small mt-2 mb-2 font-monospace fw-bold text-center";
+      statusEl.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin me-1"></i> Đang khởi động camera...';
+
+      const config = {
+        fps: 20,
+        qrbox: { width: 280, height: 160 },
+        aspectRatio: 1.777778
+      };
+
+      const cameraParam = cameraId ? cameraId : { facingMode: currentFacingMode };
+
+      try {
+        await html5QrCode.start(cameraParam, config, onScanSuccess, function(){});
+        statusEl.className = "alert alert-info py-2 small mt-2 mb-2 font-monospace text-center";
+        statusEl.innerHTML = '<i class="fa-solid fa-video me-1"></i> Camera đang quét trực tiếp...';
+      } catch(err) {
+        console.error("Lỗi start camera:", err);
+        if (currentFacingMode === "environment") {
+          currentFacingMode = "user";
+          try {
+            await html5QrCode.start({ facingMode: "user" }, config, onScanSuccess, function(){});
+            statusEl.className = "alert alert-info py-2 small mt-2 mb-2 font-monospace text-center";
+            statusEl.innerHTML = '<i class="fa-solid fa-video me-1"></i> Đang dùng Camera trước...';
+            return;
+          } catch(e2){}
+        }
+        statusEl.className = "alert alert-danger py-2 small mt-2 mb-2 font-monospace text-center";
+        statusEl.innerHTML = '<i class="fa-solid fa-circle-exclamation me-1"></i> Lỗi: ' + (err.message || err);
+      }
+    }
+
+    async function onSelectCamera(camId) {
+      if (!camId || camId === currentCameraId) return;
+      currentCameraId = camId;
+      if (html5QrCode) {
+        try { await html5QrCode.stop(); } catch(e){}
+      }
+      await startActiveCamera(camId);
+    }
+
+    async function switchCamera() {
+      currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment";
+      if (html5QrCode) {
+        try { await html5QrCode.stop(); } catch(e){}
+      }
+      await startActiveCamera(null);
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initCameraScanner();
+    });
+
+    window.addEventListener('beforeunload', () => {
+      if (html5QrCode && html5QrCode.isScanning) {
+        html5QrCode.stop().catch(() => {});
+      }
+    });
+  </script>
+</body>
+</html>

@@ -148,6 +148,107 @@
     </div>
   </div>
 
+  <!-- PHẦN 4: QUY CHUẨN 7 TAB DANH MỤC HỆ THỐNG -->
+  <div class="card card-custom p-4">
+    <h4 class="fw-bold text-primary mb-3"><i class="fa-solid fa-tags me-2"></i> 4. Quy Chuẩn 7 Tab Danh Mục Hệ Thống & Trường Dữ Liệu</h4>
+    <p class="text-muted small mb-3">Thiết kế theo nguyên tắc <strong>Nhập nhanh ban đầu - Bổ sung chi tiết sau</strong>. Cho phép sửa 100% tất cả các trường bất kỳ lúc nào.</p>
+    
+    <div class="table-responsive">
+      <table class="table table-bordered align-middle small">
+        <thead class="table-light">
+          <tr>
+            <th style="width: 5%;">STT</th>
+            <th style="width: 22%;">Tên Tab Danh Mục</th>
+            <th style="width: 28%;" class="text-danger">Trường Bắt Buộc Nhập Ban Đầu (*)</th>
+            <th>Các Trường Cho Phép Bỏ Trống (Sửa sau)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="text-center fw-bold">1</td>
+            <td><strong class="text-primary"><i class="fa-solid fa-cube me-1"></i> Model Sản Phẩm</strong></td>
+            <td><span class="badge bg-danger">Mã Model</span> &amp; <span class="badge bg-danger">Tên Model</span></td>
+            <td>ĐVT (mặc định: Chiếc), Hãng SX, Nhóm hàng, Bảo hành mặc định, Quản lý serial, Ghi chú.</td>
+          </tr>
+          <tr>
+            <td class="text-center fw-bold">2</td>
+            <td><strong class="text-primary"><i class="fa-solid fa-users me-1"></i> Khách Hàng</strong></td>
+            <td><span class="badge bg-danger">Tên KH</span> &amp; <span class="badge bg-danger">Số Điện Thoại (SĐT)</span></td>
+            <td>Người liên hệ, Địa chỉ, Email, Mã số thuế, Phân nhóm khách, Ghi chú. <em>(Bắt buộc có SĐT để phục vụ tra cứu bảo hành).</em></td>
+          </tr>
+          <tr>
+            <td class="text-center fw-bold">3</td>
+            <td><strong class="text-primary"><i class="fa-solid fa-building me-1"></i> Nhà Cung Cấp</strong></td>
+            <td><span class="badge bg-danger">Tên / Mã NCC</span></td>
+            <td>Tên đầy đủ công ty, Số điện thoại, Email, Địa chỉ, Người liên hệ, Mã số thuế, Ghi chú.</td>
+          </tr>
+          <tr>
+            <td class="text-center fw-bold">4</td>
+            <td><strong class="text-primary"><i class="fa-solid fa-warehouse me-1"></i> Kho Hàng</strong></td>
+            <td><span class="badge bg-danger">Tên Kho Hàng</span></td>
+            <td>Mã kho, Loại kho, Thủ kho phụ trách, SĐT, Địa chỉ kho, Ghi chú. <em>(Tách biệt hoàn toàn, không lẫn model hay bảo hành).</em></td>
+          </tr>
+          <tr>
+            <td class="text-center fw-bold">5</td>
+            <td><strong class="text-primary"><i class="fa-solid fa-copyright me-1"></i> Hãng SX</strong></td>
+            <td><span class="badge bg-danger">Tên Hãng</span> (Canon, HP...)</td>
+            <td>Mã hãng, Xuất xứ / Quốc gia, Ghi chú.</td>
+          </tr>
+          <tr>
+            <td class="text-center fw-bold">6</td>
+            <td><strong class="text-primary"><i class="fa-solid fa-layer-group me-1"></i> Nhóm Hàng</strong></td>
+            <td><span class="badge bg-danger">Tên Nhóm</span> (Máy in, Laptop...)</td>
+            <td>Mã nhóm, Ghi chú.</td>
+          </tr>
+          <tr>
+            <td class="text-center fw-bold">7</td>
+            <td><strong class="text-primary"><i class="fa-solid fa-shield-halved me-1"></i> Thời Gian Bảo Hành</strong></td>
+            <td><span class="badge bg-danger">Số Tháng / Tên Gói</span></td>
+            <td>Ghi chú chính sách. <em>(Tab nhập riêng, tự động đổ vào menu chọn bảo hành toàn hệ thống).</em></td>
+          </tr>
+          <tr>
+            <td class="text-center fw-bold">8</td>
+            <td><strong class="text-primary"><i class="fa-solid fa-boxes-stacked me-1"></i> Loại Hàng</strong></td>
+            <td><span class="badge bg-danger">Tên Loại Hàng</span></td>
+            <td>Chính Hãng, Nhập Khẩu, Mới 100%, Like New 99%... <em>(Lưu vào Cột 3 DM_QUY_CHUAN, đồng bộ vào phiếu Nhập Kho).</em></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card p-4 mt-4 border-0 shadow-sm">
+    <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">
+      <i class="fa-solid fa-camera text-success me-2"></i>CƠ CHẾ QUÉT MÃ VẠCH (BARCODE / QR) & XỬ LÝ CAMERA
+    </h5>
+    <div class="row g-3">
+      <div class="col-md-4">
+        <div class="p-3 bg-light rounded border h-100">
+          <h6 class="fw-bold text-success"><i class="fa-solid fa-mobile-screen-button me-1"></i> 1. Trên Điện Thoại & Tablet</h6>
+          <p class="small text-muted mb-0">
+            Bấm <strong>"Chụp Tem Quét Mã"</strong> để mở camera máy chụp nét tức thì. Hệ thống giải mã bằng chip GPU <strong>Native BarcodeDetector</strong> trong 0.1 giây!
+          </p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="p-3 bg-light rounded border h-100">
+          <h6 class="fw-bold text-primary"><i class="fa-solid fa-laptop me-1"></i> 2. Trên Máy Tính Có Webcam</h6>
+          <p class="small text-muted mb-0">
+            Bấm <strong>"Mở Cửa Sổ Camera Ngoài Iframe"</strong>. Cửa sổ camera độc lập chạy mượt 30fps và tự động đồng bộ mã về phiếu kho qua kênh <strong>BroadcastChannel</strong>.
+          </p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="p-3 bg-light rounded border h-100">
+          <h6 class="fw-bold text-info"><i class="fa-solid fa-barcode me-1"></i> 3. Súng Quét USB / Dán Ảnh</h6>
+          <p class="small text-muted mb-0">
+            Dùng súng quét barcode USB bắn trực tiếp "Tít" là mã tự vào, hoặc dán ảnh chụp tem màn hình từ clipboard bằng phím <strong>Ctrl + V</strong>.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="text-center text-muted mt-4 small">
     THÀNH AN ERP v4.0 &copy; 2026 - Bản quyền thuộc Công ty TNHH Thương Mại & Dịch Vụ Thành An
   </div>

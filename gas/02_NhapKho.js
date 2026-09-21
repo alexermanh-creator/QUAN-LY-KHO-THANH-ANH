@@ -190,6 +190,7 @@ function executeNhapKhoMulti(data) {
     }
 
     // 2. BATCH WRITE: Ghi toàn bộ máy vào bảng thiết bị trong 1 lần duy nhất
+    const finalNgayNhap = data.ngayNhap || data.ngay || Utilities.formatDate(new Date(), "GMT+7", "dd/MM/yyyy");
     const newRows = allCleanSerials.map(obj => [
       obj.sn, 
       obj.item.model, 
@@ -198,7 +199,7 @@ function executeNhapKhoMulti(data) {
       data.loaiHang || 'Mới 100%', 
       data.kho || 'Kho VP',
       data.ncc, 
-      data.ngayNhap, 
+      finalNgayNhap, 
       data.maPhieu, 
       "Tồn kho", 
       "", "", "", "", "", "", 
@@ -212,7 +213,7 @@ function executeNhapKhoMulti(data) {
       const modelSummary = data.items.map(i => `${i.model} (${i.serials.length})`).join(' + ');
       lsSheet.appendRow([
         data.maPhieu, 
-        data.ngayNhap, 
+        finalNgayNhap, 
         data.ncc, 
         modelSummary,
         allCleanSerials.length, 

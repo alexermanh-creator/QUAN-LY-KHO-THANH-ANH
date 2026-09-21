@@ -93,10 +93,57 @@ Khi bạn muốn sửa giao diện, chỉnh sửa nghiệp vụ hoặc thêm tí
 
 ---
 
-## ❓ PHẦN 5: CÂU HỎI THƯỜNG GẶP (FAQ)
+---
+
+## 🏷️ PHẦN 5: QUY CHUẨN 8 TAB DANH MỤC HỆ THỐNG & CÁC TRƯỜNG DỮ LIỆU
+
+Hệ thống được thiết kế theo tiêu chí **Nhập liệu siêu tốc ban đầu - Cho phép bổ sung chi tiết sau**:
+
+| STT | Tên Tab Danh Mục | Trường Bắt Buộc Nhập Ban Đầu (*) | Các Trường Tùy Chọn (Có thể bổ sung sau) | Ghi Chú & Liên Kết Nghiệp Vụ |
+| :---: | :--- | :--- | :--- | :--- |
+| **1** | **Model Sản Phẩm** | **Mã Model** & **Tên Model** | ĐVT *(mặc định: Chiếc)*, Hãng SX, Nhóm hàng, Bảo hành mặc định, Quản lý Serial, Ghi chú. | Mã Model dùng làm khóa chính liên kết thiết bị Serial và phiếu xuất/nhập. |
+| **2** | **Khách Hàng** | **Tên Khách Hàng** & **Số Điện Thoại (SĐT)** | Người liên hệ, Địa chỉ, Email, Mã số thuế, Phân nhóm khách, Ghi chú. | **Bắt buộc có SĐT** để phục vụ tra cứu bảo hành thiết bị theo số điện thoại khách. |
+| **3** | **Nhà Cung Cấp** | **Tên Viết Tắt / Mã NCC** | Tên đầy đủ công ty, Số điện thoại, Email, Địa chỉ, Người liên hệ, Mã số thuế, Ghi chú. | Dùng phân loại nguồn gốc nhập máy. |
+| **4** | **Kho Hàng** | **Tên Kho Hàng** | Mã kho, Loại kho, Thủ kho phụ trách, SĐT liên hệ, Địa chỉ kho, Ghi chú. | Tách biệt hoàn toàn, không lẫn model/bảo hành. |
+| **5** | **Hãng SX** | **Tên Hãng SX** (Canon, HP...) | Mã hãng, Xuất xứ / Quốc gia, Ghi chú. | Tự động làm gợi ý khi thêm Model mới. |
+| **6** | **Nhóm Hàng** | **Tên Nhóm** (Máy in, Laptop...) | Mã nhóm, Ghi chú. | Tự động phân loại biểu đồ Dashboard. |
+| **7** | **Thời Gian Bảo Hành** | **Số Tháng** hoặc **Tên Gói** *(Ví dụ: 12 Tháng)* | Ghi chú chính sách bảo hành. | Tab nhập riêng biệt, tự động đổ dữ liệu vào menu chọn bảo hành toàn hệ thống. |
+| **8** | **Loại Hàng** | **Tên Loại Hàng** *(Chính Hãng, Nhập Khẩu...)* | Đặc điểm phân loại, Ghi chú nguồn gốc/tình trạng máy. | **Lưu vào Cột 3 Sheet `DM_QUY_CHUAN`** và tự động đồng bộ sang phiếu Nhập Kho. |
+
+> 💡 **Khả năng chỉnh sửa**: Tất cả 8 danh mục đều có nút **Sửa (biểu tượng cây bút chì)** cho phép chỉnh sửa **100% tất cả các trường** sau khi tạo mà không bị khóa cứng.
+
+---
+
+## 📷 PHẦN 6: HƯỚNG DẪN QUÉT BARCODE / QR VÀ CƠ CHẾ CAMERA
+
+### 1. Tại sao Live Camera bị đen xì khi mở trên Google Apps Script?
+Google Apps Script khi hiển thị Web App sẽ nhúng trang web bên trong một khung ẩn gọi là **sandboxed iframe** của Google (`script.googleusercontent.com`). Do chính sách an ninh bảo mật của các trình duyệt hiện đại (Chrome, Edge, Safari), nếu Google không cấp quyền camera cho iframe thì trình duyệt sẽ chặn luồng live stream camera bên trong iframe này.
+
+### 2. Ba phương án quét mã vạch / QR chuẩn xác 100%:
+- **Cách 1: Quét trên Điện Thoại & Máy Tính Bảng (Chuẩn nhất - Nhanh nhất)**:
+  - Bấm nút **"Bấm Vào Đây Để Chụp Tem Quét Mã"** (hoặc nút Quét Camera).
+  - Điện thoại lập tức mở camera chụp ảnh gốc của máy với đầy đủ lấy nét, đèn Flash.
+  - Bạn chỉ cần chụp 1 phát tách vào tem mã vạch trên vỏ hộp hoặc thân máy: Hệ thống sử dụng bộ giải mã tăng tốc phần cứng **Native BarcodeDetector** quét xong trong **0.1 giây** và tự động thêm vào phiếu!
+- **Cách 2: Quét bằng Webcam trên Máy Tính / Laptop**:
+  - Tại modal quét, bấm nút **"Mở Cửa Sổ Camera Ngoài Iframe"**.
+  - Trình duyệt sẽ mở một cửa sổ camera độc lập ngoài iframe của Google Apps Script. Cửa sổ này nhận quyền camera 100%, quét liên tục với 30 khung hình/giây.
+  - Khi camera thấy mã, máy tự động kêu "Tít", nhấp nháy xanh và gửi mã tức thì về phiếu nhập/xuất kho qua kênh **BroadcastChannel**.
+- **Cách 3: Dành cho Thủ Kho dùng Súng Quét Mã Vạch Barcode USB / Bluetooth**:
+  - Cắm súng quét vào máy tính, chuyển sang tab **"Súng Quét USB"** (hoặc để trỏ chuột ở ô mã).
+  - Cầm súng bấm "Tít" vào tem, mã nhảy thẳng vào danh sách ngay lập tức.
+  - Hoặc dán ảnh chụp màn hình tem thiết bị bằng tổ hợp phím **Ctrl + V**.
+
+### 3. Đã chuẩn hóa giao diện:
+- Loại bỏ hoàn toàn lỗi hiển thị **2 biểu tượng camera** cạnh nhau.
+- Chỉ dùng 1 biểu tượng FontAwesome sắc nét, hiện đại trên toàn hệ thống.
+
+## ❓ PHẦN 6: CÂU HỎI THƯỜNG GẶP (FAQ)
 
 **1. Dữ liệu kho của tôi có an toàn không?**
 - Toàn bộ dữ liệu nằm 100% trong file Google Sheet trên tài khoản Google Drive cá nhân của bạn. Không ai có thể xem hay xóa ngoại trừ bạn.
+
+**2. Đẩy code lên Google Sheets báo thành công thì cần làm gì tiếp?**
+- Bạn chỉ cần vào **Triển khai (Deploy)** -> **Quản lý bản triển khai** -> Bấm biểu tượng bút chì -> Chọn **Phiên bản mới (New version)** -> Bấm **Triển khai** là xong.
 
 **2. Nếu máy tính của tôi bị hỏng thì sao?**
 - Hệ thống không bị ảnh hưởng gì cả! Vì toàn bộ Web App và CSDL đang chạy trên Cloud của Google. Bạn dùng máy tính khác hoặc điện thoại vẫn đăng nhập và làm việc bình thường. Mã nguồn cũng đã được lưu an toàn trên GitHub của bạn.
