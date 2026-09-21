@@ -1,180 +1,80 @@
   /* ==================================================== */
-  /* 10. QUẢN LÝ TỒN KHO 2 CHẾ ĐỘ & SERIAL 360° (YÊU CẦU E & F) */
+  /* 10. QUẢN LÝ TỒN KHO MASTER-DETAIL ACCORDION (YÊU CẦU E & F) */
   /* ==================================================== */
 
-  let STOCK_VIEW_MODE = 'MODEL'; // 'MODEL' hoặc 'SERIAL' (Yêu cầu E)
+  let EXPANDED_STOCK_MODELS = new Set();
+  if (typeof window !== 'undefined') window.EXPANDED_STOCK_MODELS = EXPANDED_STOCK_MODELS;
 
-  function setStockViewMode(mode) {
-    STOCK_VIEW_MODE = mode;
-    const btnModel = document.getElementById('btn-view-by-model');
-    const btnSerial = document.getElementById('btn-view-by-serial');
-    const containerModel = document.getElementById('stock-view-model-container');
-    const containerSerial = document.getElementById('stock-view-serial-container');
-
-    if (mode === 'MODEL') {
-      btnModel.classList.add('active');
-      btnSerial.classList.remove('active');
-      containerModel.style.display = 'block';
-      containerSerial.style.display = 'none';
-      renderStockByModel();
-    } else {
-      btnSerial.classList.add('active');
-      btnModel.classList.remove('active');
-      containerSerial.style.display = 'block';
-      containerModel.style.display = 'none';
-      renderStockBySerial();
+  function clearStockKeyword() {
+    const input = document.getElementById('filter-stock-keyword');
+    if (input) {
+      input.value = '';
+      applyStockFilter();
     }
+  }
+
+  function toggleModelStock(modelName) {
+    if (EXPANDED_STOCK_MODELS.has(modelName)) {
+      EXPANDED_STOCK_MODELS.delete(modelName);
+    } else {
+      EXPANDED_STOCK_MODELS.add(modelName);
+    }
+    renderTonKho();
+  }
+
+  function toggleExpandAllModels() {
+    const btnText = document.getElementById('toggle-expand-text');
+    const isExpanding = btnText && btnText.innerText.includes('Mở rộng');
+
+    if (isExpanding) {
+      // Mở rộng tất cả các model đang hiển thị
+      const allRows = document.querySelectorAll('#stock-accordion-table-body tr[data-model-key]');
+      allRows.forEach(r => {
+        const mKey = r.getAttribute('data-model-key');
+        if (mKey) EXPANDED_STOCK_MODELS.add(mKey);
+      });
+      if (btnText) btnText.innerText = 'Thu gọn tất cả';
+    } else {
+      EXPANDED_STOCK_MODELS.clear();
+      if (btnText) btnText.innerText = 'Mở rộng tất cả';
+    }
+    renderTonKho();
   }
 
   function renderTonKho() {
     if (typeof updateStockFilterDropdowns === 'function') {
       updateStockFilterDropdowns();
     }
-    if (STOCK_VIEW_MODE === 'MODEL') {
-      renderStockByModel();
-    } else {
-      renderStockBySerial();
-    }
-  }
 
-  // 1. Chế độ xem tồn Theo Model (Gom nhóm đếm số lượng - Yêu cầu E)
-  function renderStockByModel() {
-    const tbody = document.getElementById('stock-model-table-body');
+    const tbody = document.getElementById('stock-accordion-table-body');
     if (!tbody) return;
-    const filterKho = document.getElementById('filter-stock-kho')?.value || '';
-    const filterNhom = document.getElementById('filter-stock-nhom')?.value || '';
-    const keyword = (document.getElementById('filter-stock-keyword')?.value || '').trim().toLowerCase();
 
-    let modelMap = {};
-    INITIAL_PRODUCTS.forEach(p => {
-      modelMap[p.model] = {
-        model: p.model,
-        ten: p.ten,
-        nhom: p.nhom,
-        khoVp: 0,
-        khoCn: 0,
-        khoCl: 0,
-        totalInStock: 0,
-        serials: []
-      };
-    });
-
-    // Gom dữ liệu từ SERIAL_DB
-    SERIAL_DB.forEach(s => {
-      if (s.status === 'IN_STOCK') {
-        if (!modelMap[s.model]) {
-          modelMap[s.model] = {
-            model: s.model,
-            ten: s.tenHang || s.model,
-            nhom: s.nhom || 'Khác',
-            khoVp: 0,
-            khoCn: 0,
-            khoCl: 0,
-            totalInStock: 0,
-            serials: []
-          };
-        }
-        if (s.kho === 'Kho VP') modelMap[s.model].khoVp++;
-        else if (s.kho === 'Kho Chi Nhánh') modelMap[s.model].khoCn++;
-        else if (s.kho === 'Kho Cách Ly (Hàng lỗi)') modelMap[s.model].khoCl++;
-        modelMap[s.model].totalInStock++;
-        modelMap[s.model].serials.push(s);
-      }
-    });
-
-    // Lọc theo bộ lọc người dùng
-    let filteredList = Object.values(modelMap);
-    if (filterNhom) {
-      filteredList = filteredList.filter(m => m.nhom === filterNhom);
-    }
-    if (keyword) {
-      filteredList = filteredList.filter(m => m.model.toLowerCase().includes(keyword) || m.ten.toLowerCase().includes(keyword));
-    }
-    if (filterKho) {
-      if (filterKho === 'Kho VP') filteredList = filteredList.filter(m => m.khoVp > 0);
-      else if (filterKho === 'Kho Chi Nhánh') filteredList = filteredList.filter(m => m.khoCn > 0);
-      else if (filterKho === 'Kho Cách Ly (Hàng lỗi)') filteredList = filteredList.filter(m => m.khoCl > 0);
-    }
-
-    if (filteredList.length === 0) {
-      const isFiltered = !!(filterNhom || keyword || filterKho);
-      tbody.innerHTML = `
-        <tr>
-          <td colspan="8" class="text-center text-muted py-5">
-            <i class="fa-solid fa-boxes-stacked fs-2 mb-2 d-block text-secondary opacity-50"></i>
-            ${isFiltered 
-              ? 'Không tìm thấy Model sản phẩm nào phù hợp với bộ lọc.' 
-              : 'Kho hàng đang trống. Chưa có Model hoặc thiết bị nào trong kho.<br><small class="text-muted">Hệ thống đã sẵn sàng tiếp nhận file dữ liệu thực tế từ bạn.</small>'}
-          </td>
-        </tr>
-      `;
-      return;
-    }
-
-    let html = '';
-    filteredList.forEach(m => {
-      html += `
-        <tr>
-          <td data-label="Model"><strong class="text-primary">${m.model}</strong></td>
-          <td data-label="Tên Sản Phẩm">${m.ten}</td>
-          <td data-label="Nhóm"><span class="badge bg-light text-dark border">${m.nhom}</span></td>
-          <td data-label="Kho VP" class="text-center font-monospace">${m.khoVp}</td>
-          <td data-label="Kho CN" class="text-center font-monospace">${m.khoCn}</td>
-          <td data-label="Kho Cách Ly" class="text-center font-monospace ${m.khoCl > 0 ? 'text-danger fw-bold' : ''}">${m.khoCl}</td>
-          <td data-label="Tổng Tồn" class="text-center">
-            <span class="badge ${m.totalInStock > 0 ? 'bg-success' : 'bg-secondary'} fs-6">${m.totalInStock}</span>
-          </td>
-          <td data-label="Hành Động" class="text-end">
-            <button class="btn btn-sm btn-outline-primary" onclick="openModelSerialsModal('${m.model}')">
-              <i class="fa-solid fa-list-ul me-1"></i> Chi tiết (${m.serials.length} SN)
-            </button>
-          </td>
-        </tr>
-      `;
-    });
-    tbody.innerHTML = html;
-  }
-
-  // 2. Chế độ xem tồn Theo Serial chi tiết (Yêu cầu E)
-  function renderStockBySerial() {
-    const tbody = document.getElementById('stock-serial-table-body');
-    if (!tbody) return;
     const filterKho = document.getElementById('filter-stock-kho')?.value || '';
     const filterNhom = document.getElementById('filter-stock-nhom')?.value || '';
     const keyword = (document.getElementById('filter-stock-keyword')?.value || '').trim().toLowerCase();
     const agingFilter = document.getElementById('filter-stock-aging')?.value || '';
     const statusFilter = document.getElementById('filter-stock-status')?.value || 'IN_STOCK';
 
-    let list = [...SERIAL_DB];
+    let list = typeof SERIAL_DB !== 'undefined' ? [...SERIAL_DB] : [];
 
-    // Lọc theo trạng thái
+    // 1. Lọc theo trạng thái
     if (statusFilter === 'IN_STOCK') {
       list = list.filter(s => s.status === 'IN_STOCK');
     } else if (statusFilter !== 'ALL') {
       list = list.filter(s => s.status === statusFilter);
     }
 
-    // Lọc theo kho
+    // 2. Lọc theo kho
     if (filterKho) {
       list = list.filter(s => s.kho === filterKho);
     }
 
-    // Lọc theo nhóm
+    // 3. Lọc theo nhóm
     if (filterNhom) {
-      list = list.filter(s => s.nhom === filterNhom);
+      list = list.filter(s => (s.nhomHang === filterNhom) || (s.nhom === filterNhom));
     }
 
-    // Lọc theo từ khóa
-    if (keyword) {
-      list = list.filter(s => 
-        s.serial.toLowerCase().includes(keyword) ||
-        (s.internalId && s.internalId.toLowerCase().includes(keyword)) ||
-        s.model.toLowerCase().includes(keyword) ||
-        (s.tenHang && s.tenHang.toLowerCase().includes(keyword))
-      );
-    }
-
-    // Lọc theo tuổi tồn kho (Aging - Yêu cầu E)
+    // 4. Lọc theo tuổi tồn kho (Aging)
     if (agingFilter) {
       if (agingFilter === '0-30') {
         list = list.filter(s => {
@@ -199,62 +99,472 @@
       } else {
         const minDays = parseInt(agingFilter);
         if (!isNaN(minDays)) {
-          list = list.filter(s => {
-            const days = calculateStockAging(s.ngayNhap);
-            return days > minDays;
-          });
+          list = list.filter(s => calculateStockAging(s.ngayNhap) > minDays);
         }
       }
     }
 
-    if (list.length === 0) {
+    // 5. Lọc theo từ khóa thông minh (Model, Tên hàng, Serial, Mã nội bộ, Phiếu nhập)
+    if (keyword) {
+      list = list.filter(s => 
+        (s.serial && s.serial.toLowerCase().includes(keyword)) ||
+        (s.internalId && s.internalId.toLowerCase().includes(keyword)) ||
+        (s.model && s.model.toLowerCase().includes(keyword)) ||
+        (s.tenHang && s.tenHang.toLowerCase().includes(keyword)) ||
+        (s.name && s.name.toLowerCase().includes(keyword)) ||
+        (s.maPhieuNhap && s.maPhieuNhap.toLowerCase().includes(keyword)) ||
+        (s.ncc && s.ncc.toLowerCase().includes(keyword))
+      );
+    }
+
+    // 6. Gom nhóm theo Model
+    let modelMap = {};
+    list.forEach(s => {
+      const mKey = s.model || 'Chưa rõ Model';
+      if (!modelMap[mKey]) {
+        modelMap[mKey] = {
+          model: mKey,
+          tenHang: s.tenHang || s.name || mKey,
+          nhomHang: s.nhomHang || s.nhom || 'Khác',
+          warehouses: {},
+          serials: [],
+          freshCount: 0,
+          agingCount: 0
+        };
+      }
+      const wName = s.kho || 'Kho VP';
+      modelMap[mKey].warehouses[wName] = (modelMap[mKey].warehouses[wName] || 0) + 1;
+      modelMap[mKey].serials.push(s);
+
+      const days = calculateStockAging(s.ngayNhap);
+      if (days <= 30) {
+        modelMap[mKey].freshCount++;
+      } else {
+        modelMap[mKey].agingCount++;
+      }
+    });
+
+    const modelList = Object.values(modelMap);
+
+    // 7. Cập nhật thẻ chỉ số thống kê (Summary KPI Strip)
+    updateStockKpiCards(list, modelList);
+
+    // Nếu không có dữ liệu
+    if (modelList.length === 0) {
       const isFiltered = !!(filterKho || filterNhom || keyword || agingFilter || (statusFilter && statusFilter !== 'IN_STOCK' && statusFilter !== 'ALL'));
       tbody.innerHTML = `
         <tr>
-          <td colspan="8" class="text-center text-muted py-5">
-            <i class="fa-solid fa-barcode fs-2 mb-2 d-block text-secondary opacity-50"></i>
-            ${isFiltered 
-              ? 'Không tìm thấy Serial nào phù hợp với bộ lọc.' 
-              : 'Chưa có thiết bị / Serial nào trong kho.<br><small class="text-muted">Hệ thống đã sẵn sàng tiếp nhận file dữ liệu thực tế từ bạn.</small>'}
+          <td colspan="7" class="text-center text-muted py-5">
+            <i class="fa-solid fa-boxes-stacked fs-2 mb-2 d-block text-secondary opacity-50"></i>
+            <div class="fw-bold fs-6">${isFiltered ? 'Không tìm thấy Model hay Serial nào phù hợp bộ lọc.' : 'Kho hàng hiện tại chưa có thiết bị tồn.'}</div>
+            <div class="small text-muted mt-1">${isFiltered ? 'Hãy thử đổi từ khóa tìm kiếm hoặc bấm nút "Xóa" để xóa bộ lọc.' : 'Hãy tiến hành Nhập kho hoặc quét tem để bắt đầu quản lý tồn.'}</div>
           </td>
         </tr>
       `;
       return;
     }
 
+    // 8. Render bảng Master-Detail Accordion
     let html = '';
-    list.forEach(s => {
-      const daysInStock = calculateStockAging(s.ngayNhap);
-      let agingBadge = `<span class="badge bg-light text-dark border">${daysInStock} ngày</span>`;
-      if (daysInStock > 90) agingBadge = `<span class="badge bg-danger">${daysInStock} ngày (>90N)</span>`;
-      else if (daysInStock > 60) agingBadge = `<span class="badge bg-warning text-dark">${daysInStock} ngày (>60N)</span>`;
-      else if (daysInStock > 30) agingBadge = `<span class="badge bg-info text-dark">${daysInStock} ngày</span>`;
+    modelList.forEach((m, idx) => {
+      const isExpanded = EXPANDED_STOCK_MODELS.has(m.model);
+      const totalUnits = m.serials.length;
 
+      // Badges phân bổ kho
+      const whBadges = Object.entries(m.warehouses).map(([wName, count]) => {
+        let badgeColor = 'bg-primary-subtle text-primary border-primary-subtle';
+        if (wName.includes('Chi Nhánh')) badgeColor = 'bg-info-subtle text-info border-info-subtle';
+        else if (wName.includes('Cách Ly')) badgeColor = 'bg-danger-subtle text-danger border-danger-subtle';
+        return `<span class="badge ${badgeColor} border me-1 mb-1" style="font-size: 0.76rem;"><i class="fa-solid fa-location-dot me-1"></i>${wName}: <strong>${count}</strong></span>`;
+      }).join('');
+
+      // Badges tuổi tồn
+      let agingInfo = '';
+      if (m.freshCount > 0) {
+        agingInfo += `<span class="badge bg-success-subtle text-success border border-success-subtle me-1" title="Máy tồn 0-30 ngày"><i class="fa-solid fa-circle-check me-1"></i>${m.freshCount} mới (≤30N)</span>`;
+      }
+      if (m.agingCount > 0) {
+        agingInfo += `<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle" title="Máy tồn trên 30 ngày"><i class="fa-solid fa-clock me-1"></i>${m.agingCount} lâu (>30N)</span>`;
+      }
+
+      // HÀNG MASTER (MODEL)
       html += `
-        <tr>
-          <td data-label="Serial Hãng"><span class="font-monospace fw-bold text-primary">${s.serial}</span></td>
-          <td data-label="Mã Nội Bộ"><span class="badge bg-secondary font-monospace">${s.internalId}</span></td>
-          <td data-label="Model"><strong>${s.model}</strong></td>
-          <td data-label="Kho">${s.kho}</td>
-          <td data-label="Ngày Nhập">${s.ngayNhap}</td>
-          <td data-label="Tuổi Tồn">${s.status === 'IN_STOCK' ? agingBadge : '<span class="text-muted">--</span>'}</td>
-          <td data-label="Trạng Thái"><span class="badge-status ${getBadgeClass(s.status)}">${s.status}</span></td>
-          <td data-label="Thao Tác" class="text-end">
-            <button class="btn btn-sm btn-outline-secondary" onclick="openSerial360Direct('${s.serial}')" title="Xem hồ sơ 360°">
-              <i class="fa-solid fa-fingerprint"></i> 360°
+        <tr class="stock-master-row ${isExpanded ? 'table-active border-primary' : ''}" data-model-key="${escapeHtml(m.model)}" style="cursor: pointer;" onclick="if (!event.target.closest('button') && !event.target.closest('a')) toggleModelStock('${escapeHtml(m.model)}')">
+          <td class="text-center font-monospace text-muted small">${idx + 1}</td>
+          <td>
+            <div class="d-flex align-items-center">
+              <div class="me-2 text-primary">
+                <i class="fa-solid ${isExpanded ? 'fa-folder-open' : 'fa-box'} fs-5"></i>
+              </div>
+              <div>
+                <div class="fw-bold text-primary fs-6">${m.model}</div>
+                <div class="small text-secondary text-truncate" style="max-width: 380px;" title="${escapeHtml(m.tenHang)}">${m.tenHang}</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <span class="badge bg-light text-dark border px-2 py-1"><i class="fa-solid fa-tag me-1 text-secondary"></i>${m.nhomHang}</span>
+          </td>
+          <td>
+            <div class="d-flex flex-wrap">${whBadges}</div>
+          </td>
+          <td class="text-center">
+            <span class="badge ${totalUnits > 0 ? 'bg-success' : 'bg-secondary'} fs-6 px-3 py-2 fw-bold shadow-sm">${totalUnits} máy</span>
+          </td>
+          <td>
+            <div class="d-flex flex-wrap align-items-center">${agingInfo}</div>
+          </td>
+          <td class="text-end">
+            <button class="btn btn-sm ${isExpanded ? 'btn-primary' : 'btn-outline-primary'} fw-semibold px-3 py-1" onclick="toggleModelStock('${escapeHtml(m.model)}')" title="Bấm để xem danh sách ${totalUnits} Serial">
+              <i class="fa-solid ${isExpanded ? 'fa-chevron-up' : 'fa-chevron-down'} me-1"></i>
+              ${isExpanded ? 'Đóng' : 'Xem'} ${totalUnits} Serial
             </button>
-            ${s.status === 'IN_STOCK' ? `
-            <button class="btn btn-sm btn-outline-danger ms-1" onclick="voidSerialDevice('${s.serial}')" title="Hủy serial khỏi kho (VOID)">
-              <i class="fa-solid fa-ban"></i> Hủy
-            </button>` : ''}
           </td>
         </tr>
       `;
+
+      // HÀNG DETAIL (SUB-TABLE ACCORDION KHI BUNG MỞ)
+      if (isExpanded) {
+        html += `
+          <tr class="stock-detail-container bg-light bg-opacity-50">
+            <td colspan="7" class="p-3">
+              <div class="card border border-primary border-opacity-25 shadow-sm rounded-3 overflow-hidden">
+                <div class="card-header bg-white py-2 px-3 d-flex justify-content-between align-items-center border-bottom">
+                  <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-primary"><i class="fa-solid fa-barcode me-1"></i> Danh Sách Serial</span>
+                    <strong class="text-dark small">Model: ${m.model}</strong>
+                    <span class="text-muted small">• ${m.tenHang}</span>
+                  </div>
+                  <span class="badge bg-secondary-subtle text-secondary small">Đang có ${totalUnits} thiết bị</span>
+                </div>
+                <div class="table-responsive">
+                  <table class="table table-sm table-hover align-middle mb-0 bg-white" style="font-size: 0.84rem;">
+                    <thead class="table-light">
+                      <tr class="text-muted small">
+                        <th style="width: 35px;" class="text-center">#</th>
+                        <th style="min-width: 140px;">Serial Hãng (Mfg SN)</th>
+                        <th style="min-width: 110px;">Mã Nội Bộ TA</th>
+                        <th style="min-width: 120px;">Kho Hiện Tại</th>
+                        <th style="min-width: 170px;">Chứng Từ Nhập Gốc</th>
+                        <th style="min-width: 140px;">Nhà Cung Cấp</th>
+                        <th style="min-width: 100px;">Tuổi Tồn</th>
+                        <th style="min-width: 80px;">Bảo Hành</th>
+                        <th class="text-end" style="min-width: 180px;">Thao Tác Nghiệp Vụ</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${m.serials.map((s, sIdx) => {
+                        const days = calculateStockAging(s.ngayNhap);
+                        let agingBadge = `<span class="badge bg-success-subtle text-success border border-success-subtle">${days} ngày</span>`;
+                        if (days > 90) agingBadge = `<span class="badge bg-danger text-white">${days} ngày (>90N)</span>`;
+                        else if (days > 60) agingBadge = `<span class="badge bg-warning text-dark">${days} ngày (>60N)</span>`;
+                        else if (days > 30) agingBadge = `<span class="badge bg-info-subtle text-info border border-info-subtle">${days} ngày</span>`;
+
+                        return `
+                          <tr>
+                            <td class="text-center text-muted font-monospace small">${sIdx + 1}</td>
+                            <!-- 1. Click Serial Hãng -> Mở 360° -->
+                            <td>
+                              <a href="javascript:void(0)" onclick="openSerial360Direct('${s.serial}')" class="font-monospace fw-bold text-primary text-decoration-none" title="Bấm để tra cứu Hồ Sơ Serial 360° toàn diện">
+                                ${s.serial} <i class="fa-solid fa-arrow-up-right-from-square small ms-1 opacity-75"></i>
+                              </a>
+                            </td>
+                            <!-- 2. Click Mã Nội Bộ -> Mở xem & in tem nhãn barcode -->
+                            <td>
+                              <a href="javascript:void(0)" onclick="openPrintBarcodeModal('${s.serial}')" class="badge bg-dark-subtle text-dark border font-monospace text-decoration-none" title="Bấm để xem và in Tem Mã Vạch / QR Code">
+                                <i class="fa-solid fa-barcode me-1 text-secondary"></i>${s.internalId || s.serial}
+                              </a>
+                            </td>
+                            <!-- 3. Click Kho -> Mở chuyển kho nhanh -->
+                            <td>
+                              <span class="badge bg-light text-dark border" style="cursor: pointer;" onclick="openQuickTransferModal('${s.serial}', '${s.kho}')" title="Bấm để điều chuyển máy này sang kho khác">
+                                <i class="fa-solid fa-location-dot me-1 text-primary"></i>${s.kho} <i class="fa-solid fa-arrow-right-arrow-left text-muted small ms-1"></i>
+                              </span>
+                            </td>
+                            <!-- 4. Click Chứng Từ Nhập -> Mở xem chi tiết phiếu nhập -->
+                            <td>
+                              ${s.maPhieuNhap ? `
+                                <a href="javascript:void(0)" onclick="openVoucherDetail('NHAP', '${s.maPhieuNhap}')" class="font-monospace fw-semibold text-primary text-decoration-none" title="Bấm để xem chi tiết Phiếu Nhập Kho gốc">
+                                  <i class="fa-solid fa-file-invoice me-1 text-secondary"></i>${s.maPhieuNhap}
+                                </a>
+                              ` : '<span class="text-muted">--</span>'}
+                              <div class="text-muted" style="font-size: 0.75rem;"><i class="fa-regular fa-calendar me-1"></i>${s.ngayNhap || '--'}</div>
+                            </td>
+                            <!-- 5. Nhà Cung Cấp -->
+                            <td>
+                              <span class="small text-secondary"><i class="fa-regular fa-building me-1 text-muted"></i>${s.ncc || 'N/A'}</span>
+                            </td>
+                            <!-- 6. Tuổi tồn kho -->
+                            <td>${agingBadge}</td>
+                            <!-- 7. Hạn BH -->
+                            <td><span class="badge bg-light text-secondary border font-monospace">${s.soThangBh || 12}T</span></td>
+                            <!-- 8. Bộ nút thao tác chuyên biệt -->
+                            <td class="text-end">
+                              <div class="btn-group btn-group-sm" role="group">
+                                <button class="btn btn-outline-success py-1 px-2" onclick="quickExportSerial('${s.serial}')" title="Xuất kho máy này ngay (Tự động điền Serial vào phiếu xuất)">
+                                  <i class="fa-solid fa-truck-fast me-1"></i> Xuất
+                                </button>
+                                <button class="btn btn-outline-primary py-1 px-2" onclick="openSerial360Direct('${s.serial}')" title="Xem lý lịch vòng đời 360°">
+                                  <i class="fa-solid fa-fingerprint"></i>
+                                </button>
+                                <button class="btn btn-outline-warning text-dark py-1 px-2" onclick="openEditThietBiModal('${s.serial}')" title="Đính chính thông tin (sửa SN, Model, Kho)">
+                                  <i class="fa-solid fa-pen-to-square"></i>
+                                </button>
+                                <button class="btn btn-outline-danger py-1 px-2" onclick="voidSerialDevice('${s.serial}')" title="Hủy thiết bị khỏi tồn kho (VOID)">
+                                  <i class="fa-solid fa-ban"></i>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        `;
+                      }).join('')}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </td>
+          </tr>
+        `;
+      }
     });
+
     tbody.innerHTML = html;
   }
 
-  // SERIAL WRITE SAFETY: Hủy thiết bị an toàn (chuyển VOID, không deleteRow, bảo tồn lịch sử)
+  // Cập nhật các thẻ KPI trên cùng
+  function updateStockKpiCards(filteredSerials, modelList) {
+    const elTotalUnits = document.getElementById('kpi-stock-total-units');
+    const elTotalModels = document.getElementById('kpi-stock-total-models');
+    const elFreshUnits = document.getElementById('kpi-stock-fresh-units');
+    const elAgingUnits = document.getElementById('kpi-stock-aging-units');
+    const elWhDesc = document.getElementById('kpi-stock-warehouses-desc');
+
+    const totalUnits = filteredSerials.length;
+    const totalModels = modelList.length;
+
+    let freshUnits = 0;
+    let agingUnits = 0;
+    let whCounts = {};
+
+    filteredSerials.forEach(s => {
+      const days = calculateStockAging(s.ngayNhap);
+      if (days <= 30) freshUnits++;
+      else agingUnits++;
+
+      const w = s.kho || 'Kho VP';
+      whCounts[w] = (whCounts[w] || 0) + 1;
+    });
+
+    if (elTotalUnits) elTotalUnits.innerText = `${totalUnits} máy`;
+    if (elTotalModels) elTotalModels.innerText = `${totalModels} model`;
+    if (elFreshUnits) elFreshUnits.innerText = `${freshUnits} máy`;
+    if (elAgingUnits) elAgingUnits.innerText = `${agingUnits} máy`;
+
+    if (elWhDesc) {
+      const descParts = Object.entries(whCounts).map(([w, c]) => `${w}: ${c}`);
+      elWhDesc.innerText = descParts.length > 0 ? descParts.join(' • ') : '0 kho';
+    }
+  }
+
+  // XUẤT KHO NHANH CHO 1 SERIAL
+  function quickExportSerial(serial) {
+    if (typeof switchTab === 'function') {
+      switchTab('XuatKho');
+    }
+    setTimeout(() => {
+      if (typeof addSerialFromSuggest === 'function') {
+        addSerialFromSuggest(serial);
+      } else {
+        const inp = document.getElementById('xuat-serial-input');
+        if (inp) {
+          inp.value = serial;
+          if (typeof handleSerialInputSubmit === 'function') handleSerialInputSubmit();
+        }
+      }
+    }, 250);
+  }
+
+  // ĐÍNH CHÍNH THÔNG TIN THIẾT BỊ
+  function openEditThietBiModal(serial) {
+    if (typeof checkPermission === 'function' && !checkPermission(['QUẢN LÝ', 'ADMIN'], 'Đính chính thiết bị')) return;
+
+    const item = (typeof SERIAL_DB !== 'undefined' ? SERIAL_DB : []).find(s => s.serial === serial);
+    if (!item) {
+      Swal.fire('Lỗi', `Không tìm thấy thiết bị [${serial}]!`, 'error');
+      return;
+    }
+
+    document.getElementById('edit-tb-old-serial').value = item.serial;
+    document.getElementById('edit-tb-new-serial').value = item.serial;
+    document.getElementById('edit-tb-internal-id').value = item.internalId || '';
+    document.getElementById('edit-tb-model').value = item.model || '';
+    document.getElementById('edit-tb-tenhang').value = item.tenHang || '';
+    document.getElementById('edit-tb-reason').value = '';
+
+    // Render danh sách kho
+    const selKho = document.getElementById('edit-tb-kho');
+    if (selKho) {
+      let html = '';
+      if (typeof INITIAL_WAREHOUSES !== 'undefined') {
+        INITIAL_WAREHOUSES.filter(w => w.active !== false).forEach(w => {
+          html += `<option value="${w.tenKho}" ${w.tenKho === item.kho ? 'selected' : ''}>${w.tenKho}</option>`;
+        });
+      }
+      selKho.innerHTML = html;
+    }
+
+    const modal = new bootstrap.Modal(document.getElementById('editThietBiModal'));
+    modal.show();
+  }
+
+  function submitEditThietBi() {
+    const oldSerial = document.getElementById('edit-tb-old-serial').value.trim();
+    const newSerial = document.getElementById('edit-tb-new-serial').value.trim();
+    const internalId = document.getElementById('edit-tb-internal-id').value.trim();
+    const model = document.getElementById('edit-tb-model').value.trim();
+    const tenHang = document.getElementById('edit-tb-tenhang').value.trim();
+    const kho = document.getElementById('edit-tb-kho').value;
+    const reason = document.getElementById('edit-tb-reason').value.trim();
+
+    if (!newSerial) {
+      Swal.fire('Thiếu thông tin', 'Vui lòng nhập Serial Hãng!', 'warning');
+      return;
+    }
+    if (!reason) {
+      Swal.fire('Thiếu lý do', 'Vui lòng nhập Lý do đính chính để ghi nhận nhật ký kiểm toán!', 'warning');
+      return;
+    }
+
+    WarehouseAPI.updateThietBi({
+      oldSerial: oldSerial,
+      newSerial: newSerial,
+      internalId: internalId,
+      model: model,
+      tenHang: tenHang,
+      kho: kho,
+      reason: reason
+    }, function(res) {
+      if (res && res.success) {
+        const modalEl = document.getElementById('editThietBiModal');
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        if (modal) modal.hide();
+
+        if (typeof markModulesDirty === 'function') {
+          markModulesDirty(['TonKho', 'Serial360', 'LichSu', 'Dashboard']);
+        }
+        renderTonKho();
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Đính chính thành công!',
+          text: res.message,
+          timer: 1500,
+          showConfirmButton: false
+        });
+      } else {
+        Swal.fire('Lỗi', res ? res.message : 'Không thể cập nhật thiết bị!', 'error');
+      }
+    });
+  }
+
+  // XEM & IN TEM MÃ VẠCH BARCODE / QR
+  function openPrintBarcodeModal(serial) {
+    const item = (typeof SERIAL_DB !== 'undefined' ? SERIAL_DB : []).find(s => s.serial === serial);
+    if (!item) return;
+
+    document.getElementById('lbl-internal-id').innerText = item.internalId || item.serial;
+    document.getElementById('lbl-model').innerText = item.model;
+    document.getElementById('lbl-ten-hang').innerText = item.tenHang || item.model;
+    document.getElementById('lbl-serial').innerText = item.serial;
+    document.getElementById('lbl-kho').innerText = item.kho || 'Kho VP';
+    document.getElementById('lbl-bh').innerText = `${item.soThangBh || 12} tháng`;
+
+    // Render SVG Barcode
+    setTimeout(() => {
+      try {
+        if (typeof JsBarcode === 'function') {
+          JsBarcode("#label-barcode-svg", item.serial, {
+            format: "CODE128",
+            width: 1.8,
+            height: 40,
+            displayValue: false,
+            margin: 0
+          });
+        }
+      } catch(e) {
+        console.warn('JsBarcode render error:', e);
+      }
+    }, 150);
+
+    const modal = new bootstrap.Modal(document.getElementById('printBarcodeModal'));
+    modal.show();
+  }
+
+  function printDeviceLabel() {
+    window.print();
+  }
+
+  // CHUYỂN KHO NHANH
+  function openQuickTransferModal(serial, currentKho) {
+    const item = (typeof SERIAL_DB !== 'undefined' ? SERIAL_DB : []).find(s => s.serial === serial);
+    if (!item) return;
+
+    document.getElementById('transfer-serial-input').value = item.serial;
+    document.getElementById('transfer-serial-display').innerText = item.serial;
+    document.getElementById('transfer-model-display').innerText = `${item.model} • ${item.tenHang || ''}`;
+    document.getElementById('transfer-current-kho').innerText = currentKho || item.kho;
+    document.getElementById('transfer-note').value = '';
+
+    const selKho = document.getElementById('transfer-target-kho');
+    if (selKho) {
+      let html = '';
+      if (typeof INITIAL_WAREHOUSES !== 'undefined') {
+        INITIAL_WAREHOUSES.filter(w => w.active !== false && w.tenKho !== (currentKho || item.kho)).forEach(w => {
+          html += `<option value="${w.tenKho}">${w.tenKho}</option>`;
+        });
+      }
+      selKho.innerHTML = html;
+    }
+
+    const modal = new bootstrap.Modal(document.getElementById('quickTransferStockModal'));
+    modal.show();
+  }
+
+  function submitQuickTransferStock() {
+    const serial = document.getElementById('transfer-serial-input').value;
+    const targetKho = document.getElementById('transfer-target-kho').value;
+    const note = document.getElementById('transfer-note').value.trim();
+
+    if (!targetKho) {
+      Swal.fire('Lỗi', 'Vui lòng chọn kho đích để chuyển!', 'warning');
+      return;
+    }
+
+    WarehouseAPI.transferSingleDevice(serial, targetKho, note, function(res) {
+      if (res && res.success) {
+        const modalEl = document.getElementById('quickTransferStockModal');
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        if (modal) modal.hide();
+
+        if (typeof markModulesDirty === 'function') {
+          markModulesDirty(['TonKho', 'Serial360', 'LichSu', 'Dashboard']);
+        }
+        renderTonKho();
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Đã chuyển kho!',
+          text: res.message,
+          timer: 1500,
+          showConfirmButton: false
+        });
+      } else {
+        Swal.fire('Lỗi', res ? res.message : 'Không thể chuyển kho!', 'error');
+      }
+    });
+  }
+
+  // HỦY THIẾT BỊ AN TOÀN (VOID)
   function voidSerialDevice(serialCode) {
     if (typeof checkPermission === 'function' && !checkPermission(['QUẢN LÝ', 'ADMIN'], 'Hủy thiết bị (VOID)')) return;
 
@@ -262,7 +572,7 @@
       title: 'Hủy thiết bị khỏi tồn kho (VOID)?',
       html: `Bạn đang thực hiện chuyển trạng thái Serial <strong>${serialCode}</strong> sang <strong>VOID</strong>.<br><small class="text-muted">Hành động này không xóa dữ liệu và bảo toàn lịch sử tra cứu Serial 360°.</small>`,
       input: 'text',
-      inputPlaceholder: 'Nhập lý do hủy (ví dụ: Nhập sai model, lỗi linh kiện, thanh lý...)',
+      inputPlaceholder: 'Nhập lý do hủy (ví dụ: Hàng rơi vỡ, lỗi đổi trả hãng, thanh lý...)',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#dc2626',
@@ -303,11 +613,11 @@
   }
 
   function resetStockFilter() {
-    document.getElementById('filter-stock-kho').value = '';
-    document.getElementById('filter-stock-nhom').value = '';
-    document.getElementById('filter-stock-keyword').value = '';
-    document.getElementById('filter-stock-aging').value = '';
-    document.getElementById('filter-stock-status').value = 'IN_STOCK';
+    if (document.getElementById('filter-stock-kho')) document.getElementById('filter-stock-kho').value = '';
+    if (document.getElementById('filter-stock-nhom')) document.getElementById('filter-stock-nhom').value = '';
+    if (document.getElementById('filter-stock-keyword')) document.getElementById('filter-stock-keyword').value = '';
+    if (document.getElementById('filter-stock-aging')) document.getElementById('filter-stock-aging').value = '';
+    if (document.getElementById('filter-stock-status')) document.getElementById('filter-stock-status').value = 'IN_STOCK';
     renderTonKho();
   }
 

@@ -329,6 +329,110 @@
       }
     },
 
+    // 9.1. Đính chính thông tin thiết bị tồn kho (Serial, Model, Kho, Tên hàng)
+    updateThietBi: function(data, callback) {
+      if (this.isAppsScriptEnvironment()) {
+        google.script.run
+          .withSuccessHandler(res => { if (callback) callback(res); })
+          .withFailureHandler(err => { if (callback) callback({ success: false, message: err.message }); })
+          .updateThietBiSafe(data);
+      } else {
+        const oldSerial = String(data.oldSerial || '').trim().toUpperCase();
+        const newSerial = String(data.newSerial || data.serial || '').trim().toUpperCase();
+        const item = (typeof SERIAL_DB !== 'undefined' ? SERIAL_DB : []).find(s => String(s.serial).trim().toUpperCase() === oldSerial);
+        if (!item) {
+          const res = { success: false, message: `Không tìm thấy thiết bị với Serial cũ [${oldSerial}]!` };
+          if (callback) callback(res);
+          return Promise.resolve(res);
+        }
+
+        // Kiểm tra nếu đổi serial mới có bị trùng thiết bị khác không
+        if (newSerial !== oldSerial) {
+          const dup = SERIAL_DB.find(s => String(s.serial).trim().toUpperCase() === newSerial && s !== item);
+          if (dup) {
+            const res = { success: false, message: `Mã Serial mới [${newSerial}] đã tồn tại trên một thiết bị khác!` };
+            if (callback) callback(res);
+            return Promise.resolve(res);
+          }
+        }
+
+        const oldInfo = `${item.serial} | ${item.model} | ${item.kho}`;
+        item.serial = newSerial;
+        if (data.internalId) item.internalId = String(data.internalId).trim().toUpperCase();
+        if (data.model) item.model = String(data.model).trim();
+        if (data.tenHang) item.tenHang = String(data.tenHang).trim();
+        if (data.kho) item.kho = String(data.kho).trim();
+        if (data.ghiChu !== undefined) item.ghiChu = String(data.ghiChu).trim();
+
+        // Đồng bộ sang Phiếu Nhập gốc nếu có
+        if (item.maPhieuNhap && typeof PHIEU_NHAP_DB !== 'undefined') {
+          const pn = PHIEU_NHAP_DB.find(p => p.maPhieu === item.maPhieuNhap);
+          if (pn && pn.items) {
+            const line = pn.items.find(it => String(it.serial || '').trim().toUpperCase() === oldSerial);
+            if (line) {
+              line.serial = newSerial;
+              if (data.model) line.model = data.model;
+              if (data.tenHang) line.tenHang = data.tenHang;
+              if (data.kho) line.kho = data.kho;
+            }
+          }
+        }
+
+        const nowStr = typeof getLocalDateStr === 'function' ? getLocalDateStr() : '2026-09-21';
+        if (!item.timeline) item.timeline = [];
+        item.timeline.unshift({
+          date: nowStr,
+          user: typeof CURRENT_USER_NAME !== 'undefined' ? CURRENT_USER_NAME : 'Admin',
+          action: 'Đính chính thông tin thiết bị',
+          note: `Đổi: [${oldInfo}] ➔ [${item.serial} | ${item.model} | ${item.kho}]. Lý do: ${data.reason || 'Đính chính kho'}`
+        });
+
+        if (typeof recordAuditLog === 'function') {
+          recordAuditLog('ĐÍNH CHÍNH THIẾT BỊ', `Serial cũ: ${oldSerial}`, oldInfo, `${item.serial} | ${item.model} | ${item.kho}`, data.reason || 'Đính chính', [], 'Tồn kho', newSerial, item.maPhieuNhap || '');
+        }
+
+        const res = { success: true, message: `Đã đính chính thiết bị [${newSerial}] thành công!` };
+        if (callback) callback(res);
+        return Promise.resolve(res);
+      }
+    },
+
+    // 9.2. Chuyển kho nhanh 1 thiết bị
+    transferSingleDevice: function(serial, targetKho, note, callback) {
+      const clean = String(serial || '').trim().toUpperCase();
+      if (this.isAppsScriptEnvironment()) {
+        google.script.run
+          .withSuccessHandler(res => { if (callback) callback(res); })
+          .withFailureHandler(err => { if (callback) callback({ success: false, message: err.message }); })
+          .transferSingleDevice(clean, targetKho, note);
+      } else {
+        const item = (typeof SERIAL_DB !== 'undefined' ? SERIAL_DB : []).find(s => String(s.serial).trim().toUpperCase() === clean);
+        if (!item) {
+          const res = { success: false, message: `Không tìm thấy thiết bị [${clean}] để chuyển kho!` };
+          if (callback) callback(res);
+          return Promise.resolve(res);
+        }
+        const oldKho = item.kho;
+        item.kho = targetKho;
+        const nowStr = typeof getLocalDateStr === 'function' ? getLocalDateStr() : '2026-09-21';
+        if (!item.timeline) item.timeline = [];
+        item.timeline.unshift({
+          date: nowStr,
+          user: typeof CURRENT_USER_NAME !== 'undefined' ? CURRENT_USER_NAME : 'Admin',
+          action: 'Điều chuyển kho',
+          note: `Chuyển từ [${oldKho}] sang [${targetKho}]. ${note ? `Ghi chú: ${note}` : ''}`
+        });
+
+        if (typeof recordAuditLog === 'function') {
+          recordAuditLog('ĐIỀU CHUYỂN KHO', `Serial: ${clean}`, oldKho, targetKho, note || 'Chuyển kho nội bộ', [], 'Tồn kho', clean, '');
+        }
+
+        const res = { success: true, message: `Đã chuyển thiết bị [${clean}] sang [${targetKho}] thành công!` };
+        if (callback) callback(res);
+        return Promise.resolve(res);
+      }
+    },
+
     // 10. Xác thực lại mật khẩu Admin (Re-auth)
     verifyAdminPassword: function(username, password, callback) {
       if (this.isAppsScriptEnvironment()) {

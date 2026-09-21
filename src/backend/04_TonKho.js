@@ -102,13 +102,87 @@ function getTonKhoList(filters) {
   return tonKho;
 }
 
+function updateThietBiSafe(data) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const tbSheet = ss.getSheetByName("SERIAL_MASTER") || ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
+  if (!tbSheet) throw new Error("Không tìm thấy sheet SERIAL_MASTER");
+
+  const oldSerial = String(data.oldSerial || '').trim().toUpperCase();
+  const newSerial = String(data.newSerial || data.serial || '').trim().toUpperCase();
+  const targetRow = findRowBySerial(tbSheet, oldSerial);
+  if (targetRow === -1) throw new Error(`Không tìm thấy thiết bị với serial [${oldSerial}]`);
+
+  if (newSerial !== oldSerial) {
+    const dupRow = findRowBySerial(tbSheet, newSerial);
+    if (dupRow !== -1 && dupRow !== targetRow) {
+      throw new Error(`Serial mới [${newSerial}] đã tồn tại trên một máy khác!`);
+    }
+  }
+
+  if (newSerial) tbSheet.getRange(targetRow, 1).setValue(newSerial);
+  if (data.model) tbSheet.getRange(targetRow, 2).setValue(data.model);
+  if (data.tenHang) tbSheet.getRange(targetRow, 3).setValue(data.tenHang);
+  if (data.kho) tbSheet.getRange(targetRow, 6).setValue(data.kho);
+  if (data.internalId) tbSheet.getRange(targetRow, 18).setValue(data.internalId);
+
+  try {
+    let logSheet = ss.getSheetByName("NHAT_KY_HOAT_DONG");
+    if (logSheet) {
+      const timeStr = Utilities.formatDate(new Date(), "GMT+7", "dd/MM/yyyy HH:mm:ss");
+      logSheet.appendRow([timeStr, "Admin/Quản Lý", "ĐÍNH CHÍNH THIẾT BỊ", newSerial, `Sửa từ [${oldSerial}] sang [${newSerial}]. Lý do: ${data.reason || 'Sửa thông tin'}`]);
+    }
+  } catch(e){}
+
+  return { success: true, message: `Đã đính chính thiết bị [${newSerial}] thành công!` };
+}
+
+function transferSingleDevice(serial, targetKho, note) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const tbSheet = ss.getSheetByName("SERIAL_MASTER") || ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
+  if (!tbSheet) throw new Error("Không tìm thấy sheet SERIAL_MASTER");
+
+  const clean = String(serial || '').trim().toUpperCase();
+  const targetRow = findRowBySerial(tbSheet, clean);
+  if (targetRow === -1) throw new Error(`Không tìm thấy thiết bị [${clean}]`);
+
+  const oldKho = String(tbSheet.getRange(targetRow, 6).getValue() || '');
+  tbSheet.getRange(targetRow, 6).setValue(targetKho);
+
+  try {
+    let logSheet = ss.getSheetByName("NHAT_KY_HOAT_DONG");
+    if (logSheet) {
+      const timeStr = Utilities.formatDate(new Date(), "GMT+7", "dd/MM/yyyy HH:mm:ss");
+      logSheet.appendRow([timeStr, "Thủ Kho", "ĐIỀU CHUYỂN KHO", clean, `Chuyển từ [${oldKho}] sang [${targetKho}]. ${note || ''}`]);
+    }
+  } catch(e){}
+
+  return { success: true, message: `Đã chuyển thiết bị [${clean}] sang [${targetKho}] thành công!` };
+}
+
+function findRowBySerial(sheet, serial) {
+  const clean = String(serial || '').trim().toUpperCase();
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return -1;
+  const values = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+  for (let i = 0; i < values.length; i++) {
+    if (String(values[i][0]).trim().toUpperCase() === clean) {
+      return i + 2;
+    }
+  }
+  return -1;
+}
+
 function updateThietBi(rowId, serial, model, kho, ncc, ghiChu) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const tbSheet = ss.getSheetByName("SERIAL_MASTER") || ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
   const spSheet = ss.getSheetByName("DM_SAN_PHAM");
 
   const cleanSerial = String(serial).trim().toUpperCase();
-  const targetRow = Number(rowId);
+  let targetRow = Number(rowId);
+  if (isNaN(targetRow) || targetRow < 2) {
+    targetRow = findRowBySerial(tbSheet, cleanSerial);
+  }
+  if (targetRow === -1) throw new Error(`Không tìm thấy thiết bị [${cleanSerial}]`);
 
   // Check trùng
   const allSerials = tbSheet.getRange(2, 1, tbSheet.getLastRow() - 1, 1).getValues();
@@ -149,12 +223,16 @@ function updateThietBi(rowId, serial, model, kho, ncc, ghiChu) {
 function deleteThietBi(rowId, reason) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const tbSheet = ss.getSheetByName("SERIAL_MASTER") || ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
-  const targetRow = Number(rowId);
+  let targetRow = Number(rowId);
+  if (isNaN(targetRow) || targetRow < 2) {
+    targetRow = findRowBySerial(tbSheet, String(rowId).trim().toUpperCase());
+  }
+  if (targetRow === -1) throw new Error(`Không tìm thấy thiết bị để hủy`);
+
   const sn = String(tbSheet.getRange(targetRow, 1).getValue() || '').trim();
   const cancelReason = String(reason || 'Hủy do nhập sai/hỏng hóc/thanh lý').trim();
 
   // SERIAL WRITE SAFETY: Soft Void, tuyệt đối không xóa dòng cứng làm đứt gãy dữ liệu
-  // Chuyển trạng thái sang VOID và ghi chú lý do
   tbSheet.getRange(targetRow, 10).setValue("VOID");
   const currentNote = String(tbSheet.getRange(targetRow, 17).getValue() || '').trim();
   const updatedNote = currentNote ? `${currentNote} | [VOID: ${cancelReason}]` : `[VOID: ${cancelReason}]`;
