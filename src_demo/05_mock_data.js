@@ -6313,6 +6313,69 @@
     }
   } catch(e) {}
 
+  // ====================================================
+  // 7. TỰ ĐỘNG DỌN DẸP CÁC PHIẾU XUẤT TEST SÁNG 22/09/2026
+  // Phục hồi nguyên vẹn thiết bị về IN_STOCK và xóa sạch 9 phiếu PX-260922-
+  // ====================================================
+  function cleanupMorningTestExports() {
+    try {
+      if (typeof VOUCHERS_DB !== 'undefined' && Array.isArray(VOUCHERS_DB.xuat)) {
+        const morningVouchers = VOUCHERS_DB.xuat.filter(v => 
+          (v.maPhieu && v.maPhieu.startsWith('PX-260922-')) ||
+          (v.ngay === '22/09/2026' && v.khachHang && v.khachHang.includes('HARMONY GLOBAL'))
+        );
+
+        if (morningVouchers.length > 0) {
+          morningVouchers.forEach(v => {
+            if (Array.isArray(v.items)) {
+              v.items.forEach(it => {
+                const sn = String(it.serial || '').trim();
+                const s = (typeof SERIAL_DB !== 'undefined' ? SERIAL_DB : []).find(x => x.serial === sn);
+                if (s) {
+                  s.status = 'IN_STOCK';
+                  s.khachHang = '';
+                  s.sdtKhach = '';
+                  s.maPhieuXuat = '';
+                  s.ngayXuat = '';
+                  if (Array.isArray(s.timeline)) {
+                    s.timeline = s.timeline.filter(t => 
+                      !t.note || (!t.note.includes('PX-260922-') && !t.note.includes('HARMONY GLOBAL'))
+                    );
+                  }
+                }
+              });
+            }
+          });
+
+          // Loại bỏ toàn bộ các phiếu này khỏi VOUCHERS_DB.xuat
+          VOUCHERS_DB.xuat = VOUCHERS_DB.xuat.filter(v => 
+            !(v.maPhieu && v.maPhieu.startsWith('PX-260922-')) &&
+            !(v.ngay === '22/09/2026' && v.khachHang && v.khachHang.includes('HARMONY GLOBAL'))
+          );
+
+          // Dọn audit log liên quan
+          if (typeof AUDIT_LOG_DB !== 'undefined' && Array.isArray(AUDIT_LOG_DB)) {
+            AUDIT_LOG_DB = AUDIT_LOG_DB.filter(a => 
+              !a.target || (!a.target.includes('PX-260922-') && !a.target.includes('HARMONY GLOBAL'))
+            );
+          }
+
+          // Cập nhật lưu trữ bền vững vào localStorage
+          if (typeof localStorage !== 'undefined') {
+            try {
+              localStorage.setItem('THANH_AN_VOUCHERS_DB', JSON.stringify(VOUCHERS_DB));
+              localStorage.setItem('THANH_AN_SERIAL_DB', JSON.stringify(SERIAL_DB.slice(0, 2000)));
+              localStorage.setItem('THANH_AN_AUDIT_LOGS', JSON.stringify(AUDIT_LOG_DB));
+            } catch(e) {}
+          }
+        }
+      }
+    } catch(err) {
+      console.warn('Lỗi dọn dẹp phiếu test sáng nay:', err);
+    }
+  }
+  cleanupMorningTestExports();
+
   if (typeof window !== 'undefined') {
     try { if (typeof INITIAL_BRANDS !== 'undefined') window.INITIAL_BRANDS = INITIAL_BRANDS; } catch(e){}
     try { if (typeof INITIAL_CATEGORIES !== 'undefined') window.INITIAL_CATEGORIES = INITIAL_CATEGORIES; } catch(e){}
@@ -6326,4 +6389,5 @@
     try { if (typeof VOUCHERS_DB !== 'undefined') window.VOUCHERS_DB = VOUCHERS_DB; } catch(e){}
     try { if (typeof AUDIT_LOG_DB !== 'undefined') window.AUDIT_LOG_DB = AUDIT_LOG_DB; } catch(e){}
     try { if (typeof WARRANTY_CASES_DB !== 'undefined') window.WARRANTY_CASES_DB = WARRANTY_CASES_DB; } catch(e){}
+    window.cleanupMorningTestExports = cleanupMorningTestExports;
   }

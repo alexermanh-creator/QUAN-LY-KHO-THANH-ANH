@@ -1242,3 +1242,71 @@ function saveVoucherEdit(payload) {
   }
 }
 
+/**
+ * DỌN DẸP TOÀN BỘ LỊCH SỬ XUẤT TEST SÁNG 22/09/2026 TRÊN GOOGLE SHEETS
+ * Xóa các dòng PX-260922- trong LICH_SU_XUAT, V4_ISSUE_HEADERS, V4_ISSUE_DETAILS
+ * và trả trạng thái SERIAL_MASTER về 'Tồn kho' (IN_STOCK).
+ */
+function cleanupMorningTestExportsBackend() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let deletedCount = 0;
+
+    // 1. Quét và xóa các dòng trong LICH_SU_XUAT
+    const lsSheet = ss.getSheetByName("LICH_SU_XUAT");
+    if (lsSheet && lsSheet.getLastRow() > 1) {
+      const data = lsSheet.getRange(2, 1, lsSheet.getLastRow() - 1, 3).getValues();
+      for (let i = data.length - 1; i >= 0; i--) {
+        const maPhieu = String(data[i][0] || '').trim();
+        const khach = String(data[i][2] || '').trim();
+        if (maPhieu.startsWith('PX-260922-') || khach.includes('HARMONY GLOBAL')) {
+          lsSheet.deleteRow(i + 2);
+          deletedCount++;
+        }
+      }
+    }
+
+    // 2. Quét và xóa trong V4_ISSUE_HEADERS & V4_ISSUE_DETAILS nếu có
+    const iHead = ss.getSheetByName("V4_ISSUE_HEADERS");
+    if (iHead && iHead.getLastRow() > 1) {
+      const data = iHead.getRange(2, 1, iHead.getLastRow() - 1, 3).getValues();
+      for (let i = data.length - 1; i >= 0; i--) {
+        const maPhieu = String(data[i][0] || '').trim();
+        if (maPhieu.startsWith('PX-260922-')) iHead.deleteRow(i + 2);
+      }
+    }
+    const iDetail = ss.getSheetByName("V4_ISSUE_DETAILS");
+    if (iDetail && iDetail.getLastRow() > 1) {
+      const data = iDetail.getRange(2, 1, iDetail.getLastRow() - 1, 2).getValues();
+      for (let i = data.length - 1; i >= 0; i--) {
+        const maPhieu = String(data[i][1] || '').trim();
+        if (maPhieu.startsWith('PX-260922-')) iDetail.deleteRow(i + 2);
+      }
+    }
+
+    // 3. Hoàn tồn kho trong SERIAL_MASTER
+    const tbSheet = ss.getSheetByName("SERIAL_MASTER") || ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
+    if (tbSheet && tbSheet.getLastRow() > 1) {
+      const totalRows = tbSheet.getLastRow() - 1;
+      const data = tbSheet.getRange(2, 10, totalRows, 5).getValues();
+      for (let i = 0; i < totalRows; i++) {
+        const maPhieu = String(data[i][2] || '').trim();
+        const khach = String(data[i][3] || '').trim();
+        if (maPhieu.startsWith('PX-260922-') || khach.includes('HARMONY GLOBAL')) {
+          const r = i + 2;
+          tbSheet.getRange(r, 10).setValue("Tồn kho");
+          tbSheet.getRange(r, 11).setValue("");
+          tbSheet.getRange(r, 12).setValue("");
+          tbSheet.getRange(r, 13).setValue("");
+          tbSheet.getRange(r, 14).setValue("");
+        }
+      }
+    }
+
+    return { success: true, deletedCount: deletedCount };
+  } catch(e) {
+    return { success: false, error: e.message };
+  }
+}
+
+

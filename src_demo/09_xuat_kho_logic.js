@@ -585,12 +585,22 @@
     modal.show();
   }
 
+  let IS_PROCESSING_XUAT = false;
+
   function executeConfirmXuatVoucher() {
+    if (IS_PROCESSING_XUAT) return;
+
+    if (!CURRENT_DRAFT_XUAT_ITEMS || CURRENT_DRAFT_XUAT_ITEMS.length === 0) {
+      Swal.fire('Chưa có thiết bị', 'Vui lòng chọn ít nhất một máy để xuất kho!', 'warning');
+      return;
+    }
+
     const khach = (document.getElementById('xuat-khach-select')?.value || document.getElementById('xuat-khach-input')?.value || '').trim();
     const sdt = document.getElementById('xuat-sdt').value.trim();
     const diachi = document.getElementById('xuat-diachi').value.trim();
     const kho = (document.getElementById('xuat-kho')?.value) || (CURRENT_DRAFT_XUAT_ITEMS[0]?.kho) || 'Kho Chính';
-    const ngay = formatDateDisplay(document.getElementById('xuat-ngay').value) || formatDateDisplay(getLocalDateStr());
+    const rawNgay = document.getElementById('xuat-ngay')?.value || getLocalDateStr();
+    const ngay = formatDateDisplay(rawNgay) || formatDateDisplay(getLocalDateStr());
     const maPhieu = generateVoucherCode('PX');
     const nowStr = `${ngay} ${new Date().toLocaleTimeString('vi-VN')}`;
 
@@ -600,6 +610,14 @@
     if (document.getElementById('xuat-giayto-phieubh')?.checked) giayToArr.push('Phiếu BH');
     if (document.getElementById('xuat-giayto-cocq')?.checked) giayToArr.push('CO/CQ');
     const ghiChuGiayTo = document.getElementById('xuat-ghichu-giayto')?.value.trim() || '';
+
+    // Khóa nút và bật spinner chống bấm lặp
+    IS_PROCESSING_XUAT = true;
+    const confirmBtn = document.getElementById('btn-final-confirm-xuat');
+    if (confirmBtn) {
+      confirmBtn.disabled = true;
+      confirmBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Đang xử lý xuất kho...';
+    }
 
     const voucherRecord = {
       maPhieu: maPhieu,
@@ -630,8 +648,10 @@
       ]
     };
 
+    // 1. Cập nhật cơ sở dữ liệu phiếu xuất
     VOUCHERS_DB.xuat.unshift(voucherRecord);
 
+    // 2. Chuyển trạng thái các Serial sang SOLD và kích hoạt bảo hành
     CURRENT_DRAFT_XUAT_ITEMS.forEach(it => {
       const serialItem = SERIAL_DB.find(s => s.serial === it.serial);
       if (serialItem) {
@@ -652,15 +672,54 @@
       }
     });
 
+    // 3. Ghi audit log
     recordAuditLog('XÁC NHẬN XUẤT KHO', `Phiếu ${maPhieu} (${CURRENT_DRAFT_XUAT_ITEMS.length} máy)`, 'DRAFT', 'CONFIRMED', `Xuất bán cho ${khach}. Giấy tờ: ${giayToArr.join(', ') || 'Không'}`, [], 'Xuất kho', '', maPhieu);
+
+    // 4. Lưu dữ liệu bền vững vào localStorage
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('THANH_AN_VOUCHERS_DB', JSON.stringify(VOUCHERS_DB));
+        localStorage.setItem('THANH_AN_SERIAL_DB', JSON.stringify(SERIAL_DB.slice(0, 2000)));
+      }
+    } catch(e) {}
+
+    // 5. Đồng bộ Google Apps Script Backend (nếu đang chạy trên môi trường GAS thật)
+    if (typeof WarehouseAPI !== 'undefined' && WarehouseAPI.isAppsScriptEnvironment()) {
+      try {
+        google.script.run
+          .withSuccessHandler(res => console.log('Đã đồng bộ phiếu xuất xuống Google Sheets:', res))
+          .withFailureHandler(err => console.warn('Đồng bộ sheet phiếu xuất:', err))
+          .executeXuatKho({
+            maPhieu: maPhieu,
+            tenKhach: khach,
+            sdtKhach: sdt,
+            diaChi: diachi,
+            kho: kho,
+            ngayXuat: rawNgay,
+            soThangBh: CURRENT_DRAFT_XUAT_ITEMS[0]?.soThangBh || 12,
+            serials: CURRENT_DRAFT_XUAT_ITEMS.map(i => i.serial),
+            ghiChu: ghiChuGiayTo ? `Xuất bán (${ghiChuGiayTo})` : 'Xuất bán khách hàng'
+          });
+      } catch(e) { console.warn(e); }
+    }
+
     if (typeof markModulesDirty === 'function') {
       markModulesDirty(['Dashboard', 'TonKho', 'LichSu', 'Serial360']);
     }
 
+    // 6. Đóng modal xem trước dứt điểm và xóa sạch backdrop
     const modalEl = document.getElementById('previewXuatModal');
-    const modal = bootstrap.Modal.getInstance(modalEl);
-    if (modal) modal.hide();
+    if (modalEl) {
+      const modal = bootstrap.Modal.getInstance(modalEl) || bootstrap.Modal.getOrCreateInstance(modalEl);
+      if (modal) modal.hide();
+    }
+    setTimeout(() => {
+      document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
+      document.body.classList.remove('modal-open');
+      document.body.style.removeProperty('padding-right');
+    }, 350);
 
+    const itemCount = CURRENT_DRAFT_XUAT_ITEMS.length;
     CURRENT_DRAFT_XUAT_ITEMS = [];
     renderDraftXuatTable();
 
@@ -671,14 +730,67 @@
     if (document.getElementById('xuat-giayto-cocq')) document.getElementById('xuat-giayto-cocq').checked = false;
     if (document.getElementById('xuat-ghichu-giayto')) document.getElementById('xuat-ghichu-giayto').value = '';
 
+    if (typeof playBeepSound === 'function') playBeepSound();
+
+    // 7. Hiển thị hộp thoại điều hướng thông minh & rõ ràng (Interactive Action Modal)
     Swal.fire({
       icon: 'success',
-      title: 'Xuất kho thành công!',
-      html: `Phiếu xuất <strong>${maPhieu}</strong> đã được ghi nhận.<br>Khách hàng: <strong>${khach}</strong> (${sdt})<br>Số lượng: <strong>${voucherRecord.items.length} thiết bị</strong>.${giayToArr.length > 0 ? `<br>Kèm giấy tờ: <strong>${giayToArr.join(', ')}</strong>` : ''}`
+      title: 'Xuất Kho Thành Công!',
+      html: `
+        <div class="text-center">
+          <div class="display-6 fw-bold text-success font-monospace mb-2">${maPhieu}</div>
+          <p class="mb-1 fs-6">Khách hàng: <strong>${khach}</strong> ${sdt ? `(${sdt})` : ''}</p>
+          <p class="mb-2">Số lượng: <span class="badge bg-primary fs-6 px-3 py-1">${itemCount} thiết bị</span></p>
+          ${giayToArr.length > 0 ? `<div class="small text-muted mb-2"><i class="fa-solid fa-file-lines me-1"></i>Kèm giấy tờ: <strong>${giayToArr.join(', ')}</strong></div>` : ''}
+          <div class="alert alert-info py-2 small mb-0 text-start">
+            <i class="fa-solid fa-circle-check text-success me-1"></i> Thiết bị đã xuất kho thành công và kích hoạt thời hạn bảo hành. Bạn muốn thực hiện thao tác gì tiếp theo?
+          </div>
+        </div>
+      `,
+      showCancelButton: true,
+      showDenyButton: true,
+      confirmButtonText: '<i class="fa-solid fa-print me-1"></i> Xem & In Phiếu Ngay',
+      denyButtonText: '<i class="fa-solid fa-list-check me-1"></i> Đến Lịch Sử Xuất Kho',
+      cancelButtonText: '<i class="fa-solid fa-plus me-1"></i> Tiếp Tục Xuất Phiếu Mới',
+      confirmButtonColor: '#0d6efd',
+      denyButtonColor: '#198754',
+      cancelButtonColor: '#6c757d',
+      allowOutsideClick: false
+    }).then(result => {
+      if (result.isConfirmed) {
+        // Mở ngay chi tiết phiếu để in hoặc xem tem/barcode
+        if (typeof openVoucherDetail === 'function') {
+          openVoucherDetail('XUAT', maPhieu);
+        }
+      } else if (result.isDenied) {
+        // Chuyển ngay sang tab Lịch Sử Phiếu
+        if (typeof switchTab === 'function') switchTab('LichSu');
+        if (typeof switchHistorySubTab === 'function') switchHistorySubTab('xuat');
+        setTimeout(() => {
+          const searchInput = document.getElementById('filter-xuat-search');
+          if (searchInput) {
+            searchInput.value = maPhieu;
+            if (typeof renderHistoryXuatTable === 'function') renderHistoryXuatTable();
+          }
+        }, 250);
+      } else {
+        // Tiếp tục xuất phiếu mới: focus lại vào ô khách hàng
+        const custInput = document.getElementById('xuat-khach-input');
+        if (custInput) custInput.focus();
+      }
+    }).finally(() => {
+      IS_PROCESSING_XUAT = false;
+      const btn = document.getElementById('btn-final-confirm-xuat');
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-check-double"></i> Xác Nhận Xuất Kho Chính Thức';
+      }
     });
   }
 
   function saveDraftXuatVoucher(isConfirmed) {
+    if (IS_PROCESSING_XUAT) return;
+
     if (CURRENT_DRAFT_XUAT_ITEMS.length === 0) {
       Swal.fire('Chưa có thiết bị', 'Vui lòng chọn ít nhất một máy để lưu nháp!', 'warning');
       return;
@@ -730,17 +842,40 @@
 
     VOUCHERS_DB.xuat.unshift(voucherRecord);
     recordAuditLog('LƯU NHÁP PHIẾU XUẤT', `Phiếu ${maPhieu} (${CURRENT_DRAFT_XUAT_ITEMS.length} máy)`, 'None', 'DRAFT', 'Lưu nháp xuất kho', [], 'Xuất kho', '', maPhieu);
+
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('THANH_AN_VOUCHERS_DB', JSON.stringify(VOUCHERS_DB));
+      }
+    } catch(e) {}
+
     if (typeof markModulesDirty === 'function') {
       markModulesDirty(['Dashboard', 'LichSu']);
     }
 
+    const draftCount = CURRENT_DRAFT_XUAT_ITEMS.length;
     CURRENT_DRAFT_XUAT_ITEMS = [];
     renderDraftXuatTable();
 
     Swal.fire({
       icon: 'info',
-      title: 'Đã lưu nháp phiếu xuất',
-      html: `Phiếu <strong>${maPhieu}</strong> đã được lưu DRAFT. Chưa làm giảm tồn kho thật.`
+      title: 'Đã Lưu Nháp Phiếu Xuất',
+      html: `
+        <div class="text-center">
+          <div class="h4 fw-bold font-monospace text-secondary mb-2">${maPhieu}</div>
+          <p class="mb-1">Phiếu đã được lưu ở trạng thái <strong>DRAFT</strong> (${draftCount} máy).</p>
+          <small class="text-muted">Chưa giảm trừ tồn kho thật. Bạn có thể duyệt xuất chính thức sau.</small>
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: '<i class="fa-solid fa-list-check me-1"></i> Xem Trong Lịch Sử',
+      cancelButtonText: 'Đóng',
+      confirmButtonColor: '#0d6efd'
+    }).then(r => {
+      if (r.isConfirmed) {
+        if (typeof switchTab === 'function') switchTab('LichSu');
+        if (typeof switchHistorySubTab === 'function') switchHistorySubTab('xuat');
+      }
     });
   }
 

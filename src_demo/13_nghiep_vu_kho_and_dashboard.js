@@ -4665,6 +4665,20 @@
 
   // KHỞI ĐỘNG HỆ THỐNG KHI TẢI TRANG
   window.addEventListener('DOMContentLoaded', () => {
+    // 1. Tự động dọn dẹp lịch sử test xuất kho sáng 22/09/2026 nếu còn tồn tại
+    if (typeof cleanupMorningTestExports === 'function') {
+      cleanupMorningTestExports();
+    }
+    if (typeof WarehouseAPI !== 'undefined' && WarehouseAPI.isAppsScriptEnvironment()) {
+      try {
+        google.script.run
+          .withSuccessHandler(res => {
+            if (res && res.deletedCount > 0) console.log('Đã dọn dẹp dữ liệu test trên Google Sheet:', res);
+          })
+          .cleanupMorningTestExportsBackend();
+      } catch(e) {}
+    }
+
     if (typeof checkAuthOnStartup === 'function') {
       checkAuthOnStartup();
     } else {
