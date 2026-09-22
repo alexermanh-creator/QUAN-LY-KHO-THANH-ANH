@@ -2985,6 +2985,18 @@
     renderRbacUsersTable();
     resetRbacForm();
 
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('THANH_AN_USERS_DB', JSON.stringify(USERS_DB));
+      }
+    } catch(e) {}
+
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+      try {
+        google.script.run.saveUserAccountBackend({ username, fullName, role, status, password });
+      } catch(e) {}
+    }
+
     if (typeof Swal !== 'undefined') {
       Swal.fire({ icon: 'success', title: 'Thành công', text: `Đã lưu tài khoản nhân sự [${username}]!`, timer: 1500, showConfirmButton: false });
     }
@@ -3020,6 +3032,16 @@
     }
     const doDelete = () => {
       USERS_DB = USERS_DB.filter(x => x.username !== username);
+      try {
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('THANH_AN_USERS_DB', JSON.stringify(USERS_DB));
+        }
+      } catch(e) {}
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        try {
+          google.script.run.deleteUserAccountBackend(username);
+        } catch(e) {}
+      }
       recordAuditLog('XÓA TÀI KHOẢN', 'RBAC', username, '', `Xóa tài khoản nhân viên ${username}`);
       renderRbacUsersTable();
       resetRbacForm();
@@ -4706,21 +4728,7 @@
     window.deleteCustomer = deleteCustomer;
   }
 
-  // KHỞI ĐỘNG HỆ THỐNG KHI TẢI TRANG
   window.addEventListener('DOMContentLoaded', () => {
-    // 1. Tự động dọn dẹp lịch sử test xuất kho sáng 22/09/2026 nếu còn tồn tại
-    if (typeof cleanupMorningTestExports === 'function') {
-      cleanupMorningTestExports();
-    }
-    if (typeof WarehouseAPI !== 'undefined' && WarehouseAPI.isAppsScriptEnvironment()) {
-      try {
-        google.script.run
-          .withSuccessHandler(res => {
-            if (res && res.deletedCount > 0) console.log('Đã dọn dẹp dữ liệu test trên Google Sheet:', res);
-          })
-          .cleanupMorningTestExportsBackend();
-      } catch(e) {}
-    }
 
     if (typeof checkAuthOnStartup === 'function') {
       checkAuthOnStartup();

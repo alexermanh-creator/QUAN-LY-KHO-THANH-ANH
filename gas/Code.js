@@ -71,11 +71,6 @@ function getInitAppData(options) {
   const khSheet = ss.getSheetByName("DM_KHACH_HANG");
   const khachHang = (khSheet && khSheet.getLastRow() > 1) 
     ? khSheet.getRange(2, 1, khSheet.getLastRow() - 1, 4).getValues()
-        .filter(r => {
-          const ten = String(r[0] || '').trim();
-          const sdt = String(r[1] || '').trim();
-          return !ten.includes('HARMONY GLOBAL') && !sdt.includes('0962503280');
-        })
         .map((r, i) => ({ rowId: i + 2, ten: r[0], sdt: formatPhoneNumberBackend(r[1]), diaChi: r[2], ghiChu: r[3] })) 
     : [];
 
@@ -251,7 +246,7 @@ function getInitAppData(options) {
         khachHang: String(r[2] || ''),
         sdtKhach: refItem.sdtKhach || '',
         kho: refItem.kho || 'Kho VP',
-        nguoiTao: 'Khổng Mạnh Cường',
+        nguoiTao: String(r[7] || 'Thủ Kho'),
         soLuong: parseInt(r[3], 10) || 1,
         serials: String(r[4] || ''),
         baoHanh: String(r[5] || ''),
@@ -1249,97 +1244,69 @@ function saveVoucherEdit(payload) {
 }
 
 /**
- * DỌN DẸP TOÀN BỘ LỊCH SỬ XUẤT TEST SÁNG 22/09/2026 TRÊN GOOGLE SHEETS
- * Xóa các dòng PX-260922- trong LICH_SU_XUAT, V4_ISSUE_HEADERS, V4_ISSUE_DETAILS
- * và trả trạng thái SERIAL_MASTER về 'Tồn kho' (IN_STOCK).
+ * LƯU / SỬA TÀI KHOẢN NHÂN VIÊN VÀO SHEET USERS (DYNAMIC RBAC)
  */
-function cleanupMorningTestExportsBackend() {
+function saveUserAccountBackend(userData) {
   try {
+    if (!userData || !userData.username) return { success: false, error: "Thiếu username" };
     const ss = SpreadsheetApp.getActiveSpreadsheet();
-    let deletedCount = 0;
-
-    // 1. Quét và xóa các dòng trong LICH_SU_XUAT
-    const lsSheet = ss.getSheetByName("LICH_SU_XUAT");
-    if (lsSheet && lsSheet.getLastRow() > 1) {
-      const data = lsSheet.getRange(2, 1, lsSheet.getLastRow() - 1, 3).getValues();
-      for (let i = data.length - 1; i >= 0; i--) {
-        const maPhieu = String(data[i][0] || '').trim();
-        const khach = String(data[i][2] || '').trim();
-        if (maPhieu.startsWith('PX-260922-') || khach.includes('HARMONY GLOBAL')) {
-          lsSheet.deleteRow(i + 2);
-          deletedCount++;
-        }
-      }
+    let uSheet = ss.getSheetByName("USERS");
+    if (!uSheet) {
+      uSheet = ss.insertSheet("USERS");
+      uSheet.appendRow(["Username", "PasswordHash", "FullName", "Role", "Status", "Email", "Phone"]);
     }
-
-    // 2. Quét và xóa trong V4_ISSUE_HEADERS & V4_ISSUE_DETAILS nếu có
-    const iHead = ss.getSheetByName("V4_ISSUE_HEADERS");
-    if (iHead && iHead.getLastRow() > 1) {
-      const data = iHead.getRange(2, 1, iHead.getLastRow() - 1, 3).getValues();
-      for (let i = data.length - 1; i >= 0; i--) {
-        const maPhieu = String(data[i][0] || '').trim();
-        if (maPhieu.startsWith('PX-260922-')) iHead.deleteRow(i + 2);
-      }
-    }
-    const iDetail = ss.getSheetByName("V4_ISSUE_DETAILS");
-    if (iDetail && iDetail.getLastRow() > 1) {
-      const data = iDetail.getRange(2, 1, iDetail.getLastRow() - 1, 2).getValues();
-      for (let i = data.length - 1; i >= 0; i--) {
-        const maPhieu = String(data[i][1] || '').trim();
-        if (maPhieu.startsWith('PX-260922-')) iDetail.deleteRow(i + 2);
-      }
-    }
-
-    // 3. Hoàn tồn kho trong SERIAL_MASTER
-    const tbSheet = ss.getSheetByName("SERIAL_MASTER") || ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
-    if (tbSheet && tbSheet.getLastRow() > 1) {
-      const totalRows = tbSheet.getLastRow() - 1;
-      const data = tbSheet.getRange(2, 10, totalRows, 5).getValues();
+    const totalRows = uSheet.getLastRow() - 1;
+    let foundRow = -1;
+    if (totalRows > 0) {
+      const users = uSheet.getRange(2, 1, totalRows, 1).getValues();
       for (let i = 0; i < totalRows; i++) {
-        const maPhieu = String(data[i][2] || '').trim();
-        const khach = String(data[i][3] || '').trim();
-        if (maPhieu.startsWith('PX-260922-') || khach.includes('HARMONY GLOBAL')) {
-          const r = i + 2;
-          tbSheet.getRange(r, 10).setValue("Tồn kho");
-          tbSheet.getRange(r, 11).setValue("");
-          tbSheet.getRange(r, 12).setValue("");
-          tbSheet.getRange(r, 13).setValue("");
-          tbSheet.getRange(r, 14).setValue("");
+        if (String(users[i][0]).toLowerCase().trim() === String(userData.username).toLowerCase().trim()) {
+          foundRow = i + 2;
+          break;
         }
       }
     }
+    const rowData = [
+      userData.username,
+      userData.password || '123456',
+      userData.fullName || userData.username,
+      userData.role || 'THỦ KHO',
+      userData.status || 'ACTIVE',
+      userData.email || '',
+      userData.phone ? ("'" + userData.phone) : ''
+    ];
+    if (foundRow > 0) {
+      uSheet.getRange(foundRow, 1, 1, rowData.length).setValues([rowData]);
+    } else {
+      uSheet.appendRow(rowData);
+    }
+    return { success: true };
+  } catch(err) {
+    return { success: false, error: err.message };
+  }
+}
 
-    // 4. Xóa khách hàng HARMONY GLOBAL trong DM_KHACH_HANG nếu có
-    const khSheet = ss.getSheetByName("DM_KHACH_HANG");
-    if (khSheet && khSheet.getLastRow() > 1) {
-      const khData = khSheet.getRange(2, 1, khSheet.getLastRow() - 1, 3).getValues();
-      for (let i = khData.length - 1; i >= 0; i--) {
-        const tenKh = String(khData[i][1] || '').trim();
-        const sdtKh = String(khData[i][2] || '').trim();
-        if (tenKh.includes('HARMONY GLOBAL') || sdtKh.includes('0962503280')) {
-          khSheet.deleteRow(i + 2);
+/**
+ * XÓA TÀI KHOẢN NHÂN VIÊN TRONG SHEET USERS
+ */
+function deleteUserAccountBackend(username) {
+  try {
+    username = String(username || '').trim().toLowerCase();
+    if (!username || username === 'admin') return { success: false, error: "Không được phép xóa admin" };
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const uSheet = ss.getSheetByName("USERS");
+    if (uSheet && uSheet.getLastRow() > 1) {
+      const users = uSheet.getRange(2, 1, uSheet.getLastRow() - 1, 1).getValues();
+      for (let i = users.length - 1; i >= 0; i--) {
+        if (String(users[i][0]).toLowerCase().trim() === username) {
+          uSheet.deleteRow(i + 2);
+          break;
         }
       }
     }
-
-    // 5. Dọn dẹp các serial thuộc phiếu nhập PN-260922-01 đã bị hủy để sẵn sàng tái nhập
-    if (tbSheet && tbSheet.getLastRow() > 1) {
-      const dataSn = tbSheet.getRange(2, 1, tbSheet.getLastRow() - 1, 9).getValues();
-      for (let i = dataSn.length - 1; i >= 0; i--) {
-        const sn = String(dataSn[i][0] || '').trim();
-        const pNhap = String(dataSn[i][8] || '').trim();
-        if (pNhap.startsWith('PN-260922-01') || sn === 'E82908G6N644372' || sn === 'E82908G6N644920') {
-          tbSheet.deleteRow(i + 2);
-          deletedCount++;
-        }
-      }
-    }
-
-    if (typeof invalidateMasterCache === 'function') invalidateMasterCache();
-
-    return { success: true, deletedCount: deletedCount };
-  } catch(e) {
-    return { success: false, error: e.message };
+    return { success: true };
+  } catch(err) {
+    return { success: false, error: err.message };
   }
 }
 

@@ -1274,6 +1274,15 @@
     { username: 'minhquan', fullName: 'Khổng Minh Quân', role: 'THỦ KHO', status: 'ACTIVE', password: '***' }
   ];
   let USERS_DB = JSON.parse(JSON.stringify(INITIAL_USERS));
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const savedUsers = localStorage.getItem('THANH_AN_USERS_DB');
+      if (savedUsers) {
+        const parsedU = JSON.parse(savedUsers);
+        if (Array.isArray(parsedU) && parsedU.length > 0) USERS_DB = parsedU;
+      }
+    }
+  } catch(e) {}
 
   // Tài khoản đăng nhập (mặc định chưa đăng nhập / Khách)
   let CURRENT_ROLE = 'GUEST';
@@ -6313,99 +6322,6 @@
     }
   } catch(e) {}
 
-  // ====================================================
-  // 7. TỰ ĐỘNG DỌN DẸP CÁC PHIẾU XUẤT TEST SÁNG 22/09/2026
-  // Phục hồi nguyên vẹn thiết bị về IN_STOCK và xóa sạch 9 phiếu PX-260922-
-  // ====================================================
-  function cleanupMorningTestExports() {
-    try {
-      // 1. Dọn dẹp khách hàng HARMONY GLOBAL khỏi danh mục INITIAL_CUSTOMERS & localStorage
-      if (typeof INITIAL_CUSTOMERS !== 'undefined' && Array.isArray(INITIAL_CUSTOMERS)) {
-        INITIAL_CUSTOMERS = INITIAL_CUSTOMERS.filter(c => 
-          !(c.name && c.name.includes('HARMONY GLOBAL')) &&
-          !(c.ten && c.ten.includes('HARMONY GLOBAL')) &&
-          !(c.phone && c.phone.includes('0962503280')) &&
-          !(c.sdt && c.sdt.includes('0962503280'))
-        );
-      }
-      if (typeof localStorage !== 'undefined') {
-        try {
-          const savedC = localStorage.getItem('THANH_AN_CUSTOMERS');
-          if (savedC) {
-            let parsedC = JSON.parse(savedC);
-            if (Array.isArray(parsedC)) {
-              parsedC = parsedC.filter(c => 
-                !(c.name && c.name.includes('HARMONY GLOBAL')) &&
-                !(c.ten && c.ten.includes('HARMONY GLOBAL')) &&
-                !(c.phone && c.phone.includes('0962503280')) &&
-                !(c.sdt && c.sdt.includes('0962503280'))
-              );
-              localStorage.setItem('THANH_AN_CUSTOMERS', JSON.stringify(parsedC));
-            }
-          }
-        } catch(e) {}
-      }
-
-      // 2. Dọn dẹp phiếu test và rollback thiết bị
-      if (typeof VOUCHERS_DB !== 'undefined' && Array.isArray(VOUCHERS_DB.xuat)) {
-        const morningVouchers = VOUCHERS_DB.xuat.filter(v => 
-          (v.maPhieu && v.maPhieu.startsWith('PX-260922-')) ||
-          (v.khachHang && v.khachHang.includes('HARMONY GLOBAL')) ||
-          (v.sdtKhach && v.sdtKhach.includes('0962503280'))
-        );
-
-        if (morningVouchers.length > 0) {
-          morningVouchers.forEach(v => {
-            if (Array.isArray(v.items)) {
-              v.items.forEach(it => {
-                const sn = String(it.serial || '').trim();
-                const s = (typeof SERIAL_DB !== 'undefined' ? SERIAL_DB : []).find(x => x.serial === sn);
-                if (s) {
-                  s.status = 'IN_STOCK';
-                  s.khachHang = '';
-                  s.sdtKhach = '';
-                  s.maPhieuXuat = '';
-                  s.ngayXuat = '';
-                  if (Array.isArray(s.timeline)) {
-                    s.timeline = s.timeline.filter(t => 
-                      !t.note || (!t.note.includes('PX-260922-') && !t.note.includes('HARMONY GLOBAL'))
-                    );
-                  }
-                }
-              });
-            }
-          });
-
-          // Loại bỏ toàn bộ các phiếu này khỏi VOUCHERS_DB.xuat
-          VOUCHERS_DB.xuat = VOUCHERS_DB.xuat.filter(v => 
-            !(v.maPhieu && v.maPhieu.startsWith('PX-260922-')) &&
-            !(v.khachHang && v.khachHang.includes('HARMONY GLOBAL')) &&
-            !(v.sdtKhach && v.sdtKhach.includes('0962503280'))
-          );
-
-          // Dọn audit log liên quan
-          if (typeof AUDIT_LOG_DB !== 'undefined' && Array.isArray(AUDIT_LOG_DB)) {
-            AUDIT_LOG_DB = AUDIT_LOG_DB.filter(a => 
-              !a.target || (!a.target.includes('PX-260922-') && !a.target.includes('HARMONY GLOBAL'))
-            );
-          }
-
-          // Cập nhật lưu trữ bền vững vào localStorage
-          if (typeof localStorage !== 'undefined') {
-            try {
-              localStorage.setItem('THANH_AN_VOUCHERS_DB', JSON.stringify(VOUCHERS_DB));
-              localStorage.setItem('THANH_AN_SERIAL_DB', JSON.stringify(SERIAL_DB.slice(0, 2000)));
-              localStorage.setItem('THANH_AN_AUDIT_LOGS', JSON.stringify(AUDIT_LOG_DB));
-            } catch(e) {}
-          }
-        }
-      }
-    } catch(err) {
-      console.warn('Lỗi dọn dẹp phiếu test sáng nay:', err);
-    }
-  }
-  cleanupMorningTestExports();
-
   if (typeof window !== 'undefined') {
     try { if (typeof INITIAL_BRANDS !== 'undefined') window.INITIAL_BRANDS = INITIAL_BRANDS; } catch(e){}
     try { if (typeof INITIAL_CATEGORIES !== 'undefined') window.INITIAL_CATEGORIES = INITIAL_CATEGORIES; } catch(e){}
@@ -6419,5 +6335,5 @@
     try { if (typeof VOUCHERS_DB !== 'undefined') window.VOUCHERS_DB = VOUCHERS_DB; } catch(e){}
     try { if (typeof AUDIT_LOG_DB !== 'undefined') window.AUDIT_LOG_DB = AUDIT_LOG_DB; } catch(e){}
     try { if (typeof WARRANTY_CASES_DB !== 'undefined') window.WARRANTY_CASES_DB = WARRANTY_CASES_DB; } catch(e){}
-    window.cleanupMorningTestExports = cleanupMorningTestExports;
+    try { if (typeof USERS_DB !== 'undefined') window.USERS_DB = USERS_DB; } catch(e){}
   }

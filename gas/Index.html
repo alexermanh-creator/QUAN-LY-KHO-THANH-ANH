@@ -6258,6 +6258,15 @@
     { username: 'minhquan', fullName: 'Khổng Minh Quân', role: 'THỦ KHO', status: 'ACTIVE', password: '***' }
   ];
   let USERS_DB = JSON.parse(JSON.stringify(INITIAL_USERS));
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const savedUsers = localStorage.getItem('THANH_AN_USERS_DB');
+      if (savedUsers) {
+        const parsedU = JSON.parse(savedUsers);
+        if (Array.isArray(parsedU) && parsedU.length > 0) USERS_DB = parsedU;
+      }
+    }
+  } catch(e) {}
 
   // Tài khoản đăng nhập (mặc định chưa đăng nhập / Khách)
   let CURRENT_ROLE = 'GUEST';
@@ -11297,99 +11306,6 @@
     }
   } catch(e) {}
 
-  // ====================================================
-  // 7. TỰ ĐỘNG DỌN DẸP CÁC PHIẾU XUẤT TEST SÁNG 22/09/2026
-  // Phục hồi nguyên vẹn thiết bị về IN_STOCK và xóa sạch 9 phiếu PX-260922-
-  // ====================================================
-  function cleanupMorningTestExports() {
-    try {
-      // 1. Dọn dẹp khách hàng HARMONY GLOBAL khỏi danh mục INITIAL_CUSTOMERS & localStorage
-      if (typeof INITIAL_CUSTOMERS !== 'undefined' && Array.isArray(INITIAL_CUSTOMERS)) {
-        INITIAL_CUSTOMERS = INITIAL_CUSTOMERS.filter(c => 
-          !(c.name && c.name.includes('HARMONY GLOBAL')) &&
-          !(c.ten && c.ten.includes('HARMONY GLOBAL')) &&
-          !(c.phone && c.phone.includes('0962503280')) &&
-          !(c.sdt && c.sdt.includes('0962503280'))
-        );
-      }
-      if (typeof localStorage !== 'undefined') {
-        try {
-          const savedC = localStorage.getItem('THANH_AN_CUSTOMERS');
-          if (savedC) {
-            let parsedC = JSON.parse(savedC);
-            if (Array.isArray(parsedC)) {
-              parsedC = parsedC.filter(c => 
-                !(c.name && c.name.includes('HARMONY GLOBAL')) &&
-                !(c.ten && c.ten.includes('HARMONY GLOBAL')) &&
-                !(c.phone && c.phone.includes('0962503280')) &&
-                !(c.sdt && c.sdt.includes('0962503280'))
-              );
-              localStorage.setItem('THANH_AN_CUSTOMERS', JSON.stringify(parsedC));
-            }
-          }
-        } catch(e) {}
-      }
-
-      // 2. Dọn dẹp phiếu test và rollback thiết bị
-      if (typeof VOUCHERS_DB !== 'undefined' && Array.isArray(VOUCHERS_DB.xuat)) {
-        const morningVouchers = VOUCHERS_DB.xuat.filter(v => 
-          (v.maPhieu && v.maPhieu.startsWith('PX-260922-')) ||
-          (v.khachHang && v.khachHang.includes('HARMONY GLOBAL')) ||
-          (v.sdtKhach && v.sdtKhach.includes('0962503280'))
-        );
-
-        if (morningVouchers.length > 0) {
-          morningVouchers.forEach(v => {
-            if (Array.isArray(v.items)) {
-              v.items.forEach(it => {
-                const sn = String(it.serial || '').trim();
-                const s = (typeof SERIAL_DB !== 'undefined' ? SERIAL_DB : []).find(x => x.serial === sn);
-                if (s) {
-                  s.status = 'IN_STOCK';
-                  s.khachHang = '';
-                  s.sdtKhach = '';
-                  s.maPhieuXuat = '';
-                  s.ngayXuat = '';
-                  if (Array.isArray(s.timeline)) {
-                    s.timeline = s.timeline.filter(t => 
-                      !t.note || (!t.note.includes('PX-260922-') && !t.note.includes('HARMONY GLOBAL'))
-                    );
-                  }
-                }
-              });
-            }
-          });
-
-          // Loại bỏ toàn bộ các phiếu này khỏi VOUCHERS_DB.xuat
-          VOUCHERS_DB.xuat = VOUCHERS_DB.xuat.filter(v => 
-            !(v.maPhieu && v.maPhieu.startsWith('PX-260922-')) &&
-            !(v.khachHang && v.khachHang.includes('HARMONY GLOBAL')) &&
-            !(v.sdtKhach && v.sdtKhach.includes('0962503280'))
-          );
-
-          // Dọn audit log liên quan
-          if (typeof AUDIT_LOG_DB !== 'undefined' && Array.isArray(AUDIT_LOG_DB)) {
-            AUDIT_LOG_DB = AUDIT_LOG_DB.filter(a => 
-              !a.target || (!a.target.includes('PX-260922-') && !a.target.includes('HARMONY GLOBAL'))
-            );
-          }
-
-          // Cập nhật lưu trữ bền vững vào localStorage
-          if (typeof localStorage !== 'undefined') {
-            try {
-              localStorage.setItem('THANH_AN_VOUCHERS_DB', JSON.stringify(VOUCHERS_DB));
-              localStorage.setItem('THANH_AN_SERIAL_DB', JSON.stringify(SERIAL_DB.slice(0, 2000)));
-              localStorage.setItem('THANH_AN_AUDIT_LOGS', JSON.stringify(AUDIT_LOG_DB));
-            } catch(e) {}
-          }
-        }
-      }
-    } catch(err) {
-      console.warn('Lỗi dọn dẹp phiếu test sáng nay:', err);
-    }
-  }
-  cleanupMorningTestExports();
-
   if (typeof window !== 'undefined') {
     try { if (typeof INITIAL_BRANDS !== 'undefined') window.INITIAL_BRANDS = INITIAL_BRANDS; } catch(e){}
     try { if (typeof INITIAL_CATEGORIES !== 'undefined') window.INITIAL_CATEGORIES = INITIAL_CATEGORIES; } catch(e){}
@@ -11403,7 +11319,7 @@
     try { if (typeof VOUCHERS_DB !== 'undefined') window.VOUCHERS_DB = VOUCHERS_DB; } catch(e){}
     try { if (typeof AUDIT_LOG_DB !== 'undefined') window.AUDIT_LOG_DB = AUDIT_LOG_DB; } catch(e){}
     try { if (typeof WARRANTY_CASES_DB !== 'undefined') window.WARRANTY_CASES_DB = WARRANTY_CASES_DB; } catch(e){}
-    window.cleanupMorningTestExports = cleanupMorningTestExports;
+    try { if (typeof USERS_DB !== 'undefined') window.USERS_DB = USERS_DB; } catch(e){}
   }
 
   /* ==================================================== */
@@ -13007,9 +12923,8 @@
     if (!matched && (typeof INITIAL_USERS !== 'undefined')) {
       matched = INITIAL_USERS.find(x => x.username.toLowerCase() === u);
     }
-    if (!matched) {
-      if (u === 'admin') matched = { username: 'admin', fullName: 'Khổng Mạnh Cường', role: 'ADMIN' };
-      else if (u === 'minhquan') matched = { username: 'minhquan', fullName: 'Khổng Minh Quân', role: 'THỦ KHO' };
+    if (!matched && u === 'admin') {
+      matched = { username: 'admin', fullName: 'Khổng Mạnh Cường', role: 'ADMIN' };
     }
 
     if (matched) {
@@ -19216,7 +19131,7 @@
 
     // Tiêu đề & Thông tin bổ sung (Thời gian tạo, người sửa gần nhất, thời gian sửa)
     const headerBox = document.getElementById('view-voucher-header-info');
-    const nguoiLap = v.nguoiTao || v.nguoiXuat || v.user || 'Khổng Mạnh Cường';
+    const nguoiLap = v.nguoiTao || v.nguoiXuat || v.user || (typeof CURRENT_USER_NAME !== 'undefined' && CURRENT_USER_NAME ? CURRENT_USER_NAME : 'Thủ Kho');
     const khoGiaoDich = v.kho || (v.items && v.items[0] && v.items[0].kho) || 'Kho VP';
     let custName = v.khachHang || (isNhap ? (v.ncc || 'Chính hãng') : 'Khách lẻ');
     let custPhone = v.sdtKhach || v.sdt || '';
@@ -23433,6 +23348,18 @@
     renderRbacUsersTable();
     resetRbacForm();
 
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('THANH_AN_USERS_DB', JSON.stringify(USERS_DB));
+      }
+    } catch(e) {}
+
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+      try {
+        google.script.run.saveUserAccountBackend({ username, fullName, role, status, password });
+      } catch(e) {}
+    }
+
     if (typeof Swal !== 'undefined') {
       Swal.fire({ icon: 'success', title: 'Thành công', text: `Đã lưu tài khoản nhân sự [${username}]!`, timer: 1500, showConfirmButton: false });
     }
@@ -23468,6 +23395,16 @@
     }
     const doDelete = () => {
       USERS_DB = USERS_DB.filter(x => x.username !== username);
+      try {
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('THANH_AN_USERS_DB', JSON.stringify(USERS_DB));
+        }
+      } catch(e) {}
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        try {
+          google.script.run.deleteUserAccountBackend(username);
+        } catch(e) {}
+      }
       recordAuditLog('XÓA TÀI KHOẢN', 'RBAC', username, '', `Xóa tài khoản nhân viên ${username}`);
       renderRbacUsersTable();
       resetRbacForm();
@@ -25154,21 +25091,7 @@
     window.deleteCustomer = deleteCustomer;
   }
 
-  // KHỞI ĐỘNG HỆ THỐNG KHI TẢI TRANG
   window.addEventListener('DOMContentLoaded', () => {
-    // 1. Tự động dọn dẹp lịch sử test xuất kho sáng 22/09/2026 nếu còn tồn tại
-    if (typeof cleanupMorningTestExports === 'function') {
-      cleanupMorningTestExports();
-    }
-    if (typeof WarehouseAPI !== 'undefined' && WarehouseAPI.isAppsScriptEnvironment()) {
-      try {
-        google.script.run
-          .withSuccessHandler(res => {
-            if (res && res.deletedCount > 0) console.log('Đã dọn dẹp dữ liệu test trên Google Sheet:', res);
-          })
-          .cleanupMorningTestExportsBackend();
-      } catch(e) {}
-    }
 
     if (typeof checkAuthOnStartup === 'function') {
       checkAuthOnStartup();
@@ -25179,21 +25102,20 @@
     switchTab('Dashboard');
   });
 </script>
-
 <script>
   // =========================================================
-  // GOOGLE APPS SCRIPT LIVE DATA HYDRATION BRIDGE
+  // GOOGLE APPS SCRIPT LIVE DATA HYDRATION BRIDGE (UTF-8 PROMAX)
   // =========================================================
   function syncServerDataToDemo(serverData) {
     if (!serverData) return;
     console.log("[GAS Bridge] Hydrating live data from Google Sheets...", serverData);
     
-    // 0. Kiá»ƒm tra phiÃªn Ä‘Äƒng nháº­p an toÃ n, khÃ´ng tá»± Ä‘á»™ng bypass vai trÃ²
+    // 0. Kiểm tra phiên đăng nhập an toàn từ localStorage / sessionStorage
     if (typeof checkAuthOnStartup === 'function') {
       checkAuthOnStartup();
     }
 
-    // 1. Äá»“ng bá»™ Danh má»¥c Sáº£n pháº©m / Model (Chá»‰ ghi Ä‘Ã¨ náº¿u server cÃ³ dá»¯ liá»‡u tháº­t)
+    // 1. Đồng bộ Danh mục Sản phẩm / Model
     if (Array.isArray(serverData.products) && serverData.products.length > 0) {
       INITIAL_PRODUCTS = serverData.products.map(p => ({
         id: p.model,
@@ -25205,7 +25127,7 @@
         nhomHang: p.nhom || '',
         category: p.nhom || '',
         nhom: p.nhom || '',
-        dvt: p.dvt || 'Chiáº¿c',
+        dvt: p.dvt || 'Chiếc',
         hang: p.hang || '',
         brand: p.hang || '',
         defaultBh: p.defaultBh || 12,
@@ -25216,7 +25138,7 @@
       if (typeof PRODUCTS_DB !== 'undefined') PRODUCTS_DB = INITIAL_PRODUCTS;
     }
 
-    // 2. Äá»“ng bá»™ Danh má»¥c NhÃ  Cung Cáº¥p
+    // 2. Đồng bộ Danh mục Nhà Cung Cấp
     if (Array.isArray(serverData.ncc) && serverData.ncc.length > 0) {
       INITIAL_SUPPLIERS = serverData.ncc.map(n => ({
         id: n.tenTat,
@@ -25237,7 +25159,7 @@
       if (typeof SUPPLIERS_DB !== 'undefined') SUPPLIERS_DB = INITIAL_SUPPLIERS;
     }
 
-    // 3. Äá»“ng bá»™ Danh má»¥c KhÃ¡ch HÃ ng
+    // 3. Đồng bộ Danh mục Khách Hàng (Đầy đủ, không lọc chặn bất kỳ khách nào)
     if (Array.isArray(serverData.khachHang) && serverData.khachHang.length > 0) {
       INITIAL_CUSTOMERS = serverData.khachHang.map((k, idx) => ({
         id: 'KH' + String(idx + 1).padStart(3, '0'),
@@ -25251,14 +25173,14 @@
         diaChi: k.diaChi || '',
         nguoiLienHe: k.nguoiLienHe || '',
         mst: k.mst || '',
-        nhomKhach: k.nhomKhach || 'KhÃ¡ch láº»',
+        nhomKhach: k.nhomKhach || 'Khách lẻ',
         ghiChu: k.ghiChu || '',
         active: true
       }));
       if (typeof CUSTOMERS_DB !== 'undefined') CUSTOMERS_DB = INITIAL_CUSTOMERS;
     }
 
-    // 4. Äá»“ng bá»™ Danh má»¥c Kho HÃ ng
+    // 4. Đồng bộ Danh mục Kho Hàng (Tiếng Việt chuẩn)
     if (Array.isArray(serverData.kho) && serverData.kho.length > 0) {
       INITIAL_WAREHOUSES = serverData.kho.map(k => ({
         id: k.val,
@@ -25267,13 +25189,13 @@
         name: k.val,
         maKho: k.val,
         tenKho: k.val,
-        loaiKho: 'Kho Trung TÃ¢m',
+        loaiKho: 'Kho Trung Tâm',
         active: true
       }));
       if (typeof WAREHOUSES_DB !== 'undefined') WAREHOUSES_DB = INITIAL_WAREHOUSES;
     }
 
-    // 5. Äá»“ng bá»™ Danh má»¥c NhÃ³m HÃ ng
+    // 5. Đồng bộ Danh mục Nhóm Hàng
     if (Array.isArray(serverData.nhomHang) && serverData.nhomHang.length > 0) {
       INITIAL_CATEGORIES = serverData.nhomHang.map(nh => ({
         id: nh.val,
@@ -25287,7 +25209,7 @@
       if (typeof CATEGORIES_DB !== 'undefined') CATEGORIES_DB = INITIAL_CATEGORIES;
     }
 
-    // 6. Äá»“ng bá»™ Danh má»¥c HÃ£ng SX
+    // 6. Đồng bộ Danh mục Hãng SX
     if (Array.isArray(serverData.hangSx) && serverData.hangSx.length > 0) {
       INITIAL_BRANDS = serverData.hangSx.map(h => ({
         id: h.val,
@@ -25301,7 +25223,7 @@
       if (typeof BRANDS_DB !== 'undefined') BRANDS_DB = INITIAL_BRANDS;
     }
 
-    // 7. Äá»“ng bá»™ Danh má»¥c Thá»i Gian Báº£o HÃ nh
+    // 7. Đồng bộ Danh mục Thời Gian Bảo Hành (Tiếng Việt chuẩn)
     if (Array.isArray(serverData.baoHanh) && serverData.baoHanh.length > 0) {
       INITIAL_WARRANTIES = serverData.baoHanh.map((b, idx) => {
         const valStr = String(b.val || b);
@@ -25310,14 +25232,14 @@
           id: 'BH-' + (months || (idx + 1)),
           tenGoi: valStr,
           soThang: months,
-          ghiChu: 'Thá»i háº¡n báº£o hÃ nh há»‡ thá»‘ng',
+          ghiChu: 'Thời hạn bảo hành hệ thống',
           active: true
         };
       });
       if (typeof window !== 'undefined') window.INITIAL_WARRANTIES = INITIAL_WARRANTIES;
     }
 
-    // 7b. Äá»“ng bá»™ Danh má»¥c Loáº¡i HÃ ng (Cá»™t 3 DM_QUY_CHUAN)
+    // 7b. Đồng bộ Danh mục Loại Hàng (Tiếng Việt chuẩn)
     if (Array.isArray(serverData.loaiHang) && serverData.loaiHang.length > 0) {
       INITIAL_CONDITIONS = serverData.loaiHang.map((l, idx) => {
         const valStr = String(l.val || l);
@@ -25326,14 +25248,14 @@
           rowId: l.rowId || null,
           ten: valStr,
           name: valStr,
-          ghiChu: 'PhÃ¢n loáº¡i hÃ ng hÃ³a quy chuáº©n',
+          ghiChu: 'Phân loại hàng hóa quy chuẩn',
           active: true
         };
       });
       if (typeof window !== 'undefined') window.INITIAL_CONDITIONS = INITIAL_CONDITIONS;
     }
 
-    // 8. Äá»“ng bá»™ Tá»“n kho vÃ  Thiáº¿t bá»‹ thá»±c táº¿ (Giá»¯ trá»n váº¹n toÃ n bá»™ Serial Tá»“n kho & ÄÃ£ xuáº¥t)
+    // 8. Đồng bộ Tồn kho và Thiết bị thực tế
     if (Array.isArray(serverData.allSerials) && serverData.allSerials.length > 0) {
       SERIAL_DATA = serverData.allSerials.map(t => ({
         serial: t.serial,
@@ -25342,13 +25264,13 @@
         model: t.model,
         name: t.tenHang || t.name,
         tenHang: t.tenHang || t.name,
-        nhom: t.nhom || t.nhomHang || 'KhÃ¡c',
-        nhomHang: t.nhomHang || t.nhom || 'KhÃ¡c',
-        category: t.nhomHang || t.nhom || 'KhÃ¡c',
+        nhom: t.nhom || t.nhomHang || 'Khác',
+        nhomHang: t.nhomHang || t.nhom || 'Khác',
+        category: t.nhomHang || t.nhom || 'Khác',
         warehouse: t.kho || 'Kho VP',
         kho: t.kho || 'Kho VP',
-        supplier: t.ncc || 'ChÃ­nh hÃ£ng',
-        ncc: t.ncc || 'ChÃ­nh hÃ£ng',
+        supplier: t.ncc || 'Chính hãng',
+        ncc: t.ncc || 'Chính hãng',
         importDate: t.ngayNhap,
         ngayNhap: t.ngayNhap,
         importVoucher: t.maPhieuNhap || t.maPhieu,
@@ -25357,8 +25279,8 @@
         status: t.status || 'IN_STOCK',
         daysInStock: t.soNgayLuuKho || 0,
         soNgayLuuKho: t.soNgayLuuKho || 0,
-        condition: t.loaiHang || 'Má»›i 100%',
-        loaiHang: t.loaiHang || 'Má»›i 100%',
+        condition: t.loaiHang || 'Mới 100%',
+        loaiHang: t.loaiHang || 'Mới 100%',
         soThangBh: t.soThangBh || t.warrantyMonths || 12,
         warrantyMonths: t.warrantyMonths || t.soThangBh || 12,
         ngayHetHanBh: t.ngayHetHanBh || '',
@@ -25370,7 +25292,6 @@
       }));
       if (typeof SERIAL_DB !== 'undefined') SERIAL_DB = SERIAL_DATA;
     } else if (Array.isArray(serverData.tonKhoList) && serverData.tonKhoList.length > 0) {
-      // Há»£p nháº¥t tonKhoList vá»›i SERIAL_DB Ä‘á»ƒ khÃ´ng lÃ m máº¥t cÃ¡c serial Ä‘Ã£ xuáº¥t
       const map = new Map();
       (typeof SERIAL_DB !== 'undefined' ? SERIAL_DB : []).forEach(s => map.set(s.serial, s));
       serverData.tonKhoList.forEach(t => {
@@ -25385,33 +25306,48 @@
       if (typeof SERIAL_DB !== 'undefined') SERIAL_DB = SERIAL_DATA;
     }
 
-    // 9. Äá»“ng bá»™ Phiáº¿u Nháº­p & Phiáº¿u Xuáº¥t (VOUCHERS_DB) - Náº¡p Ä‘áº§y Ä‘á»§ Model, TÃªn hÃ ng, Kho, BH
+    // 9. Đồng bộ Phiếu Nhập & Phiếu Xuất (VOUCHERS_DB) - SMART MERGE BẢO TOÀN DỮ LIỆU
     if (typeof VOUCHERS_DB !== 'undefined') {
+      // 9a. Smart Merge Phiếu Nhập
       if (Array.isArray(serverData.lsNhap) && serverData.lsNhap.length > 0) {
-        VOUCHERS_DB.nhap = serverData.lsNhap.map(v => ({
-          maPhieu: v.maPhieu,
-          ngay: v.ngayNhap || v.ngay,
-          ncc: v.ncc,
-          kho: v.kho || 'Kho VP',
-          status: 'CONFIRMED',
-          ghiChu: v.ghiChu || '',
-          items: (v.serials || '').split(',').map(sn => {
-            const cleanSn = sn.trim();
-            const found = (typeof SERIAL_DB !== 'undefined' ? SERIAL_DB : []).find(s => s.serial === cleanSn);
-            return {
-              model: (found && found.model) ? found.model : ((v.modelSummary || '').split('(')[0].trim()),
-              serial: cleanSn,
-              internalId: (found && (found.internalId || found.maNoiBo)) ? (found.internalId || found.maNoiBo) : cleanSn,
-              name: (found && (found.name || found.tenHang)) ? (found.name || found.tenHang) : '',
-              tenHang: (found && (found.name || found.tenHang)) ? (found.name || found.tenHang) : '',
-              category: (found && (found.category || found.nhomHang)) ? (found.category || found.nhomHang) : '',
-              kho: v.kho || (found && found.kho) || 'Kho VP'
-            };
-          })
-        }));
+        const serverNhapMap = new Map();
+        serverData.lsNhap.forEach(v => {
+          serverNhapMap.set(v.maPhieu, {
+            maPhieu: v.maPhieu,
+            ngay: v.ngayNhap || v.ngay,
+            ncc: v.ncc,
+            kho: v.kho || 'Kho VP',
+            status: 'CONFIRMED',
+            ghiChu: v.ghiChu || '',
+            items: (v.serials || '').split(',').map(sn => {
+              const cleanSn = sn.trim();
+              const found = (typeof SERIAL_DB !== 'undefined' ? SERIAL_DB : []).find(s => s.serial === cleanSn);
+              return {
+                model: (found && found.model) ? found.model : ((v.modelSummary || '').split('(')[0].trim()),
+                serial: cleanSn,
+                internalId: (found && (found.internalId || found.maNoiBo)) ? (found.internalId || found.maNoiBo) : cleanSn,
+                name: (found && (found.name || found.tenHang)) ? (found.name || found.tenHang) : '',
+                tenHang: (found && (found.name || found.tenHang)) ? (found.name || found.tenHang) : '',
+                category: (found && (found.category || found.nhomHang)) ? (found.category || found.nhomHang) : '',
+                kho: v.kho || (found && found.kho) || 'Kho VP'
+              };
+            })
+          });
+        });
+        // Hợp nhất: Giữ nguyên các phiếu client mà server chưa kịp có
+        const currentNhap = Array.isArray(VOUCHERS_DB.nhap) ? VOUCHERS_DB.nhap : [];
+        currentNhap.forEach(v => {
+          if (!serverNhapMap.has(v.maPhieu)) {
+            serverNhapMap.set(v.maPhieu, v);
+          }
+        });
+        VOUCHERS_DB.nhap = Array.from(serverNhapMap.values());
       }
+
+      // 9b. Smart Merge Phiếu Xuất (BẢO TOÀN 100% PHIẾU XUẤT CỦA KHÁCH HÀNG)
       if (Array.isArray(serverData.lsXuat) && serverData.lsXuat.length > 0) {
-        VOUCHERS_DB.xuat = serverData.lsXuat.map(v => {
+        const serverXuatMap = new Map();
+        serverData.lsXuat.forEach(v => {
           const serials = (v.serials || '').split(',').map(sn => sn.trim()).filter(Boolean);
           const items = serials.map(sn => {
             const found = (typeof SERIAL_DB !== 'undefined' ? SERIAL_DB : []).find(s => s.serial === sn);
@@ -25429,7 +25365,7 @@
             };
           });
 
-          return {
+          serverXuatMap.set(v.maPhieu, {
             maPhieu: v.maPhieu,
             ngay: v.ngayXuat || v.ngay,
             ngayXuat: v.ngayXuat || v.ngay,
@@ -25437,22 +25373,32 @@
             sdtKhach: v.sdtKhach || '',
             diaChi: v.diaChi || '',
             kho: v.kho || (items[0] && items[0].kho) || 'Kho VP',
-            nguoiTao: v.nguoiTao || 'Khá»•ng Máº¡nh CÆ°á»ng',
+            nguoiTao: v.nguoiTao || (typeof CURRENT_USER_NAME !== 'undefined' && CURRENT_USER_NAME ? CURRENT_USER_NAME : 'Thủ Kho'),
             status: 'CONFIRMED',
             ghiChu: v.ghiChu || '',
             items: items
-          };
+          });
         });
+
+        // Hợp nhất: Giữ nguyên các phiếu client/localStorage mà server chưa có hoặc mới xuất
+        const currentXuat = Array.isArray(VOUCHERS_DB.xuat) ? VOUCHERS_DB.xuat : [];
+        currentXuat.forEach(v => {
+          if (!serverXuatMap.has(v.maPhieu)) {
+            serverXuatMap.set(v.maPhieu, v);
+          }
+        });
+        VOUCHERS_DB.xuat = Array.from(serverXuatMap.values());
       }
+
       try {
         localStorage.setItem('THANH_AN_VOUCHERS_DB', JSON.stringify(VOUCHERS_DB));
       } catch(e) {}
     }
 
-    // 10. Äá»“ng bá»™ Nháº­t kÃ½ kiá»ƒm toÃ¡n (AUDIT_LOG_DB) - LÃ m sáº¡ch Ä‘á»“ng bá»™ náº¿u server reset
+    // 10. Đồng bộ Nhật ký kiểm toán (AUDIT_LOG_DB)
     if (Array.isArray(serverData.auditLogs) && serverData.auditLogs.length > 0) {
       if (typeof AUDIT_LOG_DB !== 'undefined') {
-        AUDIT_LOG_DB = serverData.auditLogs.map(a => ({
+        const serverLogs = serverData.auditLogs.map(a => ({
           id: a.id || ('AUD-' + Math.floor(Math.random()*10000)),
           time: a.time,
           timestamp: a.time,
@@ -25462,6 +25408,7 @@
           reason: a.detail,
           detail: a.detail
         }));
+        AUDIT_LOG_DB = serverLogs;
         if (typeof window !== 'undefined') window.AUDIT_LOG_DB = AUDIT_LOG_DB;
         try {
           localStorage.setItem('THANH_AN_AUDIT_LOGS', JSON.stringify(AUDIT_LOG_DB));
@@ -25469,7 +25416,7 @@
       }
     }
 
-    // ÄÃ¡nh dáº¥u cÃ¡c module cáº§n render láº¡i khi ngÆ°á»i dÃ¹ng báº¥m vÃ o
+    // 11. Đánh dấu các module cần render lại khi người dùng bấm vào
     if (typeof MODULE_STATE !== 'undefined') {
       Object.keys(MODULE_STATE).forEach(k => {
         if (MODULE_STATE[k]) {
@@ -25479,7 +25426,7 @@
       });
     }
 
-    // Render láº¡i toÃ n bá»™ giao diá»‡n vá»›i dá»¯ liá»‡u tháº­t
+    // Render lại toàn bộ giao diện với dữ liệu thật
     if (typeof syncLoaiHangDropdowns === 'function') syncLoaiHangDropdowns();
     if (typeof setupNhapKhoForm === 'function') setupNhapKhoForm();
     if (typeof setupXuatKhoForm === 'function') setupXuatKhoForm();
@@ -25490,7 +25437,7 @@
     console.log("[GAS Bridge] Live data hydration COMPLETE!");
   }
 
-  // Khá»Ÿi Ä‘á»™ng káº¿t ná»‘i Google Sheets khi trang táº£i xong
+  // Khởi động kết nối Google Sheets khi trang tải xong
   window.addEventListener('DOMContentLoaded', function() {
     if (typeof google !== 'undefined' && google.script && google.script.run) {
       console.log("[GAS Bridge] Detecting Google Apps Script environment. Fetching live sheet data...");

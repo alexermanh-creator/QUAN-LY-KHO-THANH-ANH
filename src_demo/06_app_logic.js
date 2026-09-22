@@ -1599,9 +1599,8 @@
     if (!matched && (typeof INITIAL_USERS !== 'undefined')) {
       matched = INITIAL_USERS.find(x => x.username.toLowerCase() === u);
     }
-    if (!matched) {
-      if (u === 'admin') matched = { username: 'admin', fullName: 'Khổng Mạnh Cường', role: 'ADMIN' };
-      else if (u === 'minhquan') matched = { username: 'minhquan', fullName: 'Khổng Minh Quân', role: 'THỦ KHO' };
+    if (!matched && u === 'admin') {
+      matched = { username: 'admin', fullName: 'Khổng Mạnh Cường', role: 'ADMIN' };
     }
 
     if (matched) {

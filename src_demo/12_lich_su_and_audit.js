@@ -604,7 +604,7 @@
 
     // Tiêu đề & Thông tin bổ sung (Thời gian tạo, người sửa gần nhất, thời gian sửa)
     const headerBox = document.getElementById('view-voucher-header-info');
-    const nguoiLap = v.nguoiTao || v.nguoiXuat || v.user || 'Khổng Mạnh Cường';
+    const nguoiLap = v.nguoiTao || v.nguoiXuat || v.user || (typeof CURRENT_USER_NAME !== 'undefined' && CURRENT_USER_NAME ? CURRENT_USER_NAME : 'Thủ Kho');
     const khoGiaoDich = v.kho || (v.items && v.items[0] && v.items[0].kho) || 'Kho VP';
     let custName = v.khachHang || (isNhap ? (v.ncc || 'Chính hãng') : 'Khách lẻ');
     let custPhone = v.sdtKhach || v.sdt || '';

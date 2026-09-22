@@ -423,8 +423,7 @@ function authenticateUser(username, password) {
   // 2. Tài khoản hệ thống dự phòng chuẩn
   if (!foundUser) {
     const defaultAccounts = {
-      'admin': { role: 'ADMIN', name: 'Khổng Mạnh Cường', pass: '123456', status: 'Hoạt động' },
-      'minhquan': { role: 'THỦ KHO', name: 'Khổng Minh Quân', pass: '123456', status: 'Hoạt động' }
+      'admin': { role: 'ADMIN', name: 'Khổng Mạnh Cường', pass: '123456', status: 'Hoạt động' }
     };
 
     if (defaultAccounts[user]) {
