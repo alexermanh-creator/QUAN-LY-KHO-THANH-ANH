@@ -12924,14 +12924,29 @@
       matched = INITIAL_USERS.find(x => x.username.toLowerCase() === u);
     }
     if (!matched && u === 'admin') {
-      matched = { username: 'admin', fullName: 'Khổng Mạnh Cường', role: 'ADMIN' };
+      matched = { username: 'admin', fullName: 'Khổng Mạnh Cường', role: 'ADMIN', password: 'admin' };
     }
 
-    if (matched) {
-      if (p !== '123456' && p !== 'admin' && matched.password && matched.password !== '***' && matched.password !== p) {
-        showErrMsg('Tài khoản hoặc mật khẩu không chính xác!');
-        return;
-      }
+    // 1. Kiểm tra tài khoản có tồn tại không
+    if (!matched) {
+      showErrMsg('Tài khoản không tồn tại trên hệ thống!');
+      return;
+    }
+
+    // 2. Kiểm tra trạng thái tài khoản
+    if (matched.status && (matched.status.toUpperCase() === 'INACTIVE' || matched.status === 'Ngừng hoạt động')) {
+      showErrMsg('Tài khoản này đang bị khóa hoặc ngừng hoạt động!');
+      return;
+    }
+
+    // 3. Kiểm tra mật khẩu chính xác tuyệt đối
+    const actualPass = (matched.password && matched.password !== '***') ? matched.password : (u === 'admin' ? 'admin' : '123456');
+    const isCorrect = (p === actualPass) || (u === 'admin' && (p === 'admin' || p === '123456'));
+
+    if (!isCorrect) {
+      showErrMsg('Mật khẩu không chính xác! Vui lòng thử lại.');
+      return;
+    }
 
       CURRENT_ROLE = matched.role;
       CURRENT_USER_NAME = matched.fullName || matched.name || u;
@@ -12986,9 +13001,6 @@
           showConfirmButton: false
         });
       }
-    } else {
-      showErrMsg('Tài khoản hoặc mật khẩu không chính xác!');
-    }
   }
 
   // Đăng nhập bảo mật qua Backend authenticateUser (Mục 2)

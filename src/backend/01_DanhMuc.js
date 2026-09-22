@@ -410,7 +410,7 @@ function authenticateUser(username, password) {
       const status = String(r[4] || 'Hoạt động').trim();
 
       if (u === user) {
-        if (p === pass || pass === '123456' || pass === 'admin') {
+        if (p === pass) {
           foundUser = { username: u, name: name || u, role: role || 'THỦ KHO', status: status };
         } else {
           return { success: false, message: "Sai tên đăng nhập hoặc mật khẩu!" };
@@ -427,13 +427,15 @@ function authenticateUser(username, password) {
     };
 
     if (defaultAccounts[user]) {
-      if (pass === defaultAccounts[user].pass || pass === 'admin' || pass === 'admin123') {
+      if (pass === defaultAccounts[user].pass) {
         foundUser = {
           username: user,
           name: defaultAccounts[user].name,
           role: defaultAccounts[user].role,
           status: defaultAccounts[user].status
         };
+      } else {
+        return { success: false, message: "Sai tên đăng nhập hoặc mật khẩu!" };
       }
     }
   }
