@@ -575,14 +575,29 @@ function resetSystemData(arg1, arg2, arg3, arg4) {
     throw new Error("Mã xác nhận Reset không đúng! Bạn phải nhập chính xác 'RESET-THANHAN'.");
   }
 
-  // Lớp 2: Xác thực lại mật khẩu Quản trị viên
-  if (!adminPassword || adminPassword.toLowerCase() === 'admin' || adminPassword.startsWith('ADM-TOKEN-') || adminPassword.startsWith('MOCK_TOKEN')) {
-    // Nếu truyền token đã xác thực hoặc chữ 'Admin' do client truyền nhầm user, fallback mật khẩu mặc định
-    adminPassword = (adminPassword && !adminPassword.startsWith('ADM-') && !adminPassword.startsWith('MOCK_') && adminPassword.toLowerCase() !== 'admin') ? adminPassword : '123456';
+  // Lớp 2: Xác thực lại mật khẩu Quản trị viên hoặc Admin Token hợp lệ
+  let isAuthorized = false;
+  if (adminPassword && adminPassword.startsWith('ADM-TOKEN-')) {
+    try {
+      const props = PropertiesService.getScriptProperties();
+      if (props) {
+        const activeToken = props.getProperty('ACTIVE_ADMIN_TOKEN');
+        const tokenExp = Number(props.getProperty('ACTIVE_ADMIN_TOKEN_EXP') || 0);
+        if (activeToken && activeToken === adminPassword && tokenExp > Date.now()) {
+          isAuthorized = true;
+        }
+      }
+    } catch(e) {}
   }
-  const authCheck = verifyAdminPassword(adminPassword, adminUser);
-  if (!authCheck.success && !options.adminPassword?.startsWith('ADM-TOKEN-')) {
-    throw new Error(`Xác thực quyền Quản trị viên thất bại: ${authCheck.message}`);
+
+  if (!isAuthorized) {
+    if (!adminPassword) {
+      throw new Error("Vui lòng nhập mật khẩu Quản trị viên để thực hiện Reset hệ thống!");
+    }
+    const authCheck = verifyAdminPassword(adminPassword, adminUser);
+    if (!authCheck.success) {
+      throw new Error(`Xác thực quyền Quản trị viên thất bại: ${authCheck.message || 'Mật khẩu không chính xác'}`);
+    }
   }
 
   // Lớp 3: Khóa hệ thống (LockService)

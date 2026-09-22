@@ -400,6 +400,7 @@ function authenticateUser(username, password) {
   let foundUser = null;
 
   // 1. Kiểm tra tài khoản từ Sheet USERS nếu có
+  let userExistsInSheet = false;
   if (userSheet && userSheet.getLastRow() > 1) {
     const data = userSheet.getRange(2, 1, userSheet.getLastRow() - 1, 5).getValues();
     for (let r of data) {
@@ -410,7 +411,20 @@ function authenticateUser(username, password) {
       const status = String(r[4] || 'Hoạt động').trim();
 
       if (u === user) {
-        if (p === pass) {
+        userExistsInSheet = true;
+        let isPassMatch = (p === pass);
+        // Nếu là admin, kiểm tra thêm mật khẩu lưu trong ScriptProperties (nếu đã đổi qua changeAdminPassword)
+        if (!isPassMatch && (role === 'ADMIN' || role === 'QUẢN TRỊ VIÊN')) {
+          try {
+            const props = PropertiesService.getScriptProperties();
+            const savedAdminPass = props ? props.getProperty('ADMIN_PASSWORD') : null;
+            if (savedAdminPass && pass === savedAdminPass) {
+              isPassMatch = true;
+            }
+          } catch(e) {}
+        }
+
+        if (isPassMatch) {
           foundUser = { username: u, name: name || u, role: role || 'THỦ KHO', status: status };
         } else {
           return { success: false, message: "Sai tên đăng nhập hoặc mật khẩu!" };
@@ -420,20 +434,18 @@ function authenticateUser(username, password) {
     }
   }
 
-  // 2. Tài khoản hệ thống dự phòng chuẩn
-  if (!foundUser) {
-    const defaultAccounts = {
-      'admin': { role: 'ADMIN', name: 'Khổng Mạnh Cường', pass: '123456', status: 'Hoạt động' }
-    };
-
-    if (defaultAccounts[user]) {
-      if (pass === defaultAccounts[user].pass) {
-        foundUser = {
-          username: user,
-          name: defaultAccounts[user].name,
-          role: defaultAccounts[user].role,
-          status: defaultAccounts[user].status
-        };
+  // 2. Nếu Sheet USERS hoàn toàn trống (chưa có dòng nào ngoài tiêu đề) -> Khởi tạo tài khoản quản trị ban đầu
+  if (!foundUser && (!userSheet || userSheet.getLastRow() <= 1)) {
+    const initialPass = '123456';
+    if (user === 'admin') {
+      if (pass === initialPass) {
+        foundUser = { username: 'admin', name: 'Khổng Mạnh Cường', role: 'ADMIN', status: 'Hoạt động' };
+        if (userSheet) {
+          if (userSheet.getLastRow() === 0) {
+            userSheet.appendRow(['Username', 'PasswordHash', 'FullName', 'Role', 'Status']);
+          }
+          userSheet.appendRow(['admin', initialPass, 'Khổng Mạnh Cường', 'ADMIN', 'Hoạt động']);
+        }
       } else {
         return { success: false, message: "Sai tên đăng nhập hoặc mật khẩu!" };
       }
@@ -458,21 +470,36 @@ function authenticateUser(username, password) {
 
   const sessionToken = `SES-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
+  // Lưu active session vào ScriptProperties để hỗ trợ xác thực token phía server
+  try {
+    const props = PropertiesService.getScriptProperties();
+    if (props) {
+      props.setProperty(`SESSION_${sessionToken}`, JSON.stringify({
+        username: foundUser.username,
+        role: foundUser.role,
+        fullName: foundUser.name,
+        createdAt: Date.now(),
+        expiresAt: Date.now() + (24 * 60 * 60 * 1000) // 24h
+      }));
+    }
+  } catch(e) {}
+
   return {
     success: true,
-    sessionToken: sessionToken,
     user: {
       username: foundUser.username,
       name: foundUser.name,
       role: foundUser.role,
+      status: foundUser.status,
       permissions: permissions
-    }
+    },
+    sessionToken: sessionToken
   };
 }
 
 /**
  * XÁC THỰC LẠI MẬT KHẨU ADMIN (RE-AUTHENTICATION TRƯỚC THAO TÁC NHẠY CẢM)
- * Tích hợp Brute Force Protection an toàn với fallback mật khẩu quản trị ban đầu
+ * Tích hợp Brute Force Protection an toàn - Tuyệt đối không hardcode mật khẩu mặc định
  */
 function verifyAdminPassword(arg1, arg2) {
   let u = 'admin';
@@ -505,13 +532,10 @@ function verifyAdminPassword(arg1, arg2) {
     }
   } catch (e) {}
 
-  // Danh sách mật khẩu admin mặc định hợp lệ cho hệ thống
-  const isDefaultAdminPass = (pass === 'admin' || pass === '123456' || pass === 'admin123' || pass === 'admin@123');
-
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const userSheet = ss.getSheetByName("USERS") || ss.getSheetByName("DM_NGUOI_DUNG");
 
-  // Kiểm tra mật khẩu đúng
+  // Kiểm tra mật khẩu đúng từ Sheet USERS
   let isMatch = false;
   if (userSheet && userSheet.getLastRow() > 1) {
     const rows = userSheet.getRange(2, 1, userSheet.getLastRow() - 1, 4).getValues();
@@ -528,17 +552,12 @@ function verifyAdminPassword(arg1, arg2) {
     }
   }
 
-  // Lấy mật khẩu admin từ PropertiesService nếu có
+  // Lấy mật khẩu admin từ PropertiesService nếu có (đã đổi qua changeAdminPassword)
   if (!isMatch && (u === 'admin' || u.includes('admin'))) {
     const savedAdminPass = props ? props.getProperty('ADMIN_PASSWORD') : null;
     if (savedAdminPass) {
       isMatch = (pass === savedAdminPass);
     }
-  }
-
-  // Fallback chấp nhận mật khẩu quản trị ban đầu
-  if (!isMatch && isDefaultAdminPass && (u === 'admin' || u.includes('admin') || !u)) {
-    isMatch = true;
   }
 
   if (isMatch) {
@@ -547,13 +566,16 @@ function verifyAdminPassword(arg1, arg2) {
       try {
         props.deleteProperty(failKey);
         props.deleteProperty(lockKey);
-        // Lưu lại để đồng bộ
-        if (!props.getProperty('ADMIN_PASSWORD')) {
-          props.setProperty('ADMIN_PASSWORD', pass);
-        }
       } catch (e) {}
     }
     const adminToken = `ADM-TOKEN-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+    // Lưu token hợp lệ vào ScriptProperties để bảo vệ các thao tác nhạy cảm
+    if (props) {
+      try {
+        props.setProperty('ACTIVE_ADMIN_TOKEN', adminToken);
+        props.setProperty('ACTIVE_ADMIN_TOKEN_EXP', String(now + (15 * 60 * 1000))); // Hạn 15 phút
+      } catch (e) {}
+    }
     return { success: true, adminToken: adminToken };
   } else {
     // Kiểm tra cooldown chỉ khi thực sự sai
@@ -564,7 +586,7 @@ function verifyAdminPassword(arg1, arg2) {
         return {
           success: false,
           cooldown: true,
-          message: `Tài khoản tạm thời bị khóa bảo vệ trong ${remainingMinutes} phút! (Mật khẩu mặc định: admin hoặc 123456)`
+          message: `Tài khoản tạm thời bị khóa bảo vệ trong ${remainingMinutes} phút do nhập sai nhiều lần!`
         };
       }
     }
@@ -585,7 +607,7 @@ function verifyAdminPassword(arg1, arg2) {
     return {
       success: false,
       remainingAttempts: remaining,
-      message: `Mật khẩu Quản trị viên không chính xác! (Mật khẩu mặc định: 123456 hoặc admin. Còn ${remaining} lần thử)`
+      message: `Mật khẩu Quản trị viên không chính xác! Còn ${remaining} lần thử.`
     };
   }
 }

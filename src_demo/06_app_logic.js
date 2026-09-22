@@ -460,9 +460,7 @@
           : (localStorage.getItem('QLK_ADMIN_PASS') || 'admin123');
         window._CURRENT_ADMIN_PASS = currentAdminPass;
 
-        const isMatch = (currentAdminPass === 'admin123') 
-          ? (p === 'admin123' || p === '123456' || p === 'admin') 
-          : (p === currentAdminPass);
+        const isMatch = (p === currentAdminPass);
 
         if (isMatch) {
           window._adminFailCount = 0;
@@ -890,10 +888,7 @@
     const curPass = (typeof window._CURRENT_ADMIN_PASS !== 'undefined' && window._CURRENT_ADMIN_PASS) 
       ? window._CURRENT_ADMIN_PASS 
       : (localStorage.getItem('QLK_ADMIN_PASS') || 'admin123');
-    const hintText = (curPass === 'admin123') 
-      ? '(Mật khẩu mặc định: admin123)' 
-      : '(Nhập mật khẩu Admin bạn đã thiết lập)';
-    if (descEl) descEl.innerText = (actionDesc ? actionDesc + ' ' : '') + `Nhập mật khẩu Admin để xác nhận ${hintText}:`;
+    if (descEl) descEl.innerText = (actionDesc ? actionDesc + ' ' : '') + `Nhập mật khẩu Admin để xác nhận:`;
     if (passInput) passInput.value = '';
     if (errBox) { errBox.classList.add('d-none'); errBox.innerText = ''; }
 
@@ -932,7 +927,7 @@
           cb(res.adminToken, pass);
         }
       } else {
-        if (errBox) { errBox.innerText = (res && res.message) ? res.message : 'Mật khẩu Admin không đúng! (Mặc định: 123456 hoặc admin)'; errBox.classList.remove('d-none'); }
+        if (errBox) { errBox.innerText = (res && res.message) ? res.message : 'Mật khẩu Admin không đúng! Vui lòng thử lại.'; errBox.classList.remove('d-none'); }
       }
     });
   }
@@ -1581,6 +1576,8 @@
     const pId = isScreen ? 'screen-login-password' : 'modal-login-password';
     const errDiv = isScreen ? document.getElementById('login-screen-error-msg') : document.getElementById('login-error-msg');
     const errText = isScreen ? document.getElementById('login-screen-error-text') : errDiv;
+    const submitBtn = isScreen ? document.getElementById('btn-submit-screen-login') : document.getElementById('btn-submit-login');
+    const origBtnHtml = submitBtn ? submitBtn.innerHTML : '';
 
     const u = (document.getElementById(uId)?.value || '').trim().toLowerCase();
     const p = (document.getElementById(pId)?.value || '').trim();
@@ -1588,50 +1585,34 @@
     const showErrMsg = (msg) => {
       if (errText) errText.textContent = msg;
       if (errDiv) errDiv.classList.remove('d-none');
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = origBtnHtml;
+      }
     };
+
+    if (errDiv) errDiv.classList.add('d-none');
 
     if (!u || !p) {
       showErrMsg('Vui lòng nhập đầy đủ tài khoản và mật khẩu!');
       return;
     }
 
-    let matched = (typeof USERS_DB !== 'undefined' ? USERS_DB : []).find(x => x.username.toLowerCase() === u);
-    if (!matched && (typeof INITIAL_USERS !== 'undefined')) {
-      matched = INITIAL_USERS.find(x => x.username.toLowerCase() === u);
-    }
-    if (!matched && u === 'admin') {
-      matched = { username: 'admin', fullName: 'Khổng Mạnh Cường', role: 'ADMIN', password: 'admin' };
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Đang xác thực...';
     }
 
-    // 1. Kiểm tra tài khoản có tồn tại không
-    if (!matched) {
-      showErrMsg('Tài khoản không tồn tại trên hệ thống!');
-      return;
-    }
-
-    // 2. Kiểm tra trạng thái tài khoản
-    if (matched.status && (matched.status.toUpperCase() === 'INACTIVE' || matched.status === 'Ngừng hoạt động')) {
-      showErrMsg('Tài khoản này đang bị khóa hoặc ngừng hoạt động!');
-      return;
-    }
-
-    // 3. Kiểm tra mật khẩu chính xác tuyệt đối
-    const actualPass = (matched.password && matched.password !== '***') ? matched.password : (u === 'admin' ? 'admin' : '123456');
-    const isCorrect = (p === actualPass) || (u === 'admin' && (p === 'admin' || p === '123456'));
-
-    if (!isCorrect) {
-      showErrMsg('Mật khẩu không chính xác! Vui lòng thử lại.');
-      return;
-    }
-
-      CURRENT_ROLE = matched.role;
-      CURRENT_USER_NAME = matched.fullName || matched.name || u;
+    const onLoginSuccess = (username, fullName, role, sessionToken) => {
+      CURRENT_ROLE = role;
+      CURRENT_USER_NAME = fullName || username;
 
       try {
         const sessionPayload = JSON.stringify({
-          username: matched.username,
+          username: username,
           fullName: CURRENT_USER_NAME,
           role: CURRENT_ROLE,
+          sessionToken: sessionToken || '',
           timestamp: new Date().toISOString()
         });
         sessionStorage.setItem('THANH_AN_LOGGED_SESSION', sessionPayload);
@@ -1660,12 +1641,13 @@
         if (modal) modal.hide();
       }
 
-      if (typeof recordAuditLog === 'function') {
-        recordAuditLog('ĐĂNG NHẬP', `Tài khoản ${u}`, '', CURRENT_ROLE, `${CURRENT_USER_NAME} đăng nhập hệ thống`);
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = origBtnHtml;
       }
 
-      if (typeof markModulesDirty === 'function') {
-        markModulesDirty(['Dashboard', 'TonKho', 'LichSu']);
+      if (typeof recordAuditLog === 'function') {
+        recordAuditLog('ĐĂNG NHẬP', `Tài khoản ${username}`, '', CURRENT_ROLE, `${CURRENT_USER_NAME} đăng nhập hệ thống`);
       }
 
       if (typeof Swal !== 'undefined') {
@@ -1677,6 +1659,53 @@
           showConfirmButton: false
         });
       }
+    };
+
+    // 1. Môi trường Google Apps Script -> Xác thực an toàn qua Backend
+    if (typeof WarehouseAPI !== 'undefined' && WarehouseAPI.isAppsScriptEnvironment()) {
+      WarehouseAPI.authenticateUser(u, p, function(res) {
+        if (res && res.success) {
+          onLoginSuccess(res.user.username, res.user.name, res.user.role, res.sessionToken);
+        } else {
+          showErrMsg((res && res.message) ? res.message : 'Sai tên đăng nhập hoặc mật khẩu!');
+        }
+      });
+      return;
+    }
+
+    // 2. Môi trường Offline / Demo -> Kiểm tra chính xác, tuyệt đối không chấp nhận nhiều mật khẩu cho admin
+    let matched = (typeof USERS_DB !== 'undefined' ? USERS_DB : []).find(x => x.username.toLowerCase() === u);
+    if (!matched && (typeof INITIAL_USERS !== 'undefined')) {
+      matched = INITIAL_USERS.find(x => x.username.toLowerCase() === u);
+    }
+
+    if (!matched) {
+      showErrMsg('Tài khoản không tồn tại trên hệ thống!');
+      return;
+    }
+
+    if (matched.status && (matched.status.toUpperCase() === 'INACTIVE' || matched.status === 'Ngừng hoạt động' || matched.status === 'Bị khóa')) {
+      showErrMsg('Tài khoản này đang bị khóa hoặc ngừng hoạt động!');
+      return;
+    }
+
+    let actualPass = '';
+    if (matched.password && matched.password !== '***') {
+      actualPass = matched.password;
+    } else if (u === 'admin') {
+      actualPass = (typeof window._CURRENT_ADMIN_PASS !== 'undefined' && window._CURRENT_ADMIN_PASS) 
+        ? window._CURRENT_ADMIN_PASS 
+        : (localStorage.getItem('QLK_ADMIN_PASS') || 'admin123');
+    } else {
+      actualPass = '123456';
+    }
+
+    if (p !== actualPass) {
+      showErrMsg('Mật khẩu không chính xác! Vui lòng thử lại.');
+      return;
+    }
+
+    onLoginSuccess(matched.username, matched.fullName || matched.name || u, matched.role, 'DEMO-TOKEN-' + Date.now());
   }
 
   // Đăng nhập bảo mật qua Backend authenticateUser (Mục 2)

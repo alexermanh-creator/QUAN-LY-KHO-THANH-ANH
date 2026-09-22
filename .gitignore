@@ -8,3 +8,4 @@ bundle_apps_script.ps1
 copy_backend.bat
 copy_frontend.bat
 *.zip
+.clasprc.json

@@ -1231,7 +1231,7 @@ function saveVoucherEdit(payload) {
     // 3. Ghi vết kiểm toán vào sheet NHAT_KY_HOAT_DONG
     saveClientAuditLog({
       time: Utilities.formatDate(new Date(), "GMT+7", "dd/MM/yyyy HH:mm:ss"),
-      user: 'Quản Lý',
+      user: payload.user || payload.nguoiSua || 'Quản Lý',
       action: 'SỬA PHIẾU ' + type,
       target: maPhieu,
       detail: `Điều chỉnh thông tin phiếu. Lý do: ${reason}`
@@ -1266,9 +1266,19 @@ function saveUserAccountBackend(userData) {
         }
       }
     }
+
+    let finalPassword = userData.password;
+    if (!finalPassword) {
+      if (foundRow > 0) {
+        finalPassword = String(uSheet.getRange(foundRow, 2).getValue() || '');
+      } else {
+        finalPassword = 'admin';
+      }
+    }
+
     const rowData = [
       userData.username,
-      userData.password || '123456',
+      finalPassword,
       userData.fullName || userData.username,
       userData.role || 'THỦ KHO',
       userData.status || 'ACTIVE',
