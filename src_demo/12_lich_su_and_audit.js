@@ -72,6 +72,11 @@
 
   // BỘ LỌC LỊCH SỬ PHIẾU NHẬP (YÊU CẦU 8A & DATE RANGE)
   function setNhapPreset(preset) {
+    if (preset === 'all') {
+      resetNhapHistoryFilters();
+      return;
+    }
+
     const fromInput = document.getElementById('filter-nhap-from');
     const toInput = document.getElementById('filter-nhap-to');
     if (!fromInput || !toInput) return;
@@ -121,7 +126,7 @@
   // PROMAX HELPERS: SẢN PHẨM & MODEL, STATUS ICON & ACCORDION
   // ====================================================
 
-  function renderVoucherProductsSummary(items) {
+  function renderVoucherProductsSummary(items, type, maPhieu) {
     if (!items || items.length === 0) return '<span class="text-muted small">-- Chưa có thiết bị --</span>';
     const modelCounts = {};
     items.forEach(it => {
@@ -141,15 +146,40 @@
     });
 
     const list = Object.values(modelCounts);
+
+    // TRƯỜNG HỢP 1: CHỈ CÓ 1 MODEL (Ví dụ 2 cái SSD, hoặc 1 máy in)
+    // Không hiện badge xN ở đây nữa vì cột SL đã hiển thị số lượng rõ ràng, tránh trùng lặp
+    if (list.length === 1) {
+      const single = list[0];
+      return `
+        <div>
+          <span class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace fw-semibold">${single.model}</span>
+          ${single.ten ? `<div class="small text-muted text-truncate" style="max-width: 250px;" title="${single.ten}">${single.ten}</div>` : ''}
+        </div>
+      `;
+    }
+
+    // TRƯỜNG HỢP 2: NHIỀU THIẾT BỊ / LINH KIỆN KHÁC NHAU (Ví dụ 1 bộ PC gồm CPU, Main, RAM, SSD...)
+    // Hiển thị 2 linh kiện đầu tiên kèm số lượng từng món, các linh kiện còn lại gom gọn thành nút mở nhanh
+    const visibleModels = list.slice(0, 2);
+    const remainCount = list.length - visibleModels.length;
+
     return `
       <div class="d-flex flex-column gap-1">
-        ${list.map(item => `
+        ${visibleModels.map(item => `
           <div>
             <span class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace fw-semibold">${item.model}</span>
-            ${item.count > 1 ? `<span class="badge bg-secondary-subtle text-dark border ms-1">x${item.count}</span>` : ''}
+            <span class="badge bg-secondary-subtle text-dark border ms-1">x${item.count}</span>
             ${item.ten ? `<div class="small text-muted text-truncate" style="max-width: 250px;" title="${item.ten}">${item.ten}</div>` : ''}
           </div>
         `).join('')}
+        ${remainCount > 0 ? `
+          <div>
+            <a href="javascript:void(0)" onclick="toggleVoucherAccordion('${type || 'XUAT'}', '${maPhieu || ''}')" class="badge bg-light text-primary border text-decoration-none mt-1 d-inline-flex align-items-center">
+              <i class="fa-solid fa-layer-group me-1 text-primary"></i>+ ${remainCount} linh kiện khác... (Bấm xem [▼])
+            </a>
+          </div>
+        ` : ''}
       </div>
     `;
   }
@@ -338,7 +368,7 @@
           <td data-label="Nhà Cung Cấp"><strong>${v.ncc}</strong></td>
           <!-- Cột Sản Phẩm & Model tóm tắt -->
           <td data-label="Sản Phẩm & Model">
-            ${renderVoucherProductsSummary(v.items)}
+            ${renderVoucherProductsSummary(v.items, 'NHAP', v.maPhieu)}
           </td>
           <td data-label="Kho Nhận" class="text-center">
             <span class="badge bg-light text-dark border">${v.kho || 'Kho VP'}</span>
@@ -374,6 +404,11 @@
 
   // BỘ LỌC LỊCH SỬ PHIẾU XUẤT (YÊU CẦU 8B & DATE RANGE)
   function setXuatPreset(preset) {
+    if (preset === 'all') {
+      resetXuatHistoryFilters();
+      return;
+    }
+
     const fromInput = document.getElementById('filter-xuat-from');
     const toInput = document.getElementById('filter-xuat-to');
     if (!fromInput || !toInput) return;
@@ -515,7 +550,7 @@
           </td>
           <!-- Cột Sản Phẩm & Model tóm tắt -->
           <td data-label="Sản Phẩm & Model">
-            ${renderVoucherProductsSummary(v.items)}
+            ${renderVoucherProductsSummary(v.items, 'XUAT', v.maPhieu)}
           </td>
           <td data-label="Kho Xuất" class="text-center">
             <span class="badge bg-light text-dark border">${v.kho || 'Kho VP'}</span>

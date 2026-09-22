@@ -779,15 +779,15 @@
             openVoucherDetail('XUAT', maPhieu);
           }
         } else if (result.isDenied) {
-          // Chuyển ngay sang tab Lịch Sử Phiếu
+          // Chuyển ngay sang tab Lịch Sử Phiếu và hiển thị đầy đủ danh sách
           if (typeof switchTab === 'function') switchTab('LichSu');
           if (typeof switchHistorySubTab === 'function') switchHistorySubTab('xuat');
           setTimeout(() => {
             const searchInput = document.getElementById('filter-xuat-search');
-            if (searchInput) {
-              searchInput.value = maPhieu;
-              if (typeof renderHistoryXuatTable === 'function') renderHistoryXuatTable();
-            }
+            if (searchInput) searchInput.value = '';
+            if (typeof renderHistoryXuatTable === 'function') renderHistoryXuatTable();
+            // Tự động mở accordion của phiếu vừa tạo
+            if (typeof toggleVoucherAccordion === 'function') toggleVoucherAccordion('XUAT', maPhieu);
           }, 250);
         } else {
           // Tiếp tục xuất phiếu mới: focus lại vào ô khách hàng
