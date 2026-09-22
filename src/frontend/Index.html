@@ -272,7 +272,7 @@
       position: relative;
     }
     .smart-suggest-wrap:focus-within {
-      z-index: 99999 !important;
+      z-index: 1040 !important;
     }
     .smart-suggest-dropdown {
       position: absolute;
@@ -285,7 +285,7 @@
       box-shadow: 0 12px 28px -4px rgba(0,0,0,0.22), 0 4px 12px rgba(0,0,0,0.1);
       max-height: 280px;
       overflow-y: auto;
-      z-index: 100000 !important;
+      z-index: 1045 !important;
       display: none;
     }
     .suggest-item {
@@ -2463,14 +2463,16 @@
                 <table class="table table-hover align-middle mb-0 table-responsive-card">
                   <thead class="table-light">
                     <tr>
-                      <th>Số Phiếu Nhập (Click xem)</th>
-                      <th>Ngày Nhập</th>
-                      <th>Nhà Cung Cấp</th>
-                      <th>Kho Nhận</th>
-                      <th class="text-center">Số Thiết Bị</th>
-                      <th>Trạng Thái</th>
-                      <th>Ghi Chú</th>
-                      <th class="text-end">Hành Động</th>
+                      <th style="width: 40px;" class="text-center" title="Xem nhanh Serial">#</th>
+                      <th style="width: 135px;">Số Phiếu</th>
+                      <th style="width: 95px;" class="text-center">Ngày Nhập</th>
+                      <th style="width: 175px;">Nhà Cung Cấp</th>
+                      <th style="min-width: 220px;">Sản Phẩm & Model</th>
+                      <th style="width: 85px;" class="text-center">Kho Nhận</th>
+                      <th style="width: 60px;" class="text-center">SL</th>
+                      <th style="width: 55px;" class="text-center" title="Trạng thái">TT</th>
+                      <th style="min-width: 160px;">Ghi Chú</th>
+                      <th style="width: 120px;" class="text-end">Hành Động</th>
                     </tr>
                   </thead>
                   <tbody id="history-nhap-table-body">
@@ -2536,14 +2538,16 @@
                 <table class="table table-hover align-middle mb-0 table-responsive-card">
                   <thead class="table-light">
                     <tr>
-                      <th>Số Phiếu Xuất (Click xem)</th>
-                      <th>Ngày Xuất</th>
-                      <th>Khách Hàng</th>
-                      <th>Số Điện Thoại</th>
-                      <th>Kho Xuất</th>
-                      <th class="text-center">Số Thiết Bị</th>
-                      <th>Trạng Thái</th>
-                      <th class="text-end">Hành Động</th>
+                      <th style="width: 40px;" class="text-center" title="Xem nhanh Serial">#</th>
+                      <th style="width: 135px;">Số Phiếu</th>
+                      <th style="width: 95px;" class="text-center">Ngày Xuất</th>
+                      <th style="width: 185px;">Khách Hàng</th>
+                      <th style="min-width: 220px;">Sản Phẩm & Model</th>
+                      <th style="width: 85px;" class="text-center">Kho Xuất</th>
+                      <th style="width: 60px;" class="text-center">SL</th>
+                      <th style="width: 55px;" class="text-center" title="Trạng thái">TT</th>
+                      <th style="min-width: 160px;">Ghi Chú</th>
+                      <th style="width: 120px;" class="text-end">Hành Động</th>
                     </tr>
                   </thead>
                   <tbody id="history-xuat-table-body">
@@ -14020,13 +14024,22 @@
     }
   }
 
+  function closeAllSmartSuggests() {
+    document.querySelectorAll('.smart-suggest-dropdown').forEach(d => {
+      d.style.display = 'none';
+    });
+  }
+
   // Tự động đóng tất cả dropdown gợi ý khi click ra ngoài
   document.addEventListener('click', function(e) {
     if (!e.target.closest('.smart-suggest-wrap')) {
-      document.querySelectorAll('.smart-suggest-dropdown').forEach(d => {
-        d.style.display = 'none';
-      });
+      closeAllSmartSuggests();
     }
+  });
+
+  // Tự động đóng tất cả dropdown gợi ý khi bất kỳ modal nào mở (tránh nổi đè lên modal)
+  document.addEventListener('show.bs.modal', function() {
+    closeAllSmartSuggests();
   });
 
   // Xuất ra toàn cục
@@ -15661,6 +15674,7 @@
   }
 
   function openQuickAddModelModal() {
+    if (typeof closeAllSmartSuggests === 'function') closeAllSmartSuggests();
     document.getElementById('quick-model-name').value = '';
     document.getElementById('quick-model-desc').value = '';
     document.getElementById('quick-model-warranty').value = '12';
@@ -15757,6 +15771,7 @@
   }
 
   function openQuickAddSupplierModal() {
+    if (typeof closeAllSmartSuggests === 'function') closeAllSmartSuggests();
     document.getElementById('quick-ncc-code').value = '';
     document.getElementById('quick-ncc-name').value = '';
     document.getElementById('quick-ncc-phone').value = '';
@@ -15928,6 +15943,7 @@
 
   // Thêm khách hàng nhanh ngay tại form Xuất kho (Yêu cầu 4.3)
   function openQuickAddCustomerModal() {
+    if (typeof closeAllSmartSuggests === 'function') closeAllSmartSuggests();
     document.getElementById('quick-cust-name').value = '';
     document.getElementById('quick-cust-phone').value = '';
     document.getElementById('quick-cust-address').value = '';
@@ -18713,6 +18729,136 @@
     renderHistoryNhapTable();
   }
 
+  // ====================================================
+  // PROMAX HELPERS: SẢN PHẨM & MODEL, STATUS ICON & ACCORDION
+  // ====================================================
+
+  function renderVoucherProductsSummary(items) {
+    if (!items || items.length === 0) return '<span class="text-muted small">-- Chưa có thiết bị --</span>';
+    const modelCounts = {};
+    items.forEach(it => {
+      const m = (it.model || 'Chưa rõ Model').trim();
+      if (!modelCounts[m]) {
+        const prodList = (typeof PRODUCTS_DB !== 'undefined' && Array.isArray(PRODUCTS_DB) && PRODUCTS_DB.length > 0)
+          ? PRODUCTS_DB
+          : (typeof INITIAL_PRODUCTS !== 'undefined' ? INITIAL_PRODUCTS : []);
+        const prod = prodList.find(p => p.model === m);
+        modelCounts[m] = {
+          model: m,
+          ten: prod ? (prod.ten || prod.name) : (it.ten || it.name || ''),
+          count: 0
+        };
+      }
+      modelCounts[m].count++;
+    });
+
+    const list = Object.values(modelCounts);
+    return `
+      <div class="d-flex flex-column gap-1">
+        ${list.map(item => `
+          <div>
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace fw-semibold">${item.model}</span>
+            ${item.count > 1 ? `<span class="badge bg-secondary-subtle text-dark border ms-1">x${item.count}</span>` : ''}
+            ${item.ten ? `<div class="small text-muted text-truncate" style="max-width: 250px;" title="${item.ten}">${item.ten}</div>` : ''}
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  function renderVoucherStatusIcon(status) {
+    if (status === 'CONFIRMED') {
+      return `<span class="badge rounded-circle bg-success text-white d-inline-flex align-items-center justify-content-center shadow-xs" style="width: 26px; height: 26px; font-size: 0.85rem;" title="Đã xác nhận"><i class="fa-solid fa-check"></i></span>`;
+    } else if (status === 'CANCELLED') {
+      return `<span class="badge rounded-circle bg-danger text-white d-inline-flex align-items-center justify-content-center shadow-xs" style="width: 26px; height: 26px; font-size: 0.85rem;" title="Đã hủy"><i class="fa-solid fa-xmark"></i></span>`;
+    } else if (status === 'DRAFT') {
+      return `<span class="badge rounded-circle bg-warning text-dark d-inline-flex align-items-center justify-content-center shadow-xs" style="width: 26px; height: 26px; font-size: 0.85rem;" title="Phiếu nháp"><i class="fa-solid fa-pen-nib"></i></span>`;
+    }
+    return `<span class="badge rounded-circle bg-secondary text-white d-inline-flex align-items-center justify-content-center shadow-xs" style="width: 26px; height: 26px; font-size: 0.85rem;" title="${status}"><i class="fa-solid fa-question"></i></span>`;
+  }
+
+  function renderVoucherSubRow(type, v) {
+    const items = v.items || [];
+    return `
+      <tr id="subrow-${type}-${v.maPhieu}" style="display: none;" class="bg-light-subtle">
+        <td colspan="10" class="p-2 ps-4">
+          <div class="border rounded bg-white p-3 shadow-sm">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span class="small fw-bold text-dark">
+                <i class="fa-solid fa-barcode text-primary me-1"></i> Danh Sách Serial Trong Phiếu (${items.length} thiết bị):
+              </span>
+              <button class="btn btn-xs btn-outline-primary" onclick="openVoucherDetail('${type}', '${v.maPhieu}')">
+                <i class="fa-solid fa-expand me-1"></i>Xem Chi Tiết Đầy Đủ
+              </button>
+            </div>
+            ${items.length === 0 ? '<div class="text-muted small fst-italic">Phiếu này chưa ghi nhận danh sách Serial chi tiết</div>' : `
+              <div class="table-responsive">
+                <table class="table table-sm table-bordered align-middle mb-0 small">
+                  <thead class="table-light">
+                    <tr>
+                      <th style="width: 35px;" class="text-center">#</th>
+                      <th style="width: 150px;">Mã Nội Bộ</th>
+                      <th style="width: 170px;">Serial Hãng (Mfg SN)</th>
+                      <th>Model Sản Phẩm</th>
+                      <th style="width: 120px;" class="text-center">Thời Hạn BH</th>
+                      <th style="width: 130px;" class="text-center">Trạng Thái Serial</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${items.map((it, idx) => {
+                      const serialDb = typeof SERIAL_DB !== 'undefined' ? SERIAL_DB : [];
+                      const sItem = serialDb.find(s => s.serial === it.serial || (it.internalId && s.internalId === it.internalId));
+                      const currentStatus = sItem ? sItem.status : (type === 'NHAP' ? (v.status === 'CANCELLED' ? 'CANCELLED_IMPORT' : 'IN_STOCK') : 'SOLD');
+                      let badgeStatus = '<span class="badge bg-secondary">' + currentStatus + '</span>';
+                      if (currentStatus === 'IN_STOCK') badgeStatus = '<span class="badge bg-success-subtle text-success border border-success-subtle">Tồn kho</span>';
+                      else if (currentStatus === 'SOLD') badgeStatus = '<span class="badge bg-primary-subtle text-primary border border-primary-subtle">Đã xuất</span>';
+                      else if (currentStatus === 'IN_WARRANTY') badgeStatus = '<span class="badge bg-warning-subtle text-warning border border-warning-subtle">Bảo hành</span>';
+                      else if (currentStatus === 'CANCELLED_IMPORT') badgeStatus = '<span class="badge bg-danger-subtle text-danger border border-danger-subtle">Đã hủy nhập</span>';
+                      return `
+                        <tr>
+                          <td class="text-center text-muted">${idx + 1}</td>
+                          <td class="font-monospace fw-bold text-primary">${it.internalId || '--'}</td>
+                          <td class="font-monospace fw-bold text-dark">${it.serial || '--'}</td>
+                          <td>
+                            <span class="badge bg-light text-dark border font-monospace me-1">${it.model || '--'}</span>
+                            ${it.tenHang || it.ten ? `<span class="text-muted small">${it.tenHang || it.ten}</span>` : ''}
+                          </td>
+                          <td class="text-center">${it.soThangBh ? it.soThangBh + ' tháng' : '--'}</td>
+                          <td class="text-center">${badgeStatus}</td>
+                        </tr>
+                      `;
+                    }).join('')}
+                  </tbody>
+                </table>
+              </div>
+            `}
+          </div>
+        </td>
+      </tr>
+    `;
+  }
+
+  function toggleVoucherAccordion(type, maPhieu) {
+    const subrow = document.getElementById(`subrow-${type}-${maPhieu}`);
+    const btn = document.getElementById(`btn-toggle-${type}-${maPhieu}`);
+    if (!subrow) return;
+    const isHidden = subrow.style.display === 'none';
+    subrow.style.display = isHidden ? 'table-row' : 'none';
+    if (btn) {
+      btn.innerHTML = isHidden 
+        ? '<i class="fa-solid fa-chevron-up text-primary" style="font-size: 0.72rem;"></i>'
+        : '<i class="fa-solid fa-chevron-down text-secondary" style="font-size: 0.72rem;"></i>';
+      btn.className = isHidden 
+        ? 'btn btn-xs btn-primary-subtle border border-primary rounded-circle p-0 d-inline-flex align-items-center justify-content-center' 
+        : 'btn btn-xs btn-light border rounded-circle p-0 d-inline-flex align-items-center justify-content-center';
+    }
+  }
+  if (typeof window !== 'undefined') {
+    window.toggleVoucherAccordion = toggleVoucherAccordion;
+    window.renderVoucherProductsSummary = renderVoucherProductsSummary;
+    window.renderVoucherStatusIcon = renderVoucherStatusIcon;
+  }
+
   // Render bảng lịch sử Nhập kho với bộ lọc đầy đủ
   function renderHistoryNhapTable() {
     const tbody = document.getElementById('history-nhap-table-body');
@@ -18776,36 +18922,48 @@
     }
 
     if (list.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">Không tìm thấy phiếu nhập nào phù hợp bộ lọc</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted py-4">Không tìm thấy phiếu nhập nào phù hợp bộ lọc</td></tr>';
       return;
     }
 
     let html = '';
     list.forEach(v => {
-      let statusBadge = `<span class="badge bg-secondary">${v.status}</span>`;
-      if (v.status === 'CONFIRMED') statusBadge = `<span class="badge bg-success">CONFIRMED</span>`;
-      else if (v.status === 'CANCELLED') statusBadge = `<span class="badge bg-danger">CANCELLED</span>`;
-      else if (v.status === 'DRAFT') statusBadge = `<span class="badge bg-light text-dark border">DRAFT</span>`;
-
       html += `
-        <tr>
-          <!-- Click trực tiếp vào mã phiếu mở đúng openVoucherDetail (Yêu cầu 1) -->
+        <tr id="voucher-row-NHAP-${v.maPhieu}">
+          <!-- Nút Accordion mở chi tiết Serial nhanh -->
+          <td class="text-center p-1" data-label="Mở">
+            <button class="btn btn-xs btn-light border rounded-circle p-0 d-inline-flex align-items-center justify-content-center" 
+                    id="btn-toggle-NHAP-${v.maPhieu}" 
+                    onclick="toggleVoucherAccordion('NHAP', '${v.maPhieu}')" 
+                    style="width: 24px; height: 24px;" 
+                    title="Xem nhanh danh sách Serial">
+              <i class="fa-solid fa-chevron-down text-secondary" style="font-size: 0.7rem;"></i>
+            </button>
+          </td>
+          <!-- Số phiếu (Click xem chi tiết đầy đủ) -->
           <td data-label="Số Phiếu">
             <a href="javascript:void(0)" class="fw-bold font-monospace text-primary text-decoration-underline" onclick="openVoucherDetail('NHAP', '${v.maPhieu}')">
               ${v.maPhieu}
             </a>
           </td>
-          <td data-label="Ngày Nhập">${v.ngay}</td>
+          <td data-label="Ngày Nhập" class="text-center">${v.ngay}</td>
           <td data-label="Nhà Cung Cấp"><strong>${v.ncc}</strong></td>
-          <td data-label="Kho Nhận">${v.kho}</td>
-          <td data-label="Số Thiết Bị" class="text-center font-monospace">${v.items ? v.items.length : 0}</td>
-          <td data-label="Trạng Thái">${statusBadge}</td>
-          <td data-label="Ghi Chú">
-            <small class="text-muted">${v.ghiChu || '--'}</small>
-            ${v.updatedAt ? `<div class="text-info small"><strong>Sửa:</strong> ${v.updatedBy} (${v.updatedAt})</div>` : ''}
-            ${v.lyDoHuy ? `<div class="text-danger small"><strong>Hủy:</strong> ${v.lyDoHuy} (${v.nguoiHuy} - ${v.ngayHuy})</div>` : ''}
+          <!-- Cột Sản Phẩm & Model tóm tắt -->
+          <td data-label="Sản Phẩm & Model">
+            ${renderVoucherProductsSummary(v.items)}
           </td>
-          <td data-label="Hành Động" class="text-end">
+          <td data-label="Kho Nhận" class="text-center">
+            <span class="badge bg-light text-dark border">${v.kho || 'Kho VP'}</span>
+          </td>
+          <td data-label="Số Thiết Bị" class="text-center font-monospace fw-bold fs-6">${v.items ? v.items.length : 0}</td>
+          <!-- Cột Trạng Thái dạng icon dấu tích / x, không dùng chữ -->
+          <td data-label="Trạng Thái" class="text-center">${renderVoucherStatusIcon(v.status)}</td>
+          <td data-label="Ghi Chú">
+            <div class="small text-muted text-break">${v.ghiChu || '--'}</div>
+            ${v.updatedAt ? `<div class="text-info small mt-1"><i class="fa-solid fa-pencil me-1"></i><strong>Sửa:</strong> ${v.updatedBy || ''} (${v.updatedAt})</div>` : ''}
+            ${v.lyDoHuy ? `<div class="text-danger small mt-1"><i class="fa-solid fa-ban me-1"></i><strong>Hủy:</strong> ${v.lyDoHuy} (${v.nguoiHuy || ''} - ${v.ngayHuy || ''})</div>` : ''}
+          </td>
+          <td data-label="Hành Động" class="text-end text-nowrap">
             <button class="btn btn-sm btn-outline-info" onclick="openVoucherDetail('NHAP', '${v.maPhieu}')" title="Xem chi tiết phiếu">
               <i class="fa-solid fa-eye"></i>
             </button>
@@ -18820,6 +18978,7 @@
             ` : ''}
           </td>
         </tr>
+        ${renderVoucherSubRow('NHAP', v)}
       `;
     });
     tbody.innerHTML = html;
@@ -18937,32 +19096,51 @@
     }
 
     if (list.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">Không tìm thấy phiếu xuất nào phù hợp bộ lọc</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted py-4">Không tìm thấy phiếu xuất nào phù hợp bộ lọc</td></tr>';
       return;
     }
 
     let html = '';
     list.forEach(v => {
-      let statusBadge = `<span class="badge bg-secondary">${v.status}</span>`;
-      if (v.status === 'CONFIRMED') statusBadge = `<span class="badge bg-success">CONFIRMED</span>`;
-      else if (v.status === 'CANCELLED') statusBadge = `<span class="badge bg-danger">CANCELLED</span>`;
-      else if (v.status === 'DRAFT') statusBadge = `<span class="badge bg-light text-dark border">DRAFT</span>`;
-
       html += `
-        <tr>
-          <!-- Click trực tiếp vào mã phiếu mở đúng openVoucherDetail (Yêu cầu 1) -->
+        <tr id="voucher-row-XUAT-${v.maPhieu}">
+          <!-- Nút Accordion mở chi tiết Serial nhanh -->
+          <td class="text-center p-1" data-label="Mở">
+            <button class="btn btn-xs btn-light border rounded-circle p-0 d-inline-flex align-items-center justify-content-center" 
+                    id="btn-toggle-XUAT-${v.maPhieu}" 
+                    onclick="toggleVoucherAccordion('XUAT', '${v.maPhieu}')" 
+                    style="width: 24px; height: 24px;" 
+                    title="Xem nhanh danh sách Serial">
+              <i class="fa-solid fa-chevron-down text-secondary" style="font-size: 0.7rem;"></i>
+            </button>
+          </td>
+          <!-- Số phiếu (Click xem chi tiết đầy đủ) -->
           <td data-label="Số Phiếu">
             <a href="javascript:void(0)" class="fw-bold font-monospace text-primary text-decoration-underline" onclick="openVoucherDetail('XUAT', '${v.maPhieu}')">
               ${v.maPhieu}
             </a>
           </td>
-          <td data-label="Ngày Xuất">${v.ngay}</td>
-          <td data-label="Khách Hàng"><strong>${v.khachHang}</strong></td>
-          <td data-label="Số Điện Thoại"><span class="font-monospace">${v.sdtKhach || '--'}</span></td>
-          <td data-label="Kho Xuất">${v.kho}</td>
-          <td data-label="Số Thiết Bị" class="text-center font-monospace">${v.items ? v.items.length : 0}</td>
-          <td data-label="Trạng Thái">${statusBadge}</td>
-          <td data-label="Hành Động" class="text-end">
+          <td data-label="Ngày Xuất" class="text-center">${v.ngay}</td>
+          <td data-label="Khách Hàng">
+            <strong>${v.khachHang}</strong>
+            ${v.sdtKhach ? `<div class="small font-monospace text-muted"><i class="fa-solid fa-phone me-1"></i>${v.sdtKhach}</div>` : ''}
+          </td>
+          <!-- Cột Sản Phẩm & Model tóm tắt -->
+          <td data-label="Sản Phẩm & Model">
+            ${renderVoucherProductsSummary(v.items)}
+          </td>
+          <td data-label="Kho Xuất" class="text-center">
+            <span class="badge bg-light text-dark border">${v.kho || 'Kho VP'}</span>
+          </td>
+          <td data-label="Số Thiết Bị" class="text-center font-monospace fw-bold fs-6">${v.items ? v.items.length : 0}</td>
+          <!-- Cột Trạng Thái dạng icon dấu tích / x, không dùng chữ -->
+          <td data-label="Trạng Thái" class="text-center">${renderVoucherStatusIcon(v.status)}</td>
+          <td data-label="Ghi Chú">
+            <div class="small text-muted text-break">${v.ghiChu || '--'}</div>
+            ${v.updatedAt ? `<div class="text-info small mt-1"><i class="fa-solid fa-pencil me-1"></i><strong>Sửa:</strong> ${v.updatedBy || ''} (${v.updatedAt})</div>` : ''}
+            ${v.lyDoHuy ? `<div class="text-danger small mt-1"><i class="fa-solid fa-ban me-1"></i><strong>Hủy:</strong> ${v.lyDoHuy} (${v.nguoiHuy || ''} - ${v.ngayHuy || ''})</div>` : ''}
+          </td>
+          <td data-label="Hành Động" class="text-end text-nowrap">
             <button class="btn btn-sm btn-outline-info" onclick="openVoucherDetail('XUAT', '${v.maPhieu}')" title="Xem chi tiết phiếu">
               <i class="fa-solid fa-eye"></i>
             </button>
@@ -18983,6 +19161,7 @@
             ` : ''}
           </td>
         </tr>
+        ${renderVoucherSubRow('XUAT', v)}
       `;
     });
     tbody.innerHTML = html;
@@ -19918,30 +20097,17 @@
           const fieldName = FIELD_LABELS[c.field] || c.field;
           const oldDisplay = (c.oldVal !== undefined && c.oldVal !== null && c.oldVal !== '') ? c.oldVal : '(trống)';
           const newDisplay = (c.newVal !== undefined && c.newVal !== null && c.newVal !== '') ? c.newVal : '(trống)';
-          return `<div class="mb-1"><span class="fw-semibold text-dark">${fieldName}:</span> <span class="text-muted text-decoration-line-through">${oldDisplay}</span> <i class="fa-solid fa-arrow-right text-primary mx-1" style="font-size:0.7rem"></i> <span class="text-success fw-bold">${newDisplay}</span></div>`;
+          return `<div class="mb-1"><span class="fw-semibold text-dark">• ${fieldName}:</span> <span class="badge bg-secondary-subtle text-muted text-decoration-line-through">${oldDisplay}</span> <i class="fa-solid fa-arrow-right text-primary mx-1" style="font-size:0.7rem"></i> <span class="badge bg-success-subtle text-success fw-bold">${newDisplay}</span></div>`;
         }).join('');
       } else if (a.oldVal && a.newVal && a.oldVal !== 'Before' && a.newVal !== 'After') {
-        changesHtml = `<div><span class="text-muted text-decoration-line-through">${a.oldVal}</span> <i class="fa-solid fa-arrow-right text-primary mx-1" style="font-size:0.7rem"></i> <span class="text-success fw-bold">${a.newVal}</span></div>`;
+        changesHtml = `<div><span class="badge bg-secondary-subtle text-muted text-decoration-line-through">${a.oldVal}</span> <i class="fa-solid fa-arrow-right text-primary mx-1" style="font-size:0.7rem"></i> <span class="badge bg-success-subtle text-success fw-bold">${a.newVal}</span></div>`;
       } else {
-        changesHtml = `<div class="text-dark">${a.action}: <span class="fw-semibold">${a.target}</span></div>`;
+        changesHtml = `<div class="text-dark"><i class="fa-solid fa-circle-info text-info me-1"></i>${a.action}: <strong class="text-primary">${a.target}</strong></div>`;
       }
-
-      // Thông tin chi tiết kỹ thuật (DEV Mode ẩn mặc định)
-      const devDetailId = `audit-dev-${idx}`;
-      const devJson = JSON.stringify({
-        id: a.id || idx,
-        user: a.user,
-        role: a.role,
-        action: a.action,
-        target: a.target,
-        module: a.module,
-        reason: a.reason,
-        changes: a.changes || []
-      }, null, 2);
 
       html += `
         <tr>
-          <td data-label="Thời Gian" class="small font-monospace">${a.time}</td>
+          <td data-label="Thời Gian" class="small font-monospace text-center">${a.time}</td>
           <td data-label="Người Thao Tác">
             <strong>${a.user}</strong><br>
             <span class="badge bg-light text-dark border">${a.role || 'Hệ thống'}</span>
@@ -19955,14 +20121,6 @@
           </td>
           <td data-label="Chi Tiết Thay Đổi" class="small">
             ${changesHtml}
-            <div class="mt-1">
-              <a href="javascript:void(0)" class="text-muted small text-decoration-none" onclick="toggleAuditDevDetail('${devDetailId}')" style="font-size: 0.72rem;">
-                <i class="fa-solid fa-code me-1"></i> Chi tiết DEV
-              </a>
-              <div id="${devDetailId}" style="display: none;" class="mt-1 p-2 bg-light border rounded font-monospace small">
-                <pre class="mb-0 text-dark" style="font-size: 0.7rem; max-height: 120px; overflow-y: auto;">${devJson}</pre>
-              </div>
-            </div>
           </td>
           <td data-label="Lý Do">
             <small class="text-muted">${a.reason || '--'}</small>
@@ -19971,13 +20129,6 @@
       `;
     });
     tbody.innerHTML = html;
-  }
-
-  function toggleAuditDevDetail(id) {
-    const el = document.getElementById(id);
-    if (el) {
-      el.style.display = (el.style.display === 'none' ? 'block' : 'none');
-    }
   }
 
   /* ==================================================== */

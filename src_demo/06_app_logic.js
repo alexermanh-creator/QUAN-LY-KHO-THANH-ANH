@@ -2616,13 +2616,22 @@
     }
   }
 
+  function closeAllSmartSuggests() {
+    document.querySelectorAll('.smart-suggest-dropdown').forEach(d => {
+      d.style.display = 'none';
+    });
+  }
+
   // Tự động đóng tất cả dropdown gợi ý khi click ra ngoài
   document.addEventListener('click', function(e) {
     if (!e.target.closest('.smart-suggest-wrap')) {
-      document.querySelectorAll('.smart-suggest-dropdown').forEach(d => {
-        d.style.display = 'none';
-      });
+      closeAllSmartSuggests();
     }
+  });
+
+  // Tự động đóng tất cả dropdown gợi ý khi bất kỳ modal nào mở (tránh nổi đè lên modal)
+  document.addEventListener('show.bs.modal', function() {
+    closeAllSmartSuggests();
   });
 
   // Xuất ra toàn cục

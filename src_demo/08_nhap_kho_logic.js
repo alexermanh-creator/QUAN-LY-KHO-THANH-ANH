@@ -839,6 +839,7 @@
   }
 
   function openQuickAddModelModal() {
+    if (typeof closeAllSmartSuggests === 'function') closeAllSmartSuggests();
     document.getElementById('quick-model-name').value = '';
     document.getElementById('quick-model-desc').value = '';
     document.getElementById('quick-model-warranty').value = '12';
@@ -935,6 +936,7 @@
   }
 
   function openQuickAddSupplierModal() {
+    if (typeof closeAllSmartSuggests === 'function') closeAllSmartSuggests();
     document.getElementById('quick-ncc-code').value = '';
     document.getElementById('quick-ncc-name').value = '';
     document.getElementById('quick-ncc-phone').value = '';

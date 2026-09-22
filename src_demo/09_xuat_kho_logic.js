@@ -96,6 +96,7 @@
 
   // Thêm khách hàng nhanh ngay tại form Xuất kho (Yêu cầu 4.3)
   function openQuickAddCustomerModal() {
+    if (typeof closeAllSmartSuggests === 'function') closeAllSmartSuggests();
     document.getElementById('quick-cust-name').value = '';
     document.getElementById('quick-cust-phone').value = '';
     document.getElementById('quick-cust-address').value = '';
