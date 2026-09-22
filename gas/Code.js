@@ -1322,6 +1322,19 @@ function cleanupMorningTestExportsBackend() {
       }
     }
 
+    // 5. Dọn dẹp các serial thuộc phiếu nhập PN-260922-01 đã bị hủy để sẵn sàng tái nhập
+    if (tbSheet && tbSheet.getLastRow() > 1) {
+      const dataSn = tbSheet.getRange(2, 1, tbSheet.getLastRow() - 1, 9).getValues();
+      for (let i = dataSn.length - 1; i >= 0; i--) {
+        const sn = String(dataSn[i][0] || '').trim();
+        const pNhap = String(dataSn[i][8] || '').trim();
+        if (pNhap.startsWith('PN-260922-01') || sn === 'E82908G6N644372' || sn === 'E82908G6N644920') {
+          tbSheet.deleteRow(i + 2);
+          deletedCount++;
+        }
+      }
+    }
+
     if (typeof invalidateMasterCache === 'function') invalidateMasterCache();
 
     return { success: true, deletedCount: deletedCount };
@@ -1433,3 +1446,73 @@ function cancelExportVoucherBackend(maPhieu, reason, user) {
     return { success: false, error: err.message };
   }
 }
+
+/**
+ * HỦY PHIẾU NHẬP VÀ DỌN DẸP SERIAL TRÊN GOOGLE SHEETS ĐỂ SẴN SÀNG TÁI NHẬP
+ */
+function cancelImportVoucherBackend(maPhieu, reason, user) {
+  try {
+    maPhieu = String(maPhieu || '').trim();
+    reason = String(reason || 'Hủy phiếu nhập kho').trim();
+    user = String(user || 'Quản Lý').trim();
+    if (!maPhieu) throw new Error("Mã phiếu không được để trống!");
+
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const tbSheet = ss.getSheetByName("SERIAL_MASTER") || ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
+    const lsSheet = ss.getSheetByName("LICH_SU_NHAP");
+    const rHead = ss.getSheetByName("V4_RECEIPT_HEADERS");
+
+    // 1. Quét SERIAL_MASTER: Xóa các thiết bị thuộc phiếu nhập bị hủy để có thể tái nhập không bị trùng
+    let cancelledCount = 0;
+    if (tbSheet && tbSheet.getLastRow() > 1) {
+      const totalRows = tbSheet.getLastRow() - 1;
+      const data = tbSheet.getRange(2, 9, totalRows, 1).getValues(); // Cột 9: Mã phiếu nhập
+      for (let i = totalRows - 1; i >= 0; i--) {
+        const pNhap = String(data[i][0] || '').trim();
+        if (pNhap === maPhieu) {
+          tbSheet.deleteRow(i + 2);
+          cancelledCount++;
+        }
+      }
+    }
+
+    // 2. Cập nhật LICH_SU_NHAP
+    if (lsSheet && lsSheet.getLastRow() > 1) {
+      const lsData = lsSheet.getRange(2, 1, lsSheet.getLastRow() - 1, 1).getValues();
+      for (let i = 0; i < lsData.length; i++) {
+        if (String(lsData[i][0]).trim() === maPhieu) {
+          const curNote = String(lsSheet.getRange(i + 2, 8).getValue() || '');
+          lsSheet.getRange(i + 2, 8).setValue(`[CANCELLED: ${reason}] ${curNote}`.trim());
+          break;
+        }
+      }
+    }
+
+    // 3. Cập nhật V4_RECEIPT_HEADERS nếu có
+    if (rHead && rHead.getLastRow() > 1) {
+      const hData = rHead.getRange(2, 1, rHead.getLastRow() - 1, 1).getValues();
+      for (let i = 0; i < hData.length; i++) {
+        if (String(hData[i][0]).trim() === maPhieu) {
+          rHead.getRange(i + 2, 7).setValue("CANCELLED");
+          break;
+        }
+      }
+    }
+
+    // 4. Audit Log
+    try {
+      const logSheet = ss.getSheetByName("NHAT_KY_HOAT_DONG");
+      if (logSheet) {
+        const timeStr = Utilities.formatDate(new Date(), "GMT+7", "dd/MM/yyyy HH:mm:ss");
+        logSheet.appendRow([timeStr, user, "HỦY PHIẾU NHẬP", maPhieu, `Hủy phiếu nhập và dọn dẹp ${cancelledCount} thiết bị để sẵn sàng tái nhập. Lý do: ${reason}`]);
+      }
+    } catch(e) {}
+
+    if (typeof invalidateMasterCache === 'function') invalidateMasterCache();
+
+    return { success: true, cancelledCount: cancelledCount };
+  } catch(err) {
+    return { success: false, error: err.message };
+  }
+}
+

@@ -2348,11 +2348,26 @@
     // 2. Trùng với Serial trong DB hệ thống (SERIAL_DB)
     const existing = SERIAL_DB.find(s => s.serial.toLowerCase() === sn.toLowerCase());
     if (existing) {
+      // KIỂM TRA ĐẶC BIỆT: NẾU THUỘC PHIẾU NHẬP ĐÃ HỦY
+      // Người dùng đang làm lại phiếu nhập mới cho đúng serial này -> CHO PHÉP TÁI NHẬP HỢP LỆ!
+      const parentVoucher = (typeof VOUCHERS_DB !== 'undefined' && VOUCHERS_DB.nhap) 
+        ? VOUCHERS_DB.nhap.find(v => v.maPhieu === existing.maPhieuNhap) 
+        : null;
+      const isCancelledImport = (existing.status === 'CANCELLED_IMPORT') || 
+                                (parentVoucher && parentVoucher.status === 'CANCELLED');
+
+      if (isCancelledImport) {
+        return {
+          valid: true,
+          isReimport: true,
+          message: `Hợp lệ (Tái nhập: Serial từng thuộc phiếu nhập [${existing.maPhieuNhap}] đã bị HỦY)`
+        };
+      }
+
       let statusDesc = existing.status;
       if (existing.status === 'IN_STOCK') statusDesc = `Đang tồn kho tại [${existing.kho}]`;
       else if (existing.status === 'SOLD') statusDesc = `Đã xuất bán cho [${existing.khachHang}] theo phiếu [${existing.maPhieuXuat}]`;
       else if (existing.status === 'IN_WARRANTY') statusDesc = `Đang bảo hành`;
-      else if (existing.status === 'CANCELLED_IMPORT') statusDesc = `Thuộc phiếu nhập [${existing.maPhieuNhap}] đã bị HỦY`;
 
       return {
         valid: false,

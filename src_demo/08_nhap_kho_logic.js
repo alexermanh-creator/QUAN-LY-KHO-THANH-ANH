@@ -59,9 +59,13 @@
       syncLoaiHangDropdowns();
     }
 
-    // 6. Cập nhật info model đang chọn
+    // 6. Cập nhật info model đang chọn & tự động re-validate các mục trong draft
     onSelectModelNhap();
-    renderDraftNhapTable();
+    if (typeof revalidateAllDraftNhapItems === 'function') {
+      revalidateAllDraftNhapItems();
+    } else {
+      renderDraftNhapTable();
+    }
   }
 
   // Gợi ý thông minh Nhà Cung Cấp khi gõ
@@ -125,15 +129,17 @@
 
     if (matched.length === 0) {
       dropdown.innerHTML = `
-        <div class="p-2 text-warning small">
-          <i class="fa-solid fa-circle-exclamation me-1"></i> Chưa có Model "${query}" trong danh mục.
-          <div class="text-muted mt-1" style="font-size: 0.72rem;">Hệ thống sẽ lưu tạm hoặc bấm <b>+ Thêm Model mới</b> bên trên.</div>
+        <div class="p-3 text-center">
+          <div class="text-danger fw-bold small mb-1"><i class="fa-solid fa-circle-xmark me-1"></i> Chưa có Model "${escapeHtml(query)}" trong danh mục!</div>
+          <div class="text-muted small mb-2" style="font-size: 0.75rem;">Hệ thống yêu cầu chỉ lấy Model từ danh mục. Vui lòng khai báo trước khi nhập.</div>
+          <button class="btn btn-sm btn-primary" type="button" onclick="openQuickAddModelModal()">
+            <i class="fa-solid fa-plus-circle me-1"></i> + Khai báo Model mới ngay
+          </button>
         </div>
       `;
       dropdown.style.display = 'block';
-      // Vẫn cập nhật hidden để không bị chặn
       const modelHidden = document.getElementById('nhap-select-model');
-      if (modelHidden) modelHidden.value = query;
+      if (modelHidden) modelHidden.value = '';
       onSelectModelNhap(query);
       return;
     }
@@ -189,14 +195,17 @@
     if (prod) {
       if (modelHidden) modelHidden.value = prod.model;
       infoBox.innerHTML = `
-        <div class="fw-semibold text-primary">${prod.ten}</div>
-        <div class="text-muted">Mã: <strong class="font-monospace text-dark">${prod.model}</strong> | Hãng: <strong>${prod.hang || '--'}</strong> | Nhóm: <strong>${prod.nhom || prod.nhomHang}</strong> | BH mặc định: <strong>${prod.defaultBh || 12} tháng</strong></div>
+        <div class="fw-semibold text-primary">${escapeHtml(prod.ten)}</div>
+        <div class="text-muted">Mã: <strong class="font-monospace text-dark">${escapeHtml(prod.model)}</strong> | Hãng: <strong>${escapeHtml(prod.hang || '--')}</strong> | Nhóm: <strong>${escapeHtml(prod.nhom || prod.nhomHang || 'Thiết bị')}</strong> | BH mặc định: <strong>${prod.defaultBh || 12} tháng</strong></div>
       `;
     } else {
+      if (modelHidden) modelHidden.value = '';
       if (val) {
-        if (modelHidden) modelHidden.value = val;
         infoBox.innerHTML = `
-          <div class="text-warning small"><i class="fa-solid fa-triangle-exclamation me-1"></i> Model: <strong class="font-monospace">${val}</strong> (Hệ thống sẽ lưu theo mã này).</div>
+          <div class="text-danger small fw-semibold">
+            <i class="fa-solid fa-triangle-exclamation me-1"></i> Model: <strong class="font-monospace">${escapeHtml(val)}</strong> chưa có trong danh mục! 
+            <a href="javascript:void(0)" class="fw-bold ms-1 text-decoration-underline" onclick="openQuickAddModelModal()">Bấm vào đây để thêm Model mới</a>.
+          </div>
         `;
       } else {
         infoBox.innerHTML = '<span class="text-muted small">Chưa chọn Model</span>';
@@ -239,7 +248,40 @@
   document.getElementById('nhap-serial-input').addEventListener('input', updateNhapSerialCounter);
 
   function addModelToDraftList() {
-    const model = document.getElementById('nhap-select-model').value;
+    const modelHiddenVal = (document.getElementById('nhap-select-model')?.value || '').trim();
+    const modelInputVal = (document.getElementById('nhap-model-input')?.value || '').trim();
+    const targetModel = modelHiddenVal || modelInputVal;
+
+    // BẮT BUỘC MODEL PHẢI CÓ TRONG DANH MỤC INITIAL_PRODUCTS
+    const prod = (typeof INITIAL_PRODUCTS !== 'undefined' ? INITIAL_PRODUCTS : []).find(p => 
+      p.model.toLowerCase() === targetModel.toLowerCase() ||
+      p.ten.toLowerCase() === targetModel.toLowerCase()
+    );
+
+    if (!prod) {
+      playBeepSound();
+      Swal.fire({
+        icon: 'warning',
+        title: 'MODEL CHƯA CÓ TRONG DANH MỤC!',
+        html: `
+          <p class="text-danger fw-bold mb-2">Model "${escapeHtml(targetModel || 'Chưa nhập')}" không tồn tại trong danh mục sản phẩm!</p>
+          <p class="small text-muted mb-3">Hệ thống yêu cầu chỉ được chọn Model từ danh mục. Nếu đây là Model mới, vui lòng bấm nút bên dưới để khai báo vào danh mục trước khi nhập kho.</p>
+        `,
+        showCancelButton: true,
+        confirmButtonColor: '#2563eb',
+        confirmButtonText: '<i class="fa-solid fa-plus-circle me-1"></i> + Khai báo Model mới ngay',
+        cancelButtonText: 'Đóng để chọn lại'
+      }).then(res => {
+        if (res.isConfirmed) {
+          openQuickAddModelModal();
+          const nameInput = document.getElementById('quick-model-name');
+          if (nameInput && targetModel) nameInput.value = targetModel;
+        }
+      });
+      return;
+    }
+
+    const model = prod.model; // Chuẩn hóa đúng mã model chính thức từ danh mục
     const kho = document.getElementById('nhap-kho').value;
     const loaiHang = document.getElementById('nhap-item-loai-hang')?.value || document.getElementById('nhap-loai-hang')?.value || 'Chính Hãng';
     const text = document.getElementById('nhap-serial-input').value;
@@ -250,7 +292,6 @@
       return;
     }
 
-    const prod = INITIAL_PRODUCTS.find(p => p.model === model);
     let addedCount = 0;
     let duplicateErrors = [];
 
@@ -420,11 +461,51 @@
       }
     }
 
-    const ncc = (document.getElementById('nhap-ncc')?.value || document.getElementById('nhap-ncc-input')?.value || '').trim();
-    if (!ncc) {
-      Swal.fire('Thiếu thông tin', 'Vui lòng chọn hoặc gõ Nhà cung cấp!', 'warning');
+    // 1. Kiểm tra Nhà Cung Cấp bắt buộc phải từ danh mục
+    const nccInput = (document.getElementById('nhap-ncc')?.value || document.getElementById('nhap-ncc-input')?.value || '').trim();
+    const activeSuppliers = (typeof INITIAL_SUPPLIERS !== 'undefined' ? INITIAL_SUPPLIERS : []).filter(s => s.active !== false);
+    const validSupplier = activeSuppliers.find(s => 
+      (s.tenTat && s.tenTat.toLowerCase() === nccInput.toLowerCase()) ||
+      (s.tenDayDu && s.tenDayDu.toLowerCase() === nccInput.toLowerCase()) ||
+      (`${s.tenTat} - ${s.tenDayDu}`.toLowerCase() === nccInput.toLowerCase())
+    );
+
+    if (!validSupplier) {
+      playBeepSound();
+      Swal.fire({
+        icon: 'warning',
+        title: 'NHÀ CUNG CẤP KHÔNG HỢP LỆ!',
+        html: `
+          <p class="text-danger fw-bold mb-2">Nhà cung cấp "${escapeHtml(nccInput || 'Chưa chọn')}" không tồn tại trong danh mục!</p>
+          <p class="small text-muted mb-3">Hệ thống yêu cầu chỉ được chọn NCC từ danh mục. Vui lòng chọn NCC từ danh sách gợi ý hoặc bấm nút bên dưới để thêm NCC mới.</p>
+        `,
+        showCancelButton: true,
+        confirmButtonColor: '#2563eb',
+        confirmButtonText: '<i class="fa-solid fa-plus-circle me-1"></i> + Thêm NCC mới',
+        cancelButtonText: 'Đóng để chọn lại'
+      }).then(r => {
+        if (r.isConfirmed && typeof openQuickAddSupplierModal === 'function') {
+          openQuickAddSupplierModal();
+        }
+      });
       return;
     }
+    const ncc = validSupplier.tenTat;
+
+    // 2. Kiểm tra toàn bộ Model trong draft bắt buộc phải thuộc danh mục
+    const invalidItem = CURRENT_DRAFT_NHAP_ITEMS.find(it => {
+      return !(typeof INITIAL_PRODUCTS !== 'undefined' ? INITIAL_PRODUCTS : []).some(p => p.model.toLowerCase() === it.model.toLowerCase());
+    });
+    if (invalidItem) {
+      playBeepSound();
+      Swal.fire({
+        icon: 'error',
+        title: 'CÓ MODEL CHƯA KHAI BÁO!',
+        html: `Thiết bị mang Model <strong>"${escapeHtml(invalidItem.model)}"</strong> chưa có trong danh mục sản phẩm!<br><br>Vui lòng bấm nút <strong>"+ Thêm Model mới"</strong> để khai báo trước khi xác nhận nhập kho.`
+      });
+      return;
+    }
+
     const kho = document.getElementById('nhap-kho').value;
     const generalLoaiHang = document.getElementById('nhap-loai-hang')?.value || 'Chính Hãng';
     const ngay = formatDateDisplay(document.getElementById('nhap-ngay').value) || formatDateDisplay(getLocalDateStr());
@@ -463,6 +544,15 @@
       CURRENT_DRAFT_NHAP_ITEMS.forEach(item => {
         const prod = INITIAL_PRODUCTS.find(p => p.model === item.model);
         const itemLoaiHang = item.loaiHang || generalLoaiHang;
+
+        // XÓA BẢN GHI CŨ NẾU LÀ TÁI NHẬP TỪ PHIẾU BỊ HỦY VÀ KẾ THỪA TIMELINE
+        const oldIndex = SERIAL_DB.findIndex(s => s.serial.toLowerCase() === item.serial.toLowerCase());
+        let oldTimeline = [];
+        if (oldIndex !== -1) {
+          oldTimeline = SERIAL_DB[oldIndex].timeline || [];
+          SERIAL_DB.splice(oldIndex, 1);
+        }
+
         SERIAL_DB.unshift({
           serial: item.serial,
           internalId: item.internalId,
@@ -485,7 +575,8 @@
           ghiChu: ghiChu,
           customFields: {},
           timeline: [
-            { date: nowStr, user: CURRENT_USER_NAME, action: 'Nhập kho', note: `Nhập kho theo phiếu ${maPhieu} (${itemLoaiHang}) từ NCC ${ncc}` }
+            { date: nowStr, user: CURRENT_USER_NAME, action: 'Nhập kho', note: `Nhập kho theo phiếu ${maPhieu} (${itemLoaiHang}) từ NCC ${ncc}` },
+            ...oldTimeline
           ]
         });
       });

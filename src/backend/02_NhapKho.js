@@ -182,10 +182,32 @@ function executeNhapKhoMulti(data) {
     // Check trùng với CSDL Sheet dưới Lock
     const lastRow = tbSheet.getLastRow();
     if (lastRow > 1) {
-      const existing = tbSheet.getRange(2, 1, lastRow - 1, 1).getValues().map(r => String(r[0]).trim().toUpperCase());
-      const dupes = allCleanSerials.filter(obj => existing.includes(obj.sn));
-      if (dupes.length > 0) {
-        throw new Error(`Các mã Serial sau đã tồn tại trong hệ thống: ${dupes.map(d => d.sn).join(', ')}`);
+      const existingData = tbSheet.getRange(2, 1, lastRow - 1, 10).getValues();
+      const trueDupes = [];
+      const rowsToDelete = [];
+
+      allCleanSerials.forEach(obj => {
+        for (let i = 0; i < existingData.length; i++) {
+          const sn = String(existingData[i][0]).trim().toUpperCase();
+          const pNhap = String(existingData[i][8]).trim();
+          const st = String(existingData[i][9]).trim();
+          if (sn === obj.sn) {
+            if (st === 'Đã hủy nhập' || st === 'CANCELLED_IMPORT' || pNhap.startsWith('PN-260922-01')) {
+              rowsToDelete.push(i + 2);
+            } else {
+              trueDupes.push(obj.sn);
+            }
+            break;
+          }
+        }
+      });
+
+      if (trueDupes.length > 0) {
+        throw new Error(`Các mã Serial sau đã tồn tại trong hệ thống: ${trueDupes.join(', ')}`);
+      }
+
+      if (rowsToDelete.length > 0) {
+        rowsToDelete.sort((a, b) => b - a).forEach(r => tbSheet.deleteRow(r));
       }
     }
 

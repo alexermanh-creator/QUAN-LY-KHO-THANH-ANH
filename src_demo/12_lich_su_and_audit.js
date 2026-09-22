@@ -1462,6 +1462,7 @@
           if (serialItem) {
             serialItem.status = 'CANCELLED_IMPORT';
             serialItem.ghiChu = `[HỦY PHIẾU NHẬP] ${reason}`;
+            serialItem.timeline = serialItem.timeline || [];
             serialItem.timeline.unshift({
               date: nowStr,
               user: CURRENT_USER_NAME,
@@ -1473,6 +1474,23 @@
         });
 
         recordAuditLog('HỦY PHIẾU NHẬP', `Phiếu ${maPhieu} (${v.items.length} máy)`, 'CONFIRMED', 'CANCELLED', reason, cancelledChanges, 'Phiếu kho', '', maPhieu);
+
+        // Đồng bộ lên Google Sheets backend nếu đang trong môi trường Google Apps Script
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          google.script.run
+            .withSuccessHandler(res => console.log('Đã đồng bộ Hủy phiếu nhập lên Google Sheet:', res))
+            .withFailureHandler(err => console.error('Lỗi đồng bộ Hủy phiếu nhập Sheet:', err))
+            .cancelImportVoucherBackend(maPhieu, reason, CURRENT_USER_NAME);
+        }
+
+        // Lưu localStorage
+        try {
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('THANH_AN_VOUCHERS_DB', JSON.stringify(VOUCHERS_DB));
+            localStorage.setItem('THANH_AN_SERIAL_DB', JSON.stringify(SERIAL_DB.slice(0, 2000)));
+          }
+        } catch(e) {}
+
         if (typeof markModulesDirty === 'function') {
           markModulesDirty(['Dashboard', 'TonKho', 'LichSu', 'Serial360']);
         }
@@ -1481,7 +1499,7 @@
         Swal.fire({
           icon: 'success',
           title: 'Đã hủy phiếu nhập!',
-          html: `Phiếu <strong>${maPhieu}</strong> đã chuyển sang <strong>CANCELLED</strong>.<br>Toàn bộ Serial đã chuyển sang trạng thái <strong>CANCELLED_IMPORT</strong> và vẫn tra cứu được hồ sơ tại Serial 360°.`
+          html: `Phiếu <strong>${maPhieu}</strong> đã chuyển sang <strong>CANCELLED</strong>.<br>Toàn bộ Serial đã chuyển sang trạng thái <strong>CANCELLED_IMPORT</strong> và sẵn sàng để tái nhập kho nếu cần.`
         });
       }
     });
