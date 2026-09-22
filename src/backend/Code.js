@@ -70,7 +70,13 @@ function getInitAppData(options) {
 
   const khSheet = ss.getSheetByName("DM_KHACH_HANG");
   const khachHang = (khSheet && khSheet.getLastRow() > 1) 
-    ? khSheet.getRange(2, 1, khSheet.getLastRow() - 1, 4).getValues().map((r, i) => ({ rowId: i + 2, ten: r[0], sdt: formatPhoneNumberBackend(r[1]), diaChi: r[2], ghiChu: r[3] })) 
+    ? khSheet.getRange(2, 1, khSheet.getLastRow() - 1, 4).getValues()
+        .filter(r => {
+          const ten = String(r[0] || '').trim();
+          const sdt = String(r[1] || '').trim();
+          return !ten.includes('HARMONY GLOBAL') && !sdt.includes('0962503280');
+        })
+        .map((r, i) => ({ rowId: i + 2, ten: r[0], sdt: formatPhoneNumberBackend(r[1]), diaChi: r[2], ghiChu: r[3] })) 
     : [];
 
   const qcSheet = ss.getSheetByName("DM_QUY_CHUAN");
@@ -1303,10 +1309,127 @@ function cleanupMorningTestExportsBackend() {
       }
     }
 
+    // 4. Xóa khách hàng HARMONY GLOBAL trong DM_KHACH_HANG nếu có
+    const khSheet = ss.getSheetByName("DM_KHACH_HANG");
+    if (khSheet && khSheet.getLastRow() > 1) {
+      const khData = khSheet.getRange(2, 1, khSheet.getLastRow() - 1, 3).getValues();
+      for (let i = khData.length - 1; i >= 0; i--) {
+        const tenKh = String(khData[i][1] || '').trim();
+        const sdtKh = String(khData[i][2] || '').trim();
+        if (tenKh.includes('HARMONY GLOBAL') || sdtKh.includes('0962503280')) {
+          khSheet.deleteRow(i + 2);
+        }
+      }
+    }
+
+    if (typeof invalidateMasterCache === 'function') invalidateMasterCache();
+
     return { success: true, deletedCount: deletedCount };
   } catch(e) {
     return { success: false, error: e.message };
   }
 }
 
+/**
+ * XÓA KHÁCH HÀNG THEO TÊN HOẶC SỐ ĐIỆN THOẠI TRONG SHEET DM_KHACH_HANG
+ */
+function deleteCustomerByNameOrPhone(nameOrPhone) {
+  try {
+    nameOrPhone = String(nameOrPhone || '').trim();
+    if (!nameOrPhone) return { success: false, error: "Thiếu thông tin khách hàng" };
 
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName("DM_KHACH_HANG");
+    let deletedCount = 0;
+    if (sheet && sheet.getLastRow() > 1) {
+      const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 3).getValues();
+      for (let i = data.length - 1; i >= 0; i--) {
+        const name = String(data[i][1] || '').trim();
+        const phone = String(data[i][2] || '').trim();
+        if (name.includes(nameOrPhone) || phone.includes(nameOrPhone)) {
+          sheet.deleteRow(i + 2);
+          deletedCount++;
+        }
+      }
+    }
+    if (typeof invalidateMasterCache === 'function') invalidateMasterCache();
+    return { success: true, deletedCount: deletedCount };
+  } catch(err) {
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * HỦY PHIẾU XUẤT VÀ ROLLBACK TOÀN BỘ THIẾT BỊ VỀ TỒN KHO TRÊN GOOGLE SHEETS
+ */
+function cancelExportVoucherBackend(maPhieu, reason, user) {
+  try {
+    maPhieu = String(maPhieu || '').trim();
+    reason = String(reason || 'Hủy phiếu xuất kho').trim();
+    user = String(user || 'Quản Lý').trim();
+    if (!maPhieu) throw new Error("Mã phiếu không được để trống!");
+
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const tbSheet = ss.getSheetByName("SERIAL_MASTER") || ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
+    const lsSheet = ss.getSheetByName("LICH_SU_XUAT");
+    const iHead = ss.getSheetByName("V4_ISSUE_HEADERS");
+
+    // 1. Rollback SERIAL_MASTER
+    let rollbackCount = 0;
+    if (tbSheet && tbSheet.getLastRow() > 1) {
+      const totalRows = tbSheet.getLastRow() - 1;
+      const data = tbSheet.getRange(2, 12, totalRows, 1).getValues(); // Cột 12: Mã phiếu xuất
+      for (let i = 0; i < totalRows; i++) {
+        if (String(data[i][0]).trim() === maPhieu) {
+          const row = i + 2;
+          tbSheet.getRange(row, 10).setValue("Tồn kho"); // Cột 10: Trạng thái
+          tbSheet.getRange(row, 11).setValue(""); // Cột 11: Ngày xuất
+          tbSheet.getRange(row, 12).setValue(""); // Cột 12: Mã phiếu xuất
+          tbSheet.getRange(row, 13).setValue(""); // Cột 13: Tên khách
+          tbSheet.getRange(row, 14).setValue(""); // Cột 14: SĐT khách
+          tbSheet.getRange(row, 15).setValue(""); // Cột 15: Số tháng BH
+          tbSheet.getRange(row, 16).setValue(""); // Cột 16: Hạn BH
+          rollbackCount++;
+        }
+      }
+    }
+
+    // 2. Cập nhật LICH_SU_XUAT
+    if (lsSheet && lsSheet.getLastRow() > 1) {
+      const lsData = lsSheet.getRange(2, 1, lsSheet.getLastRow() - 1, 1).getValues();
+      for (let i = 0; i < lsData.length; i++) {
+        if (String(lsData[i][0]).trim() === maPhieu) {
+          const curNote = String(lsSheet.getRange(i + 2, 7).getValue() || '');
+          lsSheet.getRange(i + 2, 7).setValue(`[CANCELLED: ${reason}] ${curNote}`.trim());
+          break;
+        }
+      }
+    }
+
+    // 3. Cập nhật V4_ISSUE_HEADERS nếu có
+    if (iHead && iHead.getLastRow() > 1) {
+      const hData = iHead.getRange(2, 1, iHead.getLastRow() - 1, 1).getValues();
+      for (let i = 0; i < hData.length; i++) {
+        if (String(hData[i][0]).trim() === maPhieu) {
+          iHead.getRange(i + 2, 7).setValue("CANCELLED");
+          break;
+        }
+      }
+    }
+
+    // 4. Ghi vết kiểm toán NHAT_KY_HOAT_DONG
+    try {
+      const logSheet = ss.getSheetByName("NHAT_KY_HOAT_DONG");
+      if (logSheet) {
+        const timeStr = Utilities.formatDate(new Date(), "GMT+7", "dd/MM/yyyy HH:mm:ss");
+        logSheet.appendRow([timeStr, user, "HỦY PHIẾU XUẤT", maPhieu, `Đã rollback ${rollbackCount} thiết bị về Tồn kho. Lý do: ${reason}`]);
+      }
+    } catch(e) {}
+
+    if (typeof invalidateMasterCache === 'function') invalidateMasterCache();
+
+    return { success: true, rollbackCount: rollbackCount };
+  } catch(err) {
+    return { success: false, error: err.message };
+  }
+}

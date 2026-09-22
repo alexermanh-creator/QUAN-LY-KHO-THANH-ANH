@@ -11299,10 +11299,39 @@
   // ====================================================
   function cleanupMorningTestExports() {
     try {
+      // 1. Dọn dẹp khách hàng HARMONY GLOBAL khỏi danh mục INITIAL_CUSTOMERS & localStorage
+      if (typeof INITIAL_CUSTOMERS !== 'undefined' && Array.isArray(INITIAL_CUSTOMERS)) {
+        INITIAL_CUSTOMERS = INITIAL_CUSTOMERS.filter(c => 
+          !(c.name && c.name.includes('HARMONY GLOBAL')) &&
+          !(c.ten && c.ten.includes('HARMONY GLOBAL')) &&
+          !(c.phone && c.phone.includes('0962503280')) &&
+          !(c.sdt && c.sdt.includes('0962503280'))
+        );
+      }
+      if (typeof localStorage !== 'undefined') {
+        try {
+          const savedC = localStorage.getItem('THANH_AN_CUSTOMERS');
+          if (savedC) {
+            let parsedC = JSON.parse(savedC);
+            if (Array.isArray(parsedC)) {
+              parsedC = parsedC.filter(c => 
+                !(c.name && c.name.includes('HARMONY GLOBAL')) &&
+                !(c.ten && c.ten.includes('HARMONY GLOBAL')) &&
+                !(c.phone && c.phone.includes('0962503280')) &&
+                !(c.sdt && c.sdt.includes('0962503280'))
+              );
+              localStorage.setItem('THANH_AN_CUSTOMERS', JSON.stringify(parsedC));
+            }
+          }
+        } catch(e) {}
+      }
+
+      // 2. Dọn dẹp phiếu test và rollback thiết bị
       if (typeof VOUCHERS_DB !== 'undefined' && Array.isArray(VOUCHERS_DB.xuat)) {
         const morningVouchers = VOUCHERS_DB.xuat.filter(v => 
           (v.maPhieu && v.maPhieu.startsWith('PX-260922-')) ||
-          (v.ngay === '22/09/2026' && v.khachHang && v.khachHang.includes('HARMONY GLOBAL'))
+          (v.khachHang && v.khachHang.includes('HARMONY GLOBAL')) ||
+          (v.sdtKhach && v.sdtKhach.includes('0962503280'))
         );
 
         if (morningVouchers.length > 0) {
@@ -11330,7 +11359,8 @@
           // Loại bỏ toàn bộ các phiếu này khỏi VOUCHERS_DB.xuat
           VOUCHERS_DB.xuat = VOUCHERS_DB.xuat.filter(v => 
             !(v.maPhieu && v.maPhieu.startsWith('PX-260922-')) &&
-            !(v.ngay === '22/09/2026' && v.khachHang && v.khachHang.includes('HARMONY GLOBAL'))
+            !(v.khachHang && v.khachHang.includes('HARMONY GLOBAL')) &&
+            !(v.sdtKhach && v.sdtKhach.includes('0962503280'))
           );
 
           // Dọn audit log liên quan
@@ -20026,6 +20056,7 @@
             s.khachHang = '';
             s.sdtKhach = '';
             s.ngayHetHanBh = '';
+            s.timeline = s.timeline || [];
             s.timeline.unshift({
               date: nowStr,
               user: CURRENT_USER_NAME,
@@ -20037,6 +20068,14 @@
         });
 
         recordAuditLog('HỦY PHIẾU XUẤT', `Phiếu ${maPhieu} (${v.items.length} máy)`, 'CONFIRMED', 'CANCELLED', reason, rollBackChanges, 'Phiếu kho', '', maPhieu);
+
+        // Đồng bộ lên Google Sheets backend nếu đang trong môi trường Google Apps Script
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          google.script.run
+            .withSuccessHandler(res => console.log('Đã đồng bộ Hủy phiếu xuất lên Google Sheet:', res))
+            .withFailureHandler(err => console.error('Lỗi đồng bộ Hủy phiếu xuất Sheet:', err))
+            .cancelExportVoucherBackend(maPhieu, reason, CURRENT_USER_NAME);
+        }
 
         // Lưu localStorage
         try {
@@ -20054,7 +20093,7 @@
         Swal.fire({
           icon: 'success',
           title: 'Đã hủy phiếu xuất & Rollback tồn kho!',
-          html: `Phiếu <strong>${maPhieu}</strong> đã được hủy.<br>Toàn bộ <strong>${v.items.length} thiết bị</strong> đã được hoàn lại trạng thái <strong>Tồn Kho (IN_STOCK)</strong> an toàn.`
+          html: `Phiếu <strong>${maPhieu}</strong> đã được hủy thành công.<br>Toàn bộ <strong>${v.items.length} thiết bị</strong> đã được hoàn lại trạng thái <strong>Tồn Kho (IN_STOCK)</strong> an toàn.`
         });
       }
     });
@@ -21150,6 +21189,9 @@
                     onclick="toggleCustomerActive('${c.customerId || c.sdt}')">
               <i class="fa-solid ${c.active !== false ? 'fa-ban' : 'fa-check'}"></i>
             </button>
+            <button class="btn btn-outline-danger" title="Xóa khách hàng này" onclick="deleteCustomer('${c.customerId || c.sdt}')">
+              <i class="fa-solid fa-trash"></i>
+            </button>
           </div>
         </td>
       </tr>
@@ -21260,6 +21302,45 @@
     recordAuditLog(c.active ? 'KÍCH HOẠT KH' : 'NGỪNG DÙNG KH', `KH ${c.ten} (${c.sdt})`, !c.active ? 'Active' : 'Inactive', c.active ? 'Active' : 'Inactive', 'Đổi trạng thái khách hàng');
     notifyCatalogChanged();
     renderCatalogCustomersTable();
+  }
+
+  function deleteCustomer(custIdOrPhone) {
+    if (!checkPermission(['ADMIN', 'QUẢN LÝ'], 'Xóa Khách hàng')) return;
+    const c = INITIAL_CUSTOMERS.find(x => x.customerId === custIdOrPhone || x.sdt === custIdOrPhone);
+    if (!c) return;
+
+    Swal.fire({
+      title: 'Xác nhận xóa Khách hàng?',
+      html: `Bạn có chắc muốn xóa khách hàng <strong>${escapeHtml(c.ten)}</strong> (${escapeHtml(c.sdt)}) khỏi danh mục hệ thống?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      confirmButtonText: 'Đồng ý xóa',
+      cancelButtonText: 'Quay lại'
+    }).then(r => {
+      if (r.isConfirmed) {
+        INITIAL_CUSTOMERS = INITIAL_CUSTOMERS.filter(x => x !== c);
+        if (typeof CUSTOMERS_DB !== 'undefined') CUSTOMERS_DB = INITIAL_CUSTOMERS;
+        try {
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('THANH_AN_CUSTOMERS', JSON.stringify(INITIAL_CUSTOMERS));
+          }
+        } catch(e) {}
+
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          google.script.run
+            .withSuccessHandler(res => console.log('Đã xóa KH Backend Sheet:', res))
+            .deleteCustomerByNameOrPhone(c.ten || c.sdt);
+        }
+
+        recordAuditLog('XÓA KHÁCH HÀNG', `KH ${c.ten} (${c.sdt})`, 'Tồn tại', 'Đã xóa', 'Xóa khỏi danh mục khách hàng');
+        notifyCatalogChanged();
+        renderCatalogCustomersTable();
+        if (typeof setupXuatKhoForm === 'function') setupXuatKhoForm();
+
+        Swal.fire('Đã xóa', `Đã xóa khách hàng <strong>${escapeHtml(c.ten)}</strong> khỏi danh mục!`, 'success');
+      }
+    });
   }
 
   // 4.4 KHO HÀNG
@@ -24760,6 +24841,7 @@
     window.goToTonKhoByAgingRange = goToTonKhoByAgingRange;
     window.goToTonKhoByModel = goToTonKhoByModel;
     window.openStockAgingAction = openStockAgingAction;
+    window.deleteCustomer = deleteCustomer;
   }
 
   // KHỞI ĐỘNG HỆ THỐNG KHI TẢI TRANG

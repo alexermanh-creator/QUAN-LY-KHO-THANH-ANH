@@ -1051,6 +1051,9 @@
                     onclick="toggleCustomerActive('${c.customerId || c.sdt}')">
               <i class="fa-solid ${c.active !== false ? 'fa-ban' : 'fa-check'}"></i>
             </button>
+            <button class="btn btn-outline-danger" title="Xóa khách hàng này" onclick="deleteCustomer('${c.customerId || c.sdt}')">
+              <i class="fa-solid fa-trash"></i>
+            </button>
           </div>
         </td>
       </tr>
@@ -1161,6 +1164,45 @@
     recordAuditLog(c.active ? 'KÍCH HOẠT KH' : 'NGỪNG DÙNG KH', `KH ${c.ten} (${c.sdt})`, !c.active ? 'Active' : 'Inactive', c.active ? 'Active' : 'Inactive', 'Đổi trạng thái khách hàng');
     notifyCatalogChanged();
     renderCatalogCustomersTable();
+  }
+
+  function deleteCustomer(custIdOrPhone) {
+    if (!checkPermission(['ADMIN', 'QUẢN LÝ'], 'Xóa Khách hàng')) return;
+    const c = INITIAL_CUSTOMERS.find(x => x.customerId === custIdOrPhone || x.sdt === custIdOrPhone);
+    if (!c) return;
+
+    Swal.fire({
+      title: 'Xác nhận xóa Khách hàng?',
+      html: `Bạn có chắc muốn xóa khách hàng <strong>${escapeHtml(c.ten)}</strong> (${escapeHtml(c.sdt)}) khỏi danh mục hệ thống?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      confirmButtonText: 'Đồng ý xóa',
+      cancelButtonText: 'Quay lại'
+    }).then(r => {
+      if (r.isConfirmed) {
+        INITIAL_CUSTOMERS = INITIAL_CUSTOMERS.filter(x => x !== c);
+        if (typeof CUSTOMERS_DB !== 'undefined') CUSTOMERS_DB = INITIAL_CUSTOMERS;
+        try {
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('THANH_AN_CUSTOMERS', JSON.stringify(INITIAL_CUSTOMERS));
+          }
+        } catch(e) {}
+
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          google.script.run
+            .withSuccessHandler(res => console.log('Đã xóa KH Backend Sheet:', res))
+            .deleteCustomerByNameOrPhone(c.ten || c.sdt);
+        }
+
+        recordAuditLog('XÓA KHÁCH HÀNG', `KH ${c.ten} (${c.sdt})`, 'Tồn tại', 'Đã xóa', 'Xóa khỏi danh mục khách hàng');
+        notifyCatalogChanged();
+        renderCatalogCustomersTable();
+        if (typeof setupXuatKhoForm === 'function') setupXuatKhoForm();
+
+        Swal.fire('Đã xóa', `Đã xóa khách hàng <strong>${escapeHtml(c.ten)}</strong> khỏi danh mục!`, 'success');
+      }
+    });
   }
 
   // 4.4 KHO HÀNG
@@ -4661,6 +4703,7 @@
     window.goToTonKhoByAgingRange = goToTonKhoByAgingRange;
     window.goToTonKhoByModel = goToTonKhoByModel;
     window.openStockAgingAction = openStockAgingAction;
+    window.deleteCustomer = deleteCustomer;
   }
 
   // KHỞI ĐỘNG HỆ THỐNG KHI TẢI TRANG

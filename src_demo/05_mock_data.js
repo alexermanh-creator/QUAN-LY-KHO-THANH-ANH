@@ -6319,10 +6319,39 @@
   // ====================================================
   function cleanupMorningTestExports() {
     try {
+      // 1. Dọn dẹp khách hàng HARMONY GLOBAL khỏi danh mục INITIAL_CUSTOMERS & localStorage
+      if (typeof INITIAL_CUSTOMERS !== 'undefined' && Array.isArray(INITIAL_CUSTOMERS)) {
+        INITIAL_CUSTOMERS = INITIAL_CUSTOMERS.filter(c => 
+          !(c.name && c.name.includes('HARMONY GLOBAL')) &&
+          !(c.ten && c.ten.includes('HARMONY GLOBAL')) &&
+          !(c.phone && c.phone.includes('0962503280')) &&
+          !(c.sdt && c.sdt.includes('0962503280'))
+        );
+      }
+      if (typeof localStorage !== 'undefined') {
+        try {
+          const savedC = localStorage.getItem('THANH_AN_CUSTOMERS');
+          if (savedC) {
+            let parsedC = JSON.parse(savedC);
+            if (Array.isArray(parsedC)) {
+              parsedC = parsedC.filter(c => 
+                !(c.name && c.name.includes('HARMONY GLOBAL')) &&
+                !(c.ten && c.ten.includes('HARMONY GLOBAL')) &&
+                !(c.phone && c.phone.includes('0962503280')) &&
+                !(c.sdt && c.sdt.includes('0962503280'))
+              );
+              localStorage.setItem('THANH_AN_CUSTOMERS', JSON.stringify(parsedC));
+            }
+          }
+        } catch(e) {}
+      }
+
+      // 2. Dọn dẹp phiếu test và rollback thiết bị
       if (typeof VOUCHERS_DB !== 'undefined' && Array.isArray(VOUCHERS_DB.xuat)) {
         const morningVouchers = VOUCHERS_DB.xuat.filter(v => 
           (v.maPhieu && v.maPhieu.startsWith('PX-260922-')) ||
-          (v.ngay === '22/09/2026' && v.khachHang && v.khachHang.includes('HARMONY GLOBAL'))
+          (v.khachHang && v.khachHang.includes('HARMONY GLOBAL')) ||
+          (v.sdtKhach && v.sdtKhach.includes('0962503280'))
         );
 
         if (morningVouchers.length > 0) {
@@ -6350,7 +6379,8 @@
           // Loại bỏ toàn bộ các phiếu này khỏi VOUCHERS_DB.xuat
           VOUCHERS_DB.xuat = VOUCHERS_DB.xuat.filter(v => 
             !(v.maPhieu && v.maPhieu.startsWith('PX-260922-')) &&
-            !(v.ngay === '22/09/2026' && v.khachHang && v.khachHang.includes('HARMONY GLOBAL'))
+            !(v.khachHang && v.khachHang.includes('HARMONY GLOBAL')) &&
+            !(v.sdtKhach && v.sdtKhach.includes('0962503280'))
           );
 
           // Dọn audit log liên quan

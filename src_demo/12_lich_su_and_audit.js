@@ -1566,6 +1566,7 @@
             s.khachHang = '';
             s.sdtKhach = '';
             s.ngayHetHanBh = '';
+            s.timeline = s.timeline || [];
             s.timeline.unshift({
               date: nowStr,
               user: CURRENT_USER_NAME,
@@ -1577,6 +1578,14 @@
         });
 
         recordAuditLog('HỦY PHIẾU XUẤT', `Phiếu ${maPhieu} (${v.items.length} máy)`, 'CONFIRMED', 'CANCELLED', reason, rollBackChanges, 'Phiếu kho', '', maPhieu);
+
+        // Đồng bộ lên Google Sheets backend nếu đang trong môi trường Google Apps Script
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          google.script.run
+            .withSuccessHandler(res => console.log('Đã đồng bộ Hủy phiếu xuất lên Google Sheet:', res))
+            .withFailureHandler(err => console.error('Lỗi đồng bộ Hủy phiếu xuất Sheet:', err))
+            .cancelExportVoucherBackend(maPhieu, reason, CURRENT_USER_NAME);
+        }
 
         // Lưu localStorage
         try {
@@ -1594,7 +1603,7 @@
         Swal.fire({
           icon: 'success',
           title: 'Đã hủy phiếu xuất & Rollback tồn kho!',
-          html: `Phiếu <strong>${maPhieu}</strong> đã được hủy.<br>Toàn bộ <strong>${v.items.length} thiết bị</strong> đã được hoàn lại trạng thái <strong>Tồn Kho (IN_STOCK)</strong> an toàn.`
+          html: `Phiếu <strong>${maPhieu}</strong> đã được hủy thành công.<br>Toàn bộ <strong>${v.items.length} thiết bị</strong> đã được hoàn lại trạng thái <strong>Tồn Kho (IN_STOCK)</strong> an toàn.`
         });
       }
     });
