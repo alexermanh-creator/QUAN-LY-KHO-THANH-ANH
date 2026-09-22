@@ -187,7 +187,8 @@ $bridge = @'
         ngayXuat: t.ngayXuat || '',
         maPhieuXuat: t.maPhieuXuat || '',
         khachHang: t.khachHang || '',
-        sdtKhach: t.sdtKhach || ''
+        sdtKhach: t.sdtKhach || '',
+        timeline: Array.isArray(t.timeline) ? t.timeline : []
       }));
       if (typeof SERIAL_DB !== 'undefined') SERIAL_DB = SERIAL_DATA;
     } else if (Array.isArray(serverData.tonKhoList) && serverData.tonKhoList.length > 0) {

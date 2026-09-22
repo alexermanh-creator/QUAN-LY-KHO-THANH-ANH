@@ -116,8 +116,16 @@ function executeXuatKho(data) {
     });
 
     // 2. Tính ngày hết hạn bảo hành theo tháng lịch chuẩn xác (Q01)
-    const ngayXuatParts = data.ngayXuat.split('-'); // YYYY-MM-DD
-    const ngayXuatDate = new Date(ngayXuatParts[0], ngayXuatParts[1] - 1, ngayXuatParts[2]);
+    let ngayXuatDate;
+    if (String(data.ngayXuat).includes('/')) {
+      const p = String(data.ngayXuat).split('/');
+      ngayXuatDate = new Date(parseInt(p[2]), parseInt(p[1]) - 1, parseInt(p[0]));
+    } else if (String(data.ngayXuat).includes('-')) {
+      const p = String(data.ngayXuat).split('-');
+      ngayXuatDate = new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2]));
+    } else {
+      ngayXuatDate = new Date();
+    }
     const soThang = parseInt(String(data.soThangBh || '').replace(/\D/g, ''), 10) || 0;
     
     let ngayHetHanFormat = "Không BH";
