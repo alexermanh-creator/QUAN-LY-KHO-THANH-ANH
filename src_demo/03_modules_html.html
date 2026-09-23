@@ -510,6 +510,7 @@
                            autocomplete="off" spellcheck="false"
                            oninput="handleSuggestNccNhap(this.value)" 
                            onfocus="handleSuggestNccNhap(this.value)" 
+                           onblur="onBlurNccNhap()"
                            onkeydown="handleSuggestKeydown(event, 'nhap-ncc-suggest', selectNccNhap)">
                     <button class="btn btn-outline-secondary" type="button" onclick="toggleSuggestAll('nhap-ncc-suggest', handleSuggestNccNhap)" title="Xem tất cả NCC">
                       <i class="fa-solid fa-chevron-down" style="font-size: 0.75rem;"></i>

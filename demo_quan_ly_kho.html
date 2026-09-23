@@ -1899,6 +1899,7 @@
                            autocomplete="off" spellcheck="false"
                            oninput="handleSuggestNccNhap(this.value)" 
                            onfocus="handleSuggestNccNhap(this.value)" 
+                           onblur="onBlurNccNhap()"
                            onkeydown="handleSuggestKeydown(event, 'nhap-ncc-suggest', selectNccNhap)">
                     <button class="btn btn-outline-secondary" type="button" onclick="toggleSuggestAll('nhap-ncc-suggest', handleSuggestNccNhap)" title="Xem tất cả NCC">
                       <i class="fa-solid fa-chevron-down" style="font-size: 0.75rem;"></i>
@@ -14922,7 +14923,19 @@
     });
 
     if (matched.length === 0) {
-      dropdown.innerHTML = '<div class="p-2 text-muted small text-center">Không tìm thấy NCC nào khớp. Bấm <b>+ Thêm NCC</b> để tạo mới.</div>';
+      dropdown.innerHTML = `
+        <div class="p-3 text-center">
+          <div class="text-danger fw-bold small mb-1">
+            <i class="fa-solid fa-triangle-exclamation me-1"></i> Chưa có NCC "${escapeHtml(query)}" trong danh mục!
+          </div>
+          <div class="text-muted small mb-2" style="font-size: 0.75rem;">
+            Hệ thống <b>khóa cứng danh mục</b>: Không được tự ý nhập tay tự do. Bắt buộc khai báo mới trước khi nhập hàng.
+          </div>
+          <button class="btn btn-sm btn-primary w-100" type="button" onclick="openQuickAddSupplierModal('${escapeHtml(query).replace(/'/g, "\\'")}')">
+            <i class="fa-solid fa-plus-circle me-1"></i> + Khai báo NCC "${escapeHtml(query)}" mới ngay
+          </button>
+        </div>
+      `;
       dropdown.style.display = 'block';
       return;
     }
@@ -14946,8 +14959,68 @@
     const nccInput = document.getElementById('nhap-ncc-input');
     const dropdown = document.getElementById('nhap-ncc-suggest');
     if (nccHidden) nccHidden.value = tenTat;
-    if (nccInput) nccInput.value = tenDayDu ? `${tenTat} - ${tenDayDu}` : tenTat;
+    if (nccInput) {
+      nccInput.value = tenDayDu ? `${tenTat} - ${tenDayDu}` : tenTat;
+      nccInput.classList.remove('is-invalid');
+      nccInput.classList.add('is-valid');
+    }
     if (dropdown) dropdown.style.display = 'none';
+  }
+
+  // Khóa cứng kiểm tra NCC khi rời khỏi ô nhập (Blur validation)
+  function onBlurNccNhap() {
+    setTimeout(() => {
+      const input = document.getElementById('nhap-ncc-input');
+      const hidden = document.getElementById('nhap-ncc');
+      if (!input) return;
+      const typed = (input.value || '').trim();
+      if (!typed) {
+        if (hidden) hidden.value = '';
+        input.classList.remove('is-invalid', 'is-valid');
+        return;
+      }
+
+      const suppliers = (typeof INITIAL_SUPPLIERS !== 'undefined' ? INITIAL_SUPPLIERS : []).filter(s => s.active !== false);
+      const matched = suppliers.find(s => 
+        (s.tenTat && s.tenTat.toLowerCase() === typed.toLowerCase()) ||
+        (s.tenDayDu && s.tenDayDu.toLowerCase() === typed.toLowerCase()) ||
+        (`${s.tenTat} - ${s.tenDayDu}`.toLowerCase() === typed.toLowerCase())
+      );
+
+      if (matched) {
+        if (hidden) hidden.value = matched.tenTat;
+        input.value = `${matched.tenTat} - ${matched.tenDayDu}`;
+        input.classList.remove('is-invalid');
+        input.classList.add('is-valid');
+      } else {
+        // KHÓA CỨNG: Bắt buộc chọn từ danh mục hoặc tạo mới, không cho nhập tự do ngoài danh mục
+        input.classList.add('is-invalid');
+        input.classList.remove('is-valid');
+        if (hidden) hidden.value = '';
+
+        Swal.fire({
+          icon: 'warning',
+          title: 'KHÓA CỨNG: NCC CHƯA CÓ TRONG DANH MỤC!',
+          html: `
+            <p class="text-danger fw-bold mb-2">Nhà cung cấp <strong>"${escapeHtml(typed)}"</strong> chưa có trong danh mục hệ thống!</p>
+            <p class="small text-muted mb-0">Hệ thống yêu cầu <b>khóa cứng danh mục</b>: Không được tự ý nhập tay tự do. Vui lòng bấm nút bên dưới để khai báo vào danh mục trước khi nhập hàng.</p>
+          `,
+          showCancelButton: true,
+          confirmButtonColor: '#2563eb',
+          confirmButtonText: '<i class="fa-solid fa-plus-circle me-1"></i> + Khai báo NCC mới ngay',
+          cancelButtonText: 'Chọn lại NCC có sẵn'
+        }).then(r => {
+          if (r.isConfirmed) {
+            openQuickAddSupplierModal(typed);
+          } else {
+            input.value = '';
+            input.classList.remove('is-invalid');
+            if (hidden) hidden.value = '';
+            input.focus();
+          }
+        });
+      }
+    }, 250);
   }
 
   // Gợi ý thông minh Model khi gõ
@@ -15774,19 +15847,23 @@
     });
   }
 
-  function openQuickAddSupplierModal() {
+  function openQuickAddSupplierModal(presetName) {
     if (typeof closeAllSmartSuggests === 'function') closeAllSmartSuggests();
-    document.getElementById('quick-ncc-code').value = '';
-    document.getElementById('quick-ncc-name').value = '';
+    const cleanPreset = String(presetName || '').trim();
+    document.getElementById('quick-ncc-code').value = cleanPreset ? cleanPreset.toUpperCase() : '';
+    document.getElementById('quick-ncc-name').value = cleanPreset ? cleanPreset : '';
     document.getElementById('quick-ncc-phone').value = '';
     document.getElementById('quick-ncc-email').value = '';
     document.getElementById('quick-ncc-address').value = '';
-    const modal = new bootstrap.Modal(document.getElementById('quickAddSupplierModal'));
-    modal.show();
+    const modalEl = document.getElementById('quickAddSupplierModal');
+    if (modalEl && typeof bootstrap !== 'undefined') {
+      const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+      modal.show();
+    }
   }
 
   function submitQuickAddSupplier() {
-    const code = document.getElementById('quick-ncc-code').value.trim();
+    const code = document.getElementById('quick-ncc-code').value.trim().toUpperCase();
     const name = document.getElementById('quick-ncc-name').value.trim();
     const phone = document.getElementById('quick-ncc-phone').value.trim();
     const email = document.getElementById('quick-ncc-email').value.trim();
@@ -15797,11 +15874,25 @@
       return;
     }
 
+    // Kiểm tra trùng
+    const isDup = INITIAL_SUPPLIERS.some(s => s.tenTat.toUpperCase() === code || s.tenDayDu.toLowerCase() === name.toLowerCase());
+    if (isDup) {
+      Swal.fire('Đã tồn tại', `Nhà cung cấp "${code}" đã có trong danh mục!`, 'info');
+      selectNccNhap(code, name);
+      const modalEl = document.getElementById('quickAddSupplierModal');
+      const modal = bootstrap.Modal.getInstance(modalEl);
+      if (modal) modal.hide();
+      return;
+    }
+
     const supId = `SUP-${String(INITIAL_SUPPLIERS.length + 1).padStart(3, '0')}`;
     const newSup = {
       supplierId: supId,
+      code: code,
       tenTat: code,
+      name: name,
       tenDayDu: name,
+      phone: phone,
       sdt: phone,
       email: email,
       diaChi: address,
@@ -15812,10 +15903,21 @@
     };
     INITIAL_SUPPLIERS.push(newSup);
 
-    const nccHidden = document.getElementById('nhap-ncc');
-    const nccInput = document.getElementById('nhap-ncc-input');
-    if (nccHidden) nccHidden.value = code;
-    if (nccInput) nccInput.value = `${code} - ${name}`;
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('THANH_AN_SUPPLIERS', JSON.stringify(INITIAL_SUPPLIERS));
+      }
+    } catch(e) {}
+
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+      try {
+        google.script.run
+          .withSuccessHandler(r => console.log('Đã lưu NCC lên Google Sheet:', r))
+          .saveNcc(code, name, phone, email, address, '', '', 'Thêm từ Nhập kho');
+      } catch(e) {}
+    }
+
+    selectNccNhap(code, name);
 
     recordAuditLog('THÊM NCC MỚI', `NCC ${code} (${supId})`, 'None', name, 'Thêm vào danh mục NCC', [], 'Danh mục');
 
@@ -15831,7 +15933,7 @@
     Swal.fire({
       icon: 'success',
       title: 'Đã thêm Nhà cung cấp!',
-      text: `NCC "${code}" (${supId}) đã được lưu thành công.`,
+      text: `NCC "${code}" (${supId}) đã được lưu thành công vào danh mục hệ thống.`,
       timer: 1500,
       showConfirmButton: false
     });
@@ -15842,6 +15944,9 @@
     window.setupNhapKhoForm = setupNhapKhoForm;
     window.handleSuggestNccNhap = handleSuggestNccNhap;
     window.selectNccNhap = selectNccNhap;
+    window.onBlurNccNhap = onBlurNccNhap;
+    window.openQuickAddSupplierModal = openQuickAddSupplierModal;
+    window.submitQuickAddSupplier = submitQuickAddSupplier;
     window.handleSuggestModelNhap = handleSuggestModelNhap;
     window.selectModelNhap = selectModelNhap;
     window.selectModelFromDropdown = selectModelFromDropdown;
