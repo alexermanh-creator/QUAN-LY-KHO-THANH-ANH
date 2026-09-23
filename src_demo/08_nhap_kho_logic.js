@@ -77,23 +77,20 @@
     const suppliers = (typeof INITIAL_SUPPLIERS !== 'undefined' ? INITIAL_SUPPLIERS : []).filter(s => s.active !== false);
     const matched = suppliers.filter(s => {
       if (!q) return true;
-      return (s.tenTat && s.tenTat.toLowerCase().includes(q)) ||
-             (s.tenDayDu && s.tenDayDu.toLowerCase().includes(q)) ||
-             (s.sdt && s.sdt.toLowerCase().includes(q));
+      const tt = (s.tenTat || '').toLowerCase();
+      const td = (s.tenDayDu || '').toLowerCase();
+      const combined = `${tt} - ${td}`.toLowerCase();
+      return tt.includes(q) || td.includes(q) || combined.includes(q) || q.includes(tt) || (s.sdt && s.sdt.toLowerCase().includes(q));
     });
 
     if (matched.length === 0) {
       dropdown.innerHTML = `
-        <div class="p-3 text-center">
-          <div class="text-danger fw-bold small mb-1">
-            <i class="fa-solid fa-triangle-exclamation me-1"></i> Chưa có NCC "${escapeHtml(query)}" trong danh mục!
+        <div class="suggest-item text-primary fw-semibold d-flex justify-content-between align-items-center" style="cursor: pointer; padding: 10px 14px;" onmousedown="openQuickAddSupplierModal('${escapeHtml(query).replace(/'/g, "\\'")}')">
+          <div class="d-flex align-items-center text-truncate me-2">
+            <i class="fa-solid fa-plus-circle text-success me-2 fs-6"></i>
+            <span>+ Thêm mới NCC: <strong>"${escapeHtml(query)}"</strong></span>
           </div>
-          <div class="text-muted small mb-2" style="font-size: 0.75rem;">
-            Hệ thống <b>khóa cứng danh mục</b>: Không được tự ý nhập tay tự do. Bắt buộc khai báo mới trước khi nhập hàng.
-          </div>
-          <button class="btn btn-sm btn-primary w-100" type="button" onclick="openQuickAddSupplierModal('${escapeHtml(query).replace(/'/g, "\\'")}')">
-            <i class="fa-solid fa-plus-circle me-1"></i> + Khai báo NCC "${escapeHtml(query)}" mới ngay
-          </button>
+          <span class="badge bg-success text-white" style="font-size: 0.72rem;">Tạo mới</span>
         </div>
       `;
       dropdown.style.display = 'block';
@@ -121,13 +118,12 @@
     if (nccHidden) nccHidden.value = tenTat;
     if (nccInput) {
       nccInput.value = tenDayDu ? `${tenTat} - ${tenDayDu}` : tenTat;
-      nccInput.classList.remove('is-invalid');
-      nccInput.classList.add('is-valid');
+      nccInput.classList.remove('is-invalid', 'is-valid');
     }
     if (dropdown) dropdown.style.display = 'none';
   }
 
-  // Khóa cứng kiểm tra NCC khi rời khỏi ô nhập (Blur validation)
+  // Khóa cứng kiểm tra NCC khi rời khỏi ô nhập (Chuẩn hóa tự động, không popup gián đoạn)
   function onBlurNccNhap() {
     setTimeout(() => {
       const input = document.getElementById('nhap-ncc-input');
@@ -141,49 +137,25 @@
       }
 
       const suppliers = (typeof INITIAL_SUPPLIERS !== 'undefined' ? INITIAL_SUPPLIERS : []).filter(s => s.active !== false);
-      const matched = suppliers.find(s => 
-        (s.tenTat && s.tenTat.toLowerCase() === typed.toLowerCase()) ||
-        (s.tenDayDu && s.tenDayDu.toLowerCase() === typed.toLowerCase()) ||
-        (`${s.tenTat} - ${s.tenDayDu}`.toLowerCase() === typed.toLowerCase())
-      );
+      const matched = suppliers.find(s => {
+        const tt = (s.tenTat || '').toLowerCase();
+        const td = (s.tenDayDu || '').toLowerCase();
+        const combined = `${tt} - ${td}`.toLowerCase();
+        return tt === typed.toLowerCase() || td === typed.toLowerCase() || combined === typed.toLowerCase();
+      });
 
       if (matched) {
         if (hidden) hidden.value = matched.tenTat;
-        input.value = `${matched.tenTat} - ${matched.tenDayDu}`;
-        input.classList.remove('is-invalid');
-        input.classList.add('is-valid');
+        input.value = matched.tenDayDu ? `${matched.tenTat} - ${matched.tenDayDu}` : matched.tenTat;
+        input.classList.remove('is-invalid', 'is-valid');
       } else {
-        // KHÓA CỨNG: Bắt buộc chọn từ danh mục hoặc tạo mới, không cho nhập tự do ngoài danh mục
-        input.classList.add('is-invalid');
-        input.classList.remove('is-valid');
+        // Nếu không khớp NCC danh mục: reset hidden, submit sẽ kiểm tra chặn lại
         if (hidden) hidden.value = '';
-
-        Swal.fire({
-          icon: 'warning',
-          title: 'KHÓA CỨNG: NCC CHƯA CÓ TRONG DANH MỤC!',
-          html: `
-            <p class="text-danger fw-bold mb-2">Nhà cung cấp <strong>"${escapeHtml(typed)}"</strong> chưa có trong danh mục hệ thống!</p>
-            <p class="small text-muted mb-0">Hệ thống yêu cầu <b>khóa cứng danh mục</b>: Không được tự ý nhập tay tự do. Vui lòng bấm nút bên dưới để khai báo vào danh mục trước khi nhập hàng.</p>
-          `,
-          showCancelButton: true,
-          confirmButtonColor: '#2563eb',
-          confirmButtonText: '<i class="fa-solid fa-plus-circle me-1"></i> + Khai báo NCC mới ngay',
-          cancelButtonText: 'Chọn lại NCC có sẵn'
-        }).then(r => {
-          if (r.isConfirmed) {
-            openQuickAddSupplierModal(typed);
-          } else {
-            input.value = '';
-            input.classList.remove('is-invalid');
-            if (hidden) hidden.value = '';
-            input.focus();
-          }
-        });
       }
     }, 250);
   }
 
-  // Gợi ý thông minh Model khi gõ
+  // Gợi ý thông minh Model khi gõ (Chuẩn ERP, tinh gọn)
   function handleSuggestModelNhap(query) {
     const q = (query || '').trim().toLowerCase();
     const dropdown = document.getElementById('nhap-model-suggest');
@@ -192,8 +164,10 @@
     const products = (typeof INITIAL_PRODUCTS !== 'undefined' ? INITIAL_PRODUCTS : []).filter(p => p.active !== false);
     const matched = products.filter(p => {
       if (!q) return true;
-      return (p.model && p.model.toLowerCase().includes(q)) ||
-             (p.ten && p.ten.toLowerCase().includes(q)) ||
+      const m = (p.model || '').toLowerCase();
+      const t = (p.ten || '').toLowerCase();
+      const combined = `${m} - ${t}`.toLowerCase();
+      return m.includes(q) || t.includes(q) || combined.includes(q) || q.includes(m) ||
              (p.hang && p.hang.toLowerCase().includes(q)) ||
              (p.nhom && p.nhom.toLowerCase().includes(q)) ||
              (p.nhomHang && p.nhomHang.toLowerCase().includes(q));
@@ -201,12 +175,12 @@
 
     if (matched.length === 0) {
       dropdown.innerHTML = `
-        <div class="p-3 text-center">
-          <div class="text-danger fw-bold small mb-1"><i class="fa-solid fa-circle-xmark me-1"></i> Chưa có Model "${escapeHtml(query)}" trong danh mục!</div>
-          <div class="text-muted small mb-2" style="font-size: 0.75rem;">Hệ thống yêu cầu chỉ lấy Model từ danh mục. Vui lòng khai báo trước khi nhập.</div>
-          <button class="btn btn-sm btn-primary" type="button" onclick="openQuickAddModelModal()">
-            <i class="fa-solid fa-plus-circle me-1"></i> + Khai báo Model mới ngay
-          </button>
+        <div class="suggest-item text-primary fw-semibold d-flex justify-content-between align-items-center" style="cursor: pointer; padding: 10px 14px;" onmousedown="openQuickAddModelModal('${escapeHtml(query).replace(/'/g, "\\'")}')">
+          <div class="d-flex align-items-center text-truncate me-2">
+            <i class="fa-solid fa-plus-circle text-primary me-2 fs-6"></i>
+            <span>+ Thêm mới Model: <strong>"${escapeHtml(query)}"</strong></span>
+          </div>
+          <span class="badge bg-primary text-white" style="font-size: 0.72rem;">Tạo mới</span>
         </div>
       `;
       dropdown.style.display = 'block';
@@ -274,9 +248,11 @@
       if (modelHidden) modelHidden.value = '';
       if (val) {
         infoBox.innerHTML = `
-          <div class="text-danger small fw-semibold">
-            <i class="fa-solid fa-triangle-exclamation me-1"></i> Model: <strong class="font-monospace">${escapeHtml(val)}</strong> chưa có trong danh mục! 
-            <a href="javascript:void(0)" class="fw-bold ms-1 text-decoration-underline" onclick="openQuickAddModelModal()">Bấm vào đây để thêm Model mới</a>.
+          <div class="text-muted small">
+            Model: <strong class="font-monospace text-dark">${escapeHtml(val)}</strong> (Chưa có trong danh mục)
+            <a href="javascript:void(0)" class="fw-semibold ms-1 text-primary text-decoration-none" onclick="openQuickAddModelModal('${escapeHtml(val).replace(/'/g, "\\'")}')">
+              <i class="fa-solid fa-plus-circle me-1"></i>+ Thêm Model
+            </a>
           </div>
         `;
       } else {
@@ -334,20 +310,15 @@
       playBeepSound();
       Swal.fire({
         icon: 'warning',
-        title: 'MODEL CHƯA CÓ TRONG DANH MỤC!',
-        html: `
-          <p class="text-danger fw-bold mb-2">Model "${escapeHtml(targetModel || 'Chưa nhập')}" không tồn tại trong danh mục sản phẩm!</p>
-          <p class="small text-muted mb-3">Hệ thống yêu cầu chỉ được chọn Model từ danh mục. Nếu đây là Model mới, vui lòng bấm nút bên dưới để khai báo vào danh mục trước khi nhập kho.</p>
-        `,
+        title: 'Chưa chọn Model từ danh mục',
+        text: `Model "${targetModel || 'Chưa nhập'}" chưa có trong danh mục sản phẩm. Vui lòng chọn Model có sẵn hoặc thêm Model mới.`,
         showCancelButton: true,
         confirmButtonColor: '#2563eb',
-        confirmButtonText: '<i class="fa-solid fa-plus-circle me-1"></i> + Khai báo Model mới ngay',
+        confirmButtonText: '<i class="fa-solid fa-plus-circle me-1"></i> + Thêm Model mới',
         cancelButtonText: 'Đóng để chọn lại'
       }).then(res => {
         if (res.isConfirmed) {
-          openQuickAddModelModal();
-          const nameInput = document.getElementById('quick-model-name');
-          if (nameInput && targetModel) nameInput.value = targetModel;
+          openQuickAddModelModal(targetModel);
         }
       });
       return;
@@ -546,18 +517,15 @@
       playBeepSound();
       Swal.fire({
         icon: 'warning',
-        title: 'NHÀ CUNG CẤP KHÔNG HỢP LỆ!',
-        html: `
-          <p class="text-danger fw-bold mb-2">Nhà cung cấp "${escapeHtml(nccInput || 'Chưa chọn')}" không tồn tại trong danh mục!</p>
-          <p class="small text-muted mb-3">Hệ thống yêu cầu chỉ được chọn NCC từ danh mục. Vui lòng chọn NCC từ danh sách gợi ý hoặc bấm nút bên dưới để thêm NCC mới.</p>
-        `,
+        title: 'Chưa chọn Nhà Cung Cấp',
+        text: `Nhà cung cấp "${nccInput || 'Chưa chọn'}" chưa có trong danh mục hệ thống. Vui lòng chọn NCC từ danh sách hoặc thêm mới.`,
         showCancelButton: true,
         confirmButtonColor: '#2563eb',
         confirmButtonText: '<i class="fa-solid fa-plus-circle me-1"></i> + Thêm NCC mới',
         cancelButtonText: 'Đóng để chọn lại'
       }).then(r => {
         if (r.isConfirmed && typeof openQuickAddSupplierModal === 'function') {
-          openQuickAddSupplierModal();
+          openQuickAddSupplierModal(nccInput);
         }
       });
       return;
@@ -910,19 +878,34 @@
     }
   }
 
-  function openQuickAddModelModal() {
+  function openQuickAddModelModal(presetModel) {
     if (typeof closeAllSmartSuggests === 'function') closeAllSmartSuggests();
-    document.getElementById('quick-model-name').value = '';
-    document.getElementById('quick-model-desc').value = '';
+    const cleanPreset = String(presetModel || '').trim();
+    document.getElementById('quick-model-name').value = cleanPreset;
+    document.getElementById('quick-model-desc').value = cleanPreset ? `Máy ${cleanPreset}` : '';
     document.getElementById('quick-model-warranty').value = '12';
 
     // Đổ danh sách Hãng vào select
     const brandSelect = document.getElementById('quick-model-brand');
     brandSelect.innerHTML = '';
+
+    // Tự động nhận diện Hãng nếu presetModel có chứa tên hãng
+    let detectedBrand = '';
+    const presetUpper = cleanPreset.toUpperCase();
+    if (presetUpper.includes('CANON')) detectedBrand = 'CANON';
+    else if (presetUpper.includes('HP')) detectedBrand = 'HP';
+    else if (presetUpper.includes('BROTHER')) detectedBrand = 'BROTHER';
+    else if (presetUpper.includes('EPSON')) detectedBrand = 'EPSON';
+    else if (presetUpper.includes('PANASONIC')) detectedBrand = 'PANASONIC';
+    else if (presetUpper.includes('RICOH')) detectedBrand = 'RICOH';
+
     INITIAL_BRANDS.filter(b => b.active !== false).forEach(b => {
       const opt = document.createElement('option');
       opt.value = b.maHang;
       opt.textContent = `${b.maHang} (${b.tenHang})`;
+      if (detectedBrand && b.maHang.toUpperCase() === detectedBrand) {
+        opt.selected = true;
+      }
       brandSelect.appendChild(opt);
     });
 
@@ -936,8 +919,11 @@
       catSelect.appendChild(opt);
     });
 
-    const modal = new bootstrap.Modal(document.getElementById('quickAddModelModal'));
-    modal.show();
+    const modalEl = document.getElementById('quickAddModelModal');
+    if (modalEl && typeof bootstrap !== 'undefined') {
+      const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+      modal.show();
+    }
   }
 
   function submitQuickAddModel() {
@@ -955,6 +941,10 @@
 
     if (INITIAL_PRODUCTS.some(p => p.model.toLowerCase() === model.toLowerCase())) {
       Swal.fire('Đã tồn tại', `Model "${model}" đã có sẵn trong danh mục!`, 'info');
+      selectModelNhap(model);
+      const modalEl = document.getElementById('quickAddModelModal');
+      const modal = bootstrap.Modal.getInstance(modalEl);
+      if (modal) modal.hide();
       return;
     }
 
@@ -971,6 +961,20 @@
       active: true
     };
     INITIAL_PRODUCTS.push(newProd);
+
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('THANH_AN_PRODUCTS', JSON.stringify(INITIAL_PRODUCTS));
+      }
+    } catch(e) {}
+
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+      try {
+        google.script.run
+          .withSuccessHandler(r => console.log('Đã lưu Model lên Google Sheet:', r))
+          .saveProduct(model, ten, nhom, 'Chiếc', hang, defaultBh, manageSerial, 'Thêm từ Nhập kho', null);
+      } catch(e) {}
+    }
 
     // Cập nhật lại dropdown và tự chọn bản ghi vừa thêm (Yêu cầu B5)
     if (typeof setupNhapKhoForm === 'function') {
@@ -1001,7 +1005,7 @@
     Swal.fire({
       icon: 'success',
       title: 'Đã thêm Model!',
-      text: `Model "${model}" (${prdId}) đã được lưu thành công.`,
+      text: `Model "${model}" (${prdId}) đã được lưu thành công vào danh mục hệ thống.`,
       timer: 1500,
       showConfirmButton: false
     });
@@ -1112,4 +1116,6 @@
     window.selectModelFromDropdown = selectModelFromDropdown;
     window.onSelectModelNhap = onSelectModelNhap;
     window.onInputModelNhap = onInputModelNhap;
+    window.openQuickAddModelModal = openQuickAddModelModal;
+    window.submitQuickAddModel = submitQuickAddModel;
   }
