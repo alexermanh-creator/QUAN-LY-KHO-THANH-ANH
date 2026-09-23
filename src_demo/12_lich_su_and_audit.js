@@ -41,6 +41,14 @@
         renderHistoryXuatTable();
       }
     } else if (tabName === 'audit') {
+      if (typeof hasPermission === 'function' && !hasPermission('Audit.View')) {
+        renderActiveHistorySubtab('nhap');
+        const nhapBtn = document.getElementById('tab-ls-nhap-btn');
+        if (nhapBtn && typeof bootstrap !== 'undefined') {
+          bootstrap.Tab.getOrCreateInstance(nhapBtn).show();
+        }
+        return;
+      }
       if (!HISTORY_SUBTAB_STATE.audit.rendered || HISTORY_SUBTAB_STATE.audit.dirty) {
         renderAuditTable();
       }
@@ -1450,6 +1458,19 @@
     if (!tbody) return;
     HISTORY_SUBTAB_STATE.audit.rendered = true;
     HISTORY_SUBTAB_STATE.audit.dirty = false;
+
+    if (typeof hasPermission === 'function' && !hasPermission('Audit.View')) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="6" class="text-center text-danger py-5">
+            <i class="fa-solid fa-lock fs-2 mb-2 d-block text-danger"></i>
+            <strong>Từ chối quyền truy cập!</strong><br>
+            <span class="text-muted small">Tài khoản vai trò [${typeof CURRENT_ROLE !== 'undefined' ? CURRENT_ROLE : 'Khách'}] không có quyền xem Nhật ký Kiểm toán (Audit.View).<br>Vui lòng liên hệ Quản trị viên để được cấp quyền.</span>
+          </td>
+        </tr>
+      `;
+      return;
+    }
     const keyword = (document.getElementById('filter-audit-search')?.value || '').trim().toLowerCase();
     const filterMod = document.getElementById('filter-audit-module')?.value || '';
     const filterAct = document.getElementById('filter-audit-action')?.value || '';

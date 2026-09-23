@@ -560,7 +560,16 @@
         const isActive = activeF === 'true';
         if (p.active !== isActive) return false;
       }
-      if (brandF && p.hang !== brandF) return false;
+      if (brandF) {
+        const targetB = String(brandF).trim().toUpperCase();
+        const pB = String(p.hang || p.brand || '').trim().toUpperCase();
+        if (pB !== targetB) {
+          const bObj = INITIAL_BRANDS.find(b => b.maHang.toUpperCase() === targetB || b.tenHang.toUpperCase() === targetB);
+          if (!bObj || (pB !== bObj.maHang.toUpperCase() && pB !== bObj.tenHang.toUpperCase())) {
+            return false;
+          }
+        }
+      }
       if (catF && p.nhom !== catF) return false;
       if (sQ) {
         const text = `${p.productId || ''} ${p.model || ''} ${p.ten || ''} ${p.hang || ''} ${p.nhom || ''}`.toLowerCase();
@@ -587,7 +596,10 @@
         <td data-label="Product ID"><span class="font-monospace fw-bold text-secondary">${p.productId || '--'}</span></td>
         <td data-label="Model"><strong class="text-primary font-monospace">${p.model}</strong></td>
         <td data-label="Tên Sản Phẩm">${p.ten}</td>
-        <td data-label="Hãng"><span class="badge bg-light text-dark border">${p.hang || 'Chưa rõ'}</span></td>
+        <td data-label="Hãng"><span class="badge bg-light text-dark border">${(() => {
+          const bObj = INITIAL_BRANDS.find(b => b.maHang.toUpperCase() === String(p.hang || p.brand || '').toUpperCase() || b.tenHang.toUpperCase() === String(p.hang || p.brand || '').toUpperCase());
+          return bObj ? `${bObj.maHang} (${bObj.tenHang})` : (p.hang || 'Chưa rõ');
+        })()}</span></td>
         <td data-label="Nhóm"><span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25">${p.nhom}</span></td>
         <td data-label="BH Mặc Định" class="text-center font-monospace">${p.defaultBh} th</td>
         <td data-label="Serial Track" class="text-center">
@@ -638,7 +650,10 @@
             <div class="col-6">
               <label class="form-label fw-bold mb-1">Hãng sản xuất (*)</label>
               <select id="swal-edit-p-brand" class="form-select form-select-sm">
-                ${INITIAL_BRANDS.map(b => `<option value="${b.maHang}" ${p.hang === b.maHang ? 'selected' : ''}>${b.maHang} (${b.tenHang})</option>`).join('')}
+                ${INITIAL_BRANDS.map(b => {
+                  const isSel = String(p.hang || p.brand || '').toUpperCase() === b.maHang.toUpperCase() || String(p.hang || p.brand || '').toUpperCase() === b.tenHang.toUpperCase();
+                  return `<option value="${b.maHang}" ${isSel ? 'selected' : ''}>${b.maHang} (${b.tenHang})</option>`;
+                }).join('')}
               </select>
             </div>
             <div class="col-6">
@@ -799,6 +814,23 @@
     if (!tbody) return;
     CATALOG_SUBTAB_STATE.suppliers.rendered = true;
     CATALOG_SUBTAB_STATE.suppliers.dirty = false;
+
+    // Tự động gộp và làm sạch trùng lặp Nhà Cung Cấp theo tenTat
+    const seenSupp = new Map();
+    INITIAL_SUPPLIERS.forEach(s => {
+      const k = (s.tenTat || s.code || '').trim().toLowerCase();
+      if (!k) return;
+      if (!seenSupp.has(k)) {
+        seenSupp.set(k, s);
+      } else {
+        const existing = seenSupp.get(k);
+        if (!existing.sdt && s.sdt) existing.sdt = s.sdt;
+        if (!existing.diaChi && s.diaChi) existing.diaChi = s.diaChi;
+        if (!existing.email && s.email) existing.email = s.email;
+        if (existing.tenDayDu === existing.tenTat && s.tenDayDu !== s.tenTat) existing.tenDayDu = s.tenDayDu;
+      }
+    });
+    INITIAL_SUPPLIERS = Array.from(seenSupp.values());
 
     const sQ = (document.getElementById('filter-cat-supp-search')?.value || '').toLowerCase().trim();
     let list = INITIAL_SUPPLIERS.filter(s => {
@@ -3100,6 +3132,11 @@
     SETTINGS_SUBTAB_STATE.audit.rendered = true;
     SETTINGS_SUBTAB_STATE.audit.dirty = false;
 
+    if (typeof hasPermission === 'function' && !hasPermission('Audit.View')) {
+      tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger py-4"><i class="fa-solid fa-lock me-2"></i>Bạn không có quyền xem Nhật ký Kiểm toán (Audit.View)</td></tr>';
+      return;
+    }
+
     const keyword = (document.getElementById('audit-filter-keyword')?.value || '').trim().toLowerCase();
     let logs = typeof AUDIT_LOG_DB !== 'undefined' ? [...AUDIT_LOG_DB] : [];
     if (keyword) {
@@ -3198,6 +3235,11 @@
     });
 
     ROLE_PERMISSIONS = newPerms;
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('THANH_AN_ROLE_PERMISSIONS', JSON.stringify(newPerms));
+      }
+    } catch(e) {}
     recordAuditLog('CẬP NHẬT PHÂN QUYỀN', 'Permission Matrix', 'Cũ', 'Mới', 'Thay đổi cấu hình quyền các vai trò');
     updateUIPermissions();
 
@@ -3231,6 +3273,11 @@
       ],
       'ADMIN': ALL_PERMISSIONS.map(p => p.code)
     };
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('THANH_AN_ROLE_PERMISSIONS', JSON.stringify(ROLE_PERMISSIONS));
+      }
+    } catch(e) {}
     renderPermissionsMatrix();
     updateUIPermissions();
     Swal.fire('Đã đặt lại', 'Đã khôi phục ma trận quyền hạn về cấu hình chuẩn', 'info');

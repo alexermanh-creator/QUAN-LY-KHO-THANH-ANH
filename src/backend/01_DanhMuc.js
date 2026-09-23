@@ -60,21 +60,42 @@ function getMasterData() {
     return sheet.getRange(2, 1, sheet.getLastRow() - 1, colCount).getValues();
   };
 
-  // 1. Model Sản Phẩm: Đọc đầy đủ 7 trường
-  const products = getSheetData("DM_SAN_PHAM", 7).map((r, i) => ({
-    rowId: i + 2,
-    model: String(r[0] || '').trim(),
-    ten: String(r[1] || '').trim(),
-    nhom: String(r[2] || '').trim(),
-    dvt: String(r[3] || 'Chiếc').trim(),
-    hang: String(r[4] || '').trim(),
-    defaultBh: Number(r[5]) || 12,
-    manageSerial: r[6] !== false && String(r[6]).toLowerCase() !== 'false',
-    ghiChu: String(r[6] || '').trim()
-  })).filter(p => p.model);
+  // 1. Model Sản Phẩm: Đọc đầy đủ các trường và tự động chuẩn hóa Hãng sản xuất
+  const rawProducts = getSheetData("DM_SAN_PHAM", 8);
+  const products = rawProducts.map((r, i) => {
+    const model = String(r[0] || '').trim();
+    const ten = String(r[1] || '').trim();
+    let hang = String(r[4] || '').trim();
 
-  // 2. Nhà Cung Cấp: Đọc đầy đủ 8 trường
-  const ncc = getSheetData("DM_NCC", 8).map((r, i) => ({
+    // Tự động nhận diện Hãng nếu cột Hãng bị trống trên Sheet
+    if (!hang && (model || ten)) {
+      const searchStr = `${model} ${ten}`.toUpperCase();
+      const knownBrands = [
+        "HP", "CANON", "BROTHER", "DAHUA", "DARKFLASH", "AIGO", "CUSU",
+        "DAREU", "HALLOYA", "HIKSEMI", "INTEL", "JASONZ", "KINGSTON",
+        "LENOVO", "MSI", "SEAGATE", "TJ INK", "WESTERN DIGITAL"
+      ];
+      for (let b of knownBrands) {
+        if (searchStr.includes(b)) { hang = b; break; }
+      }
+      if (!hang && searchStr.includes("WD")) hang = "WESTERN DIGITAL";
+    }
+
+    return {
+      rowId: i + 2,
+      model: model,
+      ten: ten,
+      nhom: String(r[2] || '').trim(),
+      dvt: String(r[3] || 'Chiếc').trim(),
+      hang: hang || 'Chưa rõ',
+      defaultBh: Number(r[5]) || 12,
+      manageSerial: r[6] !== false && String(r[6]).toLowerCase() !== 'false',
+      ghiChu: String(r[7] || '').trim()
+    };
+  }).filter(p => p.model);
+
+  // 2. Nhà Cung Cấp: Đọc đầy đủ 8 trường & GỘP TRÙNG LẶP TRIỆT ĐỂ
+  const rawNcc = getSheetData("DM_NCC", 8).map((r, i) => ({
     rowId: i + 2,
     tenTat: String(r[0] || '').trim(),
     tenDayDu: String(r[1] || r[0] || '').trim(),
@@ -85,6 +106,23 @@ function getMasterData() {
     mst: String(r[6] || '').trim(),
     ghiChu: String(r[7] || '').trim()
   })).filter(n => n.tenTat);
+
+  const nccMap = new Map();
+  rawNcc.forEach(n => {
+    const key = n.tenTat.toLowerCase();
+    if (!nccMap.has(key)) {
+      nccMap.set(key, n);
+    } else {
+      const existing = nccMap.get(key);
+      if (!existing.sdt && n.sdt) existing.sdt = n.sdt;
+      if (!existing.diaChi && n.diaChi) existing.diaChi = n.diaChi;
+      if (!existing.email && n.email) existing.email = n.email;
+      if (!existing.nguoiLienHe && n.nguoiLienHe) existing.nguoiLienHe = n.nguoiLienHe;
+      if (!existing.mst && n.mst) existing.mst = n.mst;
+      if (existing.tenDayDu === existing.tenTat && n.tenDayDu !== n.tenTat) existing.tenDayDu = n.tenDayDu;
+    }
+  });
+  const ncc = Array.from(nccMap.values());
 
   // 3. Khách Hàng: Đọc đầy đủ 9 trường
   const khachHang = getSheetData("DM_KHACH_HANG", 9).map((r, i) => ({
@@ -403,23 +441,43 @@ function authenticateUser(username, password) {
   let userExistsInSheet = false;
   if (userSheet && userSheet.getLastRow() > 1) {
     const data = userSheet.getRange(2, 1, userSheet.getLastRow() - 1, 5).getValues();
-    for (let r of data) {
+    for (let i = 0; i < data.length; i++) {
+      const r = data[i];
       const u = String(r[0] || '').trim().toLowerCase();
-      const p = String(r[1] || '').trim();
+      let p = String(r[1] || '').trim();
       const name = String(r[2] || '').trim();
       const role = String(r[3] || '').trim().toUpperCase();
       const status = String(r[4] || 'Hoạt động').trim();
 
       if (u === user) {
         userExistsInSheet = true;
-        let isPassMatch = (p === pass);
-        // Nếu là admin, kiểm tra thêm mật khẩu lưu trong ScriptProperties (nếu đã đổi qua changeAdminPassword)
-        if (!isPassMatch && (role === 'ADMIN' || role === 'QUẢN TRỊ VIÊN')) {
+        let isPassMatch = false;
+
+        // Nếu mật khẩu trong sheet bị lưu là '***' hoặc rỗng do mock data ban đầu
+        if (p === '***' || !p) {
+          if (u === 'admin') {
+            isPassMatch = (pass === '123456' || pass === 'admin');
+          } else {
+            isPassMatch = (pass === '123456');
+          }
+          if (isPassMatch) {
+            try { userSheet.getRange(i + 2, 2).setValue(pass); } catch(e){}
+          }
+        } else {
+          isPassMatch = (p === pass);
+        }
+
+        // Nếu là admin, hỗ trợ thêm mật khẩu đã lưu trong ScriptProperties hoặc mật khẩu khởi tạo nếu chưa đổi
+        if (!isPassMatch && (role === 'ADMIN' || role === 'QUẢN TRỊ VIÊN' || u === 'admin')) {
           try {
             const props = PropertiesService.getScriptProperties();
             const savedAdminPass = props ? props.getProperty('ADMIN_PASSWORD') : null;
             if (savedAdminPass && pass === savedAdminPass) {
               isPassMatch = true;
+            } else if (!savedAdminPass && (p === 'admin' || p === '123456')) {
+              if (pass === 'admin' || pass === '123456') {
+                isPassMatch = true;
+              }
             }
           } catch(e) {}
         }
@@ -434,21 +492,29 @@ function authenticateUser(username, password) {
     }
   }
 
-  // 2. Nếu Sheet USERS hoàn toàn trống (chưa có dòng nào ngoài tiêu đề) -> Khởi tạo tài khoản quản trị ban đầu
-  if (!foundUser && (!userSheet || userSheet.getLastRow() <= 1)) {
-    const initialPass = '123456';
-    if (user === 'admin') {
-      if (pass === initialPass) {
-        foundUser = { username: 'admin', name: 'Khổng Mạnh Cường', role: 'ADMIN', status: 'Hoạt động' };
-        if (userSheet) {
+  // 2. Nếu tài khoản admin chưa có trong Sheet USERS (hoặc Sheet trống) -> Khởi tạo ngay
+  if (!foundUser && user === 'admin') {
+    let isPassMatch = (pass === '123456' || pass === 'admin');
+    if (!isPassMatch) {
+      try {
+        const props = PropertiesService.getScriptProperties();
+        const savedAdminPass = props ? props.getProperty('ADMIN_PASSWORD') : null;
+        if (savedAdminPass && pass === savedAdminPass) isPassMatch = true;
+      } catch(e) {}
+    }
+
+    if (isPassMatch) {
+      foundUser = { username: 'admin', name: 'Khổng Mạnh Cường', role: 'ADMIN', status: 'Hoạt động' };
+      if (userSheet) {
+        try {
           if (userSheet.getLastRow() === 0) {
             userSheet.appendRow(['Username', 'PasswordHash', 'FullName', 'Role', 'Status']);
           }
-          userSheet.appendRow(['admin', initialPass, 'Khổng Mạnh Cường', 'ADMIN', 'Hoạt động']);
-        }
-      } else {
-        return { success: false, message: "Sai tên đăng nhập hoặc mật khẩu!" };
+          userSheet.appendRow(['admin', pass, 'Khổng Mạnh Cường', 'ADMIN', 'Hoạt động']);
+        } catch(e) {}
       }
+    } else {
+      return { success: false, message: "Sai tên đăng nhập hoặc mật khẩu!" };
     }
   }
 
@@ -537,13 +603,16 @@ function verifyAdminPassword(arg1, arg2) {
 
   // Kiểm tra mật khẩu đúng từ Sheet USERS
   let isMatch = false;
+  let adminFoundInSheet = false;
   if (userSheet && userSheet.getLastRow() > 1) {
     const rows = userSheet.getRange(2, 1, userSheet.getLastRow() - 1, 4).getValues();
     for (let r of rows) {
       if (String(r[0] || '').trim().toLowerCase() === u) {
+        adminFoundInSheet = true;
         const role = String(r[3] || '').trim().toUpperCase();
-        if (role === 'ADMIN' || role === 'QUẢN TRỊ VIÊN') {
-          if (String(r[1] || '').trim() === pass) {
+        if (role === 'ADMIN' || role === 'QUẢN TRỊ VIÊN' || u === 'admin') {
+          const p = String(r[1] || '').trim();
+          if (p === pass || ((p === '***' || !p || p === 'admin' || p === '123456') && (pass === 'admin' || pass === '123456'))) {
             isMatch = true;
           }
         }
@@ -557,6 +626,8 @@ function verifyAdminPassword(arg1, arg2) {
     const savedAdminPass = props ? props.getProperty('ADMIN_PASSWORD') : null;
     if (savedAdminPass) {
       isMatch = (pass === savedAdminPass);
+    } else if (!adminFoundInSheet) {
+      isMatch = (pass === 'admin' || pass === '123456');
     }
   }
 
