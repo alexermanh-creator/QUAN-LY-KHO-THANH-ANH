@@ -1228,13 +1228,86 @@ function saveVoucherEdit(payload) {
       });
     }
 
+    // 2B. XỬ LÝ HOÀN TRẢ SERIAL NẾU CÓ THIẾT BỊ BỊ GỠ BỎ KHỎI PHIẾU (DIFFERENTIAL ROLLBACK)
+    if (tbSheet && payload.removedSerials && Array.isArray(payload.removedSerials) && payload.removedSerials.length > 0) {
+      const numRows = tbSheet.getLastRow() - 1;
+      if (numRows > 0) {
+        const serialCol = tbSheet.getRange(2, 1, numRows, 1).getValues();
+        payload.removedSerials.forEach(remSn => {
+          for (let i = 0; i < serialCol.length; i++) {
+            if (String(serialCol[i][0]).trim() === remSn) {
+              const row = i + 2;
+              if (type === 'XUAT') {
+                tbSheet.getRange(row, 10).setValue('IN_STOCK'); // Hoàn trả tồn kho
+                tbSheet.getRange(row, 11).setValue('');          // Xóa ngày xuất
+                tbSheet.getRange(row, 12).setValue('');          // Xóa mã phiếu xuất
+                tbSheet.getRange(row, 13).setValue('');          // Xóa khách hàng
+                tbSheet.getRange(row, 14).setValue('');          // Xóa SĐT khách
+              } else {
+                tbSheet.getRange(row, 10).setValue('CANCELLED_IMPORT'); // Hủy nhập
+              }
+              break;
+            }
+          }
+        });
+      }
+    }
+
     // 3. Ghi vết kiểm toán vào sheet NHAT_KY_HOAT_DONG
     saveClientAuditLog({
       time: Utilities.formatDate(new Date(), "GMT+7", "dd/MM/yyyy HH:mm:ss"),
       user: payload.user || payload.nguoiSua || 'Quản Lý',
       action: 'SỬA PHIẾU ' + type,
       target: maPhieu,
-      detail: `Điều chỉnh thông tin phiếu. Lý do: ${reason}`
+      detail: `Điều chỉnh thông tin phiếu${payload.removedSerials && payload.removedSerials.length > 0 ? ` (Hoàn trả ${payload.removedSerials.length} serial: ${payload.removedSerials.join(', ')})` : ''}. Lý do: ${reason}`
+    });
+
+    return { success: true };
+  } catch(err) {
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * SỬA NHANH THIẾT BỊ / SERIAL TỪ TỒN KHO HOẶC 360°
+ */
+function saveQuickEditSerial(payload) {
+  try {
+    if (!payload || !payload.oldSerial) return { success: false, error: 'Thiếu serial' };
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const tbSheet = ss.getSheetByName("SERIAL_MASTER") || ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
+    if (!tbSheet || tbSheet.getLastRow() <= 1) return { success: false, error: 'Không tìm thấy sheet thiết bị' };
+
+    const numRows = tbSheet.getLastRow() - 1;
+    const serialCol = tbSheet.getRange(2, 1, numRows, 1).getValues();
+    let foundRow = -1;
+    for (let i = 0; i < serialCol.length; i++) {
+      if (String(serialCol[i][0]).trim() === payload.oldSerial) {
+        foundRow = i + 2;
+        break;
+      }
+    }
+
+    if (foundRow === -1) return { success: false, error: 'Không tìm thấy serial trên sheet' };
+
+    if (payload.newSerial && payload.newSerial !== payload.oldSerial) {
+      tbSheet.getRange(foundRow, 1).setValue(payload.newSerial);
+    }
+    if (payload.model) tbSheet.getRange(foundRow, 2).setValue(payload.model);
+    if (payload.tenHang) tbSheet.getRange(foundRow, 3).setValue(payload.tenHang);
+    if (payload.loaiHang) tbSheet.getRange(foundRow, 5).setValue(payload.loaiHang);
+    if (payload.kho) tbSheet.getRange(foundRow, 6).setValue(payload.kho);
+    if (payload.soThangBh !== undefined) tbSheet.getRange(foundRow, 15).setValue(payload.soThangBh + ' tháng');
+    if (payload.ngayHetHanBh) tbSheet.getRange(foundRow, 16).setValue(payload.ngayHetHanBh);
+    if (payload.ghiChu !== undefined) tbSheet.getRange(foundRow, 17).setValue(payload.ghiChu);
+    if (payload.internalId) tbSheet.getRange(foundRow, 18).setValue(payload.internalId);
+
+    saveClientAuditLog({
+      time: Utilities.formatDate(new Date(), "GMT+7", "dd/MM/yyyy HH:mm:ss"),
+      user: payload.user || 'Quản Lý',
+      action: 'SỬA NHANH THIẾT BỊ',
+      target: payload.newSerial || payload.oldSerial,
+      detail: `Điều chỉnh thông tin thiết bị. Lý do: ${payload.reason || 'Sửa nhanh'}`
     });
 
     return { success: true };

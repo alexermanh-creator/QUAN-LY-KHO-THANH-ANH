@@ -285,6 +285,53 @@
     window.renderVoucherStatusIcon = renderVoucherStatusIcon;
   }
 
+  // Hàm chuẩn hóa thời gian và sắp xếp phiếu: MỚI NHẤT LÊN ĐẦU TIÊN
+  function parseVoucherTime(v) {
+    if (!v) return 0;
+    if (v.createdAt) {
+      const m = String(v.createdAt).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
+      if (m) {
+        return new Date(
+          parseInt(m[3], 10),
+          parseInt(m[2], 10) - 1,
+          parseInt(m[1], 10),
+          parseInt(m[4] || 0, 10),
+          parseInt(m[5] || 0, 10),
+          parseInt(m[6] || 0, 10)
+        ).getTime();
+      }
+      const t = new Date(v.createdAt).getTime();
+      if (!isNaN(t)) return t;
+    }
+    const dateStr = v.ngayXuat || v.ngayNhap || v.ngay || '';
+    if (dateStr) {
+      const parts = String(dateStr).trim().split('/');
+      if (parts.length === 3) {
+        return new Date(parseInt(parts[2], 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10)).getTime();
+      }
+      const partsDash = String(dateStr).trim().split('-');
+      if (partsDash.length === 3) {
+        if (partsDash[0].length === 4) {
+          return new Date(parseInt(partsDash[0], 10), parseInt(partsDash[1], 10) - 1, parseInt(partsDash[2], 10)).getTime();
+        } else {
+          return new Date(parseInt(partsDash[2], 10), parseInt(partsDash[1], 10) - 1, parseInt(partsDash[0], 10)).getTime();
+        }
+      }
+    }
+    const matchCode = String(v.maPhieu || '').match(/\d+/g);
+    if (matchCode && matchCode.length > 0) {
+      return parseInt(matchCode.join(''), 10) || 0;
+    }
+    return 0;
+  }
+
+  function sortVouchersNewestFirst(a, b) {
+    const tA = parseVoucherTime(a);
+    const tB = parseVoucherTime(b);
+    if (tB !== tA) return tB - tA; // Giảm dần: Mới nhất lên đầu
+    return String(b.maPhieu || '').localeCompare(String(a.maPhieu || ''));
+  }
+
   // Render bảng lịch sử Nhập kho với bộ lọc đầy đủ
   function renderHistoryNhapTable() {
     const tbody = document.getElementById('history-nhap-table-body');
@@ -299,7 +346,8 @@
     const filterFrom = document.getElementById('filter-nhap-from')?.value || '';
     const filterTo = document.getElementById('filter-nhap-to')?.value || '';
 
-    let list = [...VOUCHERS_DB.nhap];
+    let list = [...(VOUCHERS_DB.nhap || [])];
+    list.sort(sortVouchersNewestFirst);
 
     // 1. Trạng thái
     if (filterStatus) list = list.filter(v => v.status === filterStatus);
@@ -476,7 +524,8 @@
     const filterFrom = document.getElementById('filter-xuat-from')?.value || '';
     const filterTo = document.getElementById('filter-xuat-to')?.value || '';
 
-    let list = [...VOUCHERS_DB.xuat];
+    let list = [...(VOUCHERS_DB.xuat || [])];
+    list.sort(sortVouchersNewestFirst);
 
     // 1. Trạng thái
     if (filterStatus) list = list.filter(v => v.status === filterStatus);
@@ -929,13 +978,25 @@
             ${loaiOptions}
           </select>
         </div>
+        <div class="col-12 col-md-4">
+          <label class="form-label small fw-semibold text-muted mb-1">Số Hóa Đơn / Phiếu NCC</label>
+          <input type="text" id="edit-nhap-sohoadon" class="form-control form-control-sm font-monospace" value="${v.soHoaDonNcc || ''}" placeholder="HD-NCC-12345...">
+        </div>
+        <div class="col-12 col-md-4">
+          <label class="form-label small fw-semibold text-muted mb-1">Người Giao Hàng NCC</label>
+          <input type="text" id="edit-nhap-nguoigiao" class="form-control form-control-sm" value="${v.nguoiGiaoNcc || ''}" placeholder="Tên anh/chị giao hàng...">
+        </div>
+        <div class="col-12 col-md-4">
+          <label class="form-label small fw-semibold text-muted mb-1">Thủ Kho Nhận Hàng</label>
+          <input type="text" id="edit-nhap-nguoinhan" class="form-control form-control-sm" value="${v.nguoiNhan || CURRENT_USER_NAME || ''}">
+        </div>
         <div class="col-12">
           <label class="form-label small fw-semibold text-muted mb-1">Ghi Chú Phiếu Nhập</label>
           <input type="text" id="edit-nhap-ghichu" class="form-control form-control-sm" value="${v.ghiChu || ''}">
         </div>
       `;
     } else {
-      // 2. PHIẾU XUẤT: FULL TRƯỜNG HEADER (Ngày, Khách, SĐT, Địa chỉ, Kho, Ghi chú)
+      // 2. PHIẾU XUẤT: FULL TRƯỜNG HEADER (Ngày, Khách, SĐT, Người LH, Email, MST, Địa chỉ, Kho, Chứng từ, Ghi chú)
       let custOptions = '<option value="">-- Chọn Khách Hàng --</option>';
       let hasCurrentCust = false;
       if (typeof INITIAL_CUSTOMERS !== 'undefined') {
@@ -956,6 +1017,12 @@
       khoList.forEach(k => {
         khoOptions += `<option value="${k}" ${v.kho === k ? 'selected' : ''}>${k}</option>`;
       });
+
+      const docs = Array.isArray(v.chungTuKemTheo) ? v.chungTuKemTheo : (Array.isArray(v.giayToKemTheo) ? v.giayToKemTheo : []);
+      const hasVat = docs.includes('Hóa đơn VAT');
+      const hasBbbg = docs.includes('Biên bản bàn giao');
+      const hasPbh = docs.includes('Phiếu bảo hành');
+      const hasCocq = docs.includes('CO/CQ');
 
       container.innerHTML = `
         <div class="col-12 col-md-3">
@@ -978,13 +1045,46 @@
             ${khoOptions}
           </select>
         </div>
+        <div class="col-12 col-md-4">
+          <label class="form-label small fw-semibold text-muted mb-1">Người Liên Hệ Nhận Máy</label>
+          <input type="text" id="edit-xuat-nguoilienhe" class="form-control form-control-sm" value="${v.nguoiLienHe || ''}" placeholder="Anh/Chị phụ trách nhận thiết bị...">
+        </div>
+        <div class="col-12 col-md-4">
+          <label class="form-label small fw-semibold text-muted mb-1">Email Khách Hàng</label>
+          <input type="email" id="edit-xuat-email" class="form-control form-control-sm" value="${v.emailKhach || v.email || ''}" placeholder="email@congty.com">
+        </div>
+        <div class="col-12 col-md-4">
+          <label class="form-label small fw-semibold text-muted mb-1">Mã Số Thuế</label>
+          <input type="text" id="edit-xuat-mst" class="form-control form-control-sm font-monospace" value="${v.mstKhach || v.mst || ''}" placeholder="Mã số thuế...">
+        </div>
         <div class="col-12 col-md-6">
           <label class="form-label small fw-semibold text-muted mb-1">Địa Chỉ Giao Nhận</label>
-          <input type="text" id="edit-xuat-diachi" class="form-control form-control-sm" value="${v.diaChi || ''}">
+          <input type="text" id="edit-xuat-diachi" class="form-control form-control-sm" value="${v.diaChi || v.diaChiGiao || ''}">
         </div>
         <div class="col-12 col-md-6">
           <label class="form-label small fw-semibold text-muted mb-1">Ghi Chú Xuất Kho</label>
           <input type="text" id="edit-xuat-ghichu" class="form-control form-control-sm" value="${v.ghiChu || ''}">
+        </div>
+        <div class="col-12">
+          <label class="form-label small fw-semibold text-muted mb-1">Chứng Từ Bàn Giao Đi Kèm:</label>
+          <div class="d-flex flex-wrap gap-3 p-2 bg-light rounded border small">
+            <div class="form-check form-check-inline mb-0">
+              <input class="form-check-input" type="checkbox" id="edit-xuat-ct-vat" ${hasVat ? 'checked' : ''} value="Hóa đơn VAT">
+              <label class="form-check-label fw-semibold" for="edit-xuat-ct-vat">Hóa đơn VAT</label>
+            </div>
+            <div class="form-check form-check-inline mb-0">
+              <input class="form-check-input" type="checkbox" id="edit-xuat-ct-bbbg" ${hasBbbg ? 'checked' : ''} value="Biên bản bàn giao">
+              <label class="form-check-label fw-semibold" for="edit-xuat-ct-bbbg">Biên bản bàn giao</label>
+            </div>
+            <div class="form-check form-check-inline mb-0">
+              <input class="form-check-input" type="checkbox" id="edit-xuat-ct-pbh" ${hasPbh ? 'checked' : ''} value="Phiếu bảo hành">
+              <label class="form-check-label fw-semibold" for="edit-xuat-ct-pbh">Phiếu bảo hành</label>
+            </div>
+            <div class="form-check form-check-inline mb-0">
+              <input class="form-check-input" type="checkbox" id="edit-xuat-ct-cocq" ${hasCocq ? 'checked' : ''} value="CO/CQ">
+              <label class="form-check-label fw-semibold" for="edit-xuat-ct-cocq">CO/CQ</label>
+            </div>
+          </div>
         </div>
       `;
     }
@@ -1165,6 +1265,7 @@
 
     let changes = [];
     const nowStr = `${formatDateDisplay(getLocalDateStr())} ${new Date().toLocaleTimeString('vi-VN')}`;
+    let removedSerials = [];
 
     if (isNhap) {
       // 1. Thu thập thay đổi Header Nhập
@@ -1173,6 +1274,9 @@
       const newNcc = document.getElementById('edit-nhap-ncc')?.value || v.ncc;
       const newKho = document.getElementById('edit-nhap-kho')?.value || v.kho;
       const newLoai = document.getElementById('edit-nhap-loaihang')?.value || v.loaiHang || 'Chính Hãng';
+      const newSoHoaDon = document.getElementById('edit-nhap-sohoadon')?.value.trim() || '';
+      const newNguoiGiao = document.getElementById('edit-nhap-nguoigiao')?.value.trim() || '';
+      const newNguoiNhan = document.getElementById('edit-nhap-nguoinhan')?.value.trim() || '';
       const newGhiChu = document.getElementById('edit-nhap-ghichu')?.value.trim() || '';
 
       if (newNgay && newNgay !== v.ngay) {
@@ -1191,17 +1295,48 @@
         changes.push({ field: 'Loại hàng', oldVal: v.loaiHang || 'Chính Hãng', newVal: newLoai });
         v.loaiHang = newLoai;
       }
+      if (newSoHoaDon !== (v.soHoaDonNcc || '')) {
+        changes.push({ field: 'Số HĐ NCC', oldVal: v.soHoaDonNcc || 'Trống', newVal: newSoHoaDon });
+        v.soHoaDonNcc = newSoHoaDon;
+      }
+      if (newNguoiGiao !== (v.nguoiGiaoNcc || '')) {
+        changes.push({ field: 'Người giao NCC', oldVal: v.nguoiGiaoNcc || 'Trống', newVal: newNguoiGiao });
+        v.nguoiGiaoNcc = newNguoiGiao;
+      }
+      if (newNguoiNhan !== (v.nguoiNhan || '')) {
+        changes.push({ field: 'Thủ kho nhận', oldVal: v.nguoiNhan || 'Trống', newVal: newNguoiNhan });
+        v.nguoiNhan = newNguoiNhan;
+      }
       if (newGhiChu !== (v.ghiChu || '')) {
         changes.push({ field: 'Ghi chú', oldVal: v.ghiChu || 'Trống', newVal: newGhiChu });
         v.ghiChu = newGhiChu;
       }
 
-      // 2. Thu thập thay đổi thiết bị Nhập
+      // 2. Thu thập thay đổi thiết bị Nhập & Xử lý gỡ bỏ máy
       const oldSerials = (v.items || []).map(x => x.serial).join(', ');
       const newSerials = EDIT_VOUCHER_TEMP_ITEMS.map(x => x.serial).join(', ');
       if (oldSerials !== newSerials) {
         changes.push({ field: 'Danh sách Serial', oldVal: oldSerials || 'Trống', newVal: newSerials });
       }
+
+      const oldItemSerials = (v.items || []).map(x => x.serial);
+      const newItemSerials = EDIT_VOUCHER_TEMP_ITEMS.map(x => x.serial);
+      removedSerials = oldItemSerials.filter(sn => !newItemSerials.includes(sn));
+
+      removedSerials.forEach(sn => {
+        const sRem = SERIAL_DB.find(x => x.serial === sn);
+        if (sRem) {
+          sRem.status = 'CANCELLED_IMPORT';
+          if (!sRem.timeline) sRem.timeline = [];
+          sRem.timeline.unshift({
+            date: nowStr,
+            user: CURRENT_USER_NAME,
+            action: 'Gỡ khỏi phiếu nhập',
+            note: `Hủy nhập do bị gỡ khỏi phiếu ${maPhieu}. Lý do: ${reason}`
+          });
+          changes.push({ field: `Gỡ Serial (${sn})`, oldVal: 'Nhập kho', newVal: 'Hủy nhập CANCELLED_IMPORT' });
+        }
+      });
 
       // Cập nhật từng serial sang SERIAL_DB
       EDIT_VOUCHER_TEMP_ITEMS.forEach((it, idx) => {
@@ -1220,6 +1355,8 @@
           s.kho = it.kho || newKho;
           s.ncc = newNcc;
           s.ngayNhap = newNgay;
+          s.soHoaDonNcc = newSoHoaDon;
+          s.nguoiGiaoNcc = newNguoiGiao;
         } else {
           // Thêm mới vào SERIAL_DB nếu là máy thêm mới
           SERIAL_DB.unshift({
@@ -1234,6 +1371,8 @@
             kho: it.kho || newKho,
             ncc: newNcc,
             ngayNhap: newNgay,
+            soHoaDonNcc: newSoHoaDon,
+            nguoiGiaoNcc: newNguoiGiao,
             maPhieuNhap: maPhieu,
             maPhieu: maPhieu,
             status: 'IN_STOCK',
@@ -1251,14 +1390,23 @@
 
       v.items = JSON.parse(JSON.stringify(EDIT_VOUCHER_TEMP_ITEMS));
     } else {
-      // 1. Thu thập thay đổi Header Xuất
+      // 1. Thu thập thay đổi Header Xuất (Full các trường nghiệp vụ)
       const rawDate = document.getElementById('edit-xuat-ngay')?.value;
       const newNgay = rawDate ? fromInputDateFormat(rawDate) : v.ngay;
       const newKhach = document.getElementById('edit-xuat-khach')?.value || v.khachHang;
       const newSdt = document.getElementById('edit-xuat-sdt')?.value.trim() || '';
       const newKho = document.getElementById('edit-xuat-kho')?.value || v.kho;
+      const newNguoiLienHe = document.getElementById('edit-xuat-nguoilienhe')?.value.trim() || '';
+      const newEmail = document.getElementById('edit-xuat-email')?.value.trim() || '';
+      const newMst = document.getElementById('edit-xuat-mst')?.value.trim() || '';
       const newDiaChi = document.getElementById('edit-xuat-diachi')?.value.trim() || '';
       const newGhiChu = document.getElementById('edit-xuat-ghichu')?.value.trim() || '';
+
+      const newChungTu = [];
+      if (document.getElementById('edit-xuat-ct-vat')?.checked) newChungTu.push('Hóa đơn VAT');
+      if (document.getElementById('edit-xuat-ct-bbbg')?.checked) newChungTu.push('Biên bản bàn giao');
+      if (document.getElementById('edit-xuat-ct-pbh')?.checked) newChungTu.push('Phiếu bảo hành');
+      if (document.getElementById('edit-xuat-ct-cocq')?.checked) newChungTu.push('CO/CQ');
 
       if (newNgay && newNgay !== v.ngay) {
         changes.push({ field: 'Ngày xuất', oldVal: v.ngay, newVal: newNgay });
@@ -1276,16 +1424,67 @@
         changes.push({ field: 'Kho xuất', oldVal: v.kho || 'Trống', newVal: newKho });
         v.kho = newKho;
       }
-      if (newDiaChi !== (v.diaChi || '')) {
-        changes.push({ field: 'Địa chỉ giao', oldVal: v.diaChi || 'Trống', newVal: newDiaChi });
+      if (newNguoiLienHe !== (v.nguoiLienHe || '')) {
+        changes.push({ field: 'Người liên hệ', oldVal: v.nguoiLienHe || 'Trống', newVal: newNguoiLienHe });
+        v.nguoiLienHe = newNguoiLienHe;
+      }
+      if (newEmail !== (v.emailKhach || v.email || '')) {
+        changes.push({ field: 'Email', oldVal: v.emailKhach || v.email || 'Trống', newVal: newEmail });
+        v.emailKhach = newEmail;
+        v.email = newEmail;
+      }
+      if (newMst !== (v.mstKhach || v.mst || '')) {
+        changes.push({ field: 'Mã số thuế', oldVal: v.mstKhach || v.mst || 'Trống', newVal: newMst });
+        v.mstKhach = newMst;
+        v.mst = newMst;
+      }
+      if (newDiaChi !== (v.diaChi || v.diaChiGiao || '')) {
+        changes.push({ field: 'Địa chỉ giao', oldVal: v.diaChi || v.diaChiGiao || 'Trống', newVal: newDiaChi });
         v.diaChi = newDiaChi;
+        v.diaChiGiao = newDiaChi;
       }
       if (newGhiChu !== (v.ghiChu || '')) {
         changes.push({ field: 'Ghi chú', oldVal: v.ghiChu || 'Trống', newVal: newGhiChu });
         v.ghiChu = newGhiChu;
       }
 
-      // 2. Thu thập thay đổi thiết bị Xuất
+      const oldCtStr = (v.chungTuKemTheo || []).join(', ');
+      const newCtStr = newChungTu.join(', ');
+      if (oldCtStr !== newCtStr) {
+        changes.push({ field: 'Chứng từ kèm theo', oldVal: oldCtStr || 'Trống', newVal: newCtStr || 'Không' });
+        v.chungTuKemTheo = newChungTu;
+      }
+
+      // 2. THUẬT TOÁN HOÀN TRẢ TỒN KHO VI SAI (DIFFERENTIAL ROLLBACK)
+      const oldItemSerials = (v.items || []).map(x => x.serial);
+      const newItemSerials = EDIT_VOUCHER_TEMP_ITEMS.map(x => x.serial);
+      removedSerials = oldItemSerials.filter(sn => !newItemSerials.includes(sn));
+
+      removedSerials.forEach(sn => {
+        const sRollback = SERIAL_DB.find(x => x.serial === sn);
+        if (sRollback) {
+          sRollback.status = 'IN_STOCK';
+          sRollback.maPhieuXuat = '';
+          sRollback.ngayXuat = '';
+          sRollback.khachHang = '';
+          sRollback.sdtKhach = '';
+          sRollback.nguoiLienHe = '';
+          sRollback.emailKhach = '';
+          sRollback.mstKhach = '';
+          sRollback.diaChiGiao = '';
+          sRollback.chungTuKemTheo = [];
+          if (!sRollback.timeline) sRollback.timeline = [];
+          sRollback.timeline.unshift({
+            date: nowStr,
+            user: CURRENT_USER_NAME,
+            action: 'Hoàn trả tồn kho',
+            note: `Gỡ bỏ khỏi phiếu xuất ${maPhieu}. Thiết bị đã sẵn sàng trong kho. Lý do: ${reason}`
+          });
+          changes.push({ field: `Gỡ bỏ Serial (${sn})`, oldVal: 'Đã xuất bán', newVal: 'Hoàn trả IN_STOCK' });
+        }
+      });
+
+      // 3. CASCADE HEADER SANG TOÀN BỘ CÁC MÁY CÒN LẠI THUỘC PHIẾU
       EDIT_VOUCHER_TEMP_ITEMS.forEach((it, idx) => {
         const oldItem = (v.items && v.items[idx]) ? v.items[idx] : null;
         let s = SERIAL_DB.find(x => x.serial === it.serial);
@@ -1307,6 +1506,12 @@
           s.serial = it.serial;
           s.khachHang = newKhach;
           s.sdtKhach = newSdt;
+          s.nguoiLienHe = newNguoiLienHe;
+          s.emailKhach = newEmail;
+          s.mstKhach = newMst;
+          s.diaChiGiao = newDiaChi;
+          s.kho = newKho;
+          s.chungTuKemTheo = newChungTu;
           s.ngayXuat = newNgay;
           s.soThangBh = it.soThangBh;
           s.ngayHetHanBh = it.ngayHetHanBh;
@@ -1360,6 +1565,7 @@
           type: type,
           maPhieu: maPhieu,
           voucher: v,
+          removedSerials: removedSerials,
           changes: changes,
           reason: reason
         });
@@ -1372,8 +1578,11 @@
       if (modal) modal.hide();
     }
 
-    if (typeof markModulesDirty === 'function') {
-      markModulesDirty(['Dashboard', 'TonKho', 'LichSu', 'Serial360']);
+    // ĐỒNG BỘ ĐA CHIỀU: Đánh dấu Dirty các module liên quan
+    if (typeof notifySystemDataChanged === 'function') {
+      notifySystemDataChanged('VOUCHER_EDIT', { maPhieu, type });
+    } else if (typeof markModulesDirty === 'function') {
+      markModulesDirty(['Dashboard', 'TonKho', 'LichSu', 'Serial360', 'XuatKho', 'NhapKho']);
     }
     renderHistoryTables();
 
@@ -1682,7 +1891,9 @@
           }
         } catch(e) {}
 
-        if (typeof markModulesDirty === 'function') {
+        if (typeof notifySystemDataChanged === 'function') {
+          notifySystemDataChanged('VOUCHER_CANCEL', { maPhieu, type: 'NHAP' });
+        } else if (typeof markModulesDirty === 'function') {
           markModulesDirty(['Dashboard', 'TonKho', 'LichSu', 'Serial360']);
         }
         renderHistoryTables();
@@ -1804,7 +2015,9 @@
           }
         } catch(e) {}
 
-        if (typeof markModulesDirty === 'function') {
+        if (typeof notifySystemDataChanged === 'function') {
+          notifySystemDataChanged('VOUCHER_CANCEL', { maPhieu, type: 'XUAT' });
+        } else if (typeof markModulesDirty === 'function') {
           markModulesDirty(['Dashboard', 'TonKho', 'LichSu', 'Serial360']);
         }
         renderHistoryTables();

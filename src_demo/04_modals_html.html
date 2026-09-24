@@ -476,37 +476,165 @@
   </div>
 
   <!-- ==================================================== -->
+  <!-- MODAL: SỬA NHANH THIẾT BỊ / SERIAL (TOÀN HỆ THỐNG)    -->
+  <!-- ==================================================== -->
+  <div class="modal fade" id="quickEditSerialModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-header bg-primary text-white py-2">
+          <h6 class="modal-title fw-bold" id="quickEditSerialModalTitle">
+            <i class="fa-solid fa-pen-to-square me-1"></i> Sửa Nhanh Thông Tin Thiết Bị (Toàn Hệ Thống)
+          </h6>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-3">
+          <input type="hidden" id="quick-edit-orig-serial">
+          <input type="hidden" id="quick-edit-source-module">
+
+          <div class="p-2 bg-light rounded border mb-3 small d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+              Serial: <strong id="quick-edit-serial-badge" class="font-monospace text-primary fs-6">--</strong> | 
+              Trạng thái: <span class="badge bg-success" id="quick-edit-status-badge">IN_STOCK</span>
+            </div>
+            <span class="badge bg-warning text-dark border"><i class="fa-solid fa-bolt me-1"></i> Tự đồng bộ các tab</span>
+          </div>
+
+          <div class="row g-2 mb-2">
+            <div class="col-12 col-md-6">
+              <label class="form-label small fw-semibold text-muted mb-1">
+                Serial Hãng (*) <span id="quick-edit-serial-role-hint" class="small text-danger" style="display:none;">(Chỉ Admin được đổi)</span>
+              </label>
+              <input type="text" id="quick-edit-serial-input" class="form-control form-control-sm font-monospace fw-bold text-primary">
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label small fw-semibold text-muted mb-1">Mã Định Danh Nội Bộ (Asset ID)</label>
+              <input type="text" id="quick-edit-internal-input" class="form-control form-control-sm font-monospace">
+            </div>
+          </div>
+
+          <div class="row g-2 mb-2">
+            <div class="col-12 col-md-6">
+              <label class="form-label small fw-semibold text-muted mb-1">Model Thiết Bị (*)</label>
+              <select id="quick-edit-model-select" class="form-select form-select-sm"></select>
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label small fw-semibold text-muted mb-1">Kho Lưu Trữ (*)</label>
+              <select id="quick-edit-kho-select" class="form-select form-select-sm"></select>
+            </div>
+          </div>
+
+          <div class="row g-2 mb-2">
+            <div class="col-12 col-md-6">
+              <label class="form-label small fw-semibold text-muted mb-1">Loại Hàng / Tình Trạng</label>
+              <select id="quick-edit-loaihang-select" class="form-select form-select-sm"></select>
+            </div>
+            <div class="col-12 col-md-3">
+              <label class="form-label small fw-semibold text-muted mb-1">Gói Bảo Hành (tháng)</label>
+              <input type="number" id="quick-edit-bh-months" class="form-control form-control-sm" min="0" max="120">
+            </div>
+            <div class="col-12 col-md-3">
+              <label class="form-label small fw-semibold text-muted mb-1">Hạn Bảo Hành</label>
+              <input type="date" id="quick-edit-bh-exp" class="form-control form-control-sm font-monospace">
+            </div>
+          </div>
+
+          <!-- Nhóm thông tin khách hàng nếu máy đã xuất -->
+          <div id="quick-edit-customer-section" class="p-2 rounded border bg-light bg-opacity-50 mb-2" style="display: none;">
+            <div class="fw-bold small text-primary mb-2">
+              <i class="fa-solid fa-user-check me-1"></i> Thông Tin Khách Hàng Sở Hữu & Bàn Giao
+            </div>
+            <div class="row g-2 mb-2">
+              <div class="col-12 col-md-6">
+                <label class="form-label small fw-semibold text-muted mb-1">Khách Hàng</label>
+                <input type="text" id="quick-edit-cust-name" class="form-control form-control-sm">
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label small fw-semibold text-muted mb-1">Số Điện Thoại</label>
+                <input type="text" id="quick-edit-cust-phone" class="form-control form-control-sm font-monospace">
+              </div>
+            </div>
+            <div class="row g-2">
+              <div class="col-12 col-md-6">
+                <label class="form-label small fw-semibold text-muted mb-1">Người Liên Hệ Nhận Máy</label>
+                <input type="text" id="quick-edit-cust-contact" class="form-control form-control-sm">
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label small fw-semibold text-muted mb-1">Địa Chỉ Bàn Giao</label>
+                <input type="text" id="quick-edit-cust-address" class="form-control form-control-sm">
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-2">
+            <label class="form-label small fw-semibold text-muted mb-1">Ghi Chú Thiết Bị</label>
+            <input type="text" id="quick-edit-note-input" class="form-control form-control-sm" placeholder="Ghi chú ngoại quan, phụ kiện kèm theo...">
+          </div>
+
+          <div class="mb-2">
+            <label class="form-label small fw-bold text-danger mb-1">Lý do chỉnh sửa (*) (Bắt buộc ghi nhận Audit)</label>
+            <input type="text" id="quick-edit-reason-input" class="form-control form-control-sm" placeholder="Ví dụ: Cập nhật người liên hệ và hạn bảo hành theo xác nhận của khách...">
+          </div>
+          <div id="quick-edit-error-alert" class="small text-danger mt-1" style="display: none;"></div>
+        </div>
+        <div class="modal-footer py-2 d-flex justify-content-between">
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Hủy bỏ</button>
+          <button type="button" class="btn btn-sm btn-primary fw-bold" id="btn-submit-quick-edit-serial" onclick="submitQuickEditSerial()">
+            <i class="fa-solid fa-floppy-disk me-1"></i> Lưu & Đồng Bộ Hệ Thống
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
   <!-- MODAL: THÊM KHÁCH HÀNG NHANH TẠI XUẤT KHO (YÊU CẦU 4.3) -->
+  <!-- ==================================================== -->
+  <!-- MODAL: THÊM KHÁCH HÀNG NHANH & DANH MỤC              -->
   <!-- ==================================================== -->
   <div class="modal fade" id="quickAddCustomerModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header bg-light py-2">
-          <h6 class="modal-title fw-bold"><i class="fa-solid fa-user-plus text-primary me-1"></i> Thêm Khách Hàng Nhanh</h6>
+          <h6 class="modal-title fw-bold" id="quickAddCustomerModalTitle">
+            <i class="fa-solid fa-user-plus text-primary me-1"></i> <span id="quickAddCustomerModalTitleText">Thêm Khách Hàng Nhanh</span>
+          </h6>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body p-3">
+          <input type="hidden" id="quick-cust-source" value="XUAT_KHO">
           <div class="mb-2">
             <label class="form-label small fw-semibold text-muted mb-1">Tên khách hàng / Đơn vị (*)</label>
             <input type="text" id="quick-cust-name" class="form-control form-control-sm" placeholder="Ví dụ: Cty CP Giải Pháp Số">
           </div>
-          <div class="mb-2">
-            <label class="form-label small fw-semibold text-muted mb-1">Số điện thoại (* Bảo lưu số 0)</label>
-            <input type="text" id="quick-cust-phone" class="form-control form-control-sm" placeholder="0909888777">
+          <div class="row g-2 mb-2">
+            <div class="col-6">
+              <label class="form-label small fw-semibold text-muted mb-1">Số điện thoại (* Bảo lưu số 0)</label>
+              <input type="text" id="quick-cust-phone" class="form-control form-control-sm font-monospace fw-bold text-primary" placeholder="0909888777">
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-semibold text-muted mb-1">Người liên hệ trực tiếp</label>
+              <input type="text" id="quick-cust-contact" class="form-control form-control-sm" placeholder="Tên anh/chị nhận máy...">
+            </div>
+          </div>
+          <div class="row g-2 mb-2">
+            <div class="col-6">
+              <label class="form-label small fw-semibold text-muted mb-1">Email</label>
+              <input type="email" id="quick-cust-email" class="form-control form-control-sm" placeholder="khachhang@email.com">
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-semibold text-muted mb-1">Mã số thuế (nếu có)</label>
+              <input type="text" id="quick-cust-mst" class="form-control form-control-sm" placeholder="Mã số thuế công ty...">
+            </div>
           </div>
           <div class="mb-2">
             <label class="form-label small fw-semibold text-muted mb-1">Địa chỉ giao nhận hàng</label>
-            <input type="text" id="quick-cust-address" class="form-control form-control-sm" placeholder="Địa chỉ cơ quan...">
-          </div>
-          <div class="mb-2">
-            <label class="form-label small fw-semibold text-muted mb-1">Người liên hệ</label>
-            <input type="text" id="quick-cust-contact" class="form-control form-control-sm" placeholder="Tên anh/chị nhận máy...">
+            <input type="text" id="quick-cust-address" class="form-control form-control-sm" placeholder="Địa chỉ cơ quan, văn phòng...">
           </div>
         </div>
         <div class="modal-footer py-2">
           <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
-          <button type="button" class="btn btn-sm btn-primary" onclick="submitQuickAddCustomer()">
-            <i class="fa-solid fa-save me-1"></i> Lưu & Chọn Khách Này
+          <button type="button" class="btn btn-sm btn-primary" id="btn-submit-quick-cust" onclick="submitQuickAddCustomer()">
+            <i class="fa-solid fa-save me-1"></i> <span id="btn-submit-quick-cust-text">Lưu & Chọn Khách Này</span>
           </button>
         </div>
       </div>
@@ -520,13 +648,30 @@
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header bg-light py-2">
-          <h6 class="modal-title fw-bold"><i class="fa-solid fa-plus-circle text-primary me-1"></i> Thêm Model Sản Phẩm</h6>
+          <h6 class="modal-title fw-bold" id="quickAddModelModalTitle">
+            <i class="fa-solid fa-plus-circle text-primary me-1"></i> <span id="quickAddModelModalTitleText">Thêm Model Sản Phẩm</span>
+          </h6>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body p-3">
-          <div class="mb-2">
-            <label class="form-label small fw-semibold text-muted mb-1">Mã Model (*)</label>
-            <input type="text" id="quick-model-name" class="form-control form-control-sm" placeholder="Ví dụ: Canon LBP 6030w">
+          <input type="hidden" id="quick-model-source" value="NHAP_KHO">
+          <div class="row g-2 mb-2">
+            <div class="col-8">
+              <label class="form-label small fw-semibold text-muted mb-1">Mã Model (*)</label>
+              <input type="text" id="quick-model-name" class="form-control form-control-sm font-monospace text-uppercase fw-bold" placeholder="Ví dụ: Canon LBP 6030w">
+            </div>
+            <div class="col-4">
+              <label class="form-label small fw-semibold text-muted mb-1">Đơn vị tính (ĐVT)</label>
+              <input type="text" id="quick-model-dvt" class="form-control form-control-sm" list="dvt-quick-suggest" value="Chiếc" placeholder="Chiếc, Máy...">
+              <datalist id="dvt-quick-suggest">
+                <option value="Chiếc">
+                <option value="Máy">
+                <option value="Bộ">
+                <option value="Hộp">
+                <option value="Cuộn">
+                <option value="Cái">
+              </datalist>
+            </div>
           </div>
           <div class="mb-2">
             <label class="form-label small fw-semibold text-muted mb-1">Tên Sản Phẩm Đầy Đủ (*)</label>
@@ -555,11 +700,15 @@
               </select>
             </div>
           </div>
+          <div class="mb-1">
+            <label class="form-label small fw-semibold text-muted mb-1">Ghi chú Model</label>
+            <input type="text" id="quick-model-note" class="form-control form-control-sm" placeholder="Ghi chú cấu hình, mã linh kiện phụ...">
+          </div>
         </div>
         <div class="modal-footer py-2">
           <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
-          <button type="button" class="btn btn-sm btn-primary" onclick="submitQuickAddModel()">
-            <i class="fa-solid fa-save me-1"></i> Lưu Model
+          <button type="button" class="btn btn-sm btn-primary" id="btn-submit-quick-model" onclick="submitQuickAddModel()">
+            <i class="fa-solid fa-save me-1"></i> <span id="btn-submit-quick-model-text">Lưu Model</span>
           </button>
         </div>
       </div>
@@ -573,17 +722,22 @@
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header bg-light py-2">
-          <h6 class="modal-title fw-bold"><i class="fa-solid fa-plus-circle text-success me-1"></i> Thêm Nhà Cung Cấp</h6>
+          <h6 class="modal-title fw-bold" id="quickAddSupplierModalTitle">
+            <i class="fa-solid fa-plus-circle text-success me-1"></i> <span id="quickAddSupplierModalTitleText">Thêm Nhà Cung Cấp</span>
+          </h6>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body p-3">
-          <div class="mb-2">
-            <label class="form-label small fw-semibold text-muted mb-1">Mã Viết Tắt (*)</label>
-            <input type="text" id="quick-ncc-code" class="form-control form-control-sm" placeholder="Ví dụ: SYNNEX_FPT">
-          </div>
-          <div class="mb-2">
-            <label class="form-label small fw-semibold text-muted mb-1">Tên Đầy Đủ NCC (*)</label>
-            <input type="text" id="quick-ncc-name" class="form-control form-control-sm" placeholder="Ví dụ: Công ty CP Phân Phối Synnex FPT">
+          <input type="hidden" id="quick-ncc-source" value="NHAP_KHO">
+          <div class="row g-2 mb-2">
+            <div class="col-5">
+              <label class="form-label small fw-semibold text-muted mb-1">Mã Viết Tắt (*)</label>
+              <input type="text" id="quick-ncc-code" class="form-control form-control-sm font-monospace text-uppercase fw-bold text-success" placeholder="Ví dụ: SYNNEX_FPT">
+            </div>
+            <div class="col-7">
+              <label class="form-label small fw-semibold text-muted mb-1">Tên Đầy Đủ NCC (*)</label>
+              <input type="text" id="quick-ncc-name" class="form-control form-control-sm" placeholder="Ví dụ: Công ty CP Phân Phối Synnex FPT">
+            </div>
           </div>
           <div class="row g-2 mb-2">
             <div class="col-6">
@@ -591,8 +745,18 @@
               <input type="text" id="quick-ncc-phone" class="form-control form-control-sm" placeholder="024.73006666">
             </div>
             <div class="col-6">
+              <label class="form-label small fw-semibold text-muted mb-1">Người liên hệ</label>
+              <input type="text" id="quick-ncc-contact" class="form-control form-control-sm" placeholder="Tên nhân viên phụ trách...">
+            </div>
+          </div>
+          <div class="row g-2 mb-2">
+            <div class="col-6">
               <label class="form-label small fw-semibold text-muted mb-1">Email</label>
               <input type="email" id="quick-ncc-email" class="form-control form-control-sm" placeholder="contact@supplier.vn">
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-semibold text-muted mb-1">Mã số thuế</label>
+              <input type="text" id="quick-ncc-tax" class="form-control form-control-sm" placeholder="MST công ty...">
             </div>
           </div>
           <div class="mb-2">
@@ -602,8 +766,8 @@
         </div>
         <div class="modal-footer py-2">
           <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
-          <button type="button" class="btn btn-sm btn-success" onclick="submitQuickAddSupplier()">
-            <i class="fa-solid fa-save me-1"></i> Lưu Nhà Cung Cấp
+          <button type="button" class="btn btn-sm btn-success" id="btn-submit-quick-ncc" onclick="submitQuickAddSupplier()">
+            <i class="fa-solid fa-save me-1"></i> <span id="btn-submit-quick-ncc-text">Lưu Nhà Cung Cấp</span>
           </button>
         </div>
       </div>
@@ -1291,7 +1455,7 @@
         </div>
         <div class="modal-footer py-2 bg-light">
           <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Hủy bỏ</button>
-          <button type="button" class="btn btn-sm btn-primary fw-bold px-3" onclick="submitEditThietBi()">
+          <button type="button" id="btn-submit-edit-tb" class="btn btn-sm btn-primary fw-bold px-3" onclick="submitEditThietBi()">
             <i class="fa-solid fa-floppy-disk me-1"></i> Lưu Đính Chính
           </button>
         </div>

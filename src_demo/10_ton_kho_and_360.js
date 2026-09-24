@@ -307,7 +307,7 @@
                                 <button class="btn btn-outline-primary py-1 px-2" onclick="openSerial360Direct('${s.serial}')" title="Xem lý lịch vòng đời 360°">
                                   <i class="fa-solid fa-fingerprint"></i>
                                 </button>
-                                <button class="btn btn-outline-warning text-dark py-1 px-2" onclick="openEditThietBiModal('${s.serial}')" title="Đính chính thông tin (sửa SN, Model, Kho)">
+                                <button class="btn btn-outline-warning text-dark py-1 px-2" onclick="openQuickEditSerialModal('${s.serial}', 'TonKho')" title="Sửa nhanh thiết bị (SN, Model, Kho, BH, Ghi chú)">
                                   <i class="fa-solid fa-pen-to-square"></i>
                                 </button>
                                 <button class="btn btn-outline-danger py-1 px-2" onclick="voidSerialDevice('${s.serial}')" title="Hủy thiết bị khỏi tồn kho (VOID)">
@@ -417,7 +417,10 @@
     modal.show();
   }
 
+  let isSubmittingEditTb = false;
   function submitEditThietBi() {
+    if (isSubmittingEditTb) return;
+
     const oldSerial = document.getElementById('edit-tb-old-serial').value.trim();
     const newSerial = document.getElementById('edit-tb-new-serial').value.trim();
     const internalId = document.getElementById('edit-tb-internal-id').value.trim();
@@ -435,6 +438,14 @@
       return;
     }
 
+    const btn = document.getElementById('btn-submit-edit-tb');
+    const oldBtnHtml = btn ? btn.innerHTML : '<i class="fa-solid fa-floppy-disk me-1"></i> Lưu Đính Chính';
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Đang lưu...';
+    }
+    isSubmittingEditTb = true;
+
     WarehouseAPI.updateThietBi({
       oldSerial: oldSerial,
       newSerial: newSerial,
@@ -444,15 +455,27 @@
       kho: kho,
       reason: reason
     }, function(res) {
+      isSubmittingEditTb = false;
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = oldBtnHtml;
+      }
+
       if (res && res.success) {
         const modalEl = document.getElementById('editThietBiModal');
         const modal = bootstrap.Modal.getInstance(modalEl);
         if (modal) modal.hide();
 
         if (typeof markModulesDirty === 'function') {
-          markModulesDirty(['TonKho', 'Serial360', 'LichSu', 'Dashboard']);
+          markModulesDirty(['TonKho', 'Serial360', 'LichSu', 'Dashboard', 'DanhMuc']);
         }
         renderTonKho();
+        if (typeof renderCatalogProductsTable === 'function') {
+          renderCatalogProductsTable();
+        }
+        if (typeof notifyCatalogChanged === 'function') {
+          notifyCatalogChanged();
+        }
 
         Swal.fire({
           icon: 'success',
@@ -465,6 +488,334 @@
         Swal.fire('Lỗi', res ? res.message : 'Không thể cập nhật thiết bị!', 'error');
       }
     });
+  }
+
+  // =========================================================================
+  // SỬA NHANH THIẾT BỊ / SERIAL (TOÀN HỆ THỐNG - CENTRAL QUICK EDIT)
+  // Cho phép đứng ở Tồn Kho, Serial 360°, Lịch Sử để sửa nhanh và tự đồng bộ các tab
+  // =========================================================================
+  function openQuickEditSerialModal(serial, sourceModule) {
+    if (typeof checkPermission === 'function' && !checkPermission(['QUẢN LÝ', 'ADMIN', 'THỦ KHO'], 'Sửa nhanh thiết bị')) return;
+
+    const s = (typeof SERIAL_DB !== 'undefined' ? SERIAL_DB : []).find(x => 
+      (x.serial && x.serial.toLowerCase() === String(serial).toLowerCase()) ||
+      (x.internalId && x.internalId.toLowerCase() === String(serial).toLowerCase())
+    );
+    if (!s) {
+      Swal.fire('Không tìm thấy', `Không tìm thấy thiết bị với serial [${serial}]!`, 'error');
+      return;
+    }
+
+    const modalEl = document.getElementById('quickEditSerialModal');
+    if (!modalEl) {
+      if (typeof openEditThietBiModal === 'function') {
+        openEditThietBiModal(serial);
+      }
+      return;
+    }
+
+    document.getElementById('quick-edit-orig-serial').value = s.serial;
+    document.getElementById('quick-edit-source-module').value = sourceModule || 'TonKho';
+    document.getElementById('quick-edit-serial-badge').textContent = s.serial;
+    
+    const statusBadge = document.getElementById('quick-edit-status-badge');
+    if (statusBadge) {
+      statusBadge.textContent = s.status || 'IN_STOCK';
+      statusBadge.className = (s.status === 'IN_STOCK') ? 'badge bg-success' : (s.status === 'SOLD' ? 'badge bg-primary' : 'badge bg-warning text-dark');
+    }
+
+    const serialInput = document.getElementById('quick-edit-serial-input');
+    const roleHint = document.getElementById('quick-edit-serial-role-hint');
+    const isAdmin = (typeof CURRENT_ROLE !== 'undefined' && CURRENT_ROLE === 'ADMIN');
+    if (serialInput) {
+      serialInput.value = s.serial;
+      serialInput.readOnly = !isAdmin;
+    }
+    if (roleHint) {
+      roleHint.style.display = isAdmin ? 'none' : 'inline';
+    }
+
+    const internalInput = document.getElementById('quick-edit-internal-input');
+    if (internalInput) internalInput.value = s.internalId || s.maNoiBo || '';
+
+    // Models select
+    const modelSelect = document.getElementById('quick-edit-model-select');
+    if (modelSelect) {
+      let mOpts = '';
+      const prodList = (typeof INITIAL_PRODUCTS !== 'undefined' && INITIAL_PRODUCTS.length > 0) ? INITIAL_PRODUCTS : [{ model: s.model, ten: s.tenHang || s.model }];
+      let hasSel = false;
+      prodList.forEach(p => {
+        const isSel = (p.model === s.model);
+        if (isSel) hasSel = true;
+        mOpts += `<option value="${p.model}" ${isSel ? 'selected' : ''}>${p.model} - ${p.ten || p.model}</option>`;
+      });
+      if (!hasSel && s.model) {
+        mOpts = `<option value="${s.model}" selected>${s.model}</option>` + mOpts;
+      }
+      modelSelect.innerHTML = mOpts;
+    }
+
+    // Warehouses select
+    const khoSelect = document.getElementById('quick-edit-kho-select');
+    if (khoSelect) {
+      let kOpts = '';
+      const wList = (typeof INITIAL_WAREHOUSES !== 'undefined' && INITIAL_WAREHOUSES.length > 0) ? INITIAL_WAREHOUSES : [{ tenKho: s.kho || 'Kho VP' }];
+      wList.filter(w => w.active !== false).forEach(w => {
+        const kName = w.tenKho || w.name || w.val;
+        kOpts += `<option value="${kName}" ${kName === s.kho ? 'selected' : ''}>${kName}</option>`;
+      });
+      khoSelect.innerHTML = kOpts;
+    }
+
+    // Condition select
+    const loaiSelect = document.getElementById('quick-edit-loaihang-select');
+    if (loaiSelect) {
+      let lOpts = '';
+      const cList = (typeof INITIAL_CONDITIONS !== 'undefined' && INITIAL_CONDITIONS.length > 0) ? INITIAL_CONDITIONS : [{ ten: s.loaiHang || 'Chính Hãng' }];
+      cList.forEach(c => {
+        const lName = c.ten || c.name || c.val;
+        lOpts += `<option value="${lName}" ${lName === (s.loaiHang || s.condition) ? 'selected' : ''}>${lName}</option>`;
+      });
+      loaiSelect.innerHTML = lOpts;
+    }
+
+    // Warranty months & exp
+    const bhMonths = document.getElementById('quick-edit-bh-months');
+    if (bhMonths) bhMonths.value = s.soThangBh || 12;
+
+    const bhExp = document.getElementById('quick-edit-bh-exp');
+    if (bhExp) bhExp.value = toInputDateFormat(s.ngayHetHanBh);
+
+    // Customer section (if SOLD)
+    const custSec = document.getElementById('quick-edit-customer-section');
+    if (custSec) {
+      if (s.status === 'SOLD') {
+        custSec.style.display = 'block';
+        const cName = document.getElementById('quick-edit-cust-name');
+        if (cName) cName.value = s.khachHang || '';
+        const cPhone = document.getElementById('quick-edit-cust-phone');
+        if (cPhone) cPhone.value = s.sdtKhach || '';
+        const cContact = document.getElementById('quick-edit-cust-contact');
+        if (cContact) cContact.value = s.nguoiLienHe || '';
+        const cAddr = document.getElementById('quick-edit-cust-address');
+        if (cAddr) cAddr.value = s.diaChiGiao || s.diaChi || '';
+      } else {
+        custSec.style.display = 'none';
+      }
+    }
+
+    const noteInput = document.getElementById('quick-edit-note-input');
+    if (noteInput) noteInput.value = s.ghiChu || '';
+
+    const reasonInput = document.getElementById('quick-edit-reason-input');
+    if (reasonInput) reasonInput.value = '';
+
+    const errAlert = document.getElementById('quick-edit-error-alert');
+    if (errAlert) errAlert.style.display = 'none';
+
+    const modal = new bootstrap.Modal(modalEl);
+    modal.show();
+  }
+
+  function submitQuickEditSerial() {
+    const origSerial = document.getElementById('quick-edit-orig-serial').value.trim();
+    const sourceModule = document.getElementById('quick-edit-source-module').value || 'TonKho';
+    const newSerial = document.getElementById('quick-edit-serial-input')?.value.trim() || origSerial;
+    const internalId = document.getElementById('quick-edit-internal-input')?.value.trim() || '';
+    const model = document.getElementById('quick-edit-model-select')?.value.trim() || '';
+    const kho = document.getElementById('quick-edit-kho-select')?.value || '';
+    const loaiHang = document.getElementById('quick-edit-loaihang-select')?.value || 'Chính Hãng';
+    const soThangBh = parseInt(document.getElementById('quick-edit-bh-months')?.value) || 12;
+    const rawExp = document.getElementById('quick-edit-bh-exp')?.value;
+    const ngayHetHanBh = rawExp ? fromInputDateFormat(rawExp) : '';
+    const note = document.getElementById('quick-edit-note-input')?.value.trim() || '';
+    const reason = document.getElementById('quick-edit-reason-input')?.value.trim() || '';
+
+    const errAlert = document.getElementById('quick-edit-error-alert');
+    if (errAlert) errAlert.style.display = 'none';
+
+    if (!newSerial) {
+      if (errAlert) { errAlert.textContent = 'Serial hãng không được để trống!'; errAlert.style.display = 'block'; }
+      return;
+    }
+    if (!reason) {
+      if (errAlert) { errAlert.textContent = 'Vui lòng nhập lý do chỉnh sửa để ghi nhận nhật ký kiểm toán (Audit Trail)!'; errAlert.style.display = 'block'; }
+      return;
+    }
+
+    const s = (typeof SERIAL_DB !== 'undefined' ? SERIAL_DB : []).find(x => x.serial.toLowerCase() === origSerial.toLowerCase());
+    if (!s) {
+      Swal.fire('Lỗi', 'Không tìm thấy thiết bị gốc!', 'error');
+      return;
+    }
+
+    // 1. KIỂM TRA TÍNH TOÀN VẸN VÀ RÀNG BUỘC KHI ĐỔI SERIAL (NHÓM B)
+    if (newSerial.toLowerCase() !== origSerial.toLowerCase()) {
+      // A. Kiểm tra trùng
+      const dup = SERIAL_DB.find(x => x.serial.toLowerCase() === newSerial.toLowerCase() && x.serial.toLowerCase() !== origSerial.toLowerCase());
+      if (dup) {
+        if (errAlert) {
+          errAlert.textContent = `Lỗi: Serial "${newSerial}" đã tồn tại trong hệ thống (Model: ${dup.model}, Trạng thái: ${dup.status})!`;
+          errAlert.style.display = 'block';
+        }
+        return;
+      }
+      // B. Kiểm tra ca bảo hành đã phát sinh
+      const hasWarranty = (typeof WARRANTY_CASES_DB !== 'undefined' ? WARRANTY_CASES_DB : []).some(w => w.serial && w.serial.toLowerCase() === origSerial.toLowerCase());
+      if (hasWarranty) {
+        if (errAlert) {
+          errAlert.textContent = `Chặn thao tác: Thiết bị [${origSerial}] đã có ca bảo hành trong lịch sử. Không được đổi Serial để đảm bảo toàn vẹn dữ liệu truy vết!`;
+          errAlert.style.display = 'block';
+        }
+        return;
+      }
+    }
+
+    const changes = [];
+    if (newSerial !== origSerial) changes.push({ field: 'Serial', oldVal: origSerial, newVal: newSerial });
+    if (internalId !== (s.internalId || '')) changes.push({ field: 'Mã nội bộ', oldVal: s.internalId || 'Trống', newVal: internalId });
+    if (model !== s.model) changes.push({ field: 'Model', oldVal: s.model, newVal: model });
+    if (kho !== s.kho) changes.push({ field: 'Kho', oldVal: s.kho, newVal: kho });
+    if (loaiHang !== (s.loaiHang || s.condition)) changes.push({ field: 'Loại hàng', oldVal: s.loaiHang || s.condition || 'Trống', newVal: loaiHang });
+    if (soThangBh !== (s.soThangBh || 12)) changes.push({ field: 'Số tháng BH', oldVal: `${s.soThangBh || 12}T`, newVal: `${soThangBh}T` });
+    if (ngayHetHanBh !== (s.ngayHetHanBh || '')) changes.push({ field: 'Hạn BH', oldVal: s.ngayHetHanBh || 'Trống', newVal: ngayHetHanBh });
+    if (note !== (s.ghiChu || '')) changes.push({ field: 'Ghi chú', oldVal: s.ghiChu || 'Trống', newVal: note });
+
+    // Cập nhật thông tin khách hàng nếu máy đã bán
+    if (s.status === 'SOLD') {
+      const cName = document.getElementById('quick-edit-cust-name')?.value.trim() || '';
+      const cPhone = document.getElementById('quick-edit-cust-phone')?.value.trim() || '';
+      const cContact = document.getElementById('quick-edit-cust-contact')?.value.trim() || '';
+      const cAddr = document.getElementById('quick-edit-cust-address')?.value.trim() || '';
+
+      if (cName !== (s.khachHang || '')) { changes.push({ field: 'Khách hàng', oldVal: s.khachHang || 'Trống', newVal: cName }); s.khachHang = cName; }
+      if (cPhone !== (s.sdtKhach || '')) { changes.push({ field: 'SĐT Khách', oldVal: s.sdtKhach || 'Trống', newVal: cPhone }); s.sdtKhach = cPhone; }
+      if (cContact !== (s.nguoiLienHe || '')) { changes.push({ field: 'Người liên hệ', oldVal: s.nguoiLienHe || 'Trống', newVal: cContact }); s.nguoiLienHe = cContact; }
+      if (cAddr !== (s.diaChiGiao || s.diaChi || '')) { changes.push({ field: 'Địa chỉ giao', oldVal: s.diaChiGiao || s.diaChi || 'Trống', newVal: cAddr }); s.diaChiGiao = cAddr; s.diaChi = cAddr; }
+    }
+
+    if (changes.length === 0) {
+      Swal.fire('Không có thay đổi', 'Bạn chưa thay đổi trường thông tin nào!', 'info');
+      return;
+    }
+
+    const nowStr = `${formatDateDisplay(getLocalDateStr())} ${new Date().toLocaleTimeString('vi-VN')}`;
+
+    // 2. GHI NHẬN VÀO SOURCE OF TRUTH (SERIAL_DB)
+    s.serial = newSerial;
+    s.internalId = internalId;
+    s.maNoiBo = internalId;
+    s.model = model;
+    s.kho = kho;
+    s.loaiHang = loaiHang;
+    s.condition = loaiHang;
+    s.soThangBh = soThangBh;
+    s.ngayHetHanBh = ngayHetHanBh;
+    s.ghiChu = note;
+
+    // Cập nhật tên theo Model mới nếu đổi model
+    const p = (typeof INITIAL_PRODUCTS !== 'undefined' ? INITIAL_PRODUCTS : []).find(item => item.model === model);
+    if (p) {
+      s.tenHang = p.ten;
+      s.hang = p.hang;
+      s.nhom = p.nhom;
+      s.nhomHang = p.nhom;
+    }
+
+    if (!s.timeline) s.timeline = [];
+    s.timeline.unshift({
+      date: nowStr,
+      user: CURRENT_USER_NAME,
+      action: 'Sửa nhanh thiết bị',
+      note: `Điều chỉnh: ${changes.map(c => `${c.field}: ${c.oldVal} -> ${c.newVal}`).join(', ')}. Lý do: ${reason}`
+    });
+
+    // Cascade Serial mới sang Vouchers nếu Serial bị đổi
+    if (newSerial !== origSerial) {
+      if (typeof VOUCHERS_DB !== 'undefined') {
+        ['nhap', 'xuat'].forEach(type => {
+          (VOUCHERS_DB[type] || []).forEach(v => {
+            (v.items || []).forEach(it => {
+              if (it.serial === origSerial) it.serial = newSerial;
+            });
+          });
+        });
+      }
+    }
+
+    // 3. GHI NHẬN AUDIT TRAIL
+    if (typeof recordAuditLog === 'function') {
+      recordAuditLog(
+        'SỬA NHANH THIẾT BỊ',
+        `Serial ${newSerial}`,
+        'Before',
+        'After',
+        reason,
+        changes,
+        'Thiết bị',
+        '',
+        s.maPhieuNhap || s.maPhieuXuat || ''
+      );
+    }
+
+    // 4. LƯU BỀN VỮNG LOCALSTORAGE
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('THANH_AN_SERIAL_DB', JSON.stringify(SERIAL_DB.slice(0, 2000)));
+        if (typeof VOUCHERS_DB !== 'undefined') localStorage.setItem('THANH_AN_VOUCHERS_DB', JSON.stringify(VOUCHERS_DB));
+        if (typeof AUDIT_LOG_DB !== 'undefined') localStorage.setItem('THANH_AN_AUDIT_LOGS', JSON.stringify(AUDIT_LOG_DB));
+      }
+    } catch(e) {}
+
+    // 5. ĐỒNG BỘ GOOGLE SHEETS BACKEND
+    if (typeof WarehouseAPI !== 'undefined' && WarehouseAPI.isAppsScriptEnvironment()) {
+      try {
+        WarehouseAPI.updateThietBi({
+          oldSerial: origSerial,
+          newSerial: newSerial,
+          internalId: internalId,
+          model: model,
+          tenHang: s.tenHang || model,
+          kho: kho,
+          soThangBh: soThangBh,
+          ngayHetHanBh: ngayHetHanBh,
+          ghiChu: note,
+          reason: reason
+        }, function() {});
+      } catch(e) {}
+    }
+
+    // 6. ĐÓNG MODAL
+    const modalEl = document.getElementById('quickEditSerialModal');
+    if (modalEl && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+      const modal = bootstrap.Modal.getInstance(modalEl);
+      if (modal) modal.hide();
+    }
+
+    // 7. THÔNG BÁO THÀNH CÔNG TẠI CHỖ
+    if (typeof Swal !== 'undefined') {
+      Swal.fire({
+        icon: 'success',
+        title: 'Cập nhật thành công!',
+        html: `Đã lưu thay đổi cho thiết bị <b>${newSerial}</b> và tự động đồng bộ sang tất cả các phân hệ.`,
+        timer: 1500,
+        showConfirmButton: false
+      });
+    }
+
+    // 8. ĐỒNG BỘ ĐA CHIỀU: ĐÁNH DẤU DIRTY & CẬP NHẬT VIEW HIỆN TẠI
+    if (typeof notifySystemDataChanged === 'function') {
+      notifySystemDataChanged('SERIAL_EDIT', { serial: origSerial, newSerial: newSerial });
+    } else if (typeof markModulesDirty === 'function') {
+      markModulesDirty(['TonKho', 'Dashboard', 'Serial360', 'LichSu']);
+    }
+
+    // In-place refresh UI hiện tại
+    if (sourceModule === 'TonKho' && typeof renderTonKho === 'function') {
+      renderTonKho();
+    } else if (sourceModule === 'Serial360' && typeof lookupSerial360 === 'function') {
+      lookupSerial360(newSerial);
+    }
   }
 
   // XEM & IN TEM MÃ VẠCH BARCODE / QR
@@ -708,6 +1059,79 @@
     openSerial360Direct(serial);
   }
 
+  // Hiển thị danh sách thiết bị khi tra cứu theo Model hoặc từ khóa chung
+  function renderSerial360MultiResults(keyword, list) {
+    const container = document.getElementById('serial-360-profile-container');
+    if (!container) return;
+
+    let rowsHtml = list.map((s, idx) => {
+      let badgeStatus = '';
+      if (s.status === 'IN_STOCK') badgeStatus = '<span class="badge bg-success"><i class="fa-solid fa-box me-1"></i>Tồn kho</span>';
+      else if (s.status === 'SOLD') badgeStatus = '<span class="badge bg-primary"><i class="fa-solid fa-truck me-1"></i>Đã xuất</span>';
+      else if (s.status === 'IN_WARRANTY') badgeStatus = '<span class="badge bg-warning text-dark"><i class="fa-solid fa-wrench me-1"></i>Bảo hành</span>';
+      else badgeStatus = `<span class="badge bg-secondary">${s.status || 'N/A'}</span>`;
+
+      return `
+        <tr class="align-middle" style="cursor: pointer;" onclick="lookupSerial360('${escapeHtml(s.serial)}')">
+          <td class="text-center font-monospace text-muted small">${idx + 1}</td>
+          <td>
+            <span class="font-monospace fw-bold text-primary fs-6">${escapeHtml(s.serial)}</span>
+            ${s.internalId ? `<span class="badge bg-secondary font-monospace ms-1">${escapeHtml(s.internalId)}</span>` : ''}
+          </td>
+          <td>
+            <div class="fw-semibold text-dark">${escapeHtml(s.model || 'Chưa rõ')}</div>
+            <div class="small text-muted">${escapeHtml(s.tenHang || '')}</div>
+          </td>
+          <td><span class="badge bg-light text-dark border"><i class="fa-solid fa-warehouse me-1 text-secondary"></i>${escapeHtml(s.kho || 'Kho VP')}</span></td>
+          <td>${badgeStatus}</td>
+          <td>
+            ${s.khachHang ? `<div class="small fw-semibold text-dark">${escapeHtml(s.khachHang)}</div>` : '<span class="small text-muted">Chưa xuất</span>'}
+            ${s.ngayNhap ? `<div class="small text-muted">Nhập: ${escapeHtml(s.ngayNhap)}</div>` : ''}
+          </td>
+          <td class="text-end">
+            <button class="btn btn-sm btn-primary px-3 shadow-sm" onclick="event.stopPropagation(); lookupSerial360('${escapeHtml(s.serial)}')">
+              <i class="fa-solid fa-fingerprint me-1"></i> Mở 360°
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    container.innerHTML = `
+      <div class="app-card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white py-3 px-4 border-bottom d-flex justify-content-between align-items-center">
+          <div>
+            <h5 class="fw-bold mb-1 text-primary">
+              <i class="fa-solid fa-list-check me-2"></i>Tìm thấy ${list.length} thiết bị khớp với "${escapeHtml(keyword)}"
+            </h5>
+            <p class="text-muted small mb-0">Bấm vào bất kỳ dòng nào hoặc bấm nút "Mở 360°" để xem hồ sơ lý lịch chi tiết của từng máy.</p>
+          </div>
+          <button class="btn btn-sm btn-outline-secondary" onclick="lookupSerial360('')">
+            <i class="fa-solid fa-arrow-left me-1"></i> Đóng kết quả
+          </button>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0" style="font-size: 0.88rem;">
+            <thead class="table-light text-secondary">
+              <tr>
+                <th style="width: 40px;" class="text-center">#</th>
+                <th style="min-width: 150px;">Số Serial (SN)</th>
+                <th style="min-width: 200px;">Model & Sản Phẩm</th>
+                <th style="min-width: 120px;">Vị Trí Kho</th>
+                <th style="min-width: 110px;">Trạng Thái</th>
+                <th style="min-width: 150px;">Thông Tin Luân Chuyển</th>
+                <th style="min-width: 130px;" class="text-end">Hành Động</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  }
+
   /* ==================================================== */
   /* 11. HỒ SƠ LÝ LỊCH THIẾT BỊ (SERIAL 360° - YÊU CẦU F) */
   /* ==================================================== */
@@ -738,10 +1162,31 @@
     if (inputEl) inputEl.value = q;
 
     // Tìm trong SERIAL_DB
-    const target = (typeof SERIAL_DB !== 'undefined' ? SERIAL_DB : []).find(s => 
-      s.serial.toLowerCase() === q.toLowerCase() || 
+    let target = (typeof SERIAL_DB !== 'undefined' ? SERIAL_DB : []).find(s => 
+      (s.serial && s.serial.toLowerCase() === q.toLowerCase()) || 
       (s.internalId && s.internalId.toLowerCase() === q.toLowerCase())
     );
+
+    // Nâng cấp: Nếu không khớp chính xác Serial/Mã nội bộ, hỗ trợ tìm theo Model và từ khóa
+    if (!target) {
+      const sDb = (typeof SERIAL_DB !== 'undefined' ? SERIAL_DB : []);
+      // Ưu tiên khớp theo Model trước
+      let matched = sDb.filter(s => s.model && s.model.toLowerCase().includes(q.toLowerCase()));
+      if (matched.length === 0) {
+        matched = sDb.filter(s => 
+          (s.tenHang && s.tenHang.toLowerCase().includes(q.toLowerCase())) ||
+          (s.serial && s.serial.toLowerCase().includes(q.toLowerCase())) ||
+          (s.internalId && s.internalId.toLowerCase().includes(q.toLowerCase()))
+        );
+      }
+
+      if (matched.length === 1) {
+        target = matched[0];
+      } else if (matched.length > 1) {
+        renderSerial360MultiResults(q, matched);
+        return;
+      }
+    }
 
     if (!target) {
       if (typeof playBeepSound === 'function') playBeepSound();
@@ -749,7 +1194,7 @@
         <div class="app-card p-5 text-center text-muted">
           <i class="fa-solid fa-circle-question fs-1 text-danger mb-3"></i>
           <h5 class="text-danger fw-bold">Không tìm thấy thiết bị "${q}"</h5>
-          <p class="small text-muted mb-3">Serial hoặc Mã nội bộ này chưa từng được ghi nhận trong cơ sở dữ liệu kho Thành An.</p>
+          <p class="small text-muted mb-3">Không có Serial, Mã nội bộ hoặc Model nào khớp với từ khóa trong cơ sở dữ liệu kho Thành An.</p>
           <button class="btn btn-sm btn-outline-secondary" onclick="lookupSerial360('')">
             <i class="fa-solid fa-arrow-left me-1"></i> Quay lại tra cứu khác
           </button>
@@ -786,6 +1231,23 @@
       warrantyBadgeHtml = `<span class="badge bg-warning bg-opacity-10 text-warning-emphasis border border-warning px-2 py-1"><i class="fa-solid fa-shield me-1"></i>Tiêu chuẩn ${target.soThangBh} tháng</span>`;
     }
 
+    // Dynamic Product Resolver từ INITIAL_PRODUCTS
+    const pProd = (typeof INITIAL_PRODUCTS !== 'undefined' ? INITIAL_PRODUCTS : []).find(p => p.model && p.model.toLowerCase() === (target.model || '').toLowerCase());
+    const displayTenHang = pProd ? pProd.ten : (target.tenHang || target.model);
+    const displayHang = pProd ? pProd.hang : (target.hang || '');
+    const displayNhom = pProd ? pProd.nhom : (target.nhomHang || target.nhom || 'Thiết bị');
+
+    // Tìm thông tin khách hàng bổ trợ từ INITIAL_CUSTOMERS nếu thiếu
+    const cMatch = (isSold && typeof INITIAL_CUSTOMERS !== 'undefined') 
+      ? INITIAL_CUSTOMERS.find(c => (c.ten && c.ten.toLowerCase() === (target.khachHang || '').toLowerCase()) || (c.sdt && c.sdt === target.sdtKhach))
+      : null;
+
+    const actualNguoiLienHe = target.nguoiLienHe || (cMatch ? cMatch.nguoiLienHe : '');
+    const actualDiaChi = target.diaChiGiao || target.diaChi || (cMatch ? cMatch.diaChi : '');
+    const actualEmail = target.emailKhach || (cMatch ? cMatch.email : '');
+    const actualMst = target.mstKhach || (cMatch ? cMatch.mst : '');
+    const actualDocs = Array.isArray(target.chungTuKemTheo) ? target.chungTuKemTheo : [];
+
     let html = `
       <!-- 1. THẺ HEADER: THÔNG TIN NHẬN DIỆN THIẾT BỊ -->
       <div class="app-card mb-3 border-top border-4 ${isInStock ? 'border-success' : isSold ? 'border-primary' : 'border-warning'}">
@@ -802,11 +1264,15 @@
               ${warrantyBadgeHtml}
             </div>
             <div class="text-secondary small">
-              ${target.tenHang || target.model} 
-              · Phân nhóm: <a href="javascript:void(0)" onclick="goToTonKhoByCategory('${target.nhomHang || target.nhom || 'Máy In'}')" class="fw-semibold text-decoration-none text-primary">${target.nhomHang || target.nhom || 'Thiết bị'} <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:0.7rem;"></i></a>
+              <span class="fw-semibold text-dark">${displayTenHang}</span> 
+              ${displayHang ? `· Hãng: <span class="badge bg-light text-dark border">${displayHang}</span>` : ''}
+              · Phân nhóm: <a href="javascript:void(0)" onclick="goToTonKhoByCategory('${displayNhom}')" class="fw-semibold text-decoration-none text-primary">${displayNhom} <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:0.7rem;"></i></a>
             </div>
           </div>
           <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-sm btn-outline-warning text-dark fw-bold" onclick="openQuickEditSerialModal('${target.serial}', 'Serial360')" title="Sửa nhanh thông tin thiết bị này">
+              <i class="fa-solid fa-pen-to-square me-1"></i> Sửa nhanh
+            </button>
             <button class="btn btn-sm btn-outline-secondary" onclick="openCreateWarrantyCaseModal('${target.serial}')" title="Tiếp nhận ca bảo hành cho thiết bị này">
               <i class="fa-solid fa-shield-halved text-warning me-1"></i> Tạo ca bảo hành
             </button>
@@ -864,6 +1330,10 @@
                     </a>
                   </div>
                   <div class="d-flex justify-content-between align-items-center py-1 border-bottom border-light">
+                    <span class="text-secondary">Số HĐ / Phiếu NCC:</span>
+                    <span class="fw-semibold text-dark font-monospace">${target.soHoaDonNcc || '--'}</span>
+                  </div>
+                  <div class="d-flex justify-content-between align-items-center py-1 border-bottom border-light">
                     <span class="text-secondary">Thời gian nhập:</span>
                     <span class="fw-semibold text-dark"><i class="fa-regular fa-calendar-check me-1 text-muted"></i>${target.ngayNhap || '--'}</span>
                   </div>
@@ -872,6 +1342,10 @@
                     <a href="javascript:void(0)" onclick="goToTonKhoByKho('${target.kho}')" class="fw-bold text-decoration-none text-dark hover-text-primary" title="Bấm để xem danh sách máy tại kho ${target.kho}">
                       <i class="fa-solid fa-warehouse me-1 text-muted"></i>${target.kho || '--'} <i class="fa-solid fa-arrow-up-right-from-square small text-muted ms-1"></i>
                     </a>
+                  </div>
+                  <div class="d-flex justify-content-between align-items-center py-1 border-bottom border-light">
+                    <span class="text-secondary">Loại hàng / Tình trạng:</span>
+                    <span class="badge bg-light text-dark border">${target.loaiHang || target.condition || 'Chính Hãng'}</span>
                   </div>
                   <div class="d-flex justify-content-between align-items-center py-1">
                     <span class="text-secondary">Tuổi tồn kho hiện tại:</span>
@@ -896,6 +1370,11 @@
                         <i class="fa-solid fa-user me-1 text-secondary"></i>${target.khachHang} <i class="fa-solid fa-arrow-up-right-from-square small text-primary ms-1"></i>
                       </a>
                     </div>
+                    ${actualNguoiLienHe ? `
+                    <div class="d-flex justify-content-between align-items-center py-1 border-bottom border-light">
+                      <span class="text-secondary">Người liên hệ nhận máy:</span>
+                      <span class="fw-bold text-dark"><i class="fa-solid fa-user-tag me-1 text-primary"></i>${actualNguoiLienHe}</span>
+                    </div>` : ''}
                     <div class="d-flex justify-content-between align-items-center py-1 border-bottom border-light">
                       <span class="text-secondary">SĐT Khách hàng:</span>
                       <div class="d-flex align-items-center gap-2">
@@ -905,6 +1384,21 @@
                         ${target.sdtKhach ? `<button class="btn btn-link btn-sm p-0 text-muted" onclick="copyTextToClipboard('${target.sdtKhach}', 'SĐT')" title="Copy SĐT"><i class="fa-regular fa-copy"></i></button>` : ''}
                       </div>
                     </div>
+                    ${actualEmail ? `
+                    <div class="d-flex justify-content-between align-items-center py-1 border-bottom border-light">
+                      <span class="text-secondary">Email:</span>
+                      <span class="font-monospace text-dark">${actualEmail}</span>
+                    </div>` : ''}
+                    ${actualMst ? `
+                    <div class="d-flex justify-content-between align-items-center py-1 border-bottom border-light">
+                      <span class="text-secondary">Mã số thuế:</span>
+                      <span class="font-monospace text-primary fw-semibold">${actualMst}</span>
+                    </div>` : ''}
+                    ${actualDiaChi ? `
+                    <div class="d-flex justify-content-between align-items-center py-1 border-bottom border-light">
+                      <span class="text-secondary">Địa chỉ bàn giao:</span>
+                      <span class="text-dark small text-end fw-semibold" style="max-width: 60%;">${actualDiaChi}</span>
+                    </div>` : ''}
                     <div class="d-flex justify-content-between align-items-center py-1 border-bottom border-light">
                       <span class="text-secondary">Phiếu xuất kho:</span>
                       <a href="javascript:void(0)" onclick="goToHistoryVoucher('XUAT', '${target.maPhieuXuat}')" class="fw-bold font-monospace text-decoration-none text-primary" title="Bấm để xem chi tiết phiếu xuất ${target.maPhieuXuat}">
@@ -915,10 +1409,17 @@
                       <span class="text-secondary">Thời gian xuất:</span>
                       <span class="fw-semibold text-dark"><i class="fa-regular fa-calendar-check me-1 text-muted"></i>${target.ngayXuat || '--'}</span>
                     </div>
-                    <div class="d-flex justify-content-between align-items-center py-1">
+                    <div class="d-flex justify-content-between align-items-center py-1 border-bottom border-light">
                       <span class="text-secondary">Hạn bảo hành đến:</span>
                       <span class="fw-bold font-monospace text-warning-emphasis"><i class="fa-solid fa-shield-halved me-1 text-warning"></i>${target.ngayHetHanBh || `${target.soThangBh || 12} tháng`}</span>
                     </div>
+                    ${actualDocs.length > 0 ? `
+                    <div class="d-flex justify-content-between align-items-center py-1">
+                      <span class="text-secondary">Chứng từ đi kèm:</span>
+                      <div class="d-flex flex-wrap gap-1">
+                        ${actualDocs.map(d => `<span class="badge bg-light text-primary border">${d}</span>`).join('')}
+                      </div>
+                    </div>` : ''}
                   </div>
                 ` : `
                   <div class="text-center py-4 text-muted">
@@ -1037,4 +1538,11 @@
     `;
 
     container.innerHTML = html;
+  }
+
+  if (typeof window !== 'undefined') {
+    window.lookupSerial360 = lookupSerial360;
+    window.renderSerial360MultiResults = renderSerial360MultiResults;
+    window.openQuickEditSerialModal = openQuickEditSerialModal;
+    window.submitQuickEditSerial = submitQuickEditSerial;
   }

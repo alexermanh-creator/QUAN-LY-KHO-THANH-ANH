@@ -6,61 +6,50 @@
   let EXCEL_PARSED_ITEMS = [];
 
   function setupNhapKhoForm() {
-    // 1. Điền thông tin NCC (chỉ lấy active)
+    // 1. Điền thông tin NCC: Để trắng 100% theo chuẩn hệ thống
     const nccHidden = document.getElementById('nhap-ncc');
     const nccInput = document.getElementById('nhap-ncc-input');
-    const activeSuppliers = (typeof INITIAL_SUPPLIERS !== 'undefined' ? INITIAL_SUPPLIERS : []).filter(s => s.active !== false);
-    if (activeSuppliers.length > 0) {
-      if (!nccHidden.value || !activeSuppliers.some(s => s.tenTat === nccHidden.value)) {
-        nccHidden.value = activeSuppliers[0].tenTat;
-        if (nccInput) nccInput.value = `${activeSuppliers[0].tenTat} - ${activeSuppliers[0].tenDayDu}`;
-      }
-    } else {
-      nccHidden.value = '';
-      if (nccInput) nccInput.value = '';
+    if (nccHidden) nccHidden.value = '';
+    if (nccInput) {
+      nccInput.value = '';
+      nccInput.classList.remove('is-invalid', 'is-valid');
     }
 
     // 2. Điền danh sách Kho (từ INITIAL_WAREHOUSES)
     const khoSelect = document.getElementById('nhap-kho');
-    khoSelect.innerHTML = '';
-    const activeWarehouses = INITIAL_WAREHOUSES.filter(w => w.active !== false);
-    if (activeWarehouses.length === 0) {
-      khoSelect.innerHTML = '<option value="">-- Chưa có Kho (Vào Danh mục > Kho) --</option>';
-    } else {
-      activeWarehouses.forEach(w => {
-        const opt = document.createElement('option');
-        opt.value = w.tenKho;
-        opt.textContent = w.tenKho;
-        khoSelect.appendChild(opt);
-      });
+    if (khoSelect) {
+      khoSelect.innerHTML = '';
+      const activeWarehouses = (typeof INITIAL_WAREHOUSES !== 'undefined' ? INITIAL_WAREHOUSES : []).filter(w => w.active !== false);
+      if (activeWarehouses.length === 0) {
+        khoSelect.innerHTML = '<option value="">-- Chưa có Kho (Vào Danh mục > Kho) --</option>';
+      } else {
+        activeWarehouses.forEach(w => {
+          const opt = document.createElement('option');
+          opt.value = w.tenKho;
+          opt.textContent = w.tenKho;
+          khoSelect.appendChild(opt);
+        });
+      }
     }
 
-    // 3. Điền thông tin Model mặc định (chỉ lấy active)
+    // 3. Thông tin Model: Để trắng 100% theo chuẩn hệ thống
     const modelHidden = document.getElementById('nhap-select-model');
     const modelInput = document.getElementById('nhap-model-input');
-    const activeProducts = (typeof INITIAL_PRODUCTS !== 'undefined' ? INITIAL_PRODUCTS : []).filter(p => p.active !== false);
-
-    if (activeProducts.length > 0) {
-      if (!modelHidden.value || !activeProducts.some(p => p.model === modelHidden.value)) {
-        modelHidden.value = activeProducts[0].model;
-        if (modelInput) modelInput.value = activeProducts[0].model;
-      }
-    } else {
-      modelHidden.value = '';
-      if (modelInput) modelInput.value = '';
-    }
+    if (modelHidden) modelHidden.value = '';
+    if (modelInput) modelInput.value = '';
 
     // 4. Ngày hôm nay
     const today = getLocalDateStr();
-    document.getElementById('nhap-ngay').value = today;
+    const ngayNhapEl = document.getElementById('nhap-ngay');
+    if (ngayNhapEl) ngayNhapEl.value = today;
 
     // 5. Khởi tạo danh sách Loại Hàng
     if (typeof syncLoaiHangDropdowns === 'function') {
       syncLoaiHangDropdowns();
     }
 
-    // 6. Cập nhật info model đang chọn & tự động re-validate các mục trong draft
-    onSelectModelNhap();
+    // 6. Reset thông tin info box model
+    onSelectModelNhap('');
     if (typeof revalidateAllDraftNhapItems === 'function') {
       revalidateAllDraftNhapItems();
     } else {
@@ -68,11 +57,17 @@
     }
   }
 
-  // Gợi ý thông minh Nhà Cung Cấp khi gõ
+  // Gợi ý thông minh Nhà Cung Cấp khi gõ (Hiển thị đầy đủ 100% NCC, không cắt bớt 10 dòng)
   function handleSuggestNccNhap(query) {
     const q = (query || '').trim().toLowerCase();
     const dropdown = document.getElementById('nhap-ncc-suggest');
     if (!dropdown) return;
+
+    dropdown.style.zIndex = '1050';
+    dropdown.style.position = 'absolute';
+    dropdown.style.maxHeight = '280px';
+    dropdown.style.overflowY = 'auto';
+    dropdown.style.boxShadow = '0 10px 25px rgba(0,0,0,0.15)';
 
     const suppliers = (typeof INITIAL_SUPPLIERS !== 'undefined' ? INITIAL_SUPPLIERS : []).filter(s => s.active !== false);
     const matched = suppliers.filter(s => {
@@ -97,7 +92,8 @@
       return;
     }
 
-    dropdown.innerHTML = matched.slice(0, 10).map((s, idx) => `
+    // Hiển thị toàn bộ danh sách kèm thanh cuộn để thấy mọi NCC (kể cả Trí Việt)
+    dropdown.innerHTML = matched.map((s, idx) => `
       <div class="suggest-item ${idx === 0 ? 'active' : ''}" onclick="selectNccNhap('${s.tenTat.replace(/'/g, "\\'")}', '${(s.tenDayDu || '').replace(/'/g, "\\'")}')">
         <div>
           <div class="fw-bold text-primary" style="font-size: 0.85rem;">${s.tenTat}</div>
@@ -878,12 +874,27 @@
     }
   }
 
-  function openQuickAddModelModal(presetModel) {
+  function openQuickAddModelModal(presetModel, source = 'NHAP_KHO') {
     if (typeof closeAllSmartSuggests === 'function') closeAllSmartSuggests();
     const cleanPreset = String(presetModel || '').trim();
+    const srcInput = document.getElementById('quick-model-source');
+    if (srcInput) srcInput.value = source;
+
+    const titleEl = document.getElementById('quickAddModelModalTitleText');
+    const btnTextEl = document.getElementById('btn-submit-quick-model-text');
+    if (source === 'DANH_MUC') {
+      if (titleEl) titleEl.textContent = 'Thêm Model Vào Danh Mục';
+      if (btnTextEl) btnTextEl.textContent = 'Lưu Model';
+    } else {
+      if (titleEl) titleEl.textContent = 'Thêm Model Nhanh';
+      if (btnTextEl) btnTextEl.textContent = 'Lưu & Chọn Model Này';
+    }
+
     document.getElementById('quick-model-name').value = cleanPreset;
     document.getElementById('quick-model-desc').value = cleanPreset ? `Máy ${cleanPreset}` : '';
+    if (document.getElementById('quick-model-dvt')) document.getElementById('quick-model-dvt').value = 'Chiếc';
     document.getElementById('quick-model-warranty').value = '12';
+    if (document.getElementById('quick-model-note')) document.getElementById('quick-model-note').value = '';
 
     // Đổ danh sách Hãng vào select
     const brandSelect = document.getElementById('quick-model-brand');
@@ -927,12 +938,15 @@
   }
 
   function submitQuickAddModel() {
+    const source = document.getElementById('quick-model-source')?.value || 'NHAP_KHO';
     const model = document.getElementById('quick-model-name').value.trim();
     const ten = document.getElementById('quick-model-desc').value.trim();
+    const dvt = document.getElementById('quick-model-dvt')?.value.trim() || 'Chiếc';
     const hang = document.getElementById('quick-model-brand').value;
     const nhom = document.getElementById('quick-model-category').value;
     const defaultBh = parseInt(document.getElementById('quick-model-warranty').value) || 12;
     const manageSerial = document.getElementById('quick-model-serial-track').value === 'true';
+    const note = document.getElementById('quick-model-note')?.value.trim() || ((source === 'DANH_MUC') ? 'Thêm từ Danh mục' : 'Thêm từ Nhập kho');
 
     if (!model || !ten) {
       Swal.fire('Thiếu dữ liệu', 'Vui lòng nhập mã Model và Tên sản phẩm!', 'warning');
@@ -941,7 +955,7 @@
 
     if (INITIAL_PRODUCTS.some(p => p.model.toLowerCase() === model.toLowerCase())) {
       Swal.fire('Đã tồn tại', `Model "${model}" đã có sẵn trong danh mục!`, 'info');
-      selectModelNhap(model);
+      if (source === 'NHAP_KHO') selectModelNhap(model);
       const modalEl = document.getElementById('quickAddModelModal');
       const modal = bootstrap.Modal.getInstance(modalEl);
       if (modal) modal.hide();
@@ -953,14 +967,17 @@
       productId: prdId,
       model: model,
       ten: ten,
+      dvt: dvt,
       hang: hang,
       nhom: nhom,
       defaultBh: defaultBh,
       manageSerial: manageSerial,
-      ghiChu: 'Thêm mới từ hệ thống',
+      ghiChu: note,
       active: true
     };
-    INITIAL_PRODUCTS.push(newProd);
+
+    // Đưa model mới lên đầu danh sách để thấy ngay lập tức
+    INITIAL_PRODUCTS.unshift(newProd);
 
     try {
       if (typeof localStorage !== 'undefined') {
@@ -972,53 +989,75 @@
       try {
         google.script.run
           .withSuccessHandler(r => console.log('Đã lưu Model lên Google Sheet:', r))
-          .saveProduct(model, ten, nhom, 'Chiếc', hang, defaultBh, manageSerial, 'Thêm từ Nhập kho', null);
+          .saveProduct(model, ten, nhom, dvt, hang, defaultBh, manageSerial, note, null);
       } catch(e) {}
     }
 
-    // Cập nhật lại dropdown và tự chọn bản ghi vừa thêm (Yêu cầu B5)
-    if (typeof setupNhapKhoForm === 'function') {
-      setupNhapKhoForm();
-    }
-    const modelInput = document.getElementById('nhap-model-input');
-    const modelHidden = document.getElementById('nhap-select-model');
-    if (modelInput) modelInput.value = model;
-    if (modelHidden) modelHidden.value = model;
-    if (typeof onSelectModelNhap === 'function') {
-      onSelectModelNhap(model);
-    }
-    if (modelInput) {
-      modelInput.focus();
+    // Cập nhật lại dropdown và tự chọn bản ghi vừa thêm nếu đang ở Nhập kho
+    if (source === 'NHAP_KHO') {
+      if (typeof setupNhapKhoForm === 'function') {
+        setupNhapKhoForm();
+      }
+      const modelInput = document.getElementById('nhap-model-input');
+      const modelHidden = document.getElementById('nhap-select-model');
+      if (modelInput) modelInput.value = model;
+      if (modelHidden) modelHidden.value = model;
+      if (typeof onSelectModelNhap === 'function') {
+        onSelectModelNhap(model);
+      }
+      if (modelInput) {
+        modelInput.focus();
+      }
     }
 
-    recordAuditLog('THÊM MODEL MỚI', `Model ${model} (${prdId})`, 'None', `${ten} (${defaultBh}th)`, 'Thêm vào danh mục sản phẩm', [], 'Danh mục');
+    recordAuditLog('THÊM MODEL MỚI', `Model ${model} (${prdId})`, 'None', `${ten} (${defaultBh}th)`, (source === 'DANH_MUC') ? 'Thêm vào danh mục SP' : 'Thêm từ Nhập kho', [], 'Danh mục');
 
     const modalEl = document.getElementById('quickAddModelModal');
     const modal = bootstrap.Modal.getInstance(modalEl);
     if (modal) modal.hide();
 
     if (typeof markModulesDirty === 'function') {
-      markModulesDirty(['DanhMuc', 'NhapKho', 'XuatKho']);
+      markModulesDirty(['DanhMuc', 'NhapKho', 'XuatKho', 'TonKho']);
     }
-    if (typeof renderCatalogProductsTable === 'function') renderCatalogProductsTable();
+    if (typeof renderCatalogProductsTable === 'function') {
+      renderCatalogProductsTable();
+    }
 
     Swal.fire({
       icon: 'success',
       title: 'Đã thêm Model!',
-      text: `Model "${model}" (${prdId}) đã được lưu thành công vào danh mục hệ thống.`,
+      text: (source === 'NHAP_KHO')
+        ? `Model "${model}" (${prdId}) đã được lưu và chọn vào phiếu nhập.`
+        : `Model "${model}" (${prdId}) đã được lưu thành công vào Danh mục hệ thống.`,
       timer: 1500,
       showConfirmButton: false
     });
   }
 
-  function openQuickAddSupplierModal(presetName) {
+  function openQuickAddSupplierModal(presetName, source = 'NHAP_KHO') {
     if (typeof closeAllSmartSuggests === 'function') closeAllSmartSuggests();
     const cleanPreset = String(presetName || '').trim();
+    const srcInput = document.getElementById('quick-ncc-source');
+    if (srcInput) srcInput.value = source;
+
+    const titleEl = document.getElementById('quickAddSupplierModalTitleText');
+    const btnTextEl = document.getElementById('btn-submit-quick-ncc-text');
+    if (source === 'DANH_MUC') {
+      if (titleEl) titleEl.textContent = 'Thêm Nhà Cung Cấp Vào Danh Mục';
+      if (btnTextEl) btnTextEl.textContent = 'Lưu Nhà Cung Cấp';
+    } else {
+      if (titleEl) titleEl.textContent = 'Thêm Nhà Cung Cấp Nhanh';
+      if (btnTextEl) btnTextEl.textContent = 'Lưu & Chọn NCC Này';
+    }
+
     document.getElementById('quick-ncc-code').value = cleanPreset ? cleanPreset.toUpperCase() : '';
     document.getElementById('quick-ncc-name').value = cleanPreset ? cleanPreset : '';
     document.getElementById('quick-ncc-phone').value = '';
+    if (document.getElementById('quick-ncc-contact')) document.getElementById('quick-ncc-contact').value = '';
     document.getElementById('quick-ncc-email').value = '';
+    if (document.getElementById('quick-ncc-tax')) document.getElementById('quick-ncc-tax').value = '';
     document.getElementById('quick-ncc-address').value = '';
+
     const modalEl = document.getElementById('quickAddSupplierModal');
     if (modalEl && typeof bootstrap !== 'undefined') {
       const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
@@ -1027,11 +1066,15 @@
   }
 
   function submitQuickAddSupplier() {
+    const source = document.getElementById('quick-ncc-source')?.value || 'NHAP_KHO';
     const code = document.getElementById('quick-ncc-code').value.trim().toUpperCase();
     const name = document.getElementById('quick-ncc-name').value.trim();
     const phone = document.getElementById('quick-ncc-phone').value.trim();
+    const contact = document.getElementById('quick-ncc-contact')?.value.trim() || '';
     const email = document.getElementById('quick-ncc-email').value.trim();
+    const tax = document.getElementById('quick-ncc-tax')?.value.trim() || '';
     const address = document.getElementById('quick-ncc-address').value.trim();
+    const note = (source === 'DANH_MUC') ? 'Thêm từ Danh mục' : 'Thêm từ Nhập kho';
 
     if (!code || !name) {
       Swal.fire('Thiếu thông tin', 'Vui lòng nhập mã viết tắt và tên nhà cung cấp!', 'warning');
@@ -1042,7 +1085,7 @@
     const isDup = INITIAL_SUPPLIERS.some(s => s.tenTat.toUpperCase() === code || s.tenDayDu.toLowerCase() === name.toLowerCase());
     if (isDup) {
       Swal.fire('Đã tồn tại', `Nhà cung cấp "${code}" đã có trong danh mục!`, 'info');
-      selectNccNhap(code, name);
+      if (source === 'NHAP_KHO') selectNccNhap(code, name);
       const modalEl = document.getElementById('quickAddSupplierModal');
       const modal = bootstrap.Modal.getInstance(modalEl);
       if (modal) modal.hide();
@@ -1060,12 +1103,14 @@
       sdt: phone,
       email: email,
       diaChi: address,
-      nguoiLienHe: '',
-      mst: '',
-      ghiChu: 'Thêm mới từ hệ thống',
+      nguoiLienHe: contact,
+      mst: tax,
+      ghiChu: note,
       active: true
     };
-    INITIAL_SUPPLIERS.push(newSup);
+
+    // Đưa NCC mới lên đầu danh sách để thấy ngay lập tức
+    INITIAL_SUPPLIERS.unshift(newSup);
 
     try {
       if (typeof localStorage !== 'undefined') {
@@ -1077,13 +1122,15 @@
       try {
         google.script.run
           .withSuccessHandler(r => console.log('Đã lưu NCC lên Google Sheet:', r))
-          .saveNcc(code, name, phone, email, address, '', '', 'Thêm từ Nhập kho');
+          .saveNcc(code, name, phone, email, address, contact, tax, note);
       } catch(e) {}
     }
 
-    selectNccNhap(code, name);
+    if (source === 'NHAP_KHO') {
+      selectNccNhap(code, name);
+    }
 
-    recordAuditLog('THÊM NCC MỚI', `NCC ${code} (${supId})`, 'None', name, 'Thêm vào danh mục NCC', [], 'Danh mục');
+    recordAuditLog('THÊM NCC MỚI', `NCC ${code} (${supId}) - Lh: ${contact || 'None'}`, 'None', name, (source === 'DANH_MUC') ? 'Thêm vào danh mục NCC' : 'Thêm từ Nhập kho', [], 'Danh mục');
 
     const modalEl = document.getElementById('quickAddSupplierModal');
     const modal = bootstrap.Modal.getInstance(modalEl);
@@ -1092,12 +1139,16 @@
     if (typeof markModulesDirty === 'function') {
       markModulesDirty(['DanhMuc', 'NhapKho', 'XuatKho']);
     }
-    if (typeof renderCatalogSuppliersTable === 'function') renderCatalogSuppliersTable();
+    if (typeof renderCatalogSuppliersTable === 'function') {
+      renderCatalogSuppliersTable();
+    }
 
     Swal.fire({
       icon: 'success',
       title: 'Đã thêm Nhà cung cấp!',
-      text: `NCC "${code}" (${supId}) đã được lưu thành công vào danh mục hệ thống.`,
+      text: (source === 'NHAP_KHO')
+        ? `NCC "${code}" (${supId}) đã được lưu và chọn vào phiếu nhập.`
+        : `NCC "${code}" (${supId}) đã được lưu thành công vào Danh mục hệ thống.`,
       timer: 1500,
       showConfirmButton: false
     });

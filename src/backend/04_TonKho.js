@@ -125,15 +125,72 @@ function updateThietBiSafe(data) {
   if (data.kho) tbSheet.getRange(targetRow, 6).setValue(data.kho);
   if (data.internalId) tbSheet.getRange(targetRow, 18).setValue(data.internalId);
 
+  // 1. ĐỒNG BỘ 2 CHIỀU VÀO DANH MỤC SẢN PHẨM (DM_SAN_PHAM)
+  if (data.model) {
+    try {
+      const newModel = String(data.model).trim();
+      const newTenHang = String(data.tenHang || newModel).trim();
+      let spSheet = ss.getSheetByName("DM_SAN_PHAM");
+      if (!spSheet) {
+        spSheet = ss.insertSheet("DM_SAN_PHAM");
+        spSheet.appendRow(["Mã Model", "Tên Sản Phẩm", "Nhóm Hàng", "Đơn Vị Tính", "Hãng SX", "Bảo Hành (Tháng)", "Ghi Chú"]);
+      }
+      let foundModelRow = -1;
+      const lastRowSp = spSheet.getLastRow();
+      if (lastRowSp > 1) {
+        const spData = spSheet.getRange(2, 1, lastRowSp - 1, 2).getValues();
+        for (let i = 0; i < spData.length; i++) {
+          if (String(spData[i][0]).trim().toUpperCase() === newModel.toUpperCase()) {
+            foundModelRow = i + 2;
+            break;
+          }
+        }
+      }
+      if (foundModelRow !== -1) {
+        // Đã có trong danh mục: cập nhật Tên sản phẩm nếu có
+        if (newTenHang) spSheet.getRange(foundModelRow, 2).setValue(newTenHang);
+      } else {
+        // Chưa có trong danh mục: TỰ ĐỘNG THÊM MỚI VÀO DANH MỤC HỆ THỐNG
+        const brand = newModel.split(' ')[0] || 'Chính Hãng';
+        spSheet.appendRow([newModel, newTenHang, "Phần cứng", "Chiếc", brand, 12, "Tự động tạo từ Đính chính Tồn kho"]);
+      }
+    } catch(errSp) {
+      Logger.log("Lỗi đồng bộ DM_SAN_PHAM: " + errSp.message);
+    }
+  }
+
+  // 2. ĐỒNG BỘ SANG CHỨNG TỪ GỐC (LICH_SU_NHAP) NẾU CÓ
+  try {
+    const lsNhapSheet = ss.getSheetByName("LICH_SU_NHAP");
+    if (lsNhapSheet && lsNhapSheet.getLastRow() > 1) {
+      const numRows = Math.min(200, lsNhapSheet.getLastRow() - 1);
+      const startRow = Math.max(2, lsNhapSheet.getLastRow() - numRows + 1);
+      const lsData = lsNhapSheet.getRange(startRow, 1, numRows, 6).getValues();
+      for (let i = 0; i < lsData.length; i++) {
+        let serialsCol = String(lsData[i][5] || '');
+        if (serialsCol.toUpperCase().includes(oldSerial)) {
+          serialsCol = serialsCol.replace(new RegExp(oldSerial, 'gi'), newSerial);
+          lsNhapSheet.getRange(startRow + i, 6).setValue(serialsCol);
+          if (data.model) {
+            lsNhapSheet.getRange(startRow + i, 4).setValue(data.model);
+          }
+          break;
+        }
+      }
+    }
+  } catch(errLs) {
+    Logger.log("Lỗi đồng bộ LICH_SU_NHAP: " + errLs.message);
+  }
+
   try {
     let logSheet = ss.getSheetByName("NHAT_KY_HOAT_DONG");
     if (logSheet) {
       const timeStr = Utilities.formatDate(new Date(), "GMT+7", "dd/MM/yyyy HH:mm:ss");
-      logSheet.appendRow([timeStr, "Admin/Quản Lý", "ĐÍNH CHÍNH THIẾT BỊ", newSerial, `Sửa từ [${oldSerial}] sang [${newSerial}]. Lý do: ${data.reason || 'Sửa thông tin'}`]);
+      logSheet.appendRow([timeStr, "Admin/Quản Lý", "ĐÍNH CHÍNH THIẾT BỊ", newSerial, `Sửa từ [${oldSerial}] sang [${newSerial} | ${data.model || ''}]. Lý do: ${data.reason || 'Sửa thông tin'}`]);
     }
   } catch(e){}
 
-  return { success: true, message: `Đã đính chính thiết bị [${newSerial}] thành công!` };
+  return { success: true, message: `Đã đính chính thiết bị [${newSerial}] và đồng bộ Danh mục thành công!` };
 }
 
 function transferSingleDevice(serial, targetKho, note) {

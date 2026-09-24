@@ -431,8 +431,17 @@
 
   function notifyCatalogChanged() {
     if (typeof markModulesDirty === 'function') {
-      markModulesDirty(['DanhMuc', 'NhapKho', 'XuatKho']);
+      markModulesDirty(['DanhMuc', 'NhapKho', 'XuatKho', 'TonKho', 'BaoHanh', 'LichSu']);
     }
+    // Cập nhật lại các dropdown bộ lọc và form liên quan ngay lập tức
+    try {
+      if (typeof populateCatalogFilterDropdowns === 'function') {
+        populateCatalogFilterDropdowns();
+      }
+      if (typeof setupNhapKhoForm === 'function') {
+        setupNhapKhoForm();
+      }
+    } catch(e) {}
   }
 
   let CATALOG_SUBTAB_STATE = {
@@ -522,8 +531,16 @@
     mapping.forEach(m => {
       const el = document.querySelector(m.sel);
       if (el) {
-        el.addEventListener('shown.bs.tab', () => renderActiveCatalogSubtab(m.name));
-        el.addEventListener('click', () => renderActiveCatalogSubtab(m.name));
+        const handler = () => {
+          if (typeof document !== 'undefined' && document.body) {
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+            if (document.documentElement) document.documentElement.style.overflow = '';
+          }
+          renderActiveCatalogSubtab(m.name);
+        };
+        el.addEventListener('shown.bs.tab', handler);
+        el.addEventListener('click', handler);
       }
     });
 
@@ -543,6 +560,72 @@
     }
   }
 
+  // Hàm chuẩn hóa chuỗi ngày DD/MM/YYYY, YYYY-MM-DD thành timestamp
+  function parseDateToTime(str) {
+    if (!str) return 0;
+    if (typeof str === 'number') return str;
+    const s = String(str).trim();
+    const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
+    if (m) {
+      return new Date(
+        parseInt(m[3], 10),
+        parseInt(m[2], 10) - 1,
+        parseInt(m[1], 10),
+        parseInt(m[4] || 0, 10),
+        parseInt(m[5] || 0, 10),
+        parseInt(m[6] || 0, 10)
+      ).getTime();
+    }
+    const mIso = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+    if (mIso) {
+      return new Date(parseInt(mIso[1], 10), parseInt(mIso[2], 10) - 1, parseInt(mIso[3], 10)).getTime();
+    }
+    const t = new Date(s).getTime();
+    return isNaN(t) ? 0 : t;
+  }
+
+  // Lấy thời gian nhập kho gần nhất và số lượng tồn thực tế của Model
+  function getModelLatestImportInfo(modelName) {
+    if (!modelName) return { time: 0, dateStr: '', totalStock: 0 };
+    const mLower = String(modelName).trim().toLowerCase();
+    let maxTime = 0;
+    let latestDateStr = '';
+    let totalStock = 0;
+
+    // 1. Quét trong SERIAL_DB
+    if (typeof SERIAL_DB !== 'undefined' && Array.isArray(SERIAL_DB)) {
+      SERIAL_DB.forEach(s => {
+        if (s.model && s.model.toLowerCase() === mLower) {
+          if (s.status === 'IN_STOCK') totalStock++;
+          if (s.ngayNhap) {
+            const t = parseDateToTime(s.ngayNhap);
+            if (t > maxTime) {
+              maxTime = t;
+              latestDateStr = s.ngayNhap;
+            }
+          }
+        }
+      });
+    }
+
+    // 2. Quét trong VOUCHERS_DB.nhap
+    if (typeof VOUCHERS_DB !== 'undefined' && Array.isArray(VOUCHERS_DB.nhap)) {
+      VOUCHERS_DB.nhap.forEach(v => {
+        const hasModel = (v.model && v.model.toLowerCase() === mLower) ||
+          (v.items && v.items.some(it => it.model && it.model.toLowerCase() === mLower));
+        if (hasModel) {
+          const t = parseDateToTime(v.ngayNhap || v.ngay || v.createdAt);
+          if (t > maxTime) {
+            maxTime = t;
+            latestDateStr = v.ngayNhap || v.ngay || (v.createdAt ? String(v.createdAt).split(' ')[0] : '');
+          }
+        }
+      });
+    }
+
+    return { time: maxTime, dateStr: latestDateStr, totalStock };
+  }
+
   // 4.1 SẢN PHẨM / MODEL
   function renderCatalogProductsTable() {
     const tbody = document.getElementById('catalog-products-table-body');
@@ -555,17 +638,19 @@
     const catF = document.getElementById('filter-cat-model-category')?.value || '';
     const activeF = document.getElementById('filter-cat-model-active')?.value || '';
 
-    let list = INITIAL_PRODUCTS.filter(p => {
+    let list = (typeof INITIAL_PRODUCTS !== 'undefined' ? INITIAL_PRODUCTS : []).filter(p => {
+      // Chuẩn hóa active: nếu không có trường active thì mặc định coi là Active (true)
+      const pActive = p.active !== false;
       if (activeF !== '') {
         const isActive = activeF === 'true';
-        if (p.active !== isActive) return false;
+        if (pActive !== isActive) return false;
       }
       if (brandF) {
         const targetB = String(brandF).trim().toUpperCase();
         const pB = String(p.hang || p.brand || '').trim().toUpperCase();
         if (pB !== targetB) {
-          const bObj = INITIAL_BRANDS.find(b => b.maHang.toUpperCase() === targetB || b.tenHang.toUpperCase() === targetB);
-          if (!bObj || (pB !== bObj.maHang.toUpperCase() && pB !== bObj.tenHang.toUpperCase())) {
+          const bObj = INITIAL_BRANDS.find(b => (b.maHang && b.maHang.toUpperCase() === targetB) || (b.tenHang && b.tenHang.toUpperCase() === targetB));
+          if (!bObj || ((bObj.maHang && pB !== bObj.maHang.toUpperCase()) && (bObj.tenHang && pB !== bObj.tenHang.toUpperCase()))) {
             return false;
           }
         }
@@ -576,6 +661,14 @@
         if (!text.includes(sQ)) return false;
       }
       return true;
+    });
+
+    // MẶC ĐỊNH: SẮP XẾP TOÀN BỘ MODEL THEO THỜI GIAN NHẬP TỪ MỚI NHẤT ĐẾN CŨ
+    list.sort((a, b) => {
+      const infA = getModelLatestImportInfo(a.model);
+      const infB = getModelLatestImportInfo(b.model);
+      if (infB.time !== infA.time) return infB.time - infA.time; // Giảm dần: Mới nhất lên đầu
+      return String(a.model || '').localeCompare(String(b.model || ''));
     });
 
     if (list.length === 0) {
@@ -591,37 +684,52 @@
       return;
     }
 
-    tbody.innerHTML = list.map(p => `
-      <tr class="${p.active === false ? 'table-secondary text-muted' : ''}">
-        <td data-label="Product ID"><span class="font-monospace fw-bold text-secondary">${p.productId || '--'}</span></td>
-        <td data-label="Model"><strong class="text-primary font-monospace">${p.model}</strong></td>
-        <td data-label="Tên Sản Phẩm">${p.ten}</td>
-        <td data-label="Hãng"><span class="badge bg-light text-dark border">${(() => {
-          const bObj = INITIAL_BRANDS.find(b => b.maHang.toUpperCase() === String(p.hang || p.brand || '').toUpperCase() || b.tenHang.toUpperCase() === String(p.hang || p.brand || '').toUpperCase());
-          return bObj ? `${bObj.maHang} (${bObj.tenHang})` : (p.hang || 'Chưa rõ');
-        })()}</span></td>
-        <td data-label="Nhóm"><span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25">${p.nhom}</span></td>
-        <td data-label="BH Mặc Định" class="text-center font-monospace">${p.defaultBh} th</td>
-        <td data-label="Serial Track" class="text-center">
-          ${p.manageSerial !== false ? '<span class="badge bg-success">Có quản lý</span>' : '<span class="badge bg-secondary">Không</span>'}
-        </td>
-        <td data-label="Trạng Thái">
-          ${p.active !== false ? '<span class="badge bg-success">Active</span>' : '<span class="badge bg-danger">Inactive</span>'}
-        </td>
-        <td data-label="Thao Tác" class="text-end">
-          <div class="btn-group btn-group-sm">
-            <button class="btn btn-outline-primary" title="Sửa Model" onclick="openEditModelModal('${p.productId || p.model}')">
-              <i class="fa-solid fa-pen-to-square"></i>
-            </button>
-            <button class="btn ${p.active !== false ? 'btn-outline-danger' : 'btn-outline-success'}" 
-                    title="${p.active !== false ? 'Ngừng sử dụng (Inactive)' : 'Kích hoạt lại'}" 
-                    onclick="toggleModelActive('${p.productId || p.model}')">
-              <i class="fa-solid ${p.active !== false ? 'fa-ban' : 'fa-check'}"></i>
-            </button>
-          </div>
-        </td>
-      </tr>
-    `).join('');
+    tbody.innerHTML = list.map(p => {
+      const inf = getModelLatestImportInfo(p.model);
+      return `
+        <tr class="${p.active === false ? 'table-secondary text-muted' : ''}">
+          <td data-label="Product ID"><span class="font-monospace fw-bold text-secondary">${p.productId || '--'}</span></td>
+          <td data-label="Model">
+            <strong class="text-primary font-monospace fs-6">${p.model}</strong>
+          </td>
+          <td data-label="Tên Sản Phẩm">
+            <div class="fw-semibold text-dark">${p.ten || p.model}</div>
+            <div class="small text-muted mt-1 d-flex flex-wrap gap-2">
+              <span class="badge ${inf.dateStr ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-light text-secondary border'}">
+                <i class="fa-solid fa-truck-ramp-box me-1"></i>Lần nhập: <strong>${inf.dateStr || 'Chưa có phiếu'}</strong>
+              </span>
+              <span class="badge ${inf.totalStock > 0 ? 'bg-primary-subtle text-primary border border-primary-subtle' : 'bg-light text-secondary border'}">
+                <i class="fa-solid fa-box me-1"></i>Tồn kho: <strong>${inf.totalStock} máy</strong>
+              </span>
+            </div>
+          </td>
+          <td data-label="Hãng"><span class="badge bg-light text-dark border">${(() => {
+            const bObj = INITIAL_BRANDS.find(b => (b.maHang && b.maHang.toUpperCase() === String(p.hang || p.brand || '').toUpperCase()) || (b.tenHang && b.tenHang.toUpperCase() === String(p.hang || p.brand || '').toUpperCase()));
+            return bObj ? `${bObj.maHang} (${bObj.tenHang})` : (p.hang || 'Chưa rõ');
+          })()}</span></td>
+          <td data-label="Nhóm"><span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25">${p.nhom || 'Khác'}</span></td>
+          <td data-label="BH Mặc Định" class="text-center font-monospace">${p.defaultBh || 12} th</td>
+          <td data-label="Serial Track" class="text-center">
+            ${p.manageSerial !== false ? '<span class="badge bg-success">Có quản lý</span>' : '<span class="badge bg-secondary">Không</span>'}
+          </td>
+          <td data-label="Trạng Thái">
+            ${p.active !== false ? '<span class="badge bg-success">Active</span>' : '<span class="badge bg-danger">Inactive</span>'}
+          </td>
+          <td data-label="Thao Tác" class="text-end">
+            <div class="btn-group btn-group-sm">
+              <button class="btn btn-outline-primary" title="Sửa Model" onclick="openEditModelModal('${p.productId || p.model}')">
+                <i class="fa-solid fa-pen-to-square"></i>
+              </button>
+              <button class="btn ${p.active !== false ? 'btn-outline-danger' : 'btn-outline-success'}" 
+                      title="${p.active !== false ? 'Ngừng sử dụng (Inactive)' : 'Kích hoạt lại'}" 
+                      onclick="toggleModelActive('${p.productId || p.model}')">
+                <i class="fa-solid ${p.active !== false ? 'fa-ban' : 'fa-check'}"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
   }
 
   function openEditModelModal(productIdOrModel) {
@@ -758,7 +866,8 @@
         if (typeof google !== 'undefined' && google.script && google.script.run) {
           google.script.run
             .withSuccessHandler(r => console.log('Đã cập nhật Model trên Sheet:', r))
-            .saveProduct(p.model, p.ten, p.nhom, p.rowId || null);
+            .withFailureHandler(err => console.error('Lỗi cập nhật Model trên Sheet:', err))
+            .saveProduct(p.model, p.ten, p.nhom, p.dvt || 'Chiếc', p.hang || '', p.defaultBh || 12, p.manageSerial !== false, p.ghiChu || '', p.rowId || null);
         }
 
         recordAuditLog('SỬA MODEL', `Model ${oldModel} -> ${newModel}`, 'Cũ', 'Mới', 'Cập nhật đầy đủ thông tin danh mục sản phẩm');
@@ -985,7 +1094,7 @@
         if (typeof google !== 'undefined' && google.script && google.script.run) {
           google.script.run
             .withSuccessHandler(r => console.log('Đã lưu NCC Sheet:', r))
-            .saveNcc(s.tenTat, s.tenDayDu, s.sdt, s.ghiChu, s.rowId || null);
+            .saveNcc(s.tenTat, s.tenDayDu, s.sdt, s.email || '', s.diaChi || '', s.nguoiLienHe || '', s.mst || '', s.ghiChu || '', s.rowId || null);
         }
 
         recordAuditLog('SỬA NCC', `NCC ${oldCode} -> ${newCode}`, 'Cũ', 'Mới', 'Cập nhật đầy đủ danh mục nhà cung cấp');
@@ -1041,7 +1150,7 @@
     const sQ = (document.getElementById('filter-cat-cust-search')?.value || '').toLowerCase().trim();
     let list = INITIAL_CUSTOMERS.filter(c => {
       if (sQ) {
-        const text = `${c.customerId || ''} ${c.ten || ''} ${c.sdt || ''} ${c.email || ''} ${c.diaChi || ''}`.toLowerCase();
+        const text = `${c.customerId || ''} ${c.ten || ''} ${c.sdt || ''} ${c.nguoiLienHe || ''} ${c.email || ''} ${c.diaChi || ''} ${c.mst || ''}`.toLowerCase();
         if (!text.includes(sQ)) return false;
       }
       return true;
@@ -1051,7 +1160,7 @@
       const isFiltered = !!sQ;
       tbody.innerHTML = `
         <tr>
-          <td colspan="7" class="text-center text-muted py-5">
+          <td colspan="8" class="text-center text-muted py-5">
             <i class="fa-solid fa-users fs-2 mb-2 d-block text-secondary opacity-50"></i>
             ${isFiltered ? 'Không tìm thấy khách hàng nào phù hợp.' : 'Chưa có Khách hàng nào trong danh mục.<br><small class="text-muted">Nhấn "+ Thêm Khách Hàng" hoặc nạp từ dữ liệu thực tế.</small>'}
           </td>
@@ -1065,8 +1174,11 @@
         <td data-label="Customer ID"><span class="font-monospace fw-bold text-secondary">${c.customerId || '--'}</span></td>
         <td data-label="Tên Khách Hàng"><strong>${c.ten}</strong></td>
         <td data-label="Số Điện Thoại" class="font-monospace text-primary fw-bold">${c.sdt}</td>
-        <td data-label="Email">${c.email || '--'}</td>
-        <td data-label="Địa Chỉ">${c.diaChi || '--'}</td>
+        <td data-label="Người Liên Hệ">
+          ${c.nguoiLienHe ? `<span class="badge bg-light text-dark border"><i class="fa-solid fa-user me-1 text-secondary"></i>${c.nguoiLienHe}</span>` : '<span class="text-muted opacity-50">--</span>'}
+        </td>
+        <td data-label="Email">${c.email || '<span class="text-muted opacity-50">--</span>'}</td>
+        <td data-label="Địa Chỉ">${c.diaChi || '<span class="text-muted opacity-50">--</span>'}</td>
         <td data-label="Trạng Thái">
           ${c.active !== false ? '<span class="badge bg-success">Active</span>' : '<span class="badge bg-danger">Inactive</span>'}
         </td>
@@ -1165,16 +1277,40 @@
         const oldPhone = c.sdt;
         Object.assign(c, res.value);
 
+        // Đồng bộ sang SERIAL_DB và VOUCHERS_DB nếu thay đổi Tên hoặc SĐT Khách hàng
+        if (oldName !== c.ten || oldPhone !== c.sdt) {
+          if (typeof SERIAL_DB !== 'undefined') {
+            SERIAL_DB.forEach(s => {
+              if (s.khachHang === oldName) {
+                s.khachHang = c.ten;
+                s.sdtKhach = c.sdt;
+              }
+            });
+          }
+          if (typeof VOUCHERS_DB !== 'undefined' && VOUCHERS_DB.xuat) {
+            VOUCHERS_DB.xuat.forEach(v => {
+              if (v.khachHang === oldName) {
+                v.khachHang = c.ten;
+                v.sdtKhach = c.sdt;
+              }
+            });
+          }
+        }
+
         try {
           if (typeof localStorage !== 'undefined') {
             localStorage.setItem('THANH_AN_CUSTOMERS', JSON.stringify(INITIAL_CUSTOMERS));
+            localStorage.setItem('THANH_AN_SERIAL_DB', JSON.stringify(SERIAL_DB.slice(0, 2000)));
+            if (typeof VOUCHERS_DB !== 'undefined') {
+              localStorage.setItem('THANH_AN_VOUCHERS_DB', JSON.stringify(VOUCHERS_DB));
+            }
           }
         } catch(e) {}
 
         if (typeof google !== 'undefined' && google.script && google.script.run) {
           google.script.run
             .withSuccessHandler(r => console.log('Đã lưu Khách hàng Sheet:', r))
-            .saveKhachHang(c.ten, c.sdt, c.diaChi, c.ghiChu, c.rowId || null);
+            .saveKhachHang(c.customerId || '', c.ten, c.sdt, c.nguoiLienHe || '', c.email || '', c.diaChi || '', c.mst || '', c.nhomKhach || 'Khách lẻ', c.ghiChu || '', c.rowId || null);
         }
 
         recordAuditLog('SỬA KHÁCH HÀNG', `KH ${oldName} (${oldPhone}) -> ${c.ten}`, 'Cũ', 'Mới', 'Cập nhật đầy đủ danh mục khách hàng');

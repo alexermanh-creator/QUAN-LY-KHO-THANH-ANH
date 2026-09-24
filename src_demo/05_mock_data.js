@@ -5810,6 +5810,34 @@
     }
   } catch(e) {}
 
+  // Mặc định sắp xếp toàn bộ phiếu Nhập và Xuất từ mới nhất lên đầu tiên
+  const sortVouchersDescInitial = (a, b) => {
+    const parseT = (v) => {
+      if (!v) return 0;
+      if (v.createdAt) {
+        const m = String(v.createdAt).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
+        if (m) {
+          return new Date(parseInt(m[3], 10), parseInt(m[2], 10) - 1, parseInt(m[1], 10), parseInt(m[4] || 0, 10), parseInt(m[5] || 0, 10), parseInt(m[6] || 0, 10)).getTime();
+        }
+      }
+      const ds = v.ngayXuat || v.ngayNhap || v.ngay || '';
+      const p = String(ds).split('/');
+      if (p.length === 3) return new Date(parseInt(p[2], 10), parseInt(p[1], 10) - 1, parseInt(p[0], 10)).getTime();
+      return 0;
+    };
+    const tA = parseT(a);
+    const tB = parseT(b);
+    if (tB !== tA) return tB - tA;
+    return String(b.maPhieu || '').localeCompare(String(a.maPhieu || ''));
+  };
+
+  if (VOUCHERS_DB && Array.isArray(VOUCHERS_DB.nhap)) {
+    VOUCHERS_DB.nhap.sort(sortVouchersDescInitial);
+  }
+  if (VOUCHERS_DB && Array.isArray(VOUCHERS_DB.xuat)) {
+    VOUCHERS_DB.xuat.sort(sortVouchersDescInitial);
+  }
+
   // 4. CƠ SỞ DỮ LIỆU BẢO HÀNH (WARRANTY CASES)
   let WARRANTY_CASES_DB = [];
   try {

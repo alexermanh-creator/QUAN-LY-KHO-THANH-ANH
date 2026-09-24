@@ -230,6 +230,21 @@
             })
           });
         });
+        // Hàm sắp xếp phiếu mới nhất lên đầu
+        const sortVouchersDescending = (a, b) => {
+          const parseT = (v) => {
+            if (!v) return 0;
+            const ds = v.ngayXuat || v.ngayNhap || v.ngay || '';
+            const p = String(ds).split('/');
+            if (p.length === 3) return new Date(parseInt(p[2]), parseInt(p[1]) - 1, parseInt(p[0])).getTime();
+            return 0;
+          };
+          const tA = parseT(a);
+          const tB = parseT(b);
+          if (tB !== tA) return tB - tA;
+          return String(b.maPhieu || '').localeCompare(String(a.maPhieu || ''));
+        };
+
         // Hợp nhất: Giữ nguyên các phiếu client mà server chưa kịp có
         const currentNhap = Array.isArray(VOUCHERS_DB.nhap) ? VOUCHERS_DB.nhap : [];
         currentNhap.forEach(v => {
@@ -237,7 +252,7 @@
             serverNhapMap.set(v.maPhieu, v);
           }
         });
-        VOUCHERS_DB.nhap = Array.from(serverNhapMap.values());
+        VOUCHERS_DB.nhap = Array.from(serverNhapMap.values()).sort(sortVouchersDescending);
       }
 
       // 9b. Smart Merge Phiếu Xuất (BẢO TOÀN 100% PHIẾU XUẤT CỦA KHÁCH HÀNG)
@@ -283,7 +298,7 @@
             serverXuatMap.set(v.maPhieu, v);
           }
         });
-        VOUCHERS_DB.xuat = Array.from(serverXuatMap.values());
+        VOUCHERS_DB.xuat = Array.from(serverXuatMap.values()).sort(sortVouchersDescending);
       }
 
       try {
