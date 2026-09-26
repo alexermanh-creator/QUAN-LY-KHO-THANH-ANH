@@ -12552,14 +12552,99 @@
         });
       }
 
-      // 3. Lưu bền vững vào localStorage
+      // 3. Đồng bộ trạng thái SERIAL_DB theo các phiếu vừa nhận (khắc phục độ trễ tồn kho giữa các máy)
+      let serialsUpdated = false;
+      if (typeof SERIAL_DB !== 'undefined' && Array.isArray(SERIAL_DB)) {
+        if (Array.isArray(res.xuat)) {
+          res.xuat.forEach(sv => {
+            const isConfirmed = sv.status === 'CONFIRMED' || !sv.status || sv.status === 'COMPLETED';
+            const isCancelled = sv.status === 'CANCELLED';
+            const snList = Array.isArray(sv.items) 
+              ? sv.items.map(it => String(it.serial || '').trim().toUpperCase()).filter(s => s && s !== 'N/A')
+              : (sv.serials ? String(sv.serials).split(',').map(s => s.trim().toUpperCase()).filter(s => s && s !== 'N/A') : []);
+
+            snList.forEach(sn => {
+              const found = SERIAL_DB.find(s => s.serial && s.serial.toUpperCase() === sn);
+              if (found) {
+                if (isConfirmed && found.status !== 'SOLD') {
+                  found.status = 'SOLD';
+                  found.khachHang = sv.khachHang || found.khachHang;
+                  found.sdtKhach = sv.sdtKhach || found.sdtKhach;
+                  found.ngayXuat = sv.ngay || found.ngayXuat;
+                  found.maPhieuXuat = sv.maPhieu;
+                  serialsUpdated = true;
+                } else if (isCancelled && (found.maPhieuXuat === sv.maPhieu || found.status === 'SOLD')) {
+                  found.status = 'IN_STOCK';
+                  found.khachHang = '';
+                  found.sdtKhach = '';
+                  found.ngayXuat = '';
+                  found.maPhieuXuat = '';
+                  serialsUpdated = true;
+                }
+              }
+            });
+          });
+        }
+
+        if (Array.isArray(res.nhap)) {
+          res.nhap.forEach(sn => {
+            if (sn.status === 'CANCELLED') return;
+            if (Array.isArray(sn.items)) {
+              sn.items.forEach(it => {
+                const serialNo = String(it.serial || '').trim().toUpperCase();
+                if (serialNo && serialNo !== 'N/A') {
+                  const existing = SERIAL_DB.find(s => s.serial && s.serial.toUpperCase() === serialNo);
+                  if (!existing) {
+                    SERIAL_DB.unshift({
+                      serial: serialNo,
+                      model: it.model || 'N/A',
+                      tenHang: it.tenHang || it.model || 'N/A',
+                      kho: it.kho || sn.kho || 'Kho VP',
+                      status: 'IN_STOCK',
+                      ngayNhap: sn.ngay || '',
+                      ncc: sn.ncc || '',
+                      maPhieuNhap: sn.maPhieu,
+                      soThangBh: it.soThangBh || '12 tháng'
+                    });
+                    serialsUpdated = true;
+                  }
+                }
+              });
+            }
+          });
+        }
+
+        if (serialsUpdated) {
+          try {
+            if (typeof localStorage !== 'undefined') {
+              localStorage.setItem('THANH_AN_SERIAL_DB', JSON.stringify(SERIAL_DB.slice(0, 2000)));
+            }
+          } catch(e) {}
+        }
+      }
+
+      // 4. Lưu bền vững vào localStorage
       try {
         if (typeof localStorage !== 'undefined') {
           localStorage.setItem('THANH_AN_VOUCHERS_DB', JSON.stringify(VOUCHERS_DB));
         }
       } catch(e) {}
 
-      // 4. Tự động làm mới giao diện mượt mà nếu đang ở màn hình Lịch Sử Phiếu
+      // 5. Tự động làm mới Dashboard & Tồn Kho ngay lập tức
+      if (typeof updateStats === 'function') {
+        try { updateStats(); } catch(e) {}
+      }
+      if (typeof renderDashboard === 'function') {
+        try { renderDashboard(); } catch(e) {}
+      }
+      if (typeof renderTonKho === 'function' && document.getElementById('tab-ton-kho')?.classList.contains('active')) {
+        try { renderTonKho(); } catch(e) {}
+      }
+      if (typeof renderKhoDetail === 'function' && document.getElementById('tab-chi-tiet-kho')?.classList.contains('active')) {
+        try { renderKhoDetail(); } catch(e) {}
+      }
+
+      // 6. Tự động làm mới giao diện mượt mà nếu đang ở màn hình Lịch Sử Phiếu
       if (typeof HISTORY_SUBTAB_STATE !== 'undefined') {
         if (HISTORY_SUBTAB_STATE.xuat) HISTORY_SUBTAB_STATE.xuat.dirty = true;
         if (HISTORY_SUBTAB_STATE.nhap) HISTORY_SUBTAB_STATE.nhap.dirty = true;
@@ -23420,7 +23505,14 @@
     });
 
     // MẶC ĐỊNH: SẮP XẾP KHÁCH HÀNG TỪ MỚI NHẤT ĐẾN CŨ NHẤT
-    list.sort((a, b) => (Number(b.rowId) || 0) - (Number(a.rowId) || 0));
+    list.sort((a, b) => {
+      const rA = Number(a.rowId) || 0;
+      const rB = Number(b.rowId) || 0;
+      if (rA !== rB) return rB - rA;
+      const numA = parseInt(String(a.customerId || '').replace(/\D/g, ''), 10) || 0;
+      const numB = parseInt(String(b.customerId || '').replace(/\D/g, ''), 10) || 0;
+      return numB - numA;
+    });
 
     if (list.length === 0) {
       const isFiltered = !!sQ;

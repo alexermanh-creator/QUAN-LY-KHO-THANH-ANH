@@ -59,7 +59,7 @@ function menuFormatPhoneNumbers() {
     ["DM_KHACH_HANG", "DM_NCC", "SERIAL_MASTER"].forEach(sName => {
       const s = ss.getSheetByName(sName);
       if (s && s.getLastRow() > 1) {
-        const colIdx = (sName === 'DM_KHACH_HANG') ? 2 : (sName === 'DM_NCC' ? 3 : 14);
+        const colIdx = (sName === 'DM_KHACH_HANG') ? (s.getLastColumn() >= 8 ? 3 : 2) : (sName === 'DM_NCC' ? 3 : 14);
         const r = s.getRange(2, colIdx, s.getLastRow() - 1, 1);
         r.setNumberFormat("@");
         const vals = r.getValues().map(row => {
@@ -369,8 +369,38 @@ function getInitAppData(options) {
 
   const khSheet = ss.getSheetByName("DM_KHACH_HANG");
   const khachHang = (khSheet && khSheet.getLastRow() > 1) 
-    ? khSheet.getRange(2, 1, khSheet.getLastRow() - 1, 4).getValues()
-        .map((r, i) => ({ rowId: i + 2, ten: r[0], sdt: formatPhoneNumberBackend(r[1]), diaChi: r[2], ghiChu: r[3] })) 
+    ? khSheet.getRange(2, 1, khSheet.getLastRow() - 1, Math.min(9, khSheet.getLastColumn())).getValues()
+        .map((r, i) => {
+          // Xử lý thông minh tương thích cả Sheet chuẩn 9 cột lẫn Sheet cũ 4 cột
+          const is9Col = String(r[0] || '').trim().startsWith('KH') || String(r[0] || '').trim().startsWith('CUS') || (r[2] && String(r[2]).replace(/\D/g, '').length >= 8);
+          if (is9Col) {
+            return {
+              rowId: i + 2,
+              customerId: String(r[0] || `KH${String(i + 1).padStart(3, '0')}`).trim(),
+              ten: String(r[1] || r[0] || '').trim(),
+              sdt: formatPhoneNumberBackend(r[2]),
+              nguoiLienHe: String(r[3] || '').trim(),
+              email: String(r[4] || '').trim(),
+              diaChi: String(r[5] || '').trim(),
+              mst: String(r[6] || '').trim(),
+              nhomKhach: String(r[7] || 'Khách lẻ').trim(),
+              ghiChu: String(r[8] || '').trim()
+            };
+          } else {
+            return {
+              rowId: i + 2,
+              customerId: `KH${String(i + 1).padStart(3, '0')}`,
+              ten: String(r[0] || '').trim(),
+              sdt: formatPhoneNumberBackend(r[1]),
+              nguoiLienHe: '',
+              email: '',
+              diaChi: String(r[2] || '').trim(),
+              mst: '',
+              nhomKhach: 'Khách lẻ',
+              ghiChu: String(r[3] || '').trim()
+            };
+          }
+        }).filter(k => k.ten) 
     : [];
 
   const qcSheet = ss.getSheetByName("DM_QUY_CHUAN");
@@ -1933,18 +1963,16 @@ function getAllVouchersBackend() {
     const tbSheet = ss.getSheetByName("SERIAL_MASTER") || ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
     const custSheet = ss.getSheetByName("DM_KHACH_HANG");
 
-    // Map SĐT và Tên chuẩn từ DM_KHACH_HANG để luôn phản ánh thông tin khách hàng mới nhất khi người dùng sửa ở Danh mục
-    const custInfoByPhone = new Map();
+    // Map thông tin chuẩn từ DM_KHACH_HANG để bổ sung thông tin liên hệ khi cần
     const custInfoByName = new Map();
     if (custSheet && custSheet.getLastRow() > 1) {
-      const cData = custSheet.getRange(2, 2, custSheet.getLastRow() - 1, 5).getValues();
-      cData.forEach(c => {
-        const cTen = String(c[0] || '').trim();
-        const cRawPhone = formatPhoneNumberBackend(c[1]);
-        const cleanPhone = String(c[1] || '').replace(/\D/g, '');
-        const cDiaChi = String(c[4] || '').trim();
-        const info = { ten: cTen, sdt: cRawPhone, diaChi: cDiaChi };
-        if (cleanPhone) custInfoByPhone.set(cleanPhone, info);
+      const cData = custSheet.getRange(2, 1, custSheet.getLastRow() - 1, Math.min(9, custSheet.getLastColumn())).getValues();
+      cData.forEach(r => {
+        const is9Col = String(r[0] || '').trim().startsWith('KH') || String(r[0] || '').trim().startsWith('CUS') || (r[2] && String(r[2]).replace(/\D/g, '').length >= 8);
+        const cTen = is9Col ? String(r[1] || r[0] || '').trim() : String(r[0] || '').trim();
+        const cPhone = is9Col ? formatPhoneNumberBackend(r[2]) : formatPhoneNumberBackend(r[1]);
+        const cDiaChi = is9Col ? String(r[5] || '').trim() : String(r[2] || '').trim();
+        const info = { ten: cTen, sdt: cPhone, diaChi: cDiaChi };
         if (cTen) custInfoByName.set(cTen.toLowerCase(), info);
       });
     }
@@ -1993,18 +2021,13 @@ function getAllVouchersBackend() {
           }
         }
 
-        // TỰ ĐỘNG CẬP NHẬT THEO DANH MỤC KHÁCH HÀNG: nếu SĐT hoặc Tên có trong danh mục, lấy thông tin chuẩn mới nhất
-        const cleanPhone = sdt ? sdt.replace(/\D/g, '') : '';
-        if (cleanPhone && custInfoByPhone.has(cleanPhone)) {
-          const cInfo = custInfoByPhone.get(cleanPhone);
-          khachName = cInfo.ten;
-          sdt = cInfo.sdt || cleanPhone;
+        // Ưu tiên SĐT giao hàng thực tế đã ghi nhận trên phiếu xuất.
+        // Chỉ bổ sung SĐT từ danh mục nếu phiếu chưa ghi nhận SĐT.
+        if (sdt) {
+          sdt = formatPhoneNumberBackend(sdt);
         } else if (khachName && custInfoByName.has(khachName.toLowerCase())) {
           const cInfo = custInfoByName.get(khachName.toLowerCase());
-          khachName = cInfo.ten;
-          if (!sdt) sdt = cInfo.sdt;
-        } else if (cleanPhone) {
-          sdt = cleanPhone.startsWith('0') ? cleanPhone : ('0' + cleanPhone);
+          sdt = cInfo.sdt || '';
         }
 
         // Xác định trạng thái
@@ -2144,7 +2167,8 @@ function chuanHoaVaDonDepGoogleSheets(adminPassword) {
     // 3. Chuẩn hóa SĐT trong DM_KHACH_HANG
     const khSheet = ss.getSheetByName("DM_KHACH_HANG");
     if (khSheet && khSheet.getLastRow() > 1) {
-      const rSdt = khSheet.getRange(2, 2, khSheet.getLastRow() - 1, 1);
+      const sdtCol = khSheet.getLastColumn() >= 8 ? 3 : 2;
+      const rSdt = khSheet.getRange(2, sdtCol, khSheet.getLastRow() - 1, 1);
       rSdt.setNumberFormat("@");
       const dSdt = rSdt.getValues().map(r => {
         let p = String(r[0] || '').trim();

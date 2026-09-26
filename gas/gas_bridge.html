@@ -17,6 +17,7 @@
         id: p.model,
         productId: p.model,
         model: p.model,
+        rowId: p.rowId || null,
         name: p.ten,
         ten: p.ten,
         tenHang: p.ten,
@@ -36,9 +37,10 @@
 
     // 2. Đồng bộ Danh mục Nhà Cung Cấp
     if (Array.isArray(serverData.ncc) && serverData.ncc.length > 0) {
-      INITIAL_SUPPLIERS = serverData.ncc.map(n => ({
+      INITIAL_SUPPLIERS = serverData.ncc.map((n, idx) => ({
         id: n.tenTat,
         supplierId: n.tenTat,
+        rowId: n.rowId || (idx + 2),
         code: n.tenTat,
         tenTat: n.tenTat,
         name: n.tenDayDu || n.tenTat,
@@ -58,8 +60,9 @@
     // 3. Đồng bộ Danh mục Khách Hàng (Đầy đủ, không lọc chặn bất kỳ khách nào)
     if (Array.isArray(serverData.khachHang) && serverData.khachHang.length > 0) {
       INITIAL_CUSTOMERS = serverData.khachHang.map((k, idx) => ({
-        id: 'KH' + String(idx + 1).padStart(3, '0'),
-        customerId: 'KH' + String(idx + 1).padStart(3, '0'),
+        id: k.customerId || ('KH' + String(idx + 1).padStart(3, '0')),
+        customerId: k.customerId || ('KH' + String(idx + 1).padStart(3, '0')),
+        rowId: k.rowId || (idx + 2),
         name: k.ten,
         ten: k.ten,
         phone: k.sdt || '',
@@ -78,9 +81,10 @@
 
     // 4. Đồng bộ Danh mục Kho Hàng (Tiếng Việt chuẩn)
     if (Array.isArray(serverData.kho) && serverData.kho.length > 0) {
-      INITIAL_WAREHOUSES = serverData.kho.map(k => ({
+      INITIAL_WAREHOUSES = serverData.kho.map((k, idx) => ({
         id: k.val,
         warehouseId: k.val,
+        rowId: k.rowId || (idx + 2),
         code: k.val,
         name: k.val,
         maKho: k.val,
@@ -93,9 +97,10 @@
 
     // 5. Đồng bộ Danh mục Nhóm Hàng
     if (Array.isArray(serverData.nhomHang) && serverData.nhomHang.length > 0) {
-      INITIAL_CATEGORIES = serverData.nhomHang.map(nh => ({
+      INITIAL_CATEGORIES = serverData.nhomHang.map((nh, idx) => ({
         id: nh.val,
         catId: nh.val,
+        rowId: nh.rowId || (idx + 2),
         code: nh.val,
         name: nh.val,
         maNhom: nh.val,
@@ -107,9 +112,10 @@
 
     // 6. Đồng bộ Danh mục Hãng SX
     if (Array.isArray(serverData.hangSx) && serverData.hangSx.length > 0) {
-      INITIAL_BRANDS = serverData.hangSx.map(h => ({
+      INITIAL_BRANDS = serverData.hangSx.map((h, idx) => ({
         id: h.val,
         brandId: h.val,
+        rowId: h.rowId || (idx + 2),
         code: h.val,
         name: h.val,
         maHang: h.val,
@@ -126,6 +132,7 @@
         const months = parseInt(valStr.replace(/\D/g, '')) || 0;
         return {
           id: 'BH-' + (months || (idx + 1)),
+          rowId: b.rowId || (idx + 2),
           tenGoi: valStr,
           soThang: months,
           ghiChu: 'Thời hạn bảo hành hệ thống',
@@ -141,7 +148,7 @@
         const valStr = String(l.val || l);
         return {
           id: 'COND-' + (idx + 1),
-          rowId: l.rowId || null,
+          rowId: l.rowId || (idx + 2),
           ten: valStr,
           name: valStr,
           ghiChu: 'Phân loại hàng hóa quy chuẩn',

@@ -12552,14 +12552,99 @@
         });
       }
 
-      // 3. Lưu bền vững vào localStorage
+      // 3. Đồng bộ trạng thái SERIAL_DB theo các phiếu vừa nhận (khắc phục độ trễ tồn kho giữa các máy)
+      let serialsUpdated = false;
+      if (typeof SERIAL_DB !== 'undefined' && Array.isArray(SERIAL_DB)) {
+        if (Array.isArray(res.xuat)) {
+          res.xuat.forEach(sv => {
+            const isConfirmed = sv.status === 'CONFIRMED' || !sv.status || sv.status === 'COMPLETED';
+            const isCancelled = sv.status === 'CANCELLED';
+            const snList = Array.isArray(sv.items) 
+              ? sv.items.map(it => String(it.serial || '').trim().toUpperCase()).filter(s => s && s !== 'N/A')
+              : (sv.serials ? String(sv.serials).split(',').map(s => s.trim().toUpperCase()).filter(s => s && s !== 'N/A') : []);
+
+            snList.forEach(sn => {
+              const found = SERIAL_DB.find(s => s.serial && s.serial.toUpperCase() === sn);
+              if (found) {
+                if (isConfirmed && found.status !== 'SOLD') {
+                  found.status = 'SOLD';
+                  found.khachHang = sv.khachHang || found.khachHang;
+                  found.sdtKhach = sv.sdtKhach || found.sdtKhach;
+                  found.ngayXuat = sv.ngay || found.ngayXuat;
+                  found.maPhieuXuat = sv.maPhieu;
+                  serialsUpdated = true;
+                } else if (isCancelled && (found.maPhieuXuat === sv.maPhieu || found.status === 'SOLD')) {
+                  found.status = 'IN_STOCK';
+                  found.khachHang = '';
+                  found.sdtKhach = '';
+                  found.ngayXuat = '';
+                  found.maPhieuXuat = '';
+                  serialsUpdated = true;
+                }
+              }
+            });
+          });
+        }
+
+        if (Array.isArray(res.nhap)) {
+          res.nhap.forEach(sn => {
+            if (sn.status === 'CANCELLED') return;
+            if (Array.isArray(sn.items)) {
+              sn.items.forEach(it => {
+                const serialNo = String(it.serial || '').trim().toUpperCase();
+                if (serialNo && serialNo !== 'N/A') {
+                  const existing = SERIAL_DB.find(s => s.serial && s.serial.toUpperCase() === serialNo);
+                  if (!existing) {
+                    SERIAL_DB.unshift({
+                      serial: serialNo,
+                      model: it.model || 'N/A',
+                      tenHang: it.tenHang || it.model || 'N/A',
+                      kho: it.kho || sn.kho || 'Kho VP',
+                      status: 'IN_STOCK',
+                      ngayNhap: sn.ngay || '',
+                      ncc: sn.ncc || '',
+                      maPhieuNhap: sn.maPhieu,
+                      soThangBh: it.soThangBh || '12 tháng'
+                    });
+                    serialsUpdated = true;
+                  }
+                }
+              });
+            }
+          });
+        }
+
+        if (serialsUpdated) {
+          try {
+            if (typeof localStorage !== 'undefined') {
+              localStorage.setItem('THANH_AN_SERIAL_DB', JSON.stringify(SERIAL_DB.slice(0, 2000)));
+            }
+          } catch(e) {}
+        }
+      }
+
+      // 4. Lưu bền vững vào localStorage
       try {
         if (typeof localStorage !== 'undefined') {
           localStorage.setItem('THANH_AN_VOUCHERS_DB', JSON.stringify(VOUCHERS_DB));
         }
       } catch(e) {}
 
-      // 4. Tự động làm mới giao diện mượt mà nếu đang ở màn hình Lịch Sử Phiếu
+      // 5. Tự động làm mới Dashboard & Tồn Kho ngay lập tức
+      if (typeof updateStats === 'function') {
+        try { updateStats(); } catch(e) {}
+      }
+      if (typeof renderDashboard === 'function') {
+        try { renderDashboard(); } catch(e) {}
+      }
+      if (typeof renderTonKho === 'function' && document.getElementById('tab-ton-kho')?.classList.contains('active')) {
+        try { renderTonKho(); } catch(e) {}
+      }
+      if (typeof renderKhoDetail === 'function' && document.getElementById('tab-chi-tiet-kho')?.classList.contains('active')) {
+        try { renderKhoDetail(); } catch(e) {}
+      }
+
+      // 6. Tự động làm mới giao diện mượt mà nếu đang ở màn hình Lịch Sử Phiếu
       if (typeof HISTORY_SUBTAB_STATE !== 'undefined') {
         if (HISTORY_SUBTAB_STATE.xuat) HISTORY_SUBTAB_STATE.xuat.dirty = true;
         if (HISTORY_SUBTAB_STATE.nhap) HISTORY_SUBTAB_STATE.nhap.dirty = true;
@@ -23420,7 +23505,14 @@
     });
 
     // MẶC ĐỊNH: SẮP XẾP KHÁCH HÀNG TỪ MỚI NHẤT ĐẾN CŨ NHẤT
-    list.sort((a, b) => (Number(b.rowId) || 0) - (Number(a.rowId) || 0));
+    list.sort((a, b) => {
+      const rA = Number(a.rowId) || 0;
+      const rB = Number(b.rowId) || 0;
+      if (rA !== rB) return rB - rA;
+      const numA = parseInt(String(a.customerId || '').replace(/\D/g, ''), 10) || 0;
+      const numB = parseInt(String(b.customerId || '').replace(/\D/g, ''), 10) || 0;
+      return numB - numA;
+    });
 
     if (list.length === 0) {
       const isFiltered = !!sQ;
@@ -27243,6 +27335,7 @@
         id: p.model,
         productId: p.model,
         model: p.model,
+        rowId: p.rowId || null,
         name: p.ten,
         ten: p.ten,
         tenHang: p.ten,
@@ -27262,9 +27355,10 @@
 
     // 2. Đồng bộ Danh mục Nhà Cung Cấp
     if (Array.isArray(serverData.ncc) && serverData.ncc.length > 0) {
-      INITIAL_SUPPLIERS = serverData.ncc.map(n => ({
+      INITIAL_SUPPLIERS = serverData.ncc.map((n, idx) => ({
         id: n.tenTat,
         supplierId: n.tenTat,
+        rowId: n.rowId || (idx + 2),
         code: n.tenTat,
         tenTat: n.tenTat,
         name: n.tenDayDu || n.tenTat,
@@ -27284,8 +27378,9 @@
     // 3. Đồng bộ Danh mục Khách Hàng (Đầy đủ, không lọc chặn bất kỳ khách nào)
     if (Array.isArray(serverData.khachHang) && serverData.khachHang.length > 0) {
       INITIAL_CUSTOMERS = serverData.khachHang.map((k, idx) => ({
-        id: 'KH' + String(idx + 1).padStart(3, '0'),
-        customerId: 'KH' + String(idx + 1).padStart(3, '0'),
+        id: k.customerId || ('KH' + String(idx + 1).padStart(3, '0')),
+        customerId: k.customerId || ('KH' + String(idx + 1).padStart(3, '0')),
+        rowId: k.rowId || (idx + 2),
         name: k.ten,
         ten: k.ten,
         phone: k.sdt || '',
@@ -27304,9 +27399,10 @@
 
     // 4. Đồng bộ Danh mục Kho Hàng (Tiếng Việt chuẩn)
     if (Array.isArray(serverData.kho) && serverData.kho.length > 0) {
-      INITIAL_WAREHOUSES = serverData.kho.map(k => ({
+      INITIAL_WAREHOUSES = serverData.kho.map((k, idx) => ({
         id: k.val,
         warehouseId: k.val,
+        rowId: k.rowId || (idx + 2),
         code: k.val,
         name: k.val,
         maKho: k.val,
@@ -27319,9 +27415,10 @@
 
     // 5. Đồng bộ Danh mục Nhóm Hàng
     if (Array.isArray(serverData.nhomHang) && serverData.nhomHang.length > 0) {
-      INITIAL_CATEGORIES = serverData.nhomHang.map(nh => ({
+      INITIAL_CATEGORIES = serverData.nhomHang.map((nh, idx) => ({
         id: nh.val,
         catId: nh.val,
+        rowId: nh.rowId || (idx + 2),
         code: nh.val,
         name: nh.val,
         maNhom: nh.val,
@@ -27333,9 +27430,10 @@
 
     // 6. Đồng bộ Danh mục Hãng SX
     if (Array.isArray(serverData.hangSx) && serverData.hangSx.length > 0) {
-      INITIAL_BRANDS = serverData.hangSx.map(h => ({
+      INITIAL_BRANDS = serverData.hangSx.map((h, idx) => ({
         id: h.val,
         brandId: h.val,
+        rowId: h.rowId || (idx + 2),
         code: h.val,
         name: h.val,
         maHang: h.val,
@@ -27352,6 +27450,7 @@
         const months = parseInt(valStr.replace(/\D/g, '')) || 0;
         return {
           id: 'BH-' + (months || (idx + 1)),
+          rowId: b.rowId || (idx + 2),
           tenGoi: valStr,
           soThang: months,
           ghiChu: 'Thời hạn bảo hành hệ thống',
@@ -27367,7 +27466,7 @@
         const valStr = String(l.val || l);
         return {
           id: 'COND-' + (idx + 1),
-          rowId: l.rowId || null,
+          rowId: l.rowId || (idx + 2),
           ten: valStr,
           name: valStr,
           ghiChu: 'Phân loại hàng hóa quy chuẩn',

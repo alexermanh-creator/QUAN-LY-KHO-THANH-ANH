@@ -1163,7 +1163,14 @@
     });
 
     // MẶC ĐỊNH: SẮP XẾP KHÁCH HÀNG TỪ MỚI NHẤT ĐẾN CŨ NHẤT
-    list.sort((a, b) => (Number(b.rowId) || 0) - (Number(a.rowId) || 0));
+    list.sort((a, b) => {
+      const rA = Number(a.rowId) || 0;
+      const rB = Number(b.rowId) || 0;
+      if (rA !== rB) return rB - rA;
+      const numA = parseInt(String(a.customerId || '').replace(/\D/g, ''), 10) || 0;
+      const numB = parseInt(String(b.customerId || '').replace(/\D/g, ''), 10) || 0;
+      return numB - numA;
+    });
 
     if (list.length === 0) {
       const isFiltered = !!sQ;
