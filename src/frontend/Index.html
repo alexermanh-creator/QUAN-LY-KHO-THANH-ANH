@@ -15144,15 +15144,15 @@
             }
           }
 
-          // Pattern 5: Dòng máy Dell (7 ký tự Service Tag)
-          const dellRegex = /\b[A-Z0-9]{7}\b/gi;
+          // Pattern 5: Dòng máy Dell (7 ký tự Service Tag có từ khóa neo)
+          const dellRegex = /(?:Service\s*Tag|ST)[\s\:\-]+([A-Z0-9]{7})\b/gi;
           let dellMatch;
           while ((dellMatch = dellRegex.exec(ocrText)) !== null) {
-            const snFound = isValidSerialNumber(dellMatch[0]);
+            const snFound = isValidSerialNumber(dellMatch[1]);
             if (snFound && !results.some(r => r.serial === snFound)) {
               results.push({
                 serial: snFound,
-                method: 'AI OCR (Định Dạng Dell/Phổ Thông)',
+                method: 'AI OCR (Định Dạng Dell Service Tag)',
                 thumbnailDataUrl: thumbnailDataUrl
               });
             }
