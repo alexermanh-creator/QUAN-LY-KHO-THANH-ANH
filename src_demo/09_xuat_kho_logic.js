@@ -3,6 +3,13 @@
   /* ==================================================== */
 
   let CURRENT_DRAFT_XUAT_ITEMS = [];
+  let CURRENT_XUAT_DRAFT_ID = null;
+  let CURRENT_XUAT_DRAFT_VERSION = null;
+  let IS_SAVING_XUAT_DRAFT = false;
+  if (typeof window !== 'undefined') {
+    window.CURRENT_XUAT_DRAFT_ID = null;
+    window.CURRENT_XUAT_DRAFT_VERSION = null;
+  }
 
   function setupXuatKhoForm() {
     const custHidden = document.getElementById('xuat-khach-select');
@@ -576,11 +583,17 @@
 
     let html = '';
     CURRENT_DRAFT_XUAT_ITEMS.forEach((item, idx) => {
+      const isUnavailable = (item.isAvailable === false);
       html += `
-        <tr>
+        <tr class="${isUnavailable ? 'table-danger' : ''}">
           <td data-label="#">${idx + 1}</td>
           <td data-label="Model"><strong class="text-primary">${item.model}</strong></td>
-          <td data-label="Serial Hãng"><span class="font-monospace fw-bold">${item.serial}</span></td>
+          <td data-label="Serial Hãng">
+            <span class="font-monospace fw-bold ${isUnavailable ? 'text-danger text-decoration-line-through' : ''}">${item.serial}</span>
+            ${isUnavailable 
+              ? `<div class="badge bg-danger text-wrap text-start mt-1 d-block" style="font-size: 0.68rem;"><i class="fa-solid fa-triangle-exclamation me-1"></i>${item.errorReason}</div>` 
+              : (item.isAvailable === true && CURRENT_XUAT_DRAFT_ID ? `<span class="badge bg-success-subtle text-success border border-success p-1 ms-1" style="font-size: 0.65rem;"><i class="fa-solid fa-check"></i> Sẵn sàng</span>` : '')}
+          </td>
           <td data-label="Mã Nội Bộ"><span class="badge bg-secondary font-monospace">${item.internalId}</span></td>
           <td data-label="Kho Xuất">${item.kho}</td>
           <td data-label="Gói Bảo Hành">
@@ -604,7 +617,7 @@
                    value="${item.ghiChu || ''}" onchange="updateXuatItemNote('${item.id}', this.value)">
           </td>
           <td data-label="Xóa" class="text-end">
-            <button class="btn btn-sm btn-outline-danger" onclick="removeDraftXuatItem('${item.id}')">
+            <button class="btn btn-sm btn-outline-danger" onclick="removeDraftXuatItem('${item.id}')" title="Xóa máy này khỏi danh sách xuất">
               <i class="fa-solid fa-xmark"></i>
             </button>
           </td>
@@ -617,6 +630,25 @@
   function previewAndConfirmXuatVoucher() {
     if (CURRENT_DRAFT_XUAT_ITEMS.length === 0) {
       Swal.fire('Chưa có thiết bị', 'Vui lòng chọn ít nhất một máy để xuất kho!', 'warning');
+      return;
+    }
+
+    // Kiểm tra Revalidation: Chặn nếu có bất kỳ máy nào không khả dụng
+    const invalidItems = CURRENT_DRAFT_XUAT_ITEMS.filter(i => i.isAvailable === false);
+    if (invalidItems.length > 0) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Có thiết bị không khả dụng!',
+        html: `
+          <div class="text-start">
+            <p>Phiếu nháp đang chứa <strong class="text-danger">${invalidItems.length}</strong> thiết bị không còn tồn kho hoặc đã xuất trước:</p>
+            <div class="p-2 bg-danger-subtle rounded border border-danger-subtle font-monospace small mb-2">
+              ${invalidItems.map(i => `• <strong>${i.serial}</strong>: ${i.errorReason}`).join('<br>')}
+            </div>
+            <small class="text-muted">Vui lòng bấm dấu <strong>(X)</strong> để xóa các thiết bị này khỏi bảng hoặc quét máy khác thay thế trước khi xuất kho!</small>
+          </div>
+        `
+      });
       return;
     }
 
@@ -865,6 +897,23 @@
       const itemCount = CURRENT_DRAFT_XUAT_ITEMS.length;
       CURRENT_DRAFT_XUAT_ITEMS = [];
       CURRENT_XUAT_REQUEST_ID = null;
+
+      // XÓA DRAFT SERVER-SIDE VÀ LOCAL SAU KHI XUẤT CHÍNH THỨC THÀNH CÔNG
+      if (CURRENT_XUAT_DRAFT_ID) {
+        const finishedDraftId = CURRENT_XUAT_DRAFT_ID;
+        if (typeof WarehouseAPI !== 'undefined' && WarehouseAPI.deleteDraftVoucher) {
+          WarehouseAPI.deleteDraftVoucher(finishedDraftId);
+        }
+        const dIdx = VOUCHERS_DB.xuat.findIndex(x => x.maPhieu === finishedDraftId);
+        if (dIdx !== -1) VOUCHERS_DB.xuat.splice(dIdx, 1);
+        try {
+          localStorage.setItem('THANH_AN_VOUCHERS_DB', JSON.stringify(VOUCHERS_DB));
+        } catch(e) {}
+        CURRENT_XUAT_DRAFT_ID = null;
+        CURRENT_XUAT_DRAFT_VERSION = null;
+        if (typeof removeXuatDraftBanner === 'function') removeXuatDraftBanner();
+      }
+
       renderDraftXuatTable();
 
       // Mở lại nút và tắt trạng thái xử lý sau khi lưu hoàn tất
@@ -946,6 +995,7 @@
           })
           .executeXuatKho({
             requestId: CURRENT_XUAT_REQUEST_ID,
+            draftId: CURRENT_XUAT_DRAFT_ID,
             maPhieu: maPhieu,
             tenKhach: khach,
             sdtKhach: sdt,
@@ -990,8 +1040,72 @@
   }
 }
 
+  // =========================================================================
+  // DRAFT PHIẾU XUẤT ĐA MÁY (SERVER-AUTHORITATIVE & RESUME WORKFLOW)
+  // =========================================================================
+
+  function unlockSaveDraftXuatButton() {
+    IS_SAVING_XUAT_DRAFT = false;
+    const btn = document.getElementById('btn-save-draft-xuat');
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Lưu Nháp (DRAFT)';
+    }
+  }
+
+  function showXuatDraftBanner(maPhieu, version, invalidCount) {
+    let banner = document.getElementById('xuat-draft-active-banner');
+    if (!banner) {
+      const container = document.getElementById('module-XuatKho') || document.querySelector('.xuat-kho-container');
+      if (container) {
+        banner = document.createElement('div');
+        banner.id = 'xuat-draft-active-banner';
+        container.insertBefore(banner, container.firstChild);
+      }
+    }
+    if (banner) {
+      banner.className = `alert ${invalidCount > 0 ? 'alert-warning border-warning' : 'alert-info border-info'} shadow-sm py-2 px-3 mb-3 d-flex flex-wrap justify-content-between align-items-center gap-2`;
+      banner.innerHTML = `
+        <div class="d-flex align-items-center gap-2">
+          <i class="fa-solid ${invalidCount > 0 ? 'fa-triangle-exclamation text-warning fs-5' : 'fa-clock-rotate-left text-info fs-5'}"></i>
+          <div>
+            <div>Đang tiếp tục soạn phiếu nháp: <strong class="font-monospace text-primary">${maPhieu}</strong> <span class="badge bg-secondary">v${version || 1}</span></div>
+            ${invalidCount > 0 ? `<div class="small text-danger fw-semibold mt-1">Phát hiện ${invalidCount} máy không còn khả dụng trong kho. Vui lòng xóa trước khi xuất!</div>` : '<div class="small text-muted">Dữ liệu đã được nạp lại đầy đủ từ máy chủ Google Sheets.</div>'}
+          </div>
+        </div>
+        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="cancelResumeXuatDraft()">
+          <i class="fa-solid fa-xmark me-1"></i> Hủy tiếp tục / Soạn mới
+        </button>
+      `;
+    }
+  }
+  if (typeof window !== 'undefined') window.showXuatDraftBanner = showXuatDraftBanner;
+
+  function removeXuatDraftBanner() {
+    const banner = document.getElementById('xuat-draft-active-banner');
+    if (banner) banner.remove();
+  }
+  if (typeof window !== 'undefined') window.removeXuatDraftBanner = removeXuatDraftBanner;
+
+  function cancelResumeXuatDraft() {
+    CURRENT_DRAFT_XUAT_ITEMS = [];
+    CURRENT_XUAT_DRAFT_ID = null;
+    CURRENT_XUAT_DRAFT_VERSION = null;
+    removeXuatDraftBanner();
+    renderDraftXuatTable();
+    Swal.fire({
+      toast: true,
+      position: 'top-end',
+      icon: 'info',
+      title: 'Đã hủy tiếp tục draft, sẵn sàng soạn phiếu mới',
+      showConfirmButton: false,
+      timer: 1500
+    });
+  }
+  if (typeof window !== 'undefined') window.cancelResumeXuatDraft = cancelResumeXuatDraft;
+
   function saveDraftXuatVoucher(isConfirmed) {
-    if (IS_PROCESSING_XUAT) return;
+    if (IS_SAVING_XUAT_DRAFT || IS_PROCESSING_XUAT) return;
 
     if (CURRENT_DRAFT_XUAT_ITEMS.length === 0) {
       Swal.fire('Chưa có thiết bị', 'Vui lòng chọn ít nhất một máy để lưu nháp!', 'warning');
@@ -999,11 +1113,14 @@
     }
 
     const khach = (document.getElementById('xuat-khach-select')?.value || document.getElementById('xuat-khach-input')?.value || 'Khách hàng dự thảo').trim();
-    const sdt = document.getElementById('xuat-sdt').value.trim();
-    const diachi = document.getElementById('xuat-diachi').value.trim();
+    const sdt = document.getElementById('xuat-sdt')?.value.trim() || '';
+    const diachi = document.getElementById('xuat-diachi')?.value.trim() || '';
     const kho = (document.getElementById('xuat-kho')?.value) || (CURRENT_DRAFT_XUAT_ITEMS[0]?.kho) || 'Kho Chính';
-    const ngay = formatDateDisplay(document.getElementById('xuat-ngay').value) || formatDateDisplay(getLocalDateStr());
-    const maPhieu = generateVoucherCode('PX');
+    const ngay = formatDateDisplay(document.getElementById('xuat-ngay')?.value) || formatDateDisplay(getLocalDateStr());
+    
+    // Giữ nguyên mã phiếu nếu đang sửa tiếp một draft cũ
+    const maPhieu = CURRENT_XUAT_DRAFT_ID || generateVoucherCode('PX');
+    CURRENT_XUAT_DRAFT_ID = maPhieu;
     const nowStr = `${ngay} ${new Date().toLocaleTimeString('vi-VN')}`;
 
     const giayToArr = [];
@@ -1015,10 +1132,11 @@
 
     const voucherRecord = {
       maPhieu: maPhieu,
+      type: 'XUAT',
       ngay: ngay,
       createdAt: nowStr,
-      updatedAt: '',
-      updatedBy: '',
+      updatedAt: nowStr,
+      updatedBy: CURRENT_USER_NAME,
       khachHang: khach,
       sdtKhach: sdt,
       diaChi: diachi,
@@ -1029,10 +1147,12 @@
       nguoiTao: CURRENT_USER_NAME,
       ghiChu: ghiChuGiayTo ? `Lưu nháp (${ghiChuGiayTo})` : 'Lưu nháp xuất kho',
       customFields: {},
+      expectedVersion: CURRENT_XUAT_DRAFT_VERSION || null,
       items: CURRENT_DRAFT_XUAT_ITEMS.map(i => ({
         model: i.model,
         serial: i.serial,
         internalId: i.internalId,
+        kho: i.kho || kho,
         soThangBh: i.soThangBh,
         ngayHetHanBh: i.ngayHetHanBh,
         ghiChu: i.ghiChu || ''
@@ -1042,51 +1162,198 @@
       ]
     };
 
-    voucherRecord.type = 'XUAT';
-    VOUCHERS_DB.xuat.unshift(voucherRecord);
-    recordAuditLog('LƯU NHÁP PHIẾU XUẤT', `Phiếu ${maPhieu} (${CURRENT_DRAFT_XUAT_ITEMS.length} máy)`, 'None', 'DRAFT', 'Lưu nháp xuất kho', [], 'Xuất kho', '', maPhieu);
-
-    try {
-      if (typeof localStorage !== 'undefined') {
-        localStorage.setItem('THANH_AN_VOUCHERS_DB', JSON.stringify(VOUCHERS_DB));
-      }
-    } catch(e) {}
-
-    // LƯU DRAFT SERVER-SIDE ĐỂ CÁC MÁY KHÁC ĐỀU THẤY
-    if (typeof WarehouseAPI !== 'undefined' && WarehouseAPI.saveDraftVoucher) {
-      WarehouseAPI.saveDraftVoucher(voucherRecord);
+    // Khóa UI & hiện spinner chống click đúp
+    IS_SAVING_XUAT_DRAFT = true;
+    const btnSave = document.getElementById('btn-save-draft-xuat');
+    if (btnSave) {
+      btnSave.disabled = true;
+      btnSave.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Đang lưu nháp lên hệ thống...';
     }
 
-    if (typeof markModulesDirty === 'function') {
-      markModulesDirty(['Dashboard', 'LichSu']);
-    }
+    const finalizeDraftSuccess = (serverVer) => {
+      unlockSaveDraftXuatButton();
+      CURRENT_XUAT_DRAFT_VERSION = serverVer || 1;
+      voucherRecord.serverVersion = CURRENT_XUAT_DRAFT_VERSION;
 
-    const draftCount = CURRENT_DRAFT_XUAT_ITEMS.length;
-    CURRENT_DRAFT_XUAT_ITEMS = [];
-    CURRENT_XUAT_REQUEST_ID = null;
-    renderDraftXuatTable();
-
-    Swal.fire({
-      icon: 'info',
-      title: 'Đã Lưu Nháp Phiếu Xuất',
-      html: `
-        <div class="text-center">
-          <div class="h4 fw-bold font-monospace text-secondary mb-2">${maPhieu}</div>
-          <p class="mb-1">Phiếu đã được lưu ở trạng thái <strong>DRAFT</strong> (${draftCount} máy).</p>
-          <small class="text-muted">Chưa giảm trừ tồn kho thật. Bạn có thể duyệt xuất chính thức sau.</small>
-        </div>
-      `,
-      showCancelButton: true,
-      confirmButtonText: '<i class="fa-solid fa-list-check me-1"></i> Xem Trong Lịch Sử',
-      cancelButtonText: 'Đóng',
-      confirmButtonColor: '#0d6efd'
-    }).then(r => {
-      if (r.isConfirmed) {
-        if (typeof switchTab === 'function') switchTab('LichSu');
-        if (typeof switchHistorySubTab === 'function') switchHistorySubTab('xuat');
+      // Cập nhật VOUCHERS_DB
+      const existingIdx = VOUCHERS_DB.xuat.findIndex(v => v.maPhieu === maPhieu);
+      if (existingIdx !== -1) {
+        VOUCHERS_DB.xuat[existingIdx] = voucherRecord;
+      } else {
+        VOUCHERS_DB.xuat.unshift(voucherRecord);
       }
-    });
+      try {
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('THANH_AN_VOUCHERS_DB', JSON.stringify(VOUCHERS_DB));
+        }
+      } catch(e) {}
+
+      recordAuditLog('LƯU NHÁP PHIẾU XUẤT', `Phiếu ${maPhieu} (${CURRENT_DRAFT_XUAT_ITEMS.length} máy)`, 'None', 'DRAFT', 'Lưu nháp xuất kho server-side', [], 'Xuất kho', '', maPhieu);
+
+      const draftCount = CURRENT_DRAFT_XUAT_ITEMS.length;
+      CURRENT_DRAFT_XUAT_ITEMS = [];
+      CURRENT_XUAT_REQUEST_ID = null;
+      CURRENT_XUAT_DRAFT_ID = null;
+      CURRENT_XUAT_DRAFT_VERSION = null;
+      removeXuatDraftBanner();
+      renderDraftXuatTable();
+
+      if (typeof markModulesDirty === 'function') {
+        markModulesDirty(['Dashboard', 'LichSu']);
+      }
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Đã Lưu Nháp Thành Công!',
+        html: `
+          <div class="text-center">
+            <div class="h4 fw-bold font-monospace text-primary mb-2">${maPhieu}</div>
+            <p class="mb-1">Phiếu đã được lưu an toàn lên máy chủ Google Sheets (${draftCount} máy).</p>
+            <small class="text-muted">Các máy tính khác có thể mở lại để tiếp tục xuất bất kỳ lúc nào.</small>
+          </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: '<i class="fa-solid fa-list-check me-1"></i> Xem Trong Lịch Sử',
+        cancelButtonText: 'Đóng',
+        confirmButtonColor: '#0d6efd'
+      }).then(r => {
+        if (r.isConfirmed) {
+          if (typeof switchTab === 'function') switchTab('LichSu');
+          if (typeof switchHistorySubTab === 'function') switchHistorySubTab('xuat');
+        }
+      });
+    };
+
+    const handleDraftError = (errMsg) => {
+      unlockSaveDraftXuatButton();
+      Swal.fire({
+        icon: 'error',
+        title: 'Lưu Nháp Thất Bại!',
+        html: `
+          <div class="text-start">
+            <p class="text-danger fw-semibold mb-2">${errMsg}</p>
+            <div class="alert alert-warning small py-2 mb-0">
+              <i class="fa-solid fa-triangle-exclamation me-1"></i> <strong>Lưu ý:</strong> Toàn bộ thông tin phiếu và ${CURRENT_DRAFT_XUAT_ITEMS.length} máy vừa quét <b>vẫn được giữ nguyên 100%</b> trên điện thoại. Bạn có thể kiểm tra kết nối mạng và bấm "Lưu Nháp" lại!
+            </div>
+          </div>
+        `
+      });
+    };
+
+    // Gửi lên server Google Sheets
+    if (typeof WarehouseAPI !== 'undefined' && WarehouseAPI.isAppsScriptEnvironment()) {
+      WarehouseAPI.saveDraftVoucher(voucherRecord, res => {
+        if (res && res.success) {
+          finalizeDraftSuccess(res.version);
+        } else {
+          handleDraftError(res && res.error ? res.error : 'Máy chủ từ chối lưu draft!');
+        }
+      });
+    } else {
+      finalizeDraftSuccess(1);
+    }
   }
+
+  // Khôi phục và mở lại Draft trên PC (Revalidate từng Serial với kho thực tế)
+  function resumeExportDraft(maPhieu) {
+    if (!maPhieu) return;
+    const v = (typeof VOUCHERS_DB !== 'undefined' && VOUCHERS_DB.xuat) ? VOUCHERS_DB.xuat.find(x => x.maPhieu === maPhieu) : null;
+    if (!v) {
+      Swal.fire('Không tìm thấy', `Không tìm thấy phiếu nháp [${maPhieu}] trên hệ thống!`, 'warning');
+      return;
+    }
+    if (v.status !== 'DRAFT') {
+      Swal.fire('Phiếu đã hoàn tất', `Phiếu [${maPhieu}] đang ở trạng thái [${v.status}], không phải phiếu DRAFT!`, 'info');
+      return;
+    }
+
+    // 1. Chuyển tab Xuất Kho
+    if (typeof switchTab === 'function') switchTab('XuatKho');
+
+    // 2. Khôi phục Header
+    const khachSelect = document.getElementById('xuat-khach-select');
+    const khachInput = document.getElementById('xuat-khach-input');
+    if (khachSelect) khachSelect.value = v.khachHang || '';
+    if (khachInput) khachInput.value = v.khachHang || '';
+    if (document.getElementById('xuat-sdt')) document.getElementById('xuat-sdt').value = v.sdtKhach || '';
+    if (document.getElementById('xuat-diachi')) document.getElementById('xuat-diachi').value = v.diaChi || '';
+    if (document.getElementById('xuat-kho') && v.kho) document.getElementById('xuat-kho').value = v.kho;
+    if (document.getElementById('xuat-ngay')) document.getElementById('xuat-ngay').value = toInputDateFormat(v.ngay);
+    if (document.getElementById('xuat-ghichu-giayto')) document.getElementById('xuat-ghichu-giayto').value = v.ghiChuGiayTo || '';
+
+    // Khôi phục giấy tờ
+    const gt = String(v.giayTo || '');
+    if (document.getElementById('xuat-giayto-vat')) document.getElementById('xuat-giayto-vat').checked = gt.includes('VAT');
+    if (document.getElementById('xuat-giayto-bbbg')) document.getElementById('xuat-giayto-bbbg').checked = gt.includes('bàn giao');
+    if (document.getElementById('xuat-giayto-phieubh')) document.getElementById('xuat-giayto-phieubh').checked = gt.includes('Phiếu BH');
+    if (document.getElementById('xuat-giayto-cocq')) document.getElementById('xuat-giayto-cocq').checked = gt.includes('CO/CQ');
+
+    // 3. Khôi phục và REVALIDATE Serial với kho thực tế
+    let invalidCount = 0;
+    CURRENT_DRAFT_XUAT_ITEMS = (v.items || []).map((it, idx) => {
+      const sn = String(it.serial || '').trim().toUpperCase();
+      let isAvailable = true;
+      let errorReason = '';
+
+      const foundInStock = (typeof SERIAL_DB !== 'undefined' && Array.isArray(SERIAL_DB))
+        ? SERIAL_DB.find(s => String(s.serial || '').trim().toUpperCase() === sn)
+        : null;
+
+      if (!foundInStock) {
+        isAvailable = false;
+        errorReason = 'Không tìm thấy thiết bị trong kho';
+        invalidCount++;
+      } else {
+        const curStatus = (typeof normalizeSerialStatus === 'function')
+          ? normalizeSerialStatus(foundInStock.status)
+          : foundInStock.status;
+        if (curStatus !== 'IN_STOCK' && curStatus !== 'Tồn kho') {
+          isAvailable = false;
+          errorReason = (curStatus === 'SOLD' || curStatus === 'Đã xuất')
+            ? `Đã xuất trên phiếu ${foundInStock.maPhieuXuat || 'khác'}`
+            : `Trạng thái không khả dụng (${curStatus})`;
+          invalidCount++;
+        }
+      }
+
+      return {
+        id: it.id || ('it_xuat_' + Date.now() + '_' + idx),
+        model: it.model,
+        serial: it.serial,
+        internalId: it.internalId || (foundInStock ? foundInStock.internalId : ''),
+        kho: it.kho || v.kho || 'Kho VP',
+        soThangBh: it.soThangBh !== undefined ? it.soThangBh : 12,
+        ngayHetHanBh: it.ngayHetHanBh || '',
+        ghiChu: it.ghiChu || '',
+        isAvailable: isAvailable,
+        errorReason: errorReason
+      };
+    });
+
+    CURRENT_XUAT_DRAFT_ID = v.maPhieu;
+    CURRENT_XUAT_DRAFT_VERSION = v.serverVersion || v.version || 1;
+
+    renderDraftXuatTable();
+    showXuatDraftBanner(v.maPhieu, CURRENT_XUAT_DRAFT_VERSION, invalidCount);
+
+    if (invalidCount > 0) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Đã mở phiếu nháp (Có cảnh báo)',
+        html: `Đã nạp lại phiếu <strong>${v.maPhieu}</strong> (${CURRENT_DRAFT_XUAT_ITEMS.length} máy).<br><span class="text-danger fw-bold">Phát hiện ${invalidCount} máy không còn khả dụng trong kho!</span><br>Vui lòng xóa các dòng cảnh báo đỏ trước khi xác nhận xuất kho.`
+      });
+    } else {
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: `Đã mở lại phiếu nháp ${v.maPhieu} (${CURRENT_DRAFT_XUAT_ITEMS.length} máy sẵn sàng)`,
+        showConfirmButton: false,
+        timer: 2000
+      });
+    }
+  }
+  if (typeof window !== 'undefined') window.resumeExportDraft = resumeExportDraft;
 
   // =========================================================================
   // CHỨC NĂNG: TÍCH CHỌN HÀNG LOẠT THIẾT BỊ / LINH KIỆN TỒN KHO (BỘ PC & NHIỀU MÁY)

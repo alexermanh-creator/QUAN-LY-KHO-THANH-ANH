@@ -1050,10 +1050,10 @@
       if (this.isAppsScriptEnvironment()) {
         google.script.run
           .withSuccessHandler(res => { if (callback) callback(res); })
-          .withFailureHandler(err => { if (callback) callback({ success: false, message: err.message }); })
+          .withFailureHandler(err => { if (callback) callback({ success: false, message: err.message || String(err), error: err.message || String(err) }); })
           .saveDraftVoucherBackend(draftData);
       } else {
-        if (callback) callback({ success: true });
+        if (callback) callback({ success: true, version: 1 });
       }
     },
 
@@ -1062,7 +1062,7 @@
       if (this.isAppsScriptEnvironment()) {
         google.script.run
           .withSuccessHandler(res => { if (callback) callback(res); })
-          .withFailureHandler(err => { if (callback) callback({ success: false, message: err.message }); })
+          .withFailureHandler(err => { if (callback) callback({ success: false, message: err.message || String(err), error: err.message || String(err) }); })
           .deleteDraftVoucherBackend(maDraft);
       } else {
         if (callback) callback({ success: true });

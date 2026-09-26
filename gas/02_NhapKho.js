@@ -293,11 +293,14 @@ function executeNhapKhoMulti(data) {
       }
     } catch(e) {}
 
-    // Đánh dấu DONE SAU KHI ghi dữ liệu hoàn tất
-    if (requestId) {
+    // Tự động xóa phiếu nháp tương ứng nếu đây là phiếu được confirm từ draft
+    const targetDraftId = data.draftId || data.maDraft || (data.maPhieu && data.maPhieu.includes('DRAFT') ? data.maPhieu : null);
+    if (targetDraftId) {
       try {
-        CacheService.getScriptCache().put(`REQ_NK_${requestId}`, "DONE", 300);
-      } catch (e) {}
+        if (typeof deleteDraftVoucherBackend === 'function') {
+          deleteDraftVoucherBackend(targetDraftId);
+        }
+      } catch(e) {}
     }
 
     return `Đã nhập thành công lô hàng ${allCleanSerials.length} thiết bị (${data.items.length} chủng loại)!`;

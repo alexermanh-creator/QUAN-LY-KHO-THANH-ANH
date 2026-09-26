@@ -149,8 +149,8 @@ assert(gasCode.includes('V4_DRAFT_VOUCHERS'), 'Sử dụng sheet riêng V4_DRAFT
 assert(gasCode.includes('drafts: serverDrafts'), 'getAllVouchersBackend trả về danh sách serverDrafts.');
 
 const nhapKhoLogicJs = fs.readFileSync(path.join(__dirname, 'src_demo/08_nhap_kho_logic.js'), 'utf8');
-assert(nhapKhoLogicJs.includes('WarehouseAPI.saveDraftVoucher(voucherRecord)'), 'Nhập kho lưu draft lên server-side.');
-assert(xuatKhoLogicJs.includes('WarehouseAPI.saveDraftVoucher(voucherRecord)'), 'Xuất kho lưu draft lên server-side.');
+assert(nhapKhoLogicJs.includes('WarehouseAPI.saveDraftVoucher(voucherRecord'), 'Nhập kho lưu draft lên server-side.');
+assert(xuatKhoLogicJs.includes('WarehouseAPI.saveDraftVoucher(voucherRecord'), 'Xuất kho lưu draft lên server-side.');
 
 // ----------------------------------------------------
 // TEST 7: SMART MANUAL REFRESH & MONOTONIC VERSION

@@ -2174,7 +2174,14 @@ function saveDraftVoucherBackend(payload) {
     }
 
     if (foundRow !== -1) {
-      curVer = (parseInt(dSheet.getRange(foundRow, 7).getValue(), 10) || 1) + 1;
+      const existingVer = parseInt(dSheet.getRange(foundRow, 7).getValue(), 10) || 1;
+      if (payload.expectedVersion && parseInt(payload.expectedVersion, 10) !== existingVer) {
+        return {
+          success: false,
+          error: `Phiếu Draft [${maPhieu}] đã được chỉnh sửa trên thiết bị khác (Phiên bản máy chủ: v${existingVer}, phiên bản máy của bạn: v${payload.expectedVersion}). Vui lòng tải lại bản mới nhất!`
+        };
+      }
+      curVer = existingVer + 1;
       dSheet.getRange(foundRow, 4, 1, 4).setValues([[
         payload.ngay || nowStr,
         nowStr,

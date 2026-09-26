@@ -490,6 +490,15 @@
                 <i class="fa-solid fa-ban"></i>
               </button>
             ` : ''}
+            ${effectiveStatus === 'DRAFT' ? `
+              <!-- Nút Tiếp tục nhập và Xóa Draft -->
+              <button class="btn btn-sm btn-outline-primary ms-1 btn-action-resume-draft" onclick="resumeImportDraft('${v.maPhieu}')" title="Tiếp tục nhập phiếu này">
+                <i class="fa-solid fa-play me-1"></i> Tiếp tục nhập
+              </button>
+              <button class="btn btn-sm btn-outline-danger ms-1 btn-action-delete-draft" onclick="deleteDraftImportVoucher('${v.maPhieu}')" title="Xóa phiếu nháp này">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            ` : ''}
           </td>
         </tr>
         ${renderVoucherSubRow('NHAP', v)}
@@ -678,8 +687,11 @@
               </button>
             ` : ''}
             ${effectiveStatus === 'DRAFT' ? `
-              <!-- Nút Xóa phiếu nháp DRAFT -->
-              <button class="btn btn-sm btn-outline-danger btn-action-delete-draft" onclick="deleteDraftExportVoucher('${v.maPhieu}')" title="Xóa phiếu nháp này">
+              <!-- Nút Tiếp tục xuất và Xóa Draft -->
+              <button class="btn btn-sm btn-outline-primary ms-1 btn-action-resume-draft" onclick="resumeExportDraft('${v.maPhieu}')" title="Tiếp tục xuất phiếu này">
+                <i class="fa-solid fa-play me-1"></i> Tiếp tục xuất
+              </button>
+              <button class="btn btn-sm btn-outline-danger ms-1 btn-action-delete-draft" onclick="deleteDraftExportVoucher('${v.maPhieu}')" title="Xóa phiếu nháp này">
                 <i class="fa-solid fa-trash"></i>
               </button>
             ` : ''}
@@ -2087,7 +2099,7 @@
     });
   }
 
-  // XÓA PHIẾU NHÁP DRAFT TRỰC TIẾP
+  // XÓA PHIẾU NHÁP DRAFT XUẤT KHO
   function deleteDraftExportVoucher(maPhieu) {
     const v = VOUCHERS_DB.xuat.find(x => x.maPhieu === maPhieu);
     if (!v) return;
@@ -2098,7 +2110,7 @@
 
     Swal.fire({
       title: `Xóa phiếu nháp ${maPhieu}?`,
-      text: 'Phiếu dự thảo xuất kho này sẽ bị xóa hoàn toàn.',
+      text: 'Phiếu dự thảo xuất kho này sẽ bị xóa hoàn toàn khỏi hệ thống.',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#dc2626',
@@ -2106,20 +2118,61 @@
       cancelButtonText: 'Quay lại'
     }).then(r => {
       if (r.isConfirmed) {
+        if (typeof WarehouseAPI !== 'undefined' && WarehouseAPI.deleteDraftVoucher) {
+          WarehouseAPI.deleteDraftVoucher(maPhieu);
+        }
         VOUCHERS_DB.xuat = VOUCHERS_DB.xuat.filter(x => x.maPhieu !== maPhieu);
         try {
           if (typeof localStorage !== 'undefined') {
             localStorage.setItem('THANH_AN_VOUCHERS_DB', JSON.stringify(VOUCHERS_DB));
           }
         } catch(e) {}
-        recordAuditLog('XÓA PHIẾU NHÁP', `Phiếu xuất ${maPhieu}`, 'DRAFT', 'DELETED', 'Xóa phiếu xuất nháp', [], 'Lịch sử phiếu', '', maPhieu);
+        recordAuditLog('XÓA PHIẾU NHÁP', `Phiếu xuất ${maPhieu}`, 'DRAFT', 'DELETED', 'Xóa phiếu xuất nháp trên server', [], 'Lịch sử phiếu', '', maPhieu);
         if (typeof markModulesDirty === 'function') markModulesDirty(['Dashboard', 'LichSu']);
         renderHistoryXuatTable();
         Swal.fire('Đã xóa', `Đã xóa thành công phiếu nháp ${maPhieu}.`, 'success');
       }
     });
   }
+
+  // XÓA PHIẾU NHÁP DRAFT NHẬP KHO
+  function deleteDraftImportVoucher(maPhieu) {
+    const v = VOUCHERS_DB.nhap.find(x => x.maPhieu === maPhieu);
+    if (!v) return;
+    if (v.status !== 'DRAFT') {
+      Swal.fire('Không thể xóa', 'Chỉ được xóa trực tiếp phiếu ở trạng thái DRAFT!', 'warning');
+      return;
+    }
+
+    Swal.fire({
+      title: `Xóa phiếu nháp ${maPhieu}?`,
+      text: 'Phiếu dự thảo nhập kho này sẽ bị xóa hoàn toàn khỏi hệ thống.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      confirmButtonText: 'Đồng ý xóa',
+      cancelButtonText: 'Quay lại'
+    }).then(r => {
+      if (r.isConfirmed) {
+        if (typeof WarehouseAPI !== 'undefined' && WarehouseAPI.deleteDraftVoucher) {
+          WarehouseAPI.deleteDraftVoucher(maPhieu);
+        }
+        VOUCHERS_DB.nhap = VOUCHERS_DB.nhap.filter(x => x.maPhieu !== maPhieu);
+        try {
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('THANH_AN_VOUCHERS_DB', JSON.stringify(VOUCHERS_DB));
+          }
+        } catch(e) {}
+        recordAuditLog('XÓA PHIẾU NHÁP', `Phiếu nhập ${maPhieu}`, 'DRAFT', 'DELETED', 'Xóa phiếu nhập nháp trên server', [], 'Lịch sử phiếu', '', maPhieu);
+        if (typeof markModulesDirty === 'function') markModulesDirty(['Dashboard', 'LichSu']);
+        renderHistoryNhapTable();
+        Swal.fire('Đã xóa', `Đã xóa thành công phiếu nháp ${maPhieu}.`, 'success');
+      }
+    });
+  }
+
   if (typeof window !== 'undefined') {
     window.deleteDraftExportVoucher = deleteDraftExportVoucher;
+    window.deleteDraftImportVoucher = deleteDraftImportVoucher;
     window.cancelExportVoucher = cancelExportVoucher;
   }

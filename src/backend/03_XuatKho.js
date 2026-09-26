@@ -311,6 +311,16 @@ function executeXuatKho(data) {
     const totalMs = Date.now() - tStart;
     Logger.log(`[XUAT_KHO_PERF] total=${totalMs}ms, lookup=${tLookup}ms, validate=${tValidate}ms, write=${tWrite}ms, items=${targetItems.length}`);
 
+    // Tự động xóa phiếu nháp tương ứng nếu đây là phiếu được confirm từ draft
+    const targetDraftId = data.draftId || data.maDraft || (data.maPhieu && data.maPhieu.includes('DRAFT') ? data.maPhieu : null);
+    if (targetDraftId) {
+      try {
+        if (typeof deleteDraftVoucherBackend === 'function') {
+          deleteDraftVoucherBackend(targetDraftId);
+        }
+      } catch(e) {}
+    }
+
     return `Xuất kho thành công ${targetItems.length} thiết bị cho khách hàng [${cleanCustomerName}]! Phiếu [${data.maPhieu}] đã được lưu an toàn.`;
   } catch (err) {
     if (data && (data.requestId || data.transactionId)) {

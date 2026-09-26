@@ -5,6 +5,13 @@
   let CURRENT_DRAFT_NHAP_ITEMS = [];
   let EXCEL_PARSED_ITEMS = [];
   let CURRENT_NHAP_REQUEST_ID = null;
+  let CURRENT_NHAP_DRAFT_ID = null;
+  let CURRENT_NHAP_DRAFT_VERSION = null;
+  let IS_SAVING_NHAP_DRAFT = false;
+  if (typeof window !== 'undefined') {
+    window.CURRENT_NHAP_DRAFT_ID = null;
+    window.CURRENT_NHAP_DRAFT_VERSION = null;
+  }
 
   function setupNhapKhoForm() {
     // 1. Điền thông tin NCC: Để trắng 100% theo chuẩn hệ thống
@@ -631,7 +638,9 @@
     const generalLoaiHang = document.getElementById('nhap-loai-hang')?.value || 'Chính Hãng';
     const ngay = formatDateDisplay(document.getElementById('nhap-ngay').value) || formatDateDisplay(getLocalDateStr());
     const ghiChu = document.getElementById('nhap-ghichu').value.trim();
-    const maPhieu = generateVoucherCode('PN');
+    // Giữ nguyên mã phiếu nếu đang sửa tiếp một draft cũ
+    const maPhieu = CURRENT_NHAP_DRAFT_ID || generateVoucherCode('PN');
+    CURRENT_NHAP_DRAFT_ID = maPhieu;
     const nowStr = `${ngay} ${new Date().toLocaleTimeString('vi-VN')}`;
 
     const voucherRecord = {
@@ -647,6 +656,7 @@
       nguoiTao: CURRENT_USER_NAME,
       ghiChu: ghiChu,
       customFields: {},
+      expectedVersion: CURRENT_NHAP_DRAFT_VERSION || null,
       items: CURRENT_DRAFT_NHAP_ITEMS.map(i => ({
         model: i.model,
         serial: i.serial,
@@ -698,6 +708,7 @@
 
       const payload = {
         requestId: requestId,
+        draftId: CURRENT_NHAP_DRAFT_ID,
         maPhieu: maPhieu,
         ncc: ncc,
         kho: kho,
@@ -767,6 +778,23 @@
         const importedCount = CURRENT_DRAFT_NHAP_ITEMS.length;
         CURRENT_DRAFT_NHAP_ITEMS = [];
         CURRENT_NHAP_REQUEST_ID = null;
+
+        // XÓA DRAFT SERVER-SIDE VÀ LOCAL SAU KHI NHẬP CHÍNH THỨC THÀNH CÔNG
+        if (CURRENT_NHAP_DRAFT_ID) {
+          const finishedDraftId = CURRENT_NHAP_DRAFT_ID;
+          if (typeof WarehouseAPI !== 'undefined' && WarehouseAPI.deleteDraftVoucher) {
+            WarehouseAPI.deleteDraftVoucher(finishedDraftId);
+          }
+          const dIdx = VOUCHERS_DB.nhap.findIndex(x => x.maPhieu === finishedDraftId);
+          if (dIdx !== -1) VOUCHERS_DB.nhap.splice(dIdx, 1);
+          try {
+            localStorage.setItem('THANH_AN_VOUCHERS_DB', JSON.stringify(VOUCHERS_DB));
+          } catch(e) {}
+          CURRENT_NHAP_DRAFT_ID = null;
+          CURRENT_NHAP_DRAFT_VERSION = null;
+          if (typeof removeNhapDraftBanner === 'function') removeNhapDraftBanner();
+        }
+
         if (typeof window !== 'undefined') window.CURRENT_DRAFT_NHAP_ITEMS = [];
         const gcEl = document.getElementById('nhap-ghichu');
         if (gcEl) gcEl.value = '';
@@ -825,42 +853,238 @@
       }
 
     } else {
-      // Lưu DRAFT
+      // Lưu DRAFT (Server-Authoritative)
+      if (IS_SAVING_NHAP_DRAFT || IS_PROCESSING_NHAP) return;
       voucherRecord.type = 'NHAP';
-      VOUCHERS_DB.nhap.unshift(voucherRecord);
-      recordAuditLog('LƯU NHÁP PHIẾU NHẬP', `Phiếu ${maPhieu} (${CURRENT_DRAFT_NHAP_ITEMS.length} máy)`, 'None', 'DRAFT', 'Lưu nháp chờ hoàn tất', [], 'Nhập kho', '', maPhieu);
-      try {
-        if (typeof localStorage !== 'undefined') {
-          localStorage.setItem('THANH_AN_VOUCHERS_DB', JSON.stringify(VOUCHERS_DB));
+      voucherRecord.expectedVersion = CURRENT_NHAP_DRAFT_VERSION || null;
+
+      // Khóa nút Lưu Nháp & hiện spinner
+      IS_SAVING_NHAP_DRAFT = true;
+      const btnSaveDraft = document.getElementById('btn-save-draft-nhap');
+      if (btnSaveDraft) {
+        btnSaveDraft.disabled = true;
+        btnSaveDraft.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Đang lưu nháp...';
+      }
+
+      const unlockSaveDraftNhapButton = () => {
+        IS_SAVING_NHAP_DRAFT = false;
+        if (btnSaveDraft) {
+          btnSaveDraft.disabled = false;
+          btnSaveDraft.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Lưu Nháp (DRAFT)';
         }
-      } catch(e) {}
+      };
 
-      // LƯU DRAFT SERVER-SIDE ĐỂ CÁC MÁY KHÁC ĐỀU THẤY
-      if (typeof WarehouseAPI !== 'undefined' && WarehouseAPI.saveDraftVoucher) {
-        WarehouseAPI.saveDraftVoucher(voucherRecord);
+      const finalizeDraftNhapSuccess = (serverVer) => {
+        unlockSaveDraftNhapButton();
+        CURRENT_NHAP_DRAFT_VERSION = serverVer || 1;
+        voucherRecord.serverVersion = CURRENT_NHAP_DRAFT_VERSION;
+
+        const existingIdx = VOUCHERS_DB.nhap.findIndex(v => v.maPhieu === maPhieu);
+        if (existingIdx !== -1) {
+          VOUCHERS_DB.nhap[existingIdx] = voucherRecord;
+        } else {
+          VOUCHERS_DB.nhap.unshift(voucherRecord);
+        }
+        recordAuditLog('LƯU NHÁP PHIẾU NHẬP', `Phiếu ${maPhieu} (${CURRENT_DRAFT_NHAP_ITEMS.length} máy)`, 'None', 'DRAFT', 'Lưu nháp chờ hoàn tất server-side', [], 'Nhập kho', '', maPhieu);
+        try {
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('THANH_AN_VOUCHERS_DB', JSON.stringify(VOUCHERS_DB));
+          }
+        } catch(e) {}
+
+        const draftCount = CURRENT_DRAFT_NHAP_ITEMS.length;
+        CURRENT_DRAFT_NHAP_ITEMS = [];
+        CURRENT_NHAP_REQUEST_ID = null;
+        CURRENT_NHAP_DRAFT_ID = null;
+        CURRENT_NHAP_DRAFT_VERSION = null;
+        if (typeof window !== 'undefined') window.CURRENT_DRAFT_NHAP_ITEMS = [];
+        const gcEl = document.getElementById('nhap-ghichu');
+        if (gcEl) gcEl.value = '';
+        removeNhapDraftBanner();
+        renderDraftNhapTable();
+
+        if (typeof markModulesDirty === 'function') {
+          markModulesDirty(['Dashboard', 'LichSu']);
+        }
+        if (typeof renderDashboard === 'function') {
+          renderDashboard();
+        }
+        
+        Swal.fire({
+          icon: 'success',
+          title: 'Đã lưu phiếu nháp thành công!',
+          html: `Phiếu <strong>${maPhieu}</strong> đã được lưu lên hệ thống Google Sheets ở trạng thái nháp (${draftCount} máy).<br>Chưa làm tăng tồn kho. Các máy tính khác có thể mở lại để tiếp tục chỉnh sửa.`
+        });
+      };
+
+      const handleDraftNhapError = (errMsg) => {
+        unlockSaveDraftNhapButton();
+        Swal.fire({
+          icon: 'error',
+          title: 'Lưu Nháp Thất Bại!',
+          html: `
+            <div class="text-start">
+              <p class="text-danger fw-semibold mb-2">${errMsg}</p>
+              <div class="alert alert-warning small py-2 mb-0">
+                <i class="fa-solid fa-triangle-exclamation me-1"></i> <strong>Lưu ý:</strong> Toàn bộ thông tin phiếu và ${CURRENT_DRAFT_NHAP_ITEMS.length} máy vừa quét <b>vẫn được giữ nguyên 100%</b> trên điện thoại. Bạn có thể kiểm tra kết nối mạng và bấm "Lưu Nháp" lại!
+              </div>
+            </div>
+          `
+        });
+      };
+
+      if (typeof WarehouseAPI !== 'undefined' && WarehouseAPI.isAppsScriptEnvironment()) {
+        WarehouseAPI.saveDraftVoucher(voucherRecord, res => {
+          if (res && res.success) {
+            finalizeDraftNhapSuccess(res.version);
+          } else {
+            handleDraftNhapError(res && res.error ? res.error : 'Máy chủ từ chối lưu draft!');
+          }
+        });
+      } else {
+        finalizeDraftNhapSuccess(1);
+      }
+    }
+  }
+
+  // =========================================================================
+  // DRAFT PHIẾU NHẬP ĐA MÁY (RESUME WORKFLOW & REVALIDATE SERIAL)
+  // =========================================================================
+
+  function showNhapDraftBanner(maPhieu, version, errorCount) {
+    let banner = document.getElementById('nhap-draft-active-banner');
+    if (!banner) {
+      const container = document.getElementById('module-NhapKho') || document.querySelector('.nhap-kho-container');
+      if (container) {
+        banner = document.createElement('div');
+        banner.id = 'nhap-draft-active-banner';
+        container.insertBefore(banner, container.firstChild);
+      }
+    }
+    if (banner) {
+      banner.className = `alert ${errorCount > 0 ? 'alert-warning border-warning' : 'alert-info border-info'} shadow-sm py-2 px-3 mb-3 d-flex flex-wrap justify-content-between align-items-center gap-2`;
+      banner.innerHTML = `
+        <div class="d-flex align-items-center gap-2">
+          <i class="fa-solid ${errorCount > 0 ? 'fa-triangle-exclamation text-warning fs-5' : 'fa-clock-rotate-left text-info fs-5'}"></i>
+          <div>
+            <div>Đang tiếp tục soạn phiếu nháp: <strong class="font-monospace text-primary">${maPhieu}</strong> <span class="badge bg-secondary">v${version || 1}</span></div>
+            ${errorCount > 0 ? `<div class="small text-danger fw-semibold mt-1">Phát hiện ${errorCount} máy bị trùng Serial với hàng trong kho. Vui lòng xóa trước khi xác nhận nhập!</div>` : '<div class="small text-muted">Dữ liệu đã được nạp lại đầy đủ từ máy chủ Google Sheets.</div>'}
+          </div>
+        </div>
+        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="cancelResumeNhapDraft()">
+          <i class="fa-solid fa-xmark me-1"></i> Hủy tiếp tục / Soạn mới
+        </button>
+      `;
+    }
+  }
+  if (typeof window !== 'undefined') window.showNhapDraftBanner = showNhapDraftBanner;
+
+  function removeNhapDraftBanner() {
+    const banner = document.getElementById('nhap-draft-active-banner');
+    if (banner) banner.remove();
+  }
+  if (typeof window !== 'undefined') window.removeNhapDraftBanner = removeNhapDraftBanner;
+
+  function cancelResumeNhapDraft() {
+    CURRENT_DRAFT_NHAP_ITEMS = [];
+    CURRENT_NHAP_DRAFT_ID = null;
+    CURRENT_NHAP_DRAFT_VERSION = null;
+    removeNhapDraftBanner();
+    renderDraftNhapTable();
+    Swal.fire({
+      toast: true,
+      position: 'top-end',
+      icon: 'info',
+      title: 'Đã hủy tiếp tục draft nhập, sẵn sàng soạn phiếu mới',
+      showConfirmButton: false,
+      timer: 1500
+    });
+  }
+  if (typeof window !== 'undefined') window.cancelResumeNhapDraft = cancelResumeNhapDraft;
+
+  function resumeImportDraft(maPhieu) {
+    if (!maPhieu) return;
+    const v = (typeof VOUCHERS_DB !== 'undefined' && VOUCHERS_DB.nhap) ? VOUCHERS_DB.nhap.find(x => x.maPhieu === maPhieu) : null;
+    if (!v) {
+      Swal.fire('Không tìm thấy', `Không tìm thấy phiếu nháp [${maPhieu}] trên hệ thống!`, 'warning');
+      return;
+    }
+    if (v.status !== 'DRAFT') {
+      Swal.fire('Phiếu đã hoàn tất', `Phiếu [${maPhieu}] đang ở trạng thái [${v.status}], không phải phiếu DRAFT!`, 'info');
+      return;
+    }
+
+    // 1. Chuyển tab Nhập Kho
+    if (typeof switchTab === 'function') switchTab('NhapKho');
+
+    // 2. Khôi phục Header
+    const nccHidden = document.getElementById('nhap-ncc');
+    const nccInput = document.getElementById('nhap-ncc-input');
+    if (nccHidden) nccHidden.value = v.ncc || '';
+    if (nccInput) {
+      nccInput.value = v.ncc || '';
+      nccInput.classList.remove('is-invalid');
+      nccInput.classList.add('is-valid');
+    }
+    if (document.getElementById('nhap-kho') && v.kho) document.getElementById('nhap-kho').value = v.kho;
+    if (document.getElementById('nhap-ngay')) document.getElementById('nhap-ngay').value = toInputDateFormat(v.ngay);
+    if (document.getElementById('nhap-loai-hang') && v.loaiHang) document.getElementById('nhap-loai-hang').value = v.loaiHang;
+    if (document.getElementById('nhap-ghichu')) document.getElementById('nhap-ghichu').value = v.ghiChu || '';
+
+    // 3. Khôi phục và REVALIDATE Serial chống trùng kho
+    let errorCount = 0;
+    CURRENT_DRAFT_NHAP_ITEMS = (v.items || []).map((it, idx) => {
+      const sn = String(it.serial || '').trim().toUpperCase();
+      let isValid = true;
+      let errorMessage = '';
+
+      // Kiểm tra trùng lặp trong SERIAL_DB
+      const foundInDb = (typeof SERIAL_DB !== 'undefined' && Array.isArray(SERIAL_DB))
+        ? SERIAL_DB.find(s => String(s.serial || '').trim().toUpperCase() === sn)
+        : null;
+
+      if (foundInDb) {
+        isValid = false;
+        errorMessage = `Serial đã tồn tại trong kho (Phiếu ${foundInDb.maPhieuNhap || 'cũ'}, kho ${foundInDb.kho || 'VP'})`;
+        errorCount++;
       }
 
-      CURRENT_DRAFT_NHAP_ITEMS = [];
-      CURRENT_NHAP_REQUEST_ID = null;
-      if (typeof window !== 'undefined') window.CURRENT_DRAFT_NHAP_ITEMS = [];
-      const gcEl = document.getElementById('nhap-ghichu');
-      if (gcEl) gcEl.value = '';
-      renderDraftNhapTable();
+      return {
+        id: it.id || ('it_nhap_' + Date.now() + '_' + idx),
+        model: it.model,
+        serial: it.serial,
+        internalId: it.internalId || generateSequentialInternalAssetId(),
+        kho: it.kho || v.kho || 'Kho VP',
+        loaiHang: it.loaiHang || v.loaiHang || 'Chính Hãng',
+        isValid: isValid,
+        errorMessage: errorMessage
+      };
+    });
 
-      if (typeof markModulesDirty === 'function') {
-        markModulesDirty(['Dashboard', 'LichSu']);
-      }
-      if (typeof renderDashboard === 'function') {
-        renderDashboard();
-      }
-      
+    CURRENT_NHAP_DRAFT_ID = v.maPhieu;
+    CURRENT_NHAP_DRAFT_VERSION = v.serverVersion || v.version || 1;
+
+    renderDraftNhapTable();
+    showNhapDraftBanner(v.maPhieu, CURRENT_NHAP_DRAFT_VERSION, errorCount);
+
+    if (errorCount > 0) {
       Swal.fire({
-        icon: 'info',
-        title: 'Đã lưu phiếu nháp (DRAFT)',
-        html: `Phiếu <strong>${maPhieu}</strong> đã được lưu lên hệ thống ở trạng thái nháp.<br>Chưa làm tăng tồn kho. Các máy tính khác có thể mở lại để tiếp tục chỉnh sửa.`
+        icon: 'warning',
+        title: 'Đã mở phiếu nháp (Có Serial trùng lặp)',
+        html: `Đã nạp lại phiếu <strong>${v.maPhieu}</strong> (${CURRENT_DRAFT_NHAP_ITEMS.length} máy).<br><span class="text-danger fw-bold">Phát hiện ${errorCount} máy bị trùng Serial với hàng đã có trong kho!</span><br>Vui lòng xóa các dòng cảnh báo đỏ trước khi xác nhận nhập kho.`
+      });
+    } else {
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: `Đã mở lại phiếu nháp ${v.maPhieu} (${CURRENT_DRAFT_NHAP_ITEMS.length} máy hợp lệ)`,
+        showConfirmButton: false,
+        timer: 2000
       });
     }
   }
+  if (typeof window !== 'undefined') window.resumeImportDraft = resumeImportDraft;
 
   function fillSampleExcelPaste() {
     document.getElementById('nhap-excel-raw').value = 
