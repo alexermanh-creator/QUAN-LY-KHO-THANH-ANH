@@ -23378,11 +23378,16 @@
         const oldPhone = c.sdt;
         Object.assign(c, res.value);
 
-        // Đồng bộ sang SERIAL_DB và VOUCHERS_DB nếu thay đổi Tên hoặc SĐT Khách hàng
+        // Đồng bộ sang SERIAL_DB và VOUCHERS_DB nếu thay đổi Tên hoặc SĐT Khách hàng (So khớp thông minh)
         if (oldName !== c.ten || oldPhone !== c.sdt) {
+          const cleanOldPhone = (oldPhone || '').replace(/\D/g, '');
+          const cleanOldName = (oldName || '').toLowerCase().trim();
+
           if (typeof SERIAL_DB !== 'undefined') {
             SERIAL_DB.forEach(s => {
-              if (s.khachHang === oldName) {
+              const sPhone = (s.sdtKhach || '').replace(/\D/g, '');
+              const sCust = (s.khachHang || '').toLowerCase().trim();
+              if ((cleanOldPhone && sPhone === cleanOldPhone) || (cleanOldName && (sCust === cleanOldName || sCust.includes(cleanOldName)))) {
                 s.khachHang = c.ten;
                 s.sdtKhach = c.sdt;
               }
@@ -23390,9 +23395,12 @@
           }
           if (typeof VOUCHERS_DB !== 'undefined' && VOUCHERS_DB.xuat) {
             VOUCHERS_DB.xuat.forEach(v => {
-              if (v.khachHang === oldName) {
+              const vPhone = (v.sdtKhach || '').replace(/\D/g, '');
+              const vCust = (v.khachHang || '').toLowerCase().trim();
+              if ((cleanOldPhone && (vPhone === cleanOldPhone || vCust.includes(cleanOldPhone))) || (cleanOldName && (vCust === cleanOldName || vCust.includes(cleanOldName)))) {
                 v.khachHang = c.ten;
                 v.sdtKhach = c.sdt;
+                if (c.diaChi) v.diaChi = c.diaChi;
               }
             });
           }
@@ -23418,6 +23426,12 @@
         notifyCatalogChanged();
         renderCatalogCustomersTable();
         if (typeof setupXuatKhoForm === 'function') setupXuatKhoForm();
+        if (typeof HISTORY_SUBTAB_STATE !== 'undefined' && HISTORY_SUBTAB_STATE.xuat) {
+          HISTORY_SUBTAB_STATE.xuat.dirty = true;
+        }
+        if (typeof renderHistoryXuatTable === 'function' && document.getElementById('tab-ls-xuat')?.classList.contains('active')) {
+          renderHistoryXuatTable();
+        }
 
         Swal.fire('Thành công', `Đã cập nhật khách hàng <strong>${c.ten}</strong> (${c.sdt})`, 'success');
       }

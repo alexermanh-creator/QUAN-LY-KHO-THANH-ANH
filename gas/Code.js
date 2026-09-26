@@ -1931,6 +1931,23 @@ function getAllVouchersBackend() {
     const lsXuatSheet = ss.getSheetByName("LICH_SU_XUAT");
     const lsNhapSheet = ss.getSheetByName("LICH_SU_NHAP");
     const tbSheet = ss.getSheetByName("SERIAL_MASTER") || ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
+    const custSheet = ss.getSheetByName("DM_KHACH_HANG");
+
+    // Map SĐT và Tên chuẩn từ DM_KHACH_HANG để luôn phản ánh thông tin khách hàng mới nhất khi người dùng sửa ở Danh mục
+    const custInfoByPhone = new Map();
+    const custInfoByName = new Map();
+    if (custSheet && custSheet.getLastRow() > 1) {
+      const cData = custSheet.getRange(2, 2, custSheet.getLastRow() - 1, 5).getValues();
+      cData.forEach(c => {
+        const cTen = String(c[0] || '').trim();
+        const cRawPhone = formatPhoneNumberBackend(c[1]);
+        const cleanPhone = String(c[1] || '').replace(/\D/g, '');
+        const cDiaChi = String(c[4] || '').trim();
+        const info = { ten: cTen, sdt: cRawPhone, diaChi: cDiaChi };
+        if (cleanPhone) custInfoByPhone.set(cleanPhone, info);
+        if (cTen) custInfoByName.set(cTen.toLowerCase(), info);
+      });
+    }
 
     // Map serial -> { model, tenHang, kho } từ SERIAL_MASTER
     const serialInfoMap = new Map();
@@ -1976,6 +1993,20 @@ function getAllVouchersBackend() {
           }
         }
 
+        // TỰ ĐỘNG CẬP NHẬT THEO DANH MỤC KHÁCH HÀNG: nếu SĐT hoặc Tên có trong danh mục, lấy thông tin chuẩn mới nhất
+        const cleanPhone = sdt ? sdt.replace(/\D/g, '') : '';
+        if (cleanPhone && custInfoByPhone.has(cleanPhone)) {
+          const cInfo = custInfoByPhone.get(cleanPhone);
+          khachName = cInfo.ten;
+          sdt = cInfo.sdt || cleanPhone;
+        } else if (khachName && custInfoByName.has(khachName.toLowerCase())) {
+          const cInfo = custInfoByName.get(khachName.toLowerCase());
+          khachName = cInfo.ten;
+          if (!sdt) sdt = cInfo.sdt;
+        } else if (cleanPhone) {
+          sdt = cleanPhone.startsWith('0') ? cleanPhone : ('0' + cleanPhone);
+        }
+
         // Xác định trạng thái
         const isCancelled = ghiChu.includes('[CANCELLED:') || ghiChu.toUpperCase().includes('CANCELLED');
         const status = isCancelled ? 'CANCELLED' : 'CONFIRMED';
@@ -2006,7 +2037,7 @@ function getAllVouchersBackend() {
       }
     }
 
-    // 2. Đọc phiếu Nhập Kho
+    // 2. Đọc phiếu Nhập Kho (Đúng chuẩn cột: 0: mã, 1: ngày, 2: ncc, 3: modelSummary, 4: sl, 5: serials, 6: kho, 7: ghiChu)
     const nhapList = [];
     if (lsNhapSheet && lsNhapSheet.getLastRow() > 1) {
       const nData = lsNhapSheet.getRange(2, 1, lsNhapSheet.getLastRow() - 1, Math.min(8, lsNhapSheet.getLastColumn())).getValues();
@@ -2018,9 +2049,11 @@ function getAllVouchersBackend() {
         const rawDate = r[1];
         const ngay = rawDate instanceof Date ? Utilities.formatDate(rawDate, "GMT+7", "dd/MM/yyyy") : String(rawDate || '');
         const ncc = String(r[2] || '').trim();
-        const sl = parseInt(r[3], 10) || 1;
-        const serialsStr = String(r[4] || '').trim();
-        const ghiChu = String(r[6] || '').trim();
+        const modelSummary = String(r[3] || '').trim();
+        const sl = parseInt(r[4], 10) || 1;
+        const serialsStr = String(r[5] || '').trim();
+        const khoNhap = String(r[6] || 'Kho VP').trim();
+        const ghiChu = String(r[7] || '').trim();
 
         const isCancelled = ghiChu.includes('[CANCELLED:') || ghiChu.toUpperCase().includes('CANCELLED');
         const status = isCancelled ? 'CANCELLED' : 'CONFIRMED';
@@ -2030,8 +2063,8 @@ function getAllVouchersBackend() {
           const info = serialInfoMap.get(sn) || {};
           return {
             serial: sn,
-            model: info.model || 'Thiết bị nhập',
-            kho: info.kho || 'Kho VP'
+            model: info.model || modelSummary || 'Thiết bị nhập',
+            kho: khoNhap
           };
         });
 
@@ -2039,8 +2072,8 @@ function getAllVouchersBackend() {
           maPhieu: maPhieu,
           ngay: ngay,
           ncc: ncc,
-          kho: (items[0] && items[0].kho) || 'Kho VP',
-          items: items.length > 0 ? items : [{ serial: 'N/A', model: 'Thiết bị' }],
+          kho: khoNhap,
+          items: items.length > 0 ? items : [{ serial: 'N/A', model: modelSummary || 'Thiết bị', kho: khoNhap }],
           status: status,
           ghiChu: ghiChu
         });

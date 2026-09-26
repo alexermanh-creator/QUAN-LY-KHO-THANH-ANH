@@ -372,19 +372,54 @@ function saveKhachHang(customerId, ten, sdt, nguoiLienHe, email, diaChi, mst, nh
     }
   }
 
-  // CASCADE: Đồng bộ tên khách hàng sang SERIAL_MASTER theo số điện thoại
+  // CASCADE TOÀN DIỆN: Đồng bộ Tên & SĐT Khách hàng sang SERIAL_MASTER, LICH_SU_XUAT và V4_ISSUE_HEADERS
   try {
     const tbSheet = ss.getSheetByName("SERIAL_MASTER") || ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
+    const lsSheet = ss.getSheetByName("LICH_SU_XUAT");
+    const iHead = ss.getSheetByName("V4_ISSUE_HEADERS");
+
+    // 1. Đồng bộ SERIAL_MASTER: Cột 13 là Tên khách, Cột 14 là SĐT khách
     if (tbSheet && tbSheet.getLastRow() > 1) {
       const numRows = tbSheet.getLastRow() - 1;
-      const phoneCol = tbSheet.getRange(2, 11, numRows, 1).getValues();
+      const numCols = Math.max(14, tbSheet.getLastColumn());
+      const data = tbSheet.getRange(2, 1, numRows, numCols).getValues();
       for (let i = 0; i < numRows; i++) {
-        const p = formatPhoneNumberBackend(phoneCol[i][0]);
-        if (p && p === sdt) {
-          tbSheet.getRange(i + 2, 10).setValue(ten);
+        const curCust = String(data[i][12] || '').trim(); // Cột 13: Tên khách
+        const curPhone = formatPhoneNumberBackend(data[i][13]); // Cột 14: SĐT khách
+        if ((curPhone && curPhone === sdt) || (curCust && (curCust === ten || curCust.includes(sdt)))) {
+          tbSheet.getRange(i + 2, 13).setValue(ten);
+          tbSheet.getRange(i + 2, 14).setValue("'" + sdt);
         }
       }
     }
+
+    // 2. Đồng bộ LICH_SU_XUAT: Cột 3 là "Tên Khách (SĐT)"
+    if (lsSheet && lsSheet.getLastRow() > 1) {
+      const lsRows = lsSheet.getLastRow() - 1;
+      const lsData = lsSheet.getRange(2, 1, lsRows, 3).getValues();
+      for (let j = 0; j < lsRows; j++) {
+        const custCol = String(lsData[j][2] || '').trim();
+        if (custCol.includes(sdt) || (custCol && custCol.toLowerCase().includes(ten.toLowerCase()))) {
+          lsSheet.getRange(j + 2, 3).setValue(`${ten} (${sdt})`);
+        }
+      }
+    }
+
+    // 3. Đồng bộ V4_ISSUE_HEADERS: Cột 3 là Tên khách, Cột 4 là SĐT
+    if (iHead && iHead.getLastRow() > 1) {
+      const hRows = iHead.getLastRow() - 1;
+      const hData = iHead.getRange(2, 1, hRows, 4).getValues();
+      for (let k = 0; k < hRows; k++) {
+        const hCust = String(hData[k][2] || '').trim();
+        const hPhone = formatPhoneNumberBackend(hData[k][3]);
+        if ((hPhone && hPhone === sdt) || (hCust && hCust.toLowerCase().includes(ten.toLowerCase()))) {
+          iHead.getRange(k + 2, 3).setValue(ten);
+          iHead.getRange(k + 2, 4).setValue("'" + sdt);
+        }
+      }
+    }
+
+    if (typeof markDataChanged === 'function') markDataChanged();
   } catch(eCascade) {
     Logger.log("Lỗi cascade khách hàng: " + eCascade.message);
   }
