@@ -18,6 +18,8 @@
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
   <!-- HTML5 QR Code & Barcode Scanner with fast CDN fallbacks -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+  <!-- Tesseract.js (Optical Character Recognition - OCR đọc chữ số Serial mắt thường) -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <script>
     if (typeof Html5Qrcode === 'undefined') {
       document.write('<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"><\\/script>');
@@ -3605,203 +3607,73 @@
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" onclick="stopScannerCamera()"></button>
         </div>
         <div class="modal-body p-3">
-          <!-- THANH CHUYỂN CHẾ ĐỘ QUÉT -->
-          <ul class="nav nav-pills nav-fill mb-3 bg-light p-1 rounded border" id="scannerMethodTabs" role="tablist">
-            <li class="nav-item">
-              <button class="nav-link active btn-sm py-1" id="scan-tab-photo-btn" data-bs-toggle="pill" data-bs-target="#scan-tab-photo" type="button">
-                <i class="fa-solid fa-mobile-screen-button me-1 text-success"></i> Chụp Tem ĐT
-              </button>
-            </li>
-            <li class="nav-item">
-              <button class="nav-link btn-sm py-1" id="scan-tab-gun-btn" data-bs-toggle="pill" data-bs-target="#scan-tab-gun" type="button">
-                <i class="fa-solid fa-barcode me-1 text-primary"></i> Súng Quét USB
-              </button>
-            </li>
-            <li class="nav-item">
-              <button class="nav-link btn-sm py-1" id="scan-tab-phone-sync-btn" data-bs-toggle="pill" data-bs-target="#scan-tab-phone-sync" type="button">
-                <i class="fa-solid fa-qrcode me-1 text-info"></i> ĐT Quét Sang PC
-              </button>
-            </li>
-            <li class="nav-item">
-              <button class="nav-link btn-sm py-1" id="scan-tab-live-btn" data-bs-toggle="pill" data-bs-target="#scan-tab-live" type="button">
-                <i class="fa-solid fa-video me-1 text-secondary"></i> Camera Trực Tiếp
-              </button>
-            </li>
-            <li class="nav-item">
-              <button class="nav-link btn-sm py-1" id="scan-tab-test-btn" data-bs-toggle="pill" data-bs-target="#scan-tab-test" type="button">
-                <i class="fa-solid fa-bolt me-1 text-warning"></i> Thử Nghiệm
-              </button>
-            </li>
-          </ul>
-
-          <div class="d-flex justify-content-between align-items-center mb-2 px-2 py-1 bg-light rounded border">
-            <div>
-              <span class="fw-bold small d-block">Chế độ quét liên tục (Continuous Scan)</span>
-              <small class="text-muted" style="font-size: 0.72rem;">Tự động bíp & gom danh sách nhiều máy liên tiếp</small>
+          <!-- KHU VỰC THAO TÁC TINH GỌN (CHỤP / CHỌN NHIỀU ẢNH + DÁN CTRL+V + SÚNG QUÉT) -->
+          <div class="p-3 bg-light rounded border text-center mb-3">
+            <!-- 1. NÚT CHỤP / CHỌN NHIỀU ẢNH -->
+            <div class="d-grid gap-2 mb-3">
+              <label class="btn btn-success fw-bold py-3 shadow-sm d-flex align-items-center justify-content-center gap-2" style="cursor:pointer; font-size: 1.05rem;">
+                <i class="fa-solid fa-camera-retro fs-4"></i>
+                <span>BẤM ĐỂ CHỤP / CHỌN ẢNH TEM (CHỌN ĐƯỢC NHIỀU ẢNH)</span>
+                <input type="file" id="scanner-batch-file-input" accept="image/*" multiple capture="environment" style="display:none;" onchange="handleBatchImagesUpload(this)">
+              </label>
             </div>
-            <div class="form-check form-switch m-0">
-              <input class="form-check-input" type="checkbox" id="scanner-continuous-toggle" checked style="cursor: pointer;">
+
+            <!-- 2. KHU VỰC DÁN ẢNH TỪ BỘ NHỚ TẠM (CTRL + V) -->
+            <div id="paste-drop-zone" class="p-3 border border-2 border-primary border-dashed rounded bg-white text-center shadow-sm" style="cursor: pointer;" onclick="focusPasteZone()" tabindex="0">
+              <i class="fa-solid fa-clipboard text-primary fs-3 d-block mb-1"></i>
+              <span class="fw-bold text-primary d-block">BẤM VÀO ĐÂY HOẶC NHẤN <kbd class="bg-primary text-white px-2 py-1 rounded">Ctrl + V</kbd> ĐỂ DÁN ẢNH TỪ BỘ NHỚ TẠM</span>
+              <small class="text-muted d-block mt-1">Hỗ trợ dán ảnh chụp màn hình, ảnh copy từ Zalo, ảnh gửi từ điện thoại...</small>
+            </div>
+
+            <!-- 3. NHẮC NHỞ SÚNG QUÉT MÃ VẠCH PHẦN CỨNG -->
+            <div class="mt-2 text-muted small d-flex align-items-center justify-content-center gap-2">
+              <i class="fa-solid fa-barcode text-secondary"></i>
+              <span>Súng quét USB / Bluetooth: Luôn tự động nhận diện ngầm khi bóp cò.</span>
             </div>
           </div>
 
-          <div class="tab-content" id="scannerMethodTabsContent">
-            <!-- TAB 1: CHỤP TEM / ẢNH NATIVE CAMERA (CHUẨN 100% TRÊN ĐIỆN THOẠI & WEB APP GAS) -->
-            <div class="tab-pane fade show active" id="scan-tab-photo">
-              <div class="p-3 bg-light rounded border text-center mb-2">
-                <p class="small text-muted mb-2">
-                  <i class="fa-solid fa-mobile-screen-button me-1 text-success"></i>
-                  <strong>Khuyên dùng trên Điện Thoại & Máy Tính Bảng:</strong> Bấm nút để mở camera máy chụp tem rõ nét tức thì (tự động lấy nét Macro & Flash).
-                </p>
-                <div class="d-grid gap-2 mb-2">
-                  <label class="btn btn-success fw-bold py-3 shadow-sm d-flex align-items-center justify-content-center gap-2" style="cursor:pointer; font-size: 1.05rem;">
-                    <i class="fa-solid fa-camera fs-4"></i>
-                    <span>BẤM VÀO ĐÂY ĐỂ CHỤP TEM QUÉT MÃ</span>
-                    <input type="file" id="scanner-direct-camera-input" accept="image/*" capture="environment" style="display:none;" onchange="scanBarcodeFromFile(this)">
-                  </label>
-                </div>
-                <div class="d-flex justify-content-center gap-2 flex-wrap">
-                  <label class="btn btn-sm btn-outline-secondary" style="cursor:pointer;">
-                    <i class="fa-solid fa-image me-1"></i> Tải ảnh tem từ máy
-                    <input type="file" id="scanner-file-input" accept="image/*" style="display:none;" onchange="scanBarcodeFromFile(this)">
-                  </label>
-                  <button class="btn btn-sm btn-outline-info" type="button" onclick="focusPasteZone()">
-                    <i class="fa-solid fa-paste me-1"></i> Dán ảnh tem (Ctrl+V)
-                  </button>
-                </div>
-                <div id="paste-drop-zone" class="mt-2 p-2 border border-dashed rounded text-muted small" style="display: none; background: #fff;">
-                  <i class="fa-solid fa-clipboard-check me-1 text-info"></i> Nhấn <strong>Ctrl + V</strong> để dán ảnh chụp màn hình/tem máy vào đây
-                </div>
-              </div>
+          <!-- THANH TIẾN TRÌNH XỬ LÝ (Ẩn/Hiện khi xử lý nhiều ảnh) -->
+          <div id="scanner-batch-progress" class="mb-3" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center mb-1 small fw-bold">
+              <span id="batch-progress-text" class="text-primary"><i class="fa-solid fa-circle-notch fa-spin me-1"></i> Đang bóc tách số Serial từ ảnh...</span>
+              <span id="batch-progress-count" class="badge bg-primary">0/0</span>
             </div>
-
-            <!-- TAB 2: SÚNG QUÉT MÃ VẠCH BARCODE USB / WIRELESS (TỐI ƯU 100% CHO THỦ KHO) -->
-            <div class="tab-pane fade" id="scan-tab-gun">
-              <div class="p-3 bg-light rounded border text-center">
-                <div class="badge bg-success-subtle text-success border border-success px-3 py-1 mb-2">
-                  <i class="fa-solid fa-circle-dot fa-fade me-1"></i> SẴN SÀNG NHẬN TÍN HIỆU TỪ SÚNG QUÉT USB / BLUETOOTH
-                </div>
-                <h6 class="fw-bold mb-1 text-primary"><i class="fa-solid fa-barcode fs-4 me-1"></i> Chế Độ Súng Quét Mã Vạch Phần Cứng</h6>
-                <p class="small text-muted mb-2">
-                  Cắm súng quét vào máy tính. Đưa súng ngắm và bóp cò vào tem mã vạch.
-                </p>
-                <div class="alert alert-primary py-2 px-3 small text-start mb-3 mx-auto" style="max-width: 540px;">
-                  <i class="fa-solid fa-wand-magic-sparkles me-1 text-warning"></i>
-                  <strong>Tự động toàn diện:</strong> Ngay cả khi <em>không mở bảng này</em>, bạn chỉ cần bóp cò súng tại tab <strong>Nhập Kho</strong> hoặc <strong>Xuất Kho</strong>, máy sẽ tự động nhận diện mã và đưa vào phiếu!
-                </div>
-                <div class="input-group input-group-lg max-w-400 mx-auto mb-2">
-                  <span class="input-group-text bg-white"><i class="fa-solid fa-barcode text-primary"></i></span>
-                  <input type="text" id="barcode-gun-input" class="form-control font-monospace fw-bold" 
-                         placeholder="Bắn mã vào đây hoặc gõ Serial..." 
-                         autocomplete="off" onkeydown="handleBarcodeGunKeydown(event)">
-                  <button class="btn btn-primary px-3" onclick="submitBarcodeGunInput()">
-                    <i class="fa-solid fa-check"></i> Nhập
-                  </button>
-                </div>
-                <small class="text-success d-block"><i class="fa-solid fa-bolt me-1"></i> Súng quét tự động bấm Enter và phát tiếng Bíp sau mỗi mã.</small>
-              </div>
-            </div>
-
-            <!-- TAB 3: ĐIỆN THOẠI LÀM TAY QUÉT KHÔNG DÂY CHO MÁY TÍNH (PHONE TO PC SYNC) -->
-            <div class="tab-pane fade" id="scan-tab-phone-sync">
-              <div class="p-3 bg-light rounded border text-center">
-                <h6 class="fw-bold text-dark mb-1"><i class="fa-solid fa-mobile-screen text-info me-1"></i> Dùng Điện Thoại Làm Tay Quét Cho Máy Tính</h6>
-                <p class="small text-muted mb-3">
-                  Quét mã QR dưới đây bằng điện thoại (mở bằng Zalo, Camera hoặc Trình duyệt) để biến điện thoại thành tay quét:
-                </p>
-                <div class="d-flex justify-content-center align-items-center mb-3">
-                  <div class="p-2 bg-white rounded shadow-sm border text-center">
-                    <img id="phone-sync-qr-img" src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=https%3A%2F%2Falexermanh-creator.github.io%2FQUAN-LY-KHO-THANH-ANH%2Fscanner.html" 
-                         alt="QR Code Quét Di Động" style="width: 160px; height: 160px; display: block;" class="mx-auto">
-                    <small class="text-muted d-block mt-1 fw-semibold" style="font-size: 0.72rem;">Quét để mở bộ quét di động</small>
-                  </div>
-                </div>
-                <div class="d-flex justify-content-center gap-2 flex-wrap">
-                  <button class="btn btn-sm btn-outline-primary" onclick="copyPhoneSyncLink()">
-                    <i class="fa-solid fa-copy me-1"></i> Sao chép liên kết quét
-                  </button>
-                  <button class="btn btn-sm btn-outline-success" onclick="openPhoneSyncDirectTab()">
-                    <i class="fa-solid fa-arrow-up-right-from-square me-1"></i> Mở thử màn hình quét
-                  </button>
-                </div>
-                <div class="mt-3 text-start small p-2 bg-white rounded border">
-                  <div class="fw-bold text-success mb-1"><i class="fa-solid fa-wifi me-1"></i> Cơ chế đồng bộ không dây thời gian thực:</div>
-                  <ul class="mb-0 ps-3 text-muted">
-                    <li>Khi điện thoại quét bíp 1 máy, mã Serial sẽ lập tức tự động nhảy vào màn hình máy tính.</li>
-                    <li>Không cần chạm vào bàn phím hay chuột máy tính khi đang đứng cạnh kiện hàng!</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-
-            <!-- TAB 4: CAMERA LIVE STREAM TRỰC TIẾP TRÊN MÁY TÍNH -->
-            <div class="tab-pane fade" id="scan-tab-live">
-              <div class="alert alert-info py-2 small mb-2 d-flex align-items-center justify-content-between flex-wrap gap-2">
-                <div>
-                  <i class="fa-solid fa-circle-info me-1"></i>
-                  <span>Dùng Webcam máy tính/laptop để quét trực tiếp qua khung ngắm.</span>
-                </div>
-                <button class="btn btn-sm btn-primary fw-bold" onclick="openStandaloneCameraWindow()">
-                  <i class="fa-solid fa-arrow-up-right-from-square me-1"></i> Mở Cửa Sổ Camera Ngoài Iframe
-                </button>
-              </div>
-
-              <div class="row g-2 mb-2 align-items-center">
-                <div class="col-12">
-                  <div class="input-group input-group-sm">
-                    <span class="input-group-text bg-light text-secondary"><i class="fa-solid fa-video"></i></span>
-                    <select id="scanner-camera-select" class="form-select form-select-sm" onchange="switchCameraDevice(this.value)">
-                      <option value="">Đang tìm camera...</option>
-                    </select>
-                    <button class="btn btn-outline-secondary" onclick="startScannerCamera()" title="Tải lại camera">
-                      <i class="fa-solid fa-rotate-right"></i>
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div id="scanner-video-wrapper">
-                <div id="html5-qr-reader" style="width: 100%;"></div>
-                <div class="scanner-laser" id="scanner-laser-line"></div>
-              </div>
-            </div>
-
-            <!-- TAB 5: THỬ NGHIỆM VÀ MÔ PHỎNG TEST NHANH -->
-            <div class="tab-pane fade" id="scan-tab-test">
-              <div class="p-3 bg-light rounded border">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                  <small class="fw-bold text-secondary">Mô phỏng máy quét (Dùng test nhanh trên máy tính):</small>
-                </div>
-                <div class="input-group input-group-sm mb-2">
-                  <select id="mock-scanner-select" class="form-select">
-                  </select>
-                  <button class="btn btn-success" onclick="triggerMockScan()">
-                    <i class="fa-solid fa-bolt"></i> Quét mã này
-                  </button>
-                </div>
-                <small class="text-muted d-block">
-                  Giúp kiểm thử luồng nghiệp vụ trên máy tính văn phòng khi chưa có thiết bị phần cứng thật.
-                </small>
-              </div>
+            <div class="progress" style="height: 8px;">
+              <div id="batch-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" style="width: 0%;"></div>
             </div>
           </div>
 
-          <div id="scanner-feedback-box" class="mt-2 p-2 rounded small text-center fw-semibold bg-light text-muted">
-            <i class="fa-solid fa-circle-notch fa-spin me-1"></i> Sẵn sàng quét mã...
+          <div id="scanner-feedback-box" class="p-2 rounded small text-center fw-semibold bg-light text-muted mb-2">
+            <i class="fa-solid fa-circle-info me-1 text-primary"></i> Sẵn sàng! Hãy chọn ảnh tem hoặc dán ảnh (Ctrl+V) để đọc Serial.
           </div>
 
-          <div id="scanner-recent-container" class="mt-2" style="display: none;">
-            <div class="d-flex justify-content-between align-items-center mb-1">
-              <span class="small fw-bold text-muted">Đã quét trong phiên này:</span>
-              <span class="badge bg-success" id="scanner-scanned-count">0 mã</span>
+          <!-- BẢNG ĐỐI SOÁT VÀ XEM TRƯỚC CÁC SERIAL BÓC TÁCH ĐƯỢC -->
+          <div id="scanner-results-container" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span class="small fw-bold text-dark"><i class="fa-solid fa-list-check me-1 text-success"></i> Danh sách Serial bóc tách thành công (<span id="scanner-total-extracted" class="text-success fw-bold">0</span>):</span>
+              <button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="clearExtractedSerials()"><i class="fa-solid fa-trash me-1"></i> Xóa danh sách</button>
             </div>
-            <div id="scanner-scanned-list" class="d-flex flex-wrap gap-1 p-2 bg-light border rounded" style="max-height: 80px; overflow-y: auto;">
+            <div class="table-responsive border rounded bg-white shadow-sm" style="max-height: 220px; overflow-y: auto;">
+              <table class="table table-sm table-hover align-middle mb-0 small">
+                <thead class="table-light sticky-top">
+                  <tr>
+                    <th style="width: 50px;" class="text-center">STT</th>
+                    <th style="width: 80px;" class="text-center">Ảnh Tem</th>
+                    <th>Số Serial (S/N)</th>
+                    <th style="width: 140px;">Phương Thức</th>
+                    <th style="width: 60px;" class="text-center">Xóa</th>
+                  </tr>
+                </thead>
+                <tbody id="scanner-extracted-tbody">
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
         <div class="modal-footer py-2 d-flex justify-content-between">
-          <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal" onclick="stopScannerCamera()">Đóng</button>
-          <button type="button" class="btn btn-sm btn-success" data-bs-dismiss="modal" onclick="stopScannerCamera()">
-            <i class="fa-solid fa-check"></i> Hoàn Tất Quét
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Đóng</button>
+          <button type="button" id="btn-submit-extracted-serials" class="btn btn-sm btn-success fw-bold px-3 shadow-sm" onclick="submitExtractedSerialsToContext()" disabled>
+            <i class="fa-solid fa-circle-check me-1"></i> Đưa Toàn Bộ Serial Vào Phiếu
           </button>
         </div>
       </div>
@@ -14764,23 +14636,50 @@
   }
 
   /* ==================================================== */
-  /* 7. CAMERA QUÉT BARCODE / QR & QUÉT LIÊN TỤC (YÊU CẦU I & 11) */
+  /* 7. HỆ THỐNG QUÉT MÃ VẠCH & BÓC TÁCH SERIAL THÔNG MINH  */
+  /*    - Chụp / Tải nhiều ảnh cùng lúc                   */
+  /*    - Dán ảnh từ bộ nhớ tạm (Ctrl + V)                 */
+  /*    - Súng quét mã vạch USB / Bluetooth tự động       */
+  /*    - Bóc tách mã đa tầng: GPU Barcode + AI OCR       */
   /* ==================================================== */
 
-  let html5QrCodeScanner = null;
   let CURRENT_SCAN_CONTEXT = 'GLOBAL_SEARCH';
   let lastScannedCode = '';
   let lastScannedTimestamp = 0;
   let sessionScannedSerials = [];
+  let extractedSerialsList = []; // Mảng đối tượng: { id, serial, method, previewUrl, timestamp }
   let barcodeBroadcastChannel = null;
+  let sharedHtml5QrScanner = null;
 
-  // Khởi tạo kênh giao tiếp 2 chiều độc lập (Vượt qua 100% rào cản iframe Google Apps Script)
+  // Âm thanh Beep và Rung phản hồi khi quét / bóc tách thành công
+  function playBeepSound() {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      gain.gain.setValueAtTime(0.15, ctx.currentTime);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.12);
+    } catch (e) {}
+  }
+
+  function triggerVibration() {
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      try { navigator.vibrate([80, 50, 80]); } catch (e) {}
+    }
+  }
+
+  // Khởi tạo kênh giao tiếp đồng bộ nếu có
   function initBarcodeSyncChannel() {
-    // 1. Kênh Cross-Origin chuẩn quốc tế (Dành cho scanner.html mở trên GitHub Pages)
     window.removeEventListener('message', onWindowMessageBarcodeSync);
     window.addEventListener('message', onWindowMessageBarcodeSync);
 
-    // 2. Kênh BroadcastChannel (Dành cho các tab cùng origin)
     if (typeof BroadcastChannel !== 'undefined' && !barcodeBroadcastChannel) {
       try {
         barcodeBroadcastChannel = new BroadcastChannel('THANH_AN_BARCODE_CHANNEL');
@@ -14794,7 +14693,6 @@
       }
     }
 
-    // 3. Dự phòng qua localStorage storage event
     window.removeEventListener('storage', onLocalStorageBarcodeSync);
     window.addEventListener('storage', onLocalStorageBarcodeSync);
   }
@@ -14816,451 +14714,621 @@
     }
   }
 
-  // Khởi động kênh đồng bộ ngay khi nạp script
   initBarcodeSyncChannel();
   initGlobalHardwareScanner();
 
+  /* ==================================================== */
+  /* MỞ MODAL SCANNER VÀ QUẢN LÝ GIAO DIỆN TINH GỌN       */
+  /* ==================================================== */
   function openScannerModal(targetContext) {
-    CURRENT_SCAN_CONTEXT = targetContext;
+    CURRENT_SCAN_CONTEXT = targetContext || 'GLOBAL_SEARCH';
     sessionScannedSerials = [];
-    document.getElementById('scanner-scanned-count').textContent = '0 mã';
-    document.getElementById('scanner-scanned-list').innerHTML = '';
-    
-    // Cập nhật tiêu đề modal theo ngữ cảnh (Chuẩn hóa 1 icon duy nhất)
+    extractedSerialsList = [];
+
+    // Cập nhật tiêu đề modal theo ngữ cảnh
     const titleEl = document.getElementById('scanner-modal-title');
-    if (targetContext === 'INVENTORY_SESSION') {
-      titleEl.innerHTML = '<i class="fa-solid fa-clipboard-check text-success me-1"></i> Quét Kiểm Kê Kho (Đối Soát Liên Tục)';
-    } else if (targetContext === 'XUAT_KHO') {
-      titleEl.innerHTML = '<i class="fa-solid fa-truck-fast text-primary me-1"></i> Quét Serial Xuất Kho';
-    } else if (targetContext === 'NHAP_KHO_SINGLE') {
-      titleEl.innerHTML = '<i class="fa-solid fa-truck-ramp-box text-info me-1"></i> Quét Serial Nhập Kho';
-    } else if (targetContext === 'RETURN_CUSTOMER') {
-      titleEl.innerHTML = '<i class="fa-solid fa-rotate-left text-primary me-1"></i> Quét Serial Hoàn Nhập Từ Khách';
-    } else if (targetContext === 'RETURN_SUPPLIER') {
-      titleEl.innerHTML = '<i class="fa-solid fa-arrow-right-from-bracket text-warning me-1"></i> Quét Serial Trả Hàng NCC';
-    } else if (targetContext === 'TRANSFER_WAREHOUSE') {
-      titleEl.innerHTML = '<i class="fa-solid fa-dolly text-info me-1"></i> Quét Serial Chuyển Kho Nội Bộ';
-    } else {
-      titleEl.innerHTML = '<i class="fa-solid fa-camera text-success me-1"></i> Camera Quét Barcode / QR';
+    if (titleEl) {
+      if (CURRENT_SCAN_CONTEXT === 'INVENTORY_SESSION') {
+        titleEl.innerHTML = '<i class="fa-solid fa-clipboard-check text-success me-1"></i> Quét Kiểm Kê Kho (Đối Soát Liên Tục)';
+      } else if (CURRENT_SCAN_CONTEXT === 'XUAT_KHO') {
+        titleEl.innerHTML = '<i class="fa-solid fa-truck-fast text-primary me-1"></i> Quét Serial Xuất Kho';
+      } else if (CURRENT_SCAN_CONTEXT === 'NHAP_KHO_SINGLE') {
+        titleEl.innerHTML = '<i class="fa-solid fa-truck-ramp-box text-info me-1"></i> Quét Serial Nhập Kho';
+      } else if (CURRENT_SCAN_CONTEXT === 'RETURN_CUSTOMER') {
+        titleEl.innerHTML = '<i class="fa-solid fa-rotate-left text-primary me-1"></i> Quét Serial Hoàn Nhập Từ Khách';
+      } else if (CURRENT_SCAN_CONTEXT === 'RETURN_SUPPLIER') {
+        titleEl.innerHTML = '<i class="fa-solid fa-arrow-right-from-bracket text-warning me-1"></i> Quét Serial Trả Hàng NCC';
+      } else if (CURRENT_SCAN_CONTEXT === 'TRANSFER_WAREHOUSE') {
+        titleEl.innerHTML = '<i class="fa-solid fa-dolly text-info me-1"></i> Quét Serial Chuyển Kho Nội Bộ';
+      } else if (CURRENT_SCAN_CONTEXT === 'SERIAL_360') {
+        titleEl.innerHTML = '<i class="fa-solid fa-qrcode text-primary me-1"></i> Tra Cứu Hồ Sơ Serial 360';
+      } else {
+        titleEl.innerHTML = '<i class="fa-solid fa-camera text-success me-1"></i> Bóc Tách Serial Qua Ảnh / Mã Vạch';
+      }
     }
 
-    // Điền danh sách mẫu vào mock scanner select
-    const mockSelect = document.getElementById('mock-scanner-select');
-    mockSelect.innerHTML = '';
-    SERIAL_DB.forEach(s => {
-      const opt = document.createElement('option');
-      opt.value = s.serial;
-      opt.textContent = `${s.serial} (${s.model} - ${s.status})`;
-      mockSelect.appendChild(opt);
-    });
+    // Reset giao diện về trạng thái ban đầu
+    const progressContainer = document.getElementById('scanner-batch-progress');
+    if (progressContainer) progressContainer.style.display = 'none';
 
-    const optNew = document.createElement('option');
-    optNew.value = 'CN2900-' + Math.floor(100000 + Math.random() * 900000);
-    optNew.textContent = `[MỚI] ${optNew.value} (Test Serial mới)`;
-    mockSelect.appendChild(optNew);
+    const feedbackBox = document.getElementById('scanner-feedback-box');
+    if (feedbackBox) {
+      feedbackBox.className = 'p-2 rounded small text-center fw-semibold bg-light text-muted mb-2';
+      feedbackBox.innerHTML = '<i class="fa-solid fa-circle-info me-1 text-primary"></i> Sẵn sàng! Hãy chọn ảnh tem hoặc dán ảnh (<kbd>Ctrl + V</kbd>) để bóc tách Serial.';
+    }
 
-    const optStrange = document.createElement('option');
-    optStrange.value = 'UNKNOWN-STRANGE-SN99';
-    optStrange.textContent = `[SERIAL LẠ] UNKNOWN-STRANGE-SN99`;
-    mockSelect.appendChild(optStrange);
+    const fileInput = document.getElementById('scanner-batch-file-input');
+    if (fileInput) fileInput.value = '';
+
+    renderExtractedSerialsTable();
 
     const modalEl = document.getElementById('scannerModal');
-    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-    modal.show();
+    if (modalEl && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+      const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+      modal.show();
 
-    // Mặc định focus vào ô súng quét hoặc ô paste khi mở
-    setTimeout(() => {
-      const gunInput = document.getElementById('barcode-gun-input');
-      if (gunInput) gunInput.focus();
-    }, 400);
-
-    // Lắng nghe phím dán ảnh Ctrl+V toàn cục khi mở modal
-    if (!modalEl.dataset.pasteListenerAttached) {
-      modalEl.addEventListener('paste', handleModalClipboardPaste);
-      modalEl.dataset.pasteListenerAttached = 'true';
-    }
-
-    // Lắng nghe sự kiện đóng modal để tắt Camera an toàn
-    if (!modalEl.dataset.listenerAttached) {
-      modalEl.addEventListener('hidden.bs.modal', function () {
-        stopScannerCamera();
-      });
-      modalEl.dataset.listenerAttached = 'true';
+      // Lắng nghe phím dán ảnh Ctrl+V khi modal mở
+      if (!modalEl.dataset.pasteListenerAttached) {
+        modalEl.addEventListener('paste', handleModalClipboardPaste);
+        modalEl.dataset.pasteListenerAttached = 'true';
+      }
     }
   }
 
-  // Xử lý dán ảnh từ Clipboard (Ctrl+V)
-  function handleModalClipboardPaste(e) {
-    const clipboardData = e.clipboardData || window.clipboardData;
-    if (!clipboardData || !clipboardData.items) return;
-
-    for (let i = 0; i < clipboardData.items.length; i++) {
-      const item = clipboardData.items[i];
-      if (item.type.indexOf('image') !== -1) {
-        const blob = item.getAsFile();
-        if (blob) {
-          const feedbackBox = document.getElementById('scanner-feedback-box');
-          if (feedbackBox) {
-            feedbackBox.className = 'mt-2 p-2 rounded small text-center fw-semibold bg-light text-primary';
-            feedbackBox.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin me-1"></i> Đã nhận ảnh từ Clipboard! Đang quét mã vạch...';
-          }
-          decodeBarcodeFromImageBlob(blob);
-          e.preventDefault();
-          break;
+  function stopScannerCamera() {
+    // Hàm dọn dẹp tương thích khi modal đóng
+    if (sharedHtml5QrScanner) {
+      try {
+        if (sharedHtml5QrScanner.isScanning) {
+          sharedHtml5QrScanner.stop().catch(() => {});
         }
-      }
+        sharedHtml5QrScanner.clear();
+      } catch (e) {}
+      sharedHtml5QrScanner = null;
     }
   }
 
   function focusPasteZone() {
     const dropZone = document.getElementById('paste-drop-zone');
     if (dropZone) {
-      dropZone.style.display = 'block';
-      dropZone.className = 'mt-2 p-2 border border-primary border-2 rounded text-primary fw-bold small text-center bg-primary-subtle';
-      dropZone.innerHTML = '<i class="fa-solid fa-clipboard-check me-1"></i> Đang sẵn sàng! Hãy bấm Ctrl + V để dán ảnh tem ngay bây giờ!';
-      dropZone.tabIndex = 0;
+      dropZone.className = 'p-3 border border-2 border-primary rounded bg-primary-subtle text-center shadow-sm';
+      dropZone.innerHTML = `
+        <i class="fa-solid fa-keyboard text-primary fs-3 d-block mb-1"></i>
+        <span class="fw-bold text-primary d-block">ĐÃ SẴN SÀNG NHẬN ẢNH!</span>
+        <span class="small text-dark">Hãy bấm ngay tổ hợp phím <kbd class="bg-primary text-white px-2 py-1 rounded">Ctrl + V</kbd> trên bàn phím.</span>
+      `;
       dropZone.focus();
     }
   }
 
-  // Xử lý súng quét Barcode USB / Bluetooth
-  function handleBarcodeGunKeydown(event) {
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      submitBarcodeGunInput();
-    }
-  }
-
-  function submitBarcodeGunInput() {
-    const gunInput = document.getElementById('barcode-gun-input');
-    if (!gunInput) return;
-    const code = gunInput.value.trim();
-    if (!code) {
-      playBeepSound();
-      return;
-    }
-    gunInput.value = '';
-    handleDecodedBarcode(code);
-    gunInput.focus();
-  }
-
-  let AVAILABLE_CAMERAS = [];
-  let CURRENT_CAMERA_ID = null;
-
-  async function startScannerCamera() {
-    const feedbackBox = document.getElementById('scanner-feedback-box');
-    const cameraSelect = document.getElementById('scanner-camera-select');
-    feedbackBox.className = 'mt-2 p-2 rounded small text-center fw-semibold bg-light text-muted';
-    feedbackBox.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin me-1"></i> Đang kết nối camera trực tiếp...';
-
-    if (typeof Html5Qrcode === 'undefined') {
-      feedbackBox.className = 'mt-2 p-2 rounded small text-center fw-semibold bg-warning-subtle text-warning';
-      feedbackBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i> Đang tải thư viện quét... Vui lòng thử lại sau 2 giây!';
-      return;
-    }
-
-    // Liệt kê các camera vật lý khả dụng với timeout 1.5s an toàn
-    try {
-      const timeoutGetCam = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout getCameras")), 1500));
-      const devices = await Promise.race([
-        Html5Qrcode.getCameras(),
-        timeoutGetCam
-      ]);
-      AVAILABLE_CAMERAS = devices || [];
-      if (cameraSelect) {
-        cameraSelect.innerHTML = '';
-        if (AVAILABLE_CAMERAS.length === 0) {
-          cameraSelect.innerHTML = '<option value="">Camera mặc định</option>';
-        } else {
-          AVAILABLE_CAMERAS.forEach((cam, idx) => {
-            const opt = document.createElement('option');
-            opt.value = cam.id;
-            opt.textContent = cam.label || `Camera ${idx + 1}`;
-            cameraSelect.appendChild(opt);
-          });
-        }
-      }
-
-      let selectedCamId = null;
-      if (AVAILABLE_CAMERAS.length > 0) {
-        const backCam = AVAILABLE_CAMERAS.find(c => {
-          const l = (c.label || '').toLowerCase();
-          return l.includes('back') || l.includes('rear') || l.includes('sau') || l.includes('environment');
-        });
-        selectedCamId = backCam ? backCam.id : AVAILABLE_CAMERAS[0].id;
-        if (cameraSelect) cameraSelect.value = selectedCamId;
-      }
-
-      CURRENT_CAMERA_ID = selectedCamId;
-      await initHtml5Scanner(selectedCamId);
-    } catch (err) {
-      console.warn("Camera live bị hạn chế bởi iframe sandbox:", err);
-      if (cameraSelect) {
-        cameraSelect.innerHTML = '<option value="">(Camera bị iframe GAS chặn - Dùng Nút Mở Ngoài Iframe)</option>';
-      }
-      if (feedbackBox) {
-        feedbackBox.className = 'mt-2 p-2 rounded small text-center fw-semibold bg-warning-subtle text-warning';
-        feedbackBox.innerHTML = `
-          <div class="mb-1"><i class="fa-solid fa-triangle-exclamation me-1"></i> Trình duyệt chặn Camera bên trong iframe Google Apps Script.</div>
-          <button class="btn btn-sm btn-primary py-1 px-3 fw-bold" onclick="openStandaloneCameraWindow()">
-            <i class="fa-solid fa-arrow-up-right-from-square me-1"></i> Bấm Đây Mở Camera Live Ngoài Iframe
-          </button>
-        `;
-      }
-    }
-  }
-
-  // Mở cửa sổ popup Camera Live độc lập (Host trên GitHub Pages để vượt qua 100% rào cản iframe Google Apps Script)
-  function openStandaloneCameraWindow() {
-    const onlineUrl = 'https://alexermanh-creator.github.io/QUAN-LY-KHO-THANH-ANH/scanner.html';
-    const localUrl = 'scanner.html';
-
-    // Ưu tiên mở trên GitHub Pages (HTTPS độc lập, cấp cao nhất)
-    const targetUrl = (typeof location !== 'undefined' && location.hostname === 'localhost' || location.protocol === 'file:') 
-      ? localUrl 
-      : onlineUrl;
-
-    try {
-      const w = window.open(targetUrl, 'ThanhAnCameraScanner', 'width=520,height=680,top=100,left=100,resizable=yes');
-      if (!w) {
-        if (typeof Swal !== 'undefined' && Swal.fire) {
-          Swal.fire({
-            icon: 'warning',
-            title: 'Trình duyệt chặn Cửa sổ Popup',
-            html: `Vui lòng bấm <strong>Cho Phép Cửa Sổ Bật Lên (Popups)</strong> trên thanh địa chỉ của trình duyệt để mở Camera Live!<br><br>
-                   Hoặc bạn có thể truy cập trực tiếp: <a href="${onlineUrl}" target="_blank" class="fw-bold text-primary">${onlineUrl}</a>`
-          });
-        }
-      } else {
-        w.focus();
-      }
-    } catch (err) {
-      console.error('Không mở được standalone camera scanner:', err);
-      window.open(onlineUrl, '_blank');
-    }
-  }
-  window.openStandaloneCameraWindow = openStandaloneCameraWindow;
-  if (typeof window !== 'undefined') window.handleDecodedBarcode = handleDecodedBarcode;
-
-  async function switchCameraDevice(cameraId) {
-    if (!cameraId) return;
-    CURRENT_CAMERA_ID = cameraId;
-    await stopScannerCamera();
-    setTimeout(async () => {
-      await initHtml5Scanner(cameraId);
-    }, 200);
-  }
-
-  async function initHtml5Scanner(cameraId) {
-    const feedbackBox = document.getElementById('scanner-feedback-box');
-    await stopScannerCamera();
-
-    const readerContainer = document.getElementById('html5-qr-reader');
-    if (readerContainer) readerContainer.innerHTML = '';
-
-    try {
-      const formats = (typeof Html5QrcodeSupportedFormats !== 'undefined') ? [
-        Html5QrcodeSupportedFormats.QR_CODE,
-        Html5QrcodeSupportedFormats.CODE_128,
-        Html5QrcodeSupportedFormats.CODE_39,
-        Html5QrcodeSupportedFormats.EAN_13,
-        Html5QrcodeSupportedFormats.EAN_8,
-        Html5QrcodeSupportedFormats.UPC_A
-      ] : undefined;
-
-      html5QrCodeScanner = new Html5Qrcode("html5-qr-reader", {
-        formatsToSupport: formats,
-        verbose: false
-      });
-    } catch(e) {
-      console.warn("Lỗi khởi tạo Html5Qrcode:", e);
-      if (feedbackBox) {
-        feedbackBox.className = 'mt-2 p-2 rounded small text-center fw-semibold bg-danger-subtle text-danger';
-        feedbackBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i> Không thể khởi tạo scanner: ' + e.message;
-      }
-      return;
-    }
-
-    const config = { 
-      fps: 20, 
-      qrbox: (viewfinderWidth, viewfinderHeight) => {
-        const w = Math.min(viewfinderWidth * 0.85, 280);
-        const h = Math.min(viewfinderHeight * 0.55, 160);
-        return { width: Math.floor(w), height: Math.floor(h) };
-      },
-      aspectRatio: 1.777778
-    };
-
-    const onScanSuccess = (decodedText) => {
-      handleDecodedBarcode(decodedText);
-    };
-
-    const trySources = [];
-    if (cameraId) trySources.push(cameraId);
-    trySources.push({ facingMode: "environment" });
-    trySources.push({ facingMode: "user" });
-
-    let isSuccess = false;
-    for (const src of trySources) {
-      if (isSuccess) break;
-      try {
-        await html5QrCodeScanner.start(src, config, onScanSuccess, () => {});
-        isSuccess = true;
-        if (feedbackBox) {
-          feedbackBox.className = 'mt-2 p-2 rounded small text-center fw-semibold bg-success-subtle text-success';
-          feedbackBox.innerHTML = '<i class="fa-solid fa-video me-1"></i> Camera đang hoạt động! Đưa tem mã vạch hoặc mã QR vào khung ngắm.';
-        }
-        break;
-      } catch (err) {
-        console.warn("Thử nguồn camera thất bại:", src, err);
-      }
-    }
-
-    if (!isSuccess && feedbackBox) {
-      feedbackBox.className = 'mt-2 p-2 rounded small text-center fw-semibold bg-warning-subtle text-warning';
-      feedbackBox.innerHTML = `
-        <div class="mb-1"><i class="fa-solid fa-triangle-exclamation me-1"></i> Trình duyệt chặn Camera Live bên trong iframe Google Apps Script.</div>
-        <button class="btn btn-sm btn-primary py-1 px-3 fw-bold shadow-sm" onclick="openStandaloneCameraWindow()">
-          <i class="fa-solid fa-arrow-up-right-from-square me-1"></i> Mở Cửa Sổ Camera Live Ngoài Iframe
-        </button>
-      `;
-    }
-  }
-
-  // Quét trực tiếp mã vạch từ ảnh chụp tem thiết bị (Chuẩn 100% trên điện thoại & Web App GAS)
-  function scanBarcodeFromFile(fileInput) {
+  /* ==================================================== */
+  /* TIẾP NHẬN ẢNH: CHỌN NHIỀU ẢNH HOẶC DÁN CTRL + V      */
+  /* ==================================================== */
+  function handleBatchImagesUpload(fileInput) {
     if (!fileInput || !fileInput.files || fileInput.files.length === 0) return;
-    const file = fileInput.files[0];
-    decodeBarcodeFromImageBlob(file, () => {
-      fileInput.value = '';
+    const files = Array.from(fileInput.files);
+    processBatchImageBlobs(files);
+    fileInput.value = '';
+  }
+
+  function handleModalClipboardPaste(e) {
+    const clipboardData = e.clipboardData || window.clipboardData;
+    if (!clipboardData || !clipboardData.items) return;
+
+    const imageBlobs = [];
+    for (let i = 0; i < clipboardData.items.length; i++) {
+      const item = clipboardData.items[i];
+      if (item.type.indexOf('image') !== -1) {
+        const blob = item.getAsFile();
+        if (blob) imageBlobs.push(blob);
+      }
+    }
+
+    if (imageBlobs.length > 0) {
+      e.preventDefault();
+      processBatchImageBlobs(imageBlobs);
+    }
+  }
+
+  /* ==================================================== */
+  /* BỘ LỌC HEURISTIC KIỂM ĐỊNH SỐ SERIAL CHUẨN XÁC      */
+  /* ==================================================== */
+  function isValidSerialNumber(rawText) {
+    if (!rawText) return null;
+    let sn = String(rawText).trim().toUpperCase();
+
+    // Loại bỏ dấu bao ngoặc và ký tự ngăn cách nếu có
+    sn = sn.replace(/^[\[\(\{\#\:\s]+/, '').replace(/[\]\)\}\.\;\,\s]+$/, '');
+    sn = sn.replace(/\s+/g, '');
+
+    // Độ dài Serial hợp lệ thông thường từ 6 đến 22 ký tự
+    if (sn.length < 6 || sn.length > 22) return null;
+
+    // Chỉ chứa chữ cái latin và chữ số
+    if (!/^[A-Z0-9\-_]+$/.test(sn)) return null;
+
+    // Loại trừ mã vạch UPC-A / EAN-13 (chỉ toàn số 12 hoặc 13 chữ số, ví dụ 195161269745)
+    if (/^\d{12,13}$/.test(sn)) return null;
+
+    // Loại trừ chuỗi chứa toàn ký tự trùng nhau (ví dụ: 000000, XXXXXX)
+    if (/^(.)\1+$/.test(sn)) return null;
+
+    // Loại trừ ngày tháng thuần số (YYYYMMDD)
+    if (/^(19|20)\d{6}$/.test(sn)) return null;
+
+    // Loại trừ địa chỉ MAC Card mạng (12 ký tự hex)
+    if (/^(?:[0-9A-F]{2}[:-]){5}[0-9A-F]{2}$/i.test(sn)) return null;
+
+    // Loại trừ từ khóa tem in và thông số kỹ thuật phổ biến
+    const blacklistedWords = [
+      'PRINTER', 'SCANNER', 'VIETNAM', 'MADEIN', 'VOLTS', 'HERTZ',
+      'AMPERES', 'WARNING', 'CAUTION', 'ENERGY', 'SERIES', 'PRODUCT',
+      'HEWLETT', 'PACKARD', 'CANON', 'BROTHER', 'EPSON', 'TONER',
+      'CARTRIDGE', 'RATING', 'ORIGINAL', 'SUPPLY', 'SERIAL'
+    ];
+    if (blacklistedWords.includes(sn)) return null;
+
+    // Loại trừ mã Model sản phẩm nếu trùng với danh mục hệ thống
+    if (typeof PRODUCT_DB !== 'undefined' && Array.isArray(PRODUCT_DB)) {
+      const isKnownModel = PRODUCT_DB.some(p => (p.model || '').toUpperCase() === sn);
+      if (isKnownModel) return null;
+    }
+    // Loại trừ các model phổ biến như 2Z610A, W1470A...
+    if (/^(2Z\d{3}[A-Z]|W\d{4}[A-Z]|CF\d{3}[A-Z]|CE\d{3}[A-Z]|TN\d{3,4})$/.test(sn)) {
+      return null;
+    }
+
+    return sn;
+  }
+
+  /* ==================================================== */
+  /* TIỀN XỬ LÝ ẢNH & TẠO THUMBNAIL PREVIEW               */
+  /* ==================================================== */
+  async function preprocessImageBlob(blob) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const objectUrl = URL.createObjectURL(blob);
+      img.onload = () => {
+        URL.revokeObjectURL(objectUrl);
+        try {
+          // 1. Tạo thumbnail nhỏ để hiển thị trên bảng kết quả
+          const thumbCanvas = document.createElement('canvas');
+          const thumbWidth = 100;
+          const thumbHeight = Math.round((img.height / img.width) * thumbWidth);
+          thumbCanvas.width = thumbWidth;
+          thumbCanvas.height = Math.max(thumbHeight, 40);
+          const thumbCtx = thumbCanvas.getContext('2d');
+          thumbCtx.drawImage(img, 0, 0, thumbCanvas.width, thumbCanvas.height);
+          const thumbnailDataUrl = thumbCanvas.toDataURL('image/jpeg', 0.8);
+
+          // 2. Tạo Canvas tối ưu để giải mã (Scale tối đa 1600px giữ nguyên tỉ lệ)
+          const maxDim = 1600;
+          let targetW = img.width;
+          let targetH = img.height;
+          if (targetW > maxDim || targetH > maxDim) {
+            if (targetW > targetH) {
+              targetH = Math.round((targetH * maxDim) / targetW);
+              targetW = maxDim;
+            } else {
+              targetW = Math.round((targetW * maxDim) / targetH);
+              targetH = maxDim;
+            }
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = targetW;
+          canvas.height = targetH;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, targetW, targetH);
+
+          resolve({ canvas, thumbnailDataUrl });
+        } catch (err) {
+          reject(err);
+        }
+      };
+      img.onerror = (e) => {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error('Không tải được ảnh'));
+      };
+      img.src = objectUrl;
     });
   }
 
-  // Giải mã ảnh từ Blob / File với kiến trúc đa tầng (BarcodeDetector GPU -> Canvas Resizing -> Html5Qrcode)
-  function decodeBarcodeFromImageBlob(fileBlob, callback) {
-    const feedbackBox = document.getElementById('scanner-feedback-box');
-    if (feedbackBox) {
-      feedbackBox.className = 'mt-2 p-2 rounded small text-center fw-semibold bg-light text-primary';
-      feedbackBox.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin me-1"></i> Đang phân tích mã vạch từ ảnh chụp tem...';
+  /* ==================================================== */
+  /* BÓC TÁCH SERIAL ĐA TẦNG TỪ 1 ẢNH (GPU BARCODE + OCR) */
+  /* ==================================================== */
+  async function extractSerialsFromSingleBlob(blob) {
+    const results = [];
+    let thumbnailDataUrl = '';
+    let canvas = null;
+
+    try {
+      const prep = await preprocessImageBlob(blob);
+      canvas = prep.canvas;
+      thumbnailDataUrl = prep.thumbnailDataUrl;
+    } catch (e) {
+      console.warn('Lỗi tiền xử lý ảnh:', e);
+      return { results: [], thumbnailDataUrl: '' };
     }
 
-    // TẦNG 1: NATIVE BARCODE DETECTOR (Nhanh gấp 10 lần, có sẵn trong Chrome/Edge/Android)
+    // ----------------------------------------------------
+    // TẦNG 1: NATIVE BARCODE DETECTOR (GPU Hardware Acceleration)
+    // ----------------------------------------------------
     if (typeof window.BarcodeDetector !== 'undefined') {
       try {
-        const formats = ['code_128', 'code_39', 'qr_code', 'ean_13', 'ean_8', 'upc_a'];
+        const formats = ['code_128', 'code_39', 'qr_code', 'ean_13', 'upc_a'];
         const detector = new window.BarcodeDetector({ formats });
-        createImageBitmap(fileBlob).then(bitmap => {
-          return detector.detect(bitmap);
-        }).then(barcodes => {
-          if (barcodes && barcodes.length > 0 && barcodes[0].rawValue) {
-            const detectedCode = barcodes[0].rawValue.trim();
-            handleDecodedBarcode(detectedCode);
-            if (feedbackBox) {
-              feedbackBox.className = 'mt-2 p-2 rounded small text-center fw-semibold bg-success-subtle text-success';
-              feedbackBox.innerHTML = `<i class="fa-solid fa-check-circle me-1"></i> Đã đọc thành công: <strong>${detectedCode}</strong>`;
+        const detectedCodes = await detector.detect(canvas);
+        if (detectedCodes && detectedCodes.length > 0) {
+          for (const item of detectedCodes) {
+            const raw = (item.rawValue || '').trim();
+            const validSn = isValidSerialNumber(raw);
+            if (validSn && !results.some(r => r.serial === validSn)) {
+              results.push({
+                serial: validSn,
+                method: 'Barcode (Phần cứng GPU)',
+                thumbnailDataUrl: thumbnailDataUrl
+              });
             }
-            if (typeof callback === 'function') callback();
-            return;
           }
-          // Nếu tầng 1 chưa ra, chuyển sang Tầng 2
-          decodeWithHtml5Qrcode(fileBlob, callback);
-        }).catch(err => {
-          console.warn("BarcodeDetector fallback to Html5Qrcode:", err);
-          decodeWithHtml5Qrcode(fileBlob, callback);
-        });
-        return;
-      } catch (e) {
-        console.warn("Lỗi BarcodeDetector:", e);
+        }
+      } catch (err) {
+        console.warn('Native BarcodeDetector:', err);
       }
     }
 
-    // TẦNG 2: HTML5QRCODE SCANNER VỚI CANVAS RESIZING
-    decodeWithHtml5Qrcode(fileBlob, callback);
+    // ----------------------------------------------------
+    // TẦNG 2: HTML5QRCODE DỰ PHÒNG (NẾU TẦNG 1 CHƯA RA SERIAL)
+    // ----------------------------------------------------
+    if (results.length === 0 && typeof Html5Qrcode !== 'undefined') {
+      try {
+        if (!sharedHtml5QrScanner) {
+          sharedHtml5QrScanner = new Html5Qrcode('html5-qr-reader', { verbose: false });
+        }
+        let code = await sharedHtml5QrScanner.scanFile(blob, true).catch(() => null);
+        if (!code) {
+          code = await sharedHtml5QrScanner.scanFile(blob, false).catch(() => null);
+        }
+        if (code) {
+          const validSn = isValidSerialNumber(code);
+          if (validSn && !results.some(r => r.serial === validSn)) {
+            results.push({
+              serial: validSn,
+              method: 'Mã Vạch Barcode',
+              thumbnailDataUrl: thumbnailDataUrl
+            });
+          }
+        }
+      } catch (err) {
+        console.warn('Html5Qrcode scanFile:', err);
+      }
+    }
+
+    // ----------------------------------------------------
+    // TẦNG 3: AI OCR TESSERACT.JS (BÓC TÁCH CHỮ IN MẮT THƯỜNG)
+    // Cứu cánh khi tem bị bóng băng dính, vạch mờ, hoặc nhãn chỉ in chữ
+    // ----------------------------------------------------
+    if (results.length === 0 && typeof Tesseract !== 'undefined') {
+      try {
+        const ocrResult = await Tesseract.recognize(canvas, 'eng', {
+          logger: () => {}
+        });
+
+        const ocrText = (ocrResult && ocrResult.data && ocrResult.data.text) ? ocrResult.data.text : '';
+        if (ocrText) {
+          // Pattern 1: Tìm theo neo từ khóa Serial Number chuẩn quốc tế
+          const anchorRegex = /(?:Serial\s*(?:No|Num|Number)?|S[\/\.]?N|SN|Service\s*Tag)[\s\:\-\.\#\[\(]+([A-Z0-9]{7,18})/gi;
+          let match;
+          while ((match = anchorRegex.exec(ocrText)) !== null) {
+            const snFound = isValidSerialNumber(match[1]);
+            if (snFound && !results.some(r => r.serial === snFound)) {
+              results.push({
+                serial: snFound,
+                method: 'AI OCR (Đọc Chữ In Tem)',
+                thumbnailDataUrl: thumbnailDataUrl
+              });
+            }
+          }
+
+          // Pattern 2: Dòng máy HP (Ví dụ: VNM1908585, VNM1908583, VNM1908452, CNB..., SG...)
+          const hpRegex = /\b(?:VNM|CNB|VN|SG)[0-9A-Z]{7}\b/gi;
+          let hpMatch;
+          while ((hpMatch = hpRegex.exec(ocrText)) !== null) {
+            const snFound = isValidSerialNumber(hpMatch[0]);
+            if (snFound && !results.some(r => r.serial === snFound)) {
+              results.push({
+                serial: snFound,
+                method: 'AI OCR (Định Dạng HP)',
+                thumbnailDataUrl: thumbnailDataUrl
+              });
+            }
+          }
+
+          // Pattern 3: Dòng máy Canon (Ví dụ: 4 chữ cái + 5 chữ số)
+          const canonRegex = /\b[A-Z]{4}[0-9]{5}\b/gi;
+          let canonMatch;
+          while ((canonMatch = canonRegex.exec(ocrText)) !== null) {
+            const snFound = isValidSerialNumber(canonMatch[0]);
+            if (snFound && !results.some(r => r.serial === snFound)) {
+              results.push({
+                serial: snFound,
+                method: 'AI OCR (Định Dạng Canon)',
+                thumbnailDataUrl: thumbnailDataUrl
+              });
+            }
+          }
+
+          // Pattern 4: Dòng máy Brother (15 ký tự chữ và số)
+          const brotherRegex = /\b[A-Z0-9]{15}\b/gi;
+          let brotherMatch;
+          while ((brotherMatch = brotherRegex.exec(ocrText)) !== null) {
+            const snFound = isValidSerialNumber(brotherMatch[0]);
+            if (snFound && !results.some(r => r.serial === snFound)) {
+              results.push({
+                serial: snFound,
+                method: 'AI OCR (Định Dạng Brother)',
+                thumbnailDataUrl: thumbnailDataUrl
+              });
+            }
+          }
+        }
+      } catch (ocrErr) {
+        console.warn('Tesseract OCR error:', ocrErr);
+      }
+    }
+
+    return { results, thumbnailDataUrl };
   }
 
-  function decodeWithHtml5Qrcode(fileBlob, callback) {
+  /* ==================================================== */
+  /* XỬ LÝ HÀNG LOẠT ẢNH VÀ HIỂN THỊ TIẾN TRÌNH          */
+  /* ==================================================== */
+  async function processBatchImageBlobs(blobs) {
+    if (!blobs || blobs.length === 0) return;
+
+    const progressContainer = document.getElementById('scanner-batch-progress');
+    const progressBar = document.getElementById('batch-progress-bar');
+    const progressText = document.getElementById('batch-progress-text');
+    const progressCount = document.getElementById('batch-progress-count');
     const feedbackBox = document.getElementById('scanner-feedback-box');
 
-    if (!html5QrCodeScanner) {
-      try {
-        const formats = (typeof Html5QrcodeSupportedFormats !== 'undefined') ? [
-          Html5QrcodeSupportedFormats.QR_CODE,
-          Html5QrcodeSupportedFormats.CODE_128,
-          Html5QrcodeSupportedFormats.CODE_39,
-          Html5QrcodeSupportedFormats.EAN_13,
-          Html5QrcodeSupportedFormats.EAN_8,
-          Html5QrcodeSupportedFormats.UPC_A
-        ] : undefined;
+    if (progressContainer) progressContainer.style.display = 'block';
+    if (progressBar) progressBar.style.width = '0%';
 
-        html5QrCodeScanner = new Html5Qrcode("html5-qr-reader", {
-          formatsToSupport: formats,
-          verbose: false
-        });
-      } catch(e){}
+    let totalImages = blobs.length;
+    let completedImages = 0;
+    let newSerialsFound = 0;
+
+    for (let i = 0; i < totalImages; i++) {
+      const blob = blobs[i];
+      if (progressText) {
+        progressText.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin me-1"></i> Đang xử lý ảnh ${i + 1}/${totalImages}...`;
+      }
+      if (progressCount) {
+        progressCount.textContent = `${i + 1}/${totalImages}`;
+      }
+
+      try {
+        const { results, thumbnailDataUrl } = await extractSerialsFromSingleBlob(blob);
+        if (results && results.length > 0) {
+          for (const item of results) {
+            // Kiểm tra trùng trong danh sách hiện tại của bảng
+            if (!extractedSerialsList.some(s => s.serial === item.serial)) {
+              extractedSerialsList.push({
+                id: 'sn_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+                serial: item.serial,
+                method: item.method,
+                previewUrl: item.thumbnailDataUrl || thumbnailDataUrl,
+                timestamp: Date.now()
+              });
+              newSerialsFound++;
+            }
+          }
+        } else {
+          // Nếu không bóc tách được, có thể hiển thị cảnh báo
+          console.log(`Ảnh ${i + 1} không bóc tách được Serial hợp lệ.`);
+        }
+      } catch (err) {
+        console.error('Lỗi khi bóc tách ảnh:', err);
+      }
+
+      completedImages++;
+      const percent = Math.round((completedImages / totalImages) * 100);
+      if (progressBar) progressBar.style.width = `${percent}%`;
     }
 
-    if (!html5QrCodeScanner) {
+    // Hoàn tất quét hàng loạt
+    if (progressContainer) {
+      setTimeout(() => {
+        progressContainer.style.display = 'none';
+      }, 600);
+    }
+
+    if (newSerialsFound > 0) {
+      playBeepSound();
+      triggerVibration();
       if (feedbackBox) {
-        feedbackBox.className = 'mt-2 p-2 rounded small text-center fw-semibold bg-danger-subtle text-danger';
-        feedbackBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i> Đang tải bộ giải mã... Vui lòng thử lại!';
+        feedbackBox.className = 'p-2 rounded small text-center fw-semibold bg-success-subtle text-success mb-2';
+        feedbackBox.innerHTML = `<i class="fa-solid fa-circle-check me-1"></i> Đã bóc tách thành công <strong>${newSerialsFound}</strong> số Serial từ ${totalImages} ảnh! Vui lòng kiểm tra và bấm "Đưa Toàn Bộ Serial Vào Phiếu".`;
       }
-      if (typeof callback === 'function') callback();
+    } else {
+      if (feedbackBox) {
+        feedbackBox.className = 'p-2 rounded small text-center fw-semibold bg-warning-subtle text-warning mb-2';
+        feedbackBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i> Không nhận diện được số Serial nào. Hãy đảm bảo tem ảnh rõ nét, đủ ánh sáng và chụp cận cảnh cụm Serial No.';
+      }
+    }
+
+    renderExtractedSerialsTable();
+  }
+
+  /* ==================================================== */
+  /* BẢNG ĐỐI SOÁT & DANH SÁCH SERIAL ĐÃ BÓC TÁCH        */
+  /* ==================================================== */
+  function renderExtractedSerialsTable() {
+    const resultsContainer = document.getElementById('scanner-results-container');
+    const tbody = document.getElementById('scanner-extracted-tbody');
+    const totalCountEl = document.getElementById('scanner-total-extracted');
+    const submitBtn = document.getElementById('btn-submit-extracted-serials');
+
+    if (!tbody || !totalCountEl || !resultsContainer || !submitBtn) return;
+
+    totalCountEl.textContent = extractedSerialsList.length;
+
+    if (extractedSerialsList.length === 0) {
+      resultsContainer.style.display = 'none';
+      submitBtn.disabled = true;
+      tbody.innerHTML = '';
       return;
     }
 
-    // Quét lần 1 với renderImage = true
-    html5QrCodeScanner.scanFile(fileBlob, true).then(decodedText => {
-      handleDecodedBarcode(decodedText);
-      if (feedbackBox) {
-        feedbackBox.className = 'mt-2 p-2 rounded small text-center fw-semibold bg-success-subtle text-success';
-        feedbackBox.innerHTML = `<i class="fa-solid fa-check-circle me-1"></i> Đã đọc thành công: <strong>${decodedText}</strong>`;
-      }
-      if (typeof callback === 'function') callback();
-    }).catch(err => {
-      // Quét lần 2 với renderImage = false
-      html5QrCodeScanner.scanFile(fileBlob, false).then(decodedText => {
-        handleDecodedBarcode(decodedText);
-        if (feedbackBox) {
-          feedbackBox.className = 'mt-2 p-2 rounded small text-center fw-semibold bg-success-subtle text-success';
-          feedbackBox.innerHTML = `<i class="fa-solid fa-check-circle me-1"></i> Đã đọc thành công: <strong>${decodedText}</strong>`;
-        }
-        if (typeof callback === 'function') callback();
-      }).catch(err2 => {
-        if (feedbackBox) {
-          feedbackBox.className = 'mt-2 p-2 rounded small text-center fw-semibold bg-danger-subtle text-danger';
-          feedbackBox.innerHTML = '<i class="fa-solid fa-circle-xmark me-1"></i> Không nhận diện được tem trong ảnh. Hãy chụp gần hơn, giữ thẳng và đủ sáng!';
-        }
-        if (typeof callback === 'function') callback();
-      });
-    });
+    resultsContainer.style.display = 'block';
+    submitBtn.disabled = false;
+
+    tbody.innerHTML = extractedSerialsList.map((item, idx) => {
+      const badgeClass = item.method.includes('GPU') ? 'bg-primary' : (item.method.includes('OCR') ? 'bg-success' : 'bg-secondary');
+      const thumbHtml = item.previewUrl
+        ? `<img src="${item.previewUrl}" alt="Tem" style="height: 34px; width: 60px; object-fit: cover; border-radius: 4px; border: 1px solid #cbd5e1;">`
+        : `<span class="badge bg-light text-muted border">No img</span>`;
+
+      return `
+        <tr>
+          <td class="text-center fw-bold text-muted">${idx + 1}</td>
+          <td class="text-center">${thumbHtml}</td>
+          <td>
+            <input type="text" class="form-control form-control-sm font-monospace fw-bold text-primary py-0" 
+                   value="${escapeHtml(item.serial)}" 
+                   onchange="updateExtractedSerialValue('${item.id}', this.value)" style="max-width: 220px;">
+          </td>
+          <td>
+            <span class="badge ${badgeClass} text-white small">${escapeHtml(item.method)}</span>
+          </td>
+          <td class="text-center">
+            <button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="deleteExtractedSerial('${item.id}')" title="Xóa mã này">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join('');
   }
 
-  async function stopScannerCamera() {
-    if (html5QrCodeScanner) {
-      try {
-        if (html5QrCodeScanner.isScanning) {
-          await html5QrCodeScanner.stop();
-        }
-        html5QrCodeScanner.clear();
-      } catch (e) {
-        console.warn("Lỗi khi dừng scanner:", e);
-      }
-      html5QrCodeScanner = null;
+  function updateExtractedSerialValue(id, newVal) {
+    const item = extractedSerialsList.find(s => s.id === id);
+    if (item) {
+      item.serial = (newVal || '').trim().toUpperCase();
     }
   }
 
+  function deleteExtractedSerial(id) {
+    extractedSerialsList = extractedSerialsList.filter(s => s.id !== id);
+    renderExtractedSerialsTable();
+  }
+
+  function clearExtractedSerials() {
+    extractedSerialsList = [];
+    renderExtractedSerialsTable();
+    const feedbackBox = document.getElementById('scanner-feedback-box');
+    if (feedbackBox) {
+      feedbackBox.className = 'p-2 rounded small text-center fw-semibold bg-light text-muted mb-2';
+      feedbackBox.innerHTML = '<i class="fa-solid fa-circle-info me-1 text-primary"></i> Đã xóa danh sách Serial bóc tách.';
+    }
+  }
+
+  /* ==================================================== */
+  /* ĐƯA TOÀN BỘ SERIAL VÀO PHIẾU THEO NGỮ CẢNH           */
+  /* ==================================================== */
+  function submitExtractedSerialsToContext() {
+    if (extractedSerialsList.length === 0) return;
+
+    const validSerials = extractedSerialsList
+      .map(s => (s.serial || '').trim().toUpperCase())
+      .filter(s => s.length >= 4);
+
+    if (validSerials.length === 0) {
+      alert('Không có mã Serial nào hợp lệ để đưa vào phiếu!');
+      return;
+    }
+
+    if (CURRENT_SCAN_CONTEXT === 'NHAP_KHO_SINGLE') {
+      const textarea = document.getElementById('nhap-serial-input');
+      if (textarea) {
+        const curVal = textarea.value.trim();
+        const addedText = validSerials.join('\n');
+        textarea.value = curVal ? `${curVal}\n${addedText}` : addedText;
+        if (typeof updateNhapSerialCounter === 'function') {
+          updateNhapSerialCounter();
+        }
+      }
+    } else if (CURRENT_SCAN_CONTEXT === 'XUAT_KHO') {
+      if (typeof addSerialToXuatDraft === 'function') {
+        validSerials.forEach(sn => addSerialToXuatDraft(sn));
+      }
+    } else if (CURRENT_SCAN_CONTEXT === 'INVENTORY_SESSION') {
+      if (typeof addSerialToInventorySession === 'function') {
+        validSerials.forEach(sn => addSerialToInventorySession(sn));
+      }
+    } else if (CURRENT_SCAN_CONTEXT === 'SERIAL_360') {
+      const firstSn = validSerials[0];
+      const inp = document.getElementById('serial-360-search-input');
+      if (inp) inp.value = firstSn;
+      if (typeof switchTab === 'function') switchTab('Serial360');
+      if (typeof lookupSerial360 === 'function') lookupSerial360(firstSn);
+    } else if (CURRENT_SCAN_CONTEXT === 'GLOBAL_SEARCH') {
+      const firstSn = validSerials[0];
+      const inp = document.getElementById('global-search-input');
+      if (inp) inp.value = firstSn;
+      if (typeof handleGlobalSearch === 'function') handleGlobalSearch(firstSn);
+    } else if (CURRENT_SCAN_CONTEXT === 'WARRANTY_CASE') {
+      const firstSn = validSerials[0];
+      const inp = document.getElementById('case-serial');
+      if (inp) {
+        inp.value = firstSn;
+        if (typeof onWarrantySerialChange === 'function') onWarrantySerialChange(firstSn);
+      }
+    } else if (CURRENT_SCAN_CONTEXT === 'STOCK_LOOKUP') {
+      const firstSn = validSerials[0];
+      const inp = document.getElementById('filter-stock-keyword');
+      if (inp) {
+        inp.value = firstSn;
+        if (typeof applyStockFilter === 'function') applyStockFilter();
+      }
+    } else if (CURRENT_SCAN_CONTEXT === 'STOCK_ADJUSTMENT') {
+      const firstSn = validSerials[0];
+      const inp = document.getElementById('adj-serial');
+      if (inp) inp.value = firstSn;
+    } else if (CURRENT_SCAN_CONTEXT === 'RETURN_CUSTOMER') {
+      const firstSn = validSerials[0];
+      const inp = document.getElementById('return-cust-serial');
+      if (inp) inp.value = firstSn;
+    } else if (CURRENT_SCAN_CONTEXT === 'RETURN_SUPPLIER') {
+      const firstSn = validSerials[0];
+      const inp = document.getElementById('return-supp-serial');
+      if (inp) inp.value = firstSn;
+    } else if (CURRENT_SCAN_CONTEXT === 'TRANSFER_WAREHOUSE') {
+      const firstSn = validSerials[0];
+      const inp = document.getElementById('transfer-serial');
+      if (inp) inp.value = firstSn;
+    }
+
+    // Đóng Modal và thông báo thành công
+    const modalEl = document.getElementById('scannerModal');
+    if (modalEl && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+      const modal = bootstrap.Modal.getInstance(modalEl);
+      if (modal) modal.hide();
+    }
+
+    showFloatingScannerToast(`✅ Đã nạp thành công <strong>${validSerials.length}</strong> số Serial vào phiếu!`);
+  }
+
+  /* ==================================================== */
+  /* XỬ LÝ MÃ ĐƠN (TỪ SÚNG QUÉT HOẶC TƯƠNG THÍCH CŨ)      */
+  /* ==================================================== */
   function handleDecodedBarcode(rawCode) {
     const code = (rawCode || '').trim();
     if (!code) return;
 
     const now = Date.now();
-    // Chống quét trùng liên tục trong 2 giây (Yêu cầu I3)
     if (code === lastScannedCode && (now - lastScannedTimestamp) < 2000) {
-      const feedbackBox = document.getElementById('scanner-feedback-box');
-      if (feedbackBox) {
-        feedbackBox.className = 'mt-2 p-2 rounded small text-center fw-semibold bg-warning-subtle text-warning';
-        feedbackBox.innerHTML = `<i class="fa-solid fa-triangle-exclamation me-1"></i> Mã <strong>${code}</strong> vừa được quét! Vui lòng chuyển sang tem tiếp theo.`;
-      }
       return;
     }
 
@@ -15270,78 +15338,64 @@
     playBeepSound();
     triggerVibration();
 
-    const feedbackBox = document.getElementById('scanner-feedback-box');
-    if (feedbackBox) {
-      feedbackBox.className = 'mt-2 p-2 rounded small text-center fw-semibold bg-success-subtle text-success';
-      feedbackBox.innerHTML = `<i class="fa-solid fa-check-circle me-1"></i> Đã quét thành công: <strong class="font-monospace text-primary">${code}</strong>`;
+    const validSn = isValidSerialNumber(code) || code;
+
+    // Nếu Modal Scanner đang mở, đưa vào bảng đối soát
+    const modalEl = document.getElementById('scannerModal');
+    if (modalEl && modalEl.classList.contains('show')) {
+      if (!extractedSerialsList.some(s => s.serial === validSn)) {
+        extractedSerialsList.push({
+          id: 'sn_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+          serial: validSn,
+          method: 'Súng Quét / Barcode Gun',
+          previewUrl: '',
+          timestamp: Date.now()
+        });
+        renderExtractedSerialsTable();
+      }
+      return;
     }
 
-    sessionScannedSerials.push(code);
-    const recentContainer = document.getElementById('scanner-recent-container');
-    if (recentContainer) recentContainer.style.display = 'block';
-    
-    const countEl = document.getElementById('scanner-scanned-count');
-    if (countEl) countEl.textContent = `${sessionScannedSerials.length} mã`;
-    
-    const listEl = document.getElementById('scanner-scanned-list');
-    if (listEl) {
-      const badge = document.createElement('span');
-      badge.className = 'badge bg-light text-dark border font-monospace';
-      badge.textContent = code;
-      listEl.appendChild(badge);
-    }
-
-    // Chuyển dữ liệu vào ngữ cảnh
-    routeScannedCodeToContext(code);
-
-    const isContinuous = document.getElementById('scanner-continuous-toggle')?.checked;
-    if (!isContinuous) {
-      setTimeout(() => {
-        const modalEl = document.getElementById('scannerModal');
-        if (typeof bootstrap !== 'undefined' && bootstrap.Modal && modalEl) {
-          const modal = bootstrap.Modal.getInstance(modalEl);
-          if (modal) modal.hide();
-        }
-        stopScannerCamera();
-      }, 600);
-    }
+    // Nếu Modal không mở, điều hướng thẳng vào form đang làm việc
+    routeScannedCodeToContext(validSn);
   }
 
-  // Điều hướng mã quét vào form nghiệp vụ tương ứng (Bổ sung 3 nghiệp vụ kho - Yêu cầu 11)
   function routeScannedCodeToContext(code) {
     if (CURRENT_SCAN_CONTEXT === 'GLOBAL_SEARCH') {
-      document.getElementById('global-search-input').value = code;
-      handleGlobalSearch(code);
+      const inp = document.getElementById('global-search-input');
+      if (inp) inp.value = code;
+      if (typeof handleGlobalSearch === 'function') handleGlobalSearch(code);
     } else if (CURRENT_SCAN_CONTEXT === 'SERIAL_360') {
-      document.getElementById('serial-360-search-input').value = code;
-      switchTab('Serial360');
-      lookupSerial360(code);
+      const inp = document.getElementById('serial-360-search-input');
+      if (inp) inp.value = code;
+      if (typeof switchTab === 'function') switchTab('Serial360');
+      if (typeof lookupSerial360 === 'function') lookupSerial360(code);
     } else if (CURRENT_SCAN_CONTEXT === 'NHAP_KHO_SINGLE') {
       const textarea = document.getElementById('nhap-serial-input');
       if (textarea) {
-        const currentVal = textarea.value.trim();
-        textarea.value = currentVal ? `${currentVal}\n${code}` : code;
-        updateNhapSerialCounter();
+        const curVal = textarea.value.trim();
+        textarea.value = curVal ? `${curVal}\n${code}` : code;
+        if (typeof updateNhapSerialCounter === 'function') updateNhapSerialCounter();
       }
     } else if (CURRENT_SCAN_CONTEXT === 'XUAT_KHO') {
-      addSerialToXuatDraft(code);
+      if (typeof addSerialToXuatDraft === 'function') addSerialToXuatDraft(code);
+    } else if (CURRENT_SCAN_CONTEXT === 'INVENTORY_SESSION') {
+      if (typeof addSerialToInventorySession === 'function') addSerialToInventorySession(code);
     } else if (CURRENT_SCAN_CONTEXT === 'WARRANTY_CASE') {
       const inp = document.getElementById('case-serial');
       if (inp) {
         inp.value = code;
-        onWarrantySerialChange(code);
+        if (typeof onWarrantySerialChange === 'function') onWarrantySerialChange(code);
       }
     } else if (CURRENT_SCAN_CONTEXT === 'STOCK_LOOKUP') {
       const inp = document.getElementById('filter-stock-keyword');
       if (inp) {
         inp.value = code;
-        applyStockFilter();
+        if (typeof applyStockFilter === 'function') applyStockFilter();
       }
     } else if (CURRENT_SCAN_CONTEXT === 'STOCK_ADJUSTMENT') {
       const inp = document.getElementById('adj-serial');
       if (inp) inp.value = code;
-    } else if (CURRENT_SCAN_CONTEXT === 'INVENTORY_SESSION') {
-      addSerialToInventorySession(code);
     } else if (CURRENT_SCAN_CONTEXT === 'RETURN_CUSTOMER') {
       const inp = document.getElementById('return-cust-serial');
       if (inp) inp.value = code;
@@ -15354,20 +15408,12 @@
     }
   }
 
-  function triggerMockScan() {
-    const select = document.getElementById('mock-scanner-select');
-    const code = select ? select.value : '';
-    if (code) {
-      handleDecodedBarcode(code);
-    }
-  }
-
   /* ==================================================== */
   /* TÍCH HỢP SÚNG QUÉT MÃ VẠCH TOÀN HỆ THỐNG (HARDWARE)  */
   /* ==================================================== */
   let hardwareScannerBuffer = '';
   let lastHardwareKeyTime = 0;
-  const HARDWARE_KEY_INTERVAL_MAX_MS = 55; // Tốc độ bắn của súng quét thường < 40ms/phím
+  const HARDWARE_KEY_INTERVAL_MAX_MS = 55; // Súng quét bấm rất nhanh (< 50ms)
 
   function initGlobalHardwareScanner() {
     if (typeof window === 'undefined') return;
@@ -15383,7 +15429,6 @@
     const timeDiff = now - lastHardwareKeyTime;
     lastHardwareKeyTime = now;
 
-    // Khi súng quét kết thúc chuỗi mã bằng phím Enter hoặc Tab
     if (event.key === 'Enter' || event.key === 'Tab') {
       if (hardwareScannerBuffer.length >= 3 && timeDiff < 100) {
         const code = hardwareScannerBuffer.trim();
@@ -15397,9 +15442,7 @@
       return;
     }
 
-    // Ghi nhận ký tự văn bản đơn
     if (event.key && event.key.length === 1) {
-      // Nếu thời gian gõ giữa 2 phím quá dài (> 55ms) thì là người dùng gõ phím thông thường
       if (timeDiff > HARDWARE_KEY_INTERVAL_MAX_MS && hardwareScannerBuffer.length > 0) {
         hardwareScannerBuffer = '';
       }
@@ -15412,16 +15455,14 @@
     playBeepSound();
     triggerVibration();
 
-    // 1. Nếu modal scanner đang mở:
     const modalEl = document.getElementById('scannerModal');
     if (modalEl && modalEl.classList.contains('show')) {
       handleDecodedBarcode(code);
       return;
     }
 
-    // 2. Tự động nhận diện ngữ cảnh theo tab đang hiển thị
     const activeTab = (typeof CURRENT_TAB !== 'undefined') ? CURRENT_TAB : 'Dashboard';
-    showFloatingScannerToast(`🎯 Súng quét vừa bắn: <strong>${code}</strong>`);
+    showFloatingScannerToast(`🎯 Súng quét vừa bắn: <strong>${escapeHtml(code)}</strong>`);
 
     if (activeTab === 'NhapKho') {
       const textarea = document.getElementById('nhap-serial-input');
@@ -15451,7 +15492,6 @@
         if (typeof onWarrantySerialChange === 'function') onWarrantySerialChange(code);
       }
     } else {
-      // Mặc định chuyển sang Hồ sơ Serial 360 để tra cứu máy
       if (typeof switchTab === 'function') switchTab('Serial360');
       const inp = document.getElementById('serial-360-search-input');
       if (inp) inp.value = code;
@@ -15459,7 +15499,6 @@
     }
   }
 
-  // Hiển thị thông báo nổi thông minh khi súng quét bắn
   function showFloatingScannerToast(htmlMsg) {
     let toast = document.getElementById('scanner-floating-toast');
     if (!toast) {
@@ -15497,46 +15536,22 @@
     }, 2800);
   }
 
-  /* ==================================================== */
-  /* TÍCH HỢP QUÉT BẰNG ĐIỆN THOẠI & ĐỒNG BỘ THỜI GIAN THỰC */
-  /* ==================================================== */
-  function getPhoneSyncUrl() {
-    if (typeof location !== 'undefined') {
-      if (location.protocol === 'http:' || location.protocol === 'https:') {
-        if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
-          return `${location.origin}/scanner.html`;
-        }
-      }
-    }
-    return 'https://alexermanh-creator.github.io/QUAN-LY-KHO-THANH-ANH/scanner.html';
-  }
-
-  function copyPhoneSyncLink() {
-    const link = getPhoneSyncUrl();
-    if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(link).then(() => {
-        showFloatingScannerToast('<i class="fa-solid fa-circle-check text-success me-1"></i> Đã sao chép link quét di động!');
-      }).catch(() => {
-        prompt('Sao chép liên kết quét di động:', link);
-      });
-    } else {
-      prompt('Sao chép liên kết quét di động:', link);
-    }
-  }
-
-  function openPhoneSyncDirectTab() {
-    const link = getPhoneSyncUrl();
-    window.open(link, '_blank');
-  }
-
-  // Xuất các hàm ra window để tương thích toàn diện
+  // Tương thích window
   if (typeof window !== 'undefined') {
+    window.openScannerModal = openScannerModal;
+    window.stopScannerCamera = stopScannerCamera;
+    window.focusPasteZone = focusPasteZone;
+    window.handleBatchImagesUpload = handleBatchImagesUpload;
+    window.handleModalClipboardPaste = handleModalClipboardPaste;
+    window.renderExtractedSerialsTable = renderExtractedSerialsTable;
+    window.updateExtractedSerialValue = updateExtractedSerialValue;
+    window.deleteExtractedSerial = deleteExtractedSerial;
+    window.clearExtractedSerials = clearExtractedSerials;
+    window.submitExtractedSerialsToContext = submitExtractedSerialsToContext;
+    window.handleDecodedBarcode = handleDecodedBarcode;
     window.initGlobalHardwareScanner = initGlobalHardwareScanner;
     window.handleHardwareScannedBarcode = handleHardwareScannedBarcode;
     window.showFloatingScannerToast = showFloatingScannerToast;
-    window.copyPhoneSyncLink = copyPhoneSyncLink;
-    window.openPhoneSyncDirectTab = openPhoneSyncDirectTab;
-    window.getPhoneSyncUrl = getPhoneSyncUrl;
   }
 
   /* ==================================================== */

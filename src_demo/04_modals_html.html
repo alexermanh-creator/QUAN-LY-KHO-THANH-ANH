@@ -11,203 +11,73 @@
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" onclick="stopScannerCamera()"></button>
         </div>
         <div class="modal-body p-3">
-          <!-- THANH CHUYỂN CHẾ ĐỘ QUÉT -->
-          <ul class="nav nav-pills nav-fill mb-3 bg-light p-1 rounded border" id="scannerMethodTabs" role="tablist">
-            <li class="nav-item">
-              <button class="nav-link active btn-sm py-1" id="scan-tab-photo-btn" data-bs-toggle="pill" data-bs-target="#scan-tab-photo" type="button">
-                <i class="fa-solid fa-mobile-screen-button me-1 text-success"></i> Chụp Tem ĐT
-              </button>
-            </li>
-            <li class="nav-item">
-              <button class="nav-link btn-sm py-1" id="scan-tab-gun-btn" data-bs-toggle="pill" data-bs-target="#scan-tab-gun" type="button">
-                <i class="fa-solid fa-barcode me-1 text-primary"></i> Súng Quét USB
-              </button>
-            </li>
-            <li class="nav-item">
-              <button class="nav-link btn-sm py-1" id="scan-tab-phone-sync-btn" data-bs-toggle="pill" data-bs-target="#scan-tab-phone-sync" type="button">
-                <i class="fa-solid fa-qrcode me-1 text-info"></i> ĐT Quét Sang PC
-              </button>
-            </li>
-            <li class="nav-item">
-              <button class="nav-link btn-sm py-1" id="scan-tab-live-btn" data-bs-toggle="pill" data-bs-target="#scan-tab-live" type="button">
-                <i class="fa-solid fa-video me-1 text-secondary"></i> Camera Trực Tiếp
-              </button>
-            </li>
-            <li class="nav-item">
-              <button class="nav-link btn-sm py-1" id="scan-tab-test-btn" data-bs-toggle="pill" data-bs-target="#scan-tab-test" type="button">
-                <i class="fa-solid fa-bolt me-1 text-warning"></i> Thử Nghiệm
-              </button>
-            </li>
-          </ul>
-
-          <div class="d-flex justify-content-between align-items-center mb-2 px-2 py-1 bg-light rounded border">
-            <div>
-              <span class="fw-bold small d-block">Chế độ quét liên tục (Continuous Scan)</span>
-              <small class="text-muted" style="font-size: 0.72rem;">Tự động bíp & gom danh sách nhiều máy liên tiếp</small>
+          <!-- KHU VỰC THAO TÁC TINH GỌN (CHỤP / CHỌN NHIỀU ẢNH + DÁN CTRL+V + SÚNG QUÉT) -->
+          <div class="p-3 bg-light rounded border text-center mb-3">
+            <!-- 1. NÚT CHỤP / CHỌN NHIỀU ẢNH -->
+            <div class="d-grid gap-2 mb-3">
+              <label class="btn btn-success fw-bold py-3 shadow-sm d-flex align-items-center justify-content-center gap-2" style="cursor:pointer; font-size: 1.05rem;">
+                <i class="fa-solid fa-camera-retro fs-4"></i>
+                <span>BẤM ĐỂ CHỤP / CHỌN ẢNH TEM (CHỌN ĐƯỢC NHIỀU ẢNH)</span>
+                <input type="file" id="scanner-batch-file-input" accept="image/*" multiple capture="environment" style="display:none;" onchange="handleBatchImagesUpload(this)">
+              </label>
             </div>
-            <div class="form-check form-switch m-0">
-              <input class="form-check-input" type="checkbox" id="scanner-continuous-toggle" checked style="cursor: pointer;">
+
+            <!-- 2. KHU VỰC DÁN ẢNH TỪ BỘ NHỚ TẠM (CTRL + V) -->
+            <div id="paste-drop-zone" class="p-3 border border-2 border-primary border-dashed rounded bg-white text-center shadow-sm" style="cursor: pointer;" onclick="focusPasteZone()" tabindex="0">
+              <i class="fa-solid fa-clipboard text-primary fs-3 d-block mb-1"></i>
+              <span class="fw-bold text-primary d-block">BẤM VÀO ĐÂY HOẶC NHẤN <kbd class="bg-primary text-white px-2 py-1 rounded">Ctrl + V</kbd> ĐỂ DÁN ẢNH TỪ BỘ NHỚ TẠM</span>
+              <small class="text-muted d-block mt-1">Hỗ trợ dán ảnh chụp màn hình, ảnh copy từ Zalo, ảnh gửi từ điện thoại...</small>
+            </div>
+
+            <!-- 3. NHẮC NHỞ SÚNG QUÉT MÃ VẠCH PHẦN CỨNG -->
+            <div class="mt-2 text-muted small d-flex align-items-center justify-content-center gap-2">
+              <i class="fa-solid fa-barcode text-secondary"></i>
+              <span>Súng quét USB / Bluetooth: Luôn tự động nhận diện ngầm khi bóp cò.</span>
             </div>
           </div>
 
-          <div class="tab-content" id="scannerMethodTabsContent">
-            <!-- TAB 1: CHỤP TEM / ẢNH NATIVE CAMERA (CHUẨN 100% TRÊN ĐIỆN THOẠI & WEB APP GAS) -->
-            <div class="tab-pane fade show active" id="scan-tab-photo">
-              <div class="p-3 bg-light rounded border text-center mb-2">
-                <p class="small text-muted mb-2">
-                  <i class="fa-solid fa-mobile-screen-button me-1 text-success"></i>
-                  <strong>Khuyên dùng trên Điện Thoại & Máy Tính Bảng:</strong> Bấm nút để mở camera máy chụp tem rõ nét tức thì (tự động lấy nét Macro & Flash).
-                </p>
-                <div class="d-grid gap-2 mb-2">
-                  <label class="btn btn-success fw-bold py-3 shadow-sm d-flex align-items-center justify-content-center gap-2" style="cursor:pointer; font-size: 1.05rem;">
-                    <i class="fa-solid fa-camera fs-4"></i>
-                    <span>BẤM VÀO ĐÂY ĐỂ CHỤP TEM QUÉT MÃ</span>
-                    <input type="file" id="scanner-direct-camera-input" accept="image/*" capture="environment" style="display:none;" onchange="scanBarcodeFromFile(this)">
-                  </label>
-                </div>
-                <div class="d-flex justify-content-center gap-2 flex-wrap">
-                  <label class="btn btn-sm btn-outline-secondary" style="cursor:pointer;">
-                    <i class="fa-solid fa-image me-1"></i> Tải ảnh tem từ máy
-                    <input type="file" id="scanner-file-input" accept="image/*" style="display:none;" onchange="scanBarcodeFromFile(this)">
-                  </label>
-                  <button class="btn btn-sm btn-outline-info" type="button" onclick="focusPasteZone()">
-                    <i class="fa-solid fa-paste me-1"></i> Dán ảnh tem (Ctrl+V)
-                  </button>
-                </div>
-                <div id="paste-drop-zone" class="mt-2 p-2 border border-dashed rounded text-muted small" style="display: none; background: #fff;">
-                  <i class="fa-solid fa-clipboard-check me-1 text-info"></i> Nhấn <strong>Ctrl + V</strong> để dán ảnh chụp màn hình/tem máy vào đây
-                </div>
-              </div>
+          <!-- THANH TIẾN TRÌNH XỬ LÝ (Ẩn/Hiện khi xử lý nhiều ảnh) -->
+          <div id="scanner-batch-progress" class="mb-3" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center mb-1 small fw-bold">
+              <span id="batch-progress-text" class="text-primary"><i class="fa-solid fa-circle-notch fa-spin me-1"></i> Đang bóc tách số Serial từ ảnh...</span>
+              <span id="batch-progress-count" class="badge bg-primary">0/0</span>
             </div>
-
-            <!-- TAB 2: SÚNG QUÉT MÃ VẠCH BARCODE USB / WIRELESS (TỐI ƯU 100% CHO THỦ KHO) -->
-            <div class="tab-pane fade" id="scan-tab-gun">
-              <div class="p-3 bg-light rounded border text-center">
-                <div class="badge bg-success-subtle text-success border border-success px-3 py-1 mb-2">
-                  <i class="fa-solid fa-circle-dot fa-fade me-1"></i> SẴN SÀNG NHẬN TÍN HIỆU TỪ SÚNG QUÉT USB / BLUETOOTH
-                </div>
-                <h6 class="fw-bold mb-1 text-primary"><i class="fa-solid fa-barcode fs-4 me-1"></i> Chế Độ Súng Quét Mã Vạch Phần Cứng</h6>
-                <p class="small text-muted mb-2">
-                  Cắm súng quét vào máy tính. Đưa súng ngắm và bóp cò vào tem mã vạch.
-                </p>
-                <div class="alert alert-primary py-2 px-3 small text-start mb-3 mx-auto" style="max-width: 540px;">
-                  <i class="fa-solid fa-wand-magic-sparkles me-1 text-warning"></i>
-                  <strong>Tự động toàn diện:</strong> Ngay cả khi <em>không mở bảng này</em>, bạn chỉ cần bóp cò súng tại tab <strong>Nhập Kho</strong> hoặc <strong>Xuất Kho</strong>, máy sẽ tự động nhận diện mã và đưa vào phiếu!
-                </div>
-                <div class="input-group input-group-lg max-w-400 mx-auto mb-2">
-                  <span class="input-group-text bg-white"><i class="fa-solid fa-barcode text-primary"></i></span>
-                  <input type="text" id="barcode-gun-input" class="form-control font-monospace fw-bold" 
-                         placeholder="Bắn mã vào đây hoặc gõ Serial..." 
-                         autocomplete="off" onkeydown="handleBarcodeGunKeydown(event)">
-                  <button class="btn btn-primary px-3" onclick="submitBarcodeGunInput()">
-                    <i class="fa-solid fa-check"></i> Nhập
-                  </button>
-                </div>
-                <small class="text-success d-block"><i class="fa-solid fa-bolt me-1"></i> Súng quét tự động bấm Enter và phát tiếng Bíp sau mỗi mã.</small>
-              </div>
-            </div>
-
-            <!-- TAB 3: ĐIỆN THOẠI LÀM TAY QUÉT KHÔNG DÂY CHO MÁY TÍNH (PHONE TO PC SYNC) -->
-            <div class="tab-pane fade" id="scan-tab-phone-sync">
-              <div class="p-3 bg-light rounded border text-center">
-                <h6 class="fw-bold text-dark mb-1"><i class="fa-solid fa-mobile-screen text-info me-1"></i> Dùng Điện Thoại Làm Tay Quét Cho Máy Tính</h6>
-                <p class="small text-muted mb-3">
-                  Quét mã QR dưới đây bằng điện thoại (mở bằng Zalo, Camera hoặc Trình duyệt) để biến điện thoại thành tay quét:
-                </p>
-                <div class="d-flex justify-content-center align-items-center mb-3">
-                  <div class="p-2 bg-white rounded shadow-sm border text-center">
-                    <img id="phone-sync-qr-img" src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=https%3A%2F%2Falexermanh-creator.github.io%2FQUAN-LY-KHO-THANH-ANH%2Fscanner.html" 
-                         alt="QR Code Quét Di Động" style="width: 160px; height: 160px; display: block;" class="mx-auto">
-                    <small class="text-muted d-block mt-1 fw-semibold" style="font-size: 0.72rem;">Quét để mở bộ quét di động</small>
-                  </div>
-                </div>
-                <div class="d-flex justify-content-center gap-2 flex-wrap">
-                  <button class="btn btn-sm btn-outline-primary" onclick="copyPhoneSyncLink()">
-                    <i class="fa-solid fa-copy me-1"></i> Sao chép liên kết quét
-                  </button>
-                  <button class="btn btn-sm btn-outline-success" onclick="openPhoneSyncDirectTab()">
-                    <i class="fa-solid fa-arrow-up-right-from-square me-1"></i> Mở thử màn hình quét
-                  </button>
-                </div>
-                <div class="mt-3 text-start small p-2 bg-white rounded border">
-                  <div class="fw-bold text-success mb-1"><i class="fa-solid fa-wifi me-1"></i> Cơ chế đồng bộ không dây thời gian thực:</div>
-                  <ul class="mb-0 ps-3 text-muted">
-                    <li>Khi điện thoại quét bíp 1 máy, mã Serial sẽ lập tức tự động nhảy vào màn hình máy tính.</li>
-                    <li>Không cần chạm vào bàn phím hay chuột máy tính khi đang đứng cạnh kiện hàng!</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-
-            <!-- TAB 4: CAMERA LIVE STREAM TRỰC TIẾP TRÊN MÁY TÍNH -->
-            <div class="tab-pane fade" id="scan-tab-live">
-              <div class="alert alert-info py-2 small mb-2 d-flex align-items-center justify-content-between flex-wrap gap-2">
-                <div>
-                  <i class="fa-solid fa-circle-info me-1"></i>
-                  <span>Dùng Webcam máy tính/laptop để quét trực tiếp qua khung ngắm.</span>
-                </div>
-                <button class="btn btn-sm btn-primary fw-bold" onclick="openStandaloneCameraWindow()">
-                  <i class="fa-solid fa-arrow-up-right-from-square me-1"></i> Mở Cửa Sổ Camera Ngoài Iframe
-                </button>
-              </div>
-
-              <div class="row g-2 mb-2 align-items-center">
-                <div class="col-12">
-                  <div class="input-group input-group-sm">
-                    <span class="input-group-text bg-light text-secondary"><i class="fa-solid fa-video"></i></span>
-                    <select id="scanner-camera-select" class="form-select form-select-sm" onchange="switchCameraDevice(this.value)">
-                      <option value="">Đang tìm camera...</option>
-                    </select>
-                    <button class="btn btn-outline-secondary" onclick="startScannerCamera()" title="Tải lại camera">
-                      <i class="fa-solid fa-rotate-right"></i>
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div id="scanner-video-wrapper">
-                <div id="html5-qr-reader" style="width: 100%;"></div>
-                <div class="scanner-laser" id="scanner-laser-line"></div>
-              </div>
-            </div>
-
-            <!-- TAB 5: THỬ NGHIỆM VÀ MÔ PHỎNG TEST NHANH -->
-            <div class="tab-pane fade" id="scan-tab-test">
-              <div class="p-3 bg-light rounded border">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                  <small class="fw-bold text-secondary">Mô phỏng máy quét (Dùng test nhanh trên máy tính):</small>
-                </div>
-                <div class="input-group input-group-sm mb-2">
-                  <select id="mock-scanner-select" class="form-select">
-                  </select>
-                  <button class="btn btn-success" onclick="triggerMockScan()">
-                    <i class="fa-solid fa-bolt"></i> Quét mã này
-                  </button>
-                </div>
-                <small class="text-muted d-block">
-                  Giúp kiểm thử luồng nghiệp vụ trên máy tính văn phòng khi chưa có thiết bị phần cứng thật.
-                </small>
-              </div>
+            <div class="progress" style="height: 8px;">
+              <div id="batch-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" style="width: 0%;"></div>
             </div>
           </div>
 
-          <div id="scanner-feedback-box" class="mt-2 p-2 rounded small text-center fw-semibold bg-light text-muted">
-            <i class="fa-solid fa-circle-notch fa-spin me-1"></i> Sẵn sàng quét mã...
+          <div id="scanner-feedback-box" class="p-2 rounded small text-center fw-semibold bg-light text-muted mb-2">
+            <i class="fa-solid fa-circle-info me-1 text-primary"></i> Sẵn sàng! Hãy chọn ảnh tem hoặc dán ảnh (Ctrl+V) để đọc Serial.
           </div>
 
-          <div id="scanner-recent-container" class="mt-2" style="display: none;">
-            <div class="d-flex justify-content-between align-items-center mb-1">
-              <span class="small fw-bold text-muted">Đã quét trong phiên này:</span>
-              <span class="badge bg-success" id="scanner-scanned-count">0 mã</span>
+          <!-- BẢNG ĐỐI SOÁT VÀ XEM TRƯỚC CÁC SERIAL BÓC TÁCH ĐƯỢC -->
+          <div id="scanner-results-container" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span class="small fw-bold text-dark"><i class="fa-solid fa-list-check me-1 text-success"></i> Danh sách Serial bóc tách thành công (<span id="scanner-total-extracted" class="text-success fw-bold">0</span>):</span>
+              <button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="clearExtractedSerials()"><i class="fa-solid fa-trash me-1"></i> Xóa danh sách</button>
             </div>
-            <div id="scanner-scanned-list" class="d-flex flex-wrap gap-1 p-2 bg-light border rounded" style="max-height: 80px; overflow-y: auto;">
+            <div class="table-responsive border rounded bg-white shadow-sm" style="max-height: 220px; overflow-y: auto;">
+              <table class="table table-sm table-hover align-middle mb-0 small">
+                <thead class="table-light sticky-top">
+                  <tr>
+                    <th style="width: 50px;" class="text-center">STT</th>
+                    <th style="width: 80px;" class="text-center">Ảnh Tem</th>
+                    <th>Số Serial (S/N)</th>
+                    <th style="width: 140px;">Phương Thức</th>
+                    <th style="width: 60px;" class="text-center">Xóa</th>
+                  </tr>
+                </thead>
+                <tbody id="scanner-extracted-tbody">
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
         <div class="modal-footer py-2 d-flex justify-content-between">
-          <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal" onclick="stopScannerCamera()">Đóng</button>
-          <button type="button" class="btn btn-sm btn-success" data-bs-dismiss="modal" onclick="stopScannerCamera()">
-            <i class="fa-solid fa-check"></i> Hoàn Tất Quét
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Đóng</button>
+          <button type="button" id="btn-submit-extracted-serials" class="btn btn-sm btn-success fw-bold px-3 shadow-sm" onclick="submitExtractedSerialsToContext()" disabled>
+            <i class="fa-solid fa-circle-check me-1"></i> Đưa Toàn Bộ Serial Vào Phiếu
           </button>
         </div>
       </div>
