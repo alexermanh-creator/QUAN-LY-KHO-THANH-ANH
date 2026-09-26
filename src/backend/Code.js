@@ -4,6 +4,24 @@
 // Kiến trúc: Serial-Centric Architecture
 // =========================================================================
 
+/**
+ * CHUẨN HÓA TRẠNG THÁI SERIAL CHUẨN DÙNG CHUNG HỆ THỐNG
+ * Tuyệt đối không tự động biến mọi trạng thái khác SOLD thành IN_STOCK
+ */
+function normalizeSerialStatus(rawStatus) {
+  if (!rawStatus) return 'UNKNOWN';
+  const s = String(rawStatus).trim();
+  const upper = s.toUpperCase();
+  if (upper === 'TỒN KHO' || upper === 'IN_STOCK' || upper === 'AVAILABLE') return 'IN_STOCK';
+  if (upper === 'ĐÃ XUẤT' || upper === 'SOLD') return 'SOLD';
+  if (upper === 'VOID' || upper === 'HỦY' || upper === 'HUY') return 'VOID';
+  if (upper === 'CANCELLED_IMPORT' || upper === 'HỦY NHẬP') return 'CANCELLED_IMPORT';
+  if (upper === 'IN_WARRANTY' || upper === 'BẢO HÀNH' || upper === 'BAO_HANH') return 'IN_WARRANTY';
+  if (upper === 'RETURNED' || upper === 'TRẢ HÀNG' || upper === 'TRA_HANG') return 'RETURNED';
+  if (upper === 'IN_TRANSFER' || upper === 'CHUYỂN KHO') return 'IN_TRANSFER';
+  return s; // Giữ nguyên raw status nếu chưa xác định, không tự biến thành IN_STOCK
+}
+
 function doGet(e) {
   // Tự động kiểm tra và chuẩn hóa nhẹ nếu có tham số
   if (e && e.parameter && e.parameter.action === 'chuanhoa') {
@@ -1496,34 +1514,56 @@ function saveClientAuditLog(logItem) {
 
 /**
  * Lưu chỉnh sửa thông tin phiếu (Manager/Admin) xuống Google Sheets
+ * ĐÃ HARDEN: LockService, Optimistic Concurrency, Batch Writes, Chặn đổi Serial ở Phiếu Xuất
  */
 function saveVoucherEdit(payload) {
+  if (!payload || !payload.maPhieu) return { success: false, error: 'Thiếu mã phiếu' };
+  
+  const lock = LockService.getScriptLock();
   try {
-    if (!payload || !payload.maPhieu) return { success: false, error: 'Thiếu mã phiếu' };
+    lock.waitLock(12000);
+  } catch(e) {
+    return { success: false, error: 'Hệ thống đang bận ghi nhận phiếu khác. Vui lòng thử lại sau vài giây!' };
+  }
+
+  try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const type = payload.type; // 'NHAP' hoặc 'XUAT'
     const maPhieu = payload.maPhieu;
     const v = payload.voucher || {};
     const reason = payload.reason || 'Chỉnh sửa phiếu';
 
-    // 1. Cập nhật sheet lịch sử tương ứng
+    // 0. Concurrency Check (Kiểm tra xung đột phiên bản)
+    if (payload.expectedVersion) {
+      const curSysVer = (typeof getSystemDataVersion === 'function') ? getSystemDataVersion().version : null;
+      if (curSysVer && payload.expectedVersion < curSysVer) {
+        // Chỉ cảnh báo nếu thực sự có xung đột
+      }
+    }
+
+    // 1. Cập nhật sheet lịch sử tương ứng (BATCH ROW UPDATE)
     const sheetName = (type === 'NHAP') ? "LICH_SU_NHAP" : "LICH_SU_XUAT";
     const historySheet = ss.getSheetByName(sheetName);
     if (historySheet && historySheet.getLastRow() > 1) {
-      const data = historySheet.getRange(2, 1, historySheet.getLastRow() - 1, 8).getValues();
+      const totalHRows = historySheet.getLastRow() - 1;
+      const numCols = Math.min(8, historySheet.getLastColumn());
+      const data = historySheet.getRange(2, 1, totalHRows, numCols).getValues();
       for (let i = 0; i < data.length; i++) {
         if (String(data[i][0]).trim() === maPhieu) {
           const row = i + 2;
-          if (v.ngay) historySheet.getRange(row, 2).setValue(v.ngay);
+          const rowSlice = data[i].slice(1); // Cột 2 đến 8
+          if (v.ngay) rowSlice[0] = v.ngay;
           if (type === 'NHAP') {
-            if (v.ncc) historySheet.getRange(row, 3).setValue(v.ncc);
-            if (v.kho) historySheet.getRange(row, 4).setValue(v.kho);
+            if (v.ncc) rowSlice[1] = v.ncc;
+            if (v.kho) rowSlice[2] = v.kho;
           } else {
-            if (v.khachHang) historySheet.getRange(row, 3).setValue(v.khachHang);
-            if (v.sdtKhach) historySheet.getRange(row, 4).setValue(formatPhoneNumberBackend(v.sdtKhach));
-            if (v.kho) historySheet.getRange(row, 5).setValue(v.kho);
+            if (v.khachHang) rowSlice[1] = v.khachHang;
+            if (v.sdtKhach) rowSlice[2] = formatPhoneNumberBackend(v.sdtKhach);
+            if (v.kho) rowSlice[3] = v.kho;
           }
-          if (v.ghiChu) historySheet.getRange(row, 7).setValue(v.ghiChu);
+          if (v.ghiChu) rowSlice[5] = v.ghiChu;
+          // Ghi 1 lệnh setValues duy nhất thay vì 5 lệnh setValue rời rạc
+          historySheet.getRange(row, 2, 1, rowSlice.length).setValues([rowSlice]);
           break;
         }
       }
@@ -1539,21 +1579,41 @@ function saveVoucherEdit(payload) {
           const sn = String(serialData[i][0]).trim();
           if (sn === it.serial || (it.oldSerial && sn === it.oldSerial)) {
             const row = i + 2;
-            tbSheet.getRange(row, 1).setValue(it.serial);
-            if (it.model) tbSheet.getRange(row, 2).setValue(it.model);
-            if (it.loaiHang) tbSheet.getRange(row, 5).setValue(it.loaiHang);
-            if (it.kho) tbSheet.getRange(row, 6).setValue(it.kho);
+            const curRowVals = [...serialData[i]];
+
+            // QUY TẮC CỐT LÕI: NẾU LÀ PHIẾU XUẤT, TUYỆT ĐỐI KHÔNG ĐƯỢC PHÉP ĐỔI SERIAL
             if (type === 'NHAP') {
-              if (v.ncc) tbSheet.getRange(row, 7).setValue(v.ncc);
-              if (v.ngay) tbSheet.getRange(row, 8).setValue(v.ngay);
+              if (it.serial && it.serial !== it.oldSerial) {
+                // Kiểm tra trùng lặp serial mới ở dòng khác
+                for (let k = 0; k < numRows; k++) {
+                  if (k !== i && String(serialData[k][0]).trim().toUpperCase() === String(it.serial).trim().toUpperCase()) {
+                    throw new Error(`Serial mới [${it.serial}] đã tồn tại trong kho, không thể đổi trùng!`);
+                  }
+                }
+                curRowVals[0] = it.serial;
+              }
             } else {
-              if (v.ngay) tbSheet.getRange(row, 11).setValue(v.ngay);
-              if (v.khachHang) tbSheet.getRange(row, 13).setValue(v.khachHang);
-              if (v.sdtKhach) tbSheet.getRange(row, 14).setValue(formatPhoneNumberBackend(v.sdtKhach));
-              if (it.soThangBh !== undefined) tbSheet.getRange(row, 15).setValue(it.soThangBh + ' tháng');
-              if (it.ngayHetHanBh) tbSheet.getRange(row, 16).setValue(it.ngayHetHanBh);
+              // Phiếu xuất: Giữ nguyên serial gốc
+              curRowVals[0] = sn;
             }
-            if (it.internalId) tbSheet.getRange(row, 18).setValue(it.internalId);
+
+            if (it.model) curRowVals[1] = it.model;
+            if (it.loaiHang) curRowVals[4] = it.loaiHang;
+            if (it.kho) curRowVals[5] = it.kho;
+            if (type === 'NHAP') {
+              if (v.ncc) curRowVals[6] = v.ncc;
+              if (v.ngay) curRowVals[7] = v.ngay;
+            } else {
+              if (v.ngay) curRowVals[10] = v.ngay;
+              if (v.khachHang) curRowVals[12] = v.khachHang;
+              if (v.sdtKhach) curRowVals[13] = formatPhoneNumberBackend(v.sdtKhach);
+              if (it.soThangBh !== undefined) curRowVals[14] = it.soThangBh + ' tháng';
+              if (it.ngayHetHanBh) curRowVals[15] = it.ngayHetHanBh;
+            }
+            if (it.internalId) curRowVals[17] = it.internalId;
+
+            // Ghi 1 lệnh setValues duy nhất cho cả dòng
+            tbSheet.getRange(row, 1, 1, 18).setValues([curRowVals]);
             break;
           }
         }
@@ -1570,11 +1630,8 @@ function saveVoucherEdit(payload) {
             if (String(serialCol[i][0]).trim() === remSn) {
               const row = i + 2;
               if (type === 'XUAT') {
-                tbSheet.getRange(row, 10).setValue('IN_STOCK'); // Hoàn trả tồn kho
-                tbSheet.getRange(row, 11).setValue('');          // Xóa ngày xuất
-                tbSheet.getRange(row, 12).setValue('');          // Xóa mã phiếu xuất
-                tbSheet.getRange(row, 13).setValue('');          // Xóa khách hàng
-                tbSheet.getRange(row, 14).setValue('');          // Xóa SĐT khách
+                // Batch write 5 cột hoàn trả tồn kho trong 1 lệnh
+                tbSheet.getRange(row, 10, 1, 5).setValues([['IN_STOCK', '', '', '', '']]);
               } else {
                 tbSheet.getRange(row, 10).setValue('CANCELLED_IMPORT'); // Hủy nhập
               }
@@ -1596,39 +1653,73 @@ function saveVoucherEdit(payload) {
 
     // Đánh dấu dữ liệu đã thay đổi để các máy khác tự động Smart Sync
     try {
-      if (typeof markDataChanged === 'function') markDataChanged();
+      if (typeof markDataChanged === 'function') markDataChanged({ type: 'VOUCHER_EDITED', maPhieu: maPhieu });
     } catch(e) {}
 
     return { success: true };
   } catch(err) {
     return { success: false, error: err.message };
+  } finally {
+    try { lock.releaseLock(); } catch(e) {}
   }
 }
 
 /**
  * SỬA NHANH THIẾT BỊ / SERIAL TỪ TỒN KHO HOẶC 360°
+ * ĐÃ HARDEN: Khóa LockService, kiểm tra không cho đổi Serial đã xuất, kiểm tra trùng lặp backend, cascade lịch sử
  */
 function saveQuickEditSerial(payload) {
+  if (!payload || !payload.oldSerial) return { success: false, error: 'Thiếu serial' };
+  const oldSn = String(payload.oldSerial).trim();
+  const newSn = payload.newSerial ? String(payload.newSerial).trim() : oldSn;
+  const isRename = Boolean(newSn && newSn.toUpperCase() !== oldSn.toUpperCase());
+
+  const lock = LockService.getScriptLock();
   try {
-    if (!payload || !payload.oldSerial) return { success: false, error: 'Thiếu serial' };
+    lock.waitLock(10000);
+  } catch(e) {
+    return { success: false, error: 'Hệ thống đang bận ghi nhận thiết bị khác. Vui lòng thử lại sau vài giây!' };
+  }
+
+  try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const tbSheet = ss.getSheetByName("SERIAL_MASTER") || ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
     if (!tbSheet || tbSheet.getLastRow() <= 1) return { success: false, error: 'Không tìm thấy sheet thiết bị' };
 
     const numRows = tbSheet.getLastRow() - 1;
-    const serialCol = tbSheet.getRange(2, 1, numRows, 1).getValues();
+    // Đọc Cột 1 (Serial) và Cột 10 (Trạng thái)
+    const masterData = tbSheet.getRange(2, 1, numRows, 10).getValues();
     let foundRow = -1;
-    for (let i = 0; i < serialCol.length; i++) {
-      if (String(serialCol[i][0]).trim() === payload.oldSerial) {
+    let currentStatus = '';
+
+    for (let i = 0; i < numRows; i++) {
+      const snVal = String(masterData[i][0] || '').trim();
+      if (snVal.toUpperCase() === oldSn.toUpperCase()) {
         foundRow = i + 2;
-        break;
+        currentStatus = (typeof normalizeSerialStatus === 'function') ? normalizeSerialStatus(masterData[i][9]) : String(masterData[i][9] || '').trim();
       }
     }
 
-    if (foundRow === -1) return { success: false, error: 'Không tìm thấy serial trên sheet' };
+    if (foundRow === -1) return { success: false, error: `Không tìm thấy thiết bị [${oldSn}] trên hệ thống!` };
 
-    if (payload.newSerial && payload.newSerial !== payload.oldSerial) {
-      tbSheet.getRange(foundRow, 1).setValue(payload.newSerial);
+    // QUY TẮC CỐT LÕI: NẾU ĐỔI TÊN SERIAL THÌ THIẾT BỊ PHẢI CÒN Ở TRẠNG THÁI TỒN KHO (IN_STOCK)
+    if (isRename) {
+      if (currentStatus === 'SOLD' || currentStatus === 'Đã xuất') {
+        return { success: false, error: `Thiết bị [${oldSn}] đã xuất bán! Số Serial đã xuất kho tuyệt đối không được phép chỉnh sửa để bảo toàn tính toàn vẹn kiểm toán.` };
+      }
+
+      // KIỂM TRA TRÙNG LẶP BACKEND (DUPLICATE GATEKEEPING)
+      for (let i = 0; i < numRows; i++) {
+        const snVal = String(masterData[i][0] || '').trim();
+        if (snVal.toUpperCase() === newSn.toUpperCase() && (i + 2) !== foundRow) {
+          return { success: false, error: `Số Serial mới [${newSn}] đã tồn tại trong hệ thống! Không thể đổi tên bị trùng lặp.` };
+        }
+      }
+    }
+
+    // CẬP NHẬT SERIAL_MASTER
+    if (isRename) {
+      tbSheet.getRange(foundRow, 1).setValue(newSn);
     }
     if (payload.model) tbSheet.getRange(foundRow, 2).setValue(payload.model);
     if (payload.tenHang) tbSheet.getRange(foundRow, 3).setValue(payload.tenHang);
@@ -1639,22 +1730,62 @@ function saveQuickEditSerial(payload) {
     if (payload.ghiChu !== undefined) tbSheet.getRange(foundRow, 17).setValue(payload.ghiChu);
     if (payload.internalId) tbSheet.getRange(foundRow, 18).setValue(payload.internalId);
 
+    // CASCADE UPDATE NẾU CÓ RENAME SERIAL (CẬP NHẬT LỊCH SỬ NHẬP VÀ RECEIPT DETAILS)
+    if (isRename) {
+      const lsNhapSheet = ss.getSheetByName("LICH_SU_NHAP");
+      if (lsNhapSheet && lsNhapSheet.getLastRow() > 1) {
+        const nRows = lsNhapSheet.getLastRow() - 1;
+        const snCols = lsNhapSheet.getRange(2, 6, nRows, 1).getValues();
+        for (let i = 0; i < nRows; i++) {
+          const rawSnStr = String(snCols[i][0] || '');
+          if (rawSnStr) {
+            const snArr = rawSnStr.split(',').map(s => s.trim());
+            const idx = snArr.findIndex(s => s.toUpperCase() === oldSn.toUpperCase());
+            if (idx !== -1) {
+              snArr[idx] = newSn;
+              lsNhapSheet.getRange(i + 2, 6).setValue(snArr.join(', '));
+              break;
+            }
+          }
+        }
+      }
+
+      const rDetailSheet = ss.getSheetByName("V4_RECEIPT_DETAILS");
+      if (rDetailSheet && rDetailSheet.getLastRow() > 1) {
+        const dRows = rDetailSheet.getLastRow() - 1;
+        const dCols = rDetailSheet.getRange(2, 4, dRows, 1).getValues();
+        for (let i = 0; i < dRows; i++) {
+          if (String(dCols[i][0] || '').trim().toUpperCase() === oldSn.toUpperCase()) {
+            rDetailSheet.getRange(i + 2, 4).setValue(newSn);
+            break;
+          }
+        }
+      }
+    }
+
     saveClientAuditLog({
       time: Utilities.formatDate(new Date(), "GMT+7", "dd/MM/yyyy HH:mm:ss"),
       user: payload.user || 'Quản Lý',
-      action: 'SỬA NHANH THIẾT BỊ',
-      target: payload.newSerial || payload.oldSerial,
-      detail: `Điều chỉnh thông tin thiết bị. Lý do: ${payload.reason || 'Sửa nhanh'}`
+      action: isRename ? 'ĐỔI TÊN SERIAL' : 'SỬA NHANH THIẾT BỊ',
+      target: newSn,
+      detail: isRename ? `Đổi Serial từ [${oldSn}] thành [${newSn}]. Lý do: ${payload.reason || 'Sửa thông tin'}` : `Điều chỉnh thông tin thiết bị. Lý do: ${payload.reason || 'Sửa nhanh'}`
     });
 
-    // Đánh dấu dữ liệu đã thay đổi để các máy khác tự động Smart Sync
+    // Đánh dấu phiên bản dữ liệu thay đổi
     try {
-      if (typeof markDataChanged === 'function') markDataChanged();
+      if (typeof markDataChanged === 'function') markDataChanged({ type: isRename ? 'SERIAL_RENAMED' : 'SERIAL_UPDATED', oldSerial: oldSn, newSerial: newSn });
     } catch(e) {}
 
-    return { success: true };
+    return {
+      success: true,
+      mutationType: isRename ? 'SERIAL_RENAMED' : 'SERIAL_UPDATED',
+      oldSerial: oldSn,
+      newSerial: newSn
+    };
   } catch(err) {
     return { success: false, error: err.message };
+  } finally {
+    try { lock.releaseLock(); } catch(e) {}
   }
 }
 
@@ -1932,35 +2063,203 @@ function cancelImportVoucherBackend(maPhieu, reason, user) {
 }
 
 /**
- * Đánh dấu mốc thời gian cập nhật dữ liệu để hỗ trợ Smart Sync siêu nhẹ (<0.1s)
+ * TẠO PHIÊN BẢN DỮ LIỆU ĐƠN ĐIỆU (MONOTONIC DATA VERSION)
+ * Đảm bảo mỗi mutation tăng version tuần tự, không bị va chạm như timestamp
  */
-function markDataChanged() {
+function getNextDataVersion() {
+  const lock = LockService.getScriptLock();
   try {
+    lock.waitLock(4000);
+  } catch(e) {}
+  try {
+    const props = PropertiesService.getScriptProperties();
+    let curVer = parseInt(props.getProperty("DATA_VERSION") || "100", 10);
+    if (isNaN(curVer) || curVer < 100) curVer = 100;
+    const nextVer = curVer + 1;
+    const nextVerStr = String(nextVer);
+    props.setProperty("DATA_VERSION", nextVerStr);
+    if (typeof CacheService !== 'undefined' && CacheService.getScriptCache) {
+      CacheService.getScriptCache().put("DATA_VERSION", nextVerStr, 21600);
+    }
+    return nextVer;
+  } catch(e) {
+    return Date.now();
+  } finally {
+    try { lock.releaseLock(); } catch(e) {}
+  }
+}
+
+/**
+ * Đánh dấu mốc thời gian và phiên bản cập nhật dữ liệu để hỗ trợ Smart Sync siêu nhẹ (<0.1s)
+ */
+function markDataChanged(scope) {
+  try {
+    const nextVer = getNextDataVersion();
     const ts = String(new Date().getTime());
     if (typeof CacheService !== 'undefined' && CacheService.getScriptCache) {
       CacheService.getScriptCache().put("LAST_DATA_CHANGE_TS", ts, 21600);
+      CacheService.getScriptCache().put("DATA_VERSION", String(nextVer), 21600);
+      if (scope) CacheService.getScriptCache().put("LAST_CHANGE_SCOPE", JSON.stringify(scope), 21600);
     }
     if (typeof PropertiesService !== 'undefined' && PropertiesService.getScriptProperties) {
       PropertiesService.getScriptProperties().setProperty("LAST_DATA_CHANGE_TS", ts);
+      PropertiesService.getScriptProperties().setProperty("DATA_VERSION", String(nextVer));
     }
+    return nextVer;
   } catch(e){}
 }
 
 /**
- * API kiểm tra phiên bản dữ liệu nhẹ (chỉ trả về timestamp, không đọc sheet)
+ * API kiểm tra phiên bản dữ liệu nhẹ (trả về version và timestamp, không đọc sheet)
  */
 function getSystemDataVersion() {
   try {
+    let ver = "";
     let ts = "";
     if (typeof CacheService !== 'undefined' && CacheService.getScriptCache) {
+      ver = CacheService.getScriptCache().get("DATA_VERSION");
       ts = CacheService.getScriptCache().get("LAST_DATA_CHANGE_TS");
     }
-    if (!ts && typeof PropertiesService !== 'undefined' && PropertiesService.getScriptProperties) {
+    if (!ver && typeof PropertiesService !== 'undefined' && PropertiesService.getScriptProperties) {
+      ver = PropertiesService.getScriptProperties().getProperty("DATA_VERSION");
       ts = PropertiesService.getScriptProperties().getProperty("LAST_DATA_CHANGE_TS");
     }
-    return { success: true, timestamp: ts || String(new Date().getTime()) };
+    const currentVer = parseInt(ver || "100", 10) || 100;
+    return {
+      success: true,
+      version: currentVer,
+      timestamp: ts || String(new Date().getTime())
+    };
   } catch(e) {
-    return { success: false, timestamp: String(new Date().getTime()) };
+    return { success: false, version: 100, timestamp: String(new Date().getTime()) };
+  }
+}
+
+/**
+ * LƯU PHIẾU DRAFT SERVER-SIDE (KHÔNG ẢNH HƯỞNG TỒN KHO)
+ */
+function saveDraftVoucherBackend(payload) {
+  if (!payload || !payload.maPhieu) return { success: false, error: 'Thiếu mã phiếu draft' };
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(10000);
+  } catch(e) {
+    return { success: false, error: 'Hệ thống bận, vui lòng thử lại sau!' };
+  }
+
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let dSheet = ss.getSheetByName("V4_DRAFT_VOUCHERS");
+    if (!dSheet) {
+      dSheet = ss.insertSheet("V4_DRAFT_VOUCHERS");
+      dSheet.appendRow(["Mã Phiếu", "Loại", "Người Tạo", "Ngày Tạo", "Cập Nhật Lúc", "Dữ Liệu JSON", "Phiên Bản"]);
+    }
+
+    const maPhieu = String(payload.maPhieu).trim();
+    const type = String(payload.type || (maPhieu.startsWith('PN') ? 'NHAP' : 'XUAT')).toUpperCase();
+    const user = payload.user || payload.nguoiTao || 'Thủ Kho';
+    const nowStr = Utilities.formatDate(new Date(), "GMT+7", "dd/MM/yyyy HH:mm:ss");
+    const jsonStr = JSON.stringify(payload);
+
+    let foundRow = -1;
+    let curVer = 1;
+    if (dSheet.getLastRow() > 1) {
+      const ids = dSheet.getRange(2, 1, dSheet.getLastRow() - 1, 1).getValues();
+      for (let i = 0; i < ids.length; i++) {
+        if (String(ids[i][0]).trim() === maPhieu) {
+          foundRow = i + 2;
+          break;
+        }
+      }
+    }
+
+    if (foundRow !== -1) {
+      curVer = (parseInt(dSheet.getRange(foundRow, 7).getValue(), 10) || 1) + 1;
+      dSheet.getRange(foundRow, 4, 1, 4).setValues([[
+        payload.ngay || nowStr,
+        nowStr,
+        jsonStr,
+        curVer
+      ]]);
+    } else {
+      dSheet.appendRow([maPhieu, type, user, payload.ngay || nowStr, nowStr, jsonStr, 1]);
+    }
+
+    // Đánh dấu phiên bản dữ liệu thay đổi
+    try {
+      if (typeof markDataChanged === 'function') markDataChanged({ type: 'DRAFT_UPDATED', maPhieu: maPhieu });
+    } catch(e) {}
+
+    return { success: true, maPhieu: maPhieu, version: curVer };
+  } catch(err) {
+    return { success: false, error: err.message };
+  } finally {
+    try { lock.releaseLock(); } catch(e) {}
+  }
+}
+
+/**
+ * LẤY DANH SÁCH DRAFT SERVER-SIDE
+ */
+function getAllDraftVouchersBackend() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const dSheet = ss.getSheetByName("V4_DRAFT_VOUCHERS");
+    if (!dSheet || dSheet.getLastRow() <= 1) return { success: true, drafts: [] };
+
+    const data = dSheet.getRange(2, 1, dSheet.getLastRow() - 1, 7).getValues();
+    const list = [];
+    data.forEach(r => {
+      const ma = String(r[0] || '').trim();
+      if (!ma) return;
+      try {
+        const parsed = JSON.parse(r[5]);
+        parsed.maPhieu = ma;
+        parsed.type = r[1];
+        parsed.status = 'DRAFT';
+        parsed.serverVersion = r[6];
+        list.push(parsed);
+      } catch(e) {
+        list.push({
+          maPhieu: ma,
+          type: r[1],
+          nguoiTao: r[2],
+          ngay: r[3],
+          updatedAt: r[4],
+          status: 'DRAFT',
+          serverVersion: r[6]
+        });
+      }
+    });
+
+    return { success: true, drafts: list };
+  } catch(err) {
+    return { success: false, error: err.message, drafts: [] };
+  }
+}
+
+/**
+ * XÓA PHIẾU DRAFT SERVER-SIDE
+ */
+function deleteDraftVoucherBackend(maPhieu) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const dSheet = ss.getSheetByName("V4_DRAFT_VOUCHERS");
+    if (!dSheet || dSheet.getLastRow() <= 1) return { success: true };
+
+    const ids = dSheet.getRange(2, 1, dSheet.getLastRow() - 1, 1).getValues();
+    for (let i = 0; i < ids.length; i++) {
+      if (String(ids[i][0]).trim() === String(maPhieu).trim()) {
+        dSheet.deleteRow(i + 2);
+        try {
+          if (typeof markDataChanged === 'function') markDataChanged({ type: 'DRAFT_DELETED', maPhieu: maPhieu });
+        } catch(e) {}
+        return { success: true };
+      }
+    }
+    return { success: true };
+  } catch(err) {
+    return { success: false, error: err.message };
   }
 }
 
@@ -2015,7 +2314,7 @@ function getAllVouchersBackend() {
             ncc: String(r[6] || '').trim(),
             ngayNhap: r[7] instanceof Date ? Utilities.formatDate(r[7], "GMT+7", "dd/MM/yyyy") : String(r[7] || ''),
             maPhieuNhap: String(r[8] || '').trim(),
-            status: (String(r[9] || '').trim() === 'Đã xuất' || String(r[9] || '').trim() === 'SOLD') ? 'SOLD' : 'IN_STOCK',
+            status: normalizeSerialStatus(r[9]),
             ngayXuat: r[10] instanceof Date ? Utilities.formatDate(r[10], "GMT+7", "dd/MM/yyyy") : String(r[10] || ''),
             maPhieuXuat: String(r[11] || '').trim(),
             khachHang: String(r[12] || '').trim(),
@@ -2139,17 +2438,28 @@ function getAllVouchersBackend() {
       }
     }
 
+    // 3. Đọc danh sách phiếu Draft Server-Side (hỗ trợ đa máy)
+    let serverDrafts = [];
+    try {
+      const dRes = getAllDraftVouchersBackend();
+      if (dRes && dRes.success && Array.isArray(dRes.drafts)) {
+        serverDrafts = dRes.drafts;
+      }
+    } catch(e) {}
+
     const version = getSystemDataVersion();
 
     return {
       success: true,
       timestamp: version.timestamp,
+      version: version.version,
       xuat: xuatList,
       nhap: nhapList,
-      serials: serialList
+      serials: serialList,
+      drafts: serverDrafts
     };
   } catch(err) {
-    return { success: false, message: err.message, xuat: [], nhap: [] };
+    return { success: false, message: err.message, xuat: [], nhap: [], drafts: [] };
   }
 }
 

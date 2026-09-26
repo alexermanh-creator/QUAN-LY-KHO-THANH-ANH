@@ -88,6 +88,21 @@
     autoMigrateLegacyInternalSerials();
   } catch(e) {}
 
+  function normalizeSerialStatus(rawStatus) {
+    if (!rawStatus) return 'UNKNOWN';
+    const s = String(rawStatus).trim();
+    const upper = s.toUpperCase();
+    if (upper === 'TỒN KHO' || upper === 'IN_STOCK' || upper === 'AVAILABLE') return 'IN_STOCK';
+    if (upper === 'ĐÃ XUẤT' || upper === 'SOLD') return 'SOLD';
+    if (upper === 'VOID' || upper === 'HỦY' || upper === 'HUY') return 'VOID';
+    if (upper === 'CANCELLED_IMPORT' || upper === 'HỦY NHẬP') return 'CANCELLED_IMPORT';
+    if (upper === 'IN_WARRANTY' || upper === 'BẢO HÀNH' || upper === 'BAO_HANH') return 'IN_WARRANTY';
+    if (upper === 'RETURNED' || upper === 'TRẢ HÀNG' || upper === 'TRA_HANG') return 'RETURNED';
+    if (upper === 'IN_TRANSFER' || upper === 'CHUYỂN KHO') return 'IN_TRANSFER';
+    return s;
+  }
+  if (typeof window !== 'undefined') window.normalizeSerialStatus = normalizeSerialStatus;
+
   const WarehouseAPI = {
     isAppsScriptEnvironment: function() {
       return typeof google !== 'undefined' && google.script && google.script.run;
@@ -1005,26 +1020,52 @@
           .withFailureHandler(() => { if (callback) callback({ success: false }); })
           .getSystemDataVersion();
       } else {
-        if (callback) callback({ success: true, timestamp: String(Date.now()) });
+        if (callback) callback({ success: true, version: 100, timestamp: String(Date.now()) });
       }
     },
 
-    // 26. Tải toàn bộ danh sách Phiếu Nhập & Phiếu Xuất từ Google Sheets về (Multi-client Auto Sync)
+    // 26. Tải toàn bộ danh sách Phiếu Nhập, Xuất & Drafts từ Google Sheets về (Multi-client Auto Sync)
     getAllVouchers: function(callback) {
       if (this.isAppsScriptEnvironment()) {
         google.script.run
           .withSuccessHandler(res => { if (callback) callback(res); })
-          .withFailureHandler(err => { if (callback) callback({ success: false, message: err.message, xuat: [], nhap: [] }); })
+          .withFailureHandler(err => { if (callback) callback({ success: false, message: err.message, xuat: [], nhap: [], drafts: [] }); })
           .getAllVouchersBackend();
       } else {
         const res = {
           success: true,
+          version: 100,
           timestamp: String(Date.now()),
           xuat: typeof VOUCHERS_DB !== 'undefined' ? (VOUCHERS_DB.xuat || []) : [],
-          nhap: typeof VOUCHERS_DB !== 'undefined' ? (VOUCHERS_DB.nhap || []) : []
+          nhap: typeof VOUCHERS_DB !== 'undefined' ? (VOUCHERS_DB.nhap || []) : [],
+          drafts: []
         };
         if (callback) callback(res);
         return Promise.resolve(res);
+      }
+    },
+
+    // 27. Lưu Phiếu Draft Server-Side (Hỗ trợ đa máy)
+    saveDraftVoucher: function(draftData, callback) {
+      if (this.isAppsScriptEnvironment()) {
+        google.script.run
+          .withSuccessHandler(res => { if (callback) callback(res); })
+          .withFailureHandler(err => { if (callback) callback({ success: false, message: err.message }); })
+          .saveDraftVoucherBackend(draftData);
+      } else {
+        if (callback) callback({ success: true });
+      }
+    },
+
+    // 28. Xóa Phiếu Draft Server-Side
+    deleteDraftVoucher: function(maDraft, callback) {
+      if (this.isAppsScriptEnvironment()) {
+        google.script.run
+          .withSuccessHandler(res => { if (callback) callback(res); })
+          .withFailureHandler(err => { if (callback) callback({ success: false, message: err.message }); })
+          .deleteDraftVoucherBackend(maDraft);
+      } else {
+        if (callback) callback({ success: true });
       }
     }
   };
@@ -1096,46 +1137,48 @@
         });
       }
 
+      // 2B. Gộp danh sách phiếu Draft Server-Side (hỗ trợ đa máy)
+      if (Array.isArray(res.drafts) && res.drafts.length > 0) {
+        res.drafts.forEach(dServer => {
+          const targetArr = (dServer.type === 'NHAP') ? VOUCHERS_DB.nhap : VOUCHERS_DB.xuat;
+          const idx = targetArr.findIndex(v => v.maPhieu === dServer.maPhieu);
+          if (idx === -1) {
+            targetArr.unshift(dServer);
+          } else {
+            targetArr[idx] = dServer;
+          }
+        });
+      }
+
       // 3. Đồng bộ trạng thái SERIAL_DB theo các phiếu vừa nhận (khắc phục độ trễ tồn kho giữa các máy)
       let serialsUpdated = false;
       if (typeof SERIAL_DB !== 'undefined' && Array.isArray(SERIAL_DB)) {
         if (Array.isArray(res.xuat)) {
           res.xuat.forEach(sv => {
-            const isConfirmed = sv.status === 'CONFIRMED' || !sv.status || sv.status === 'COMPLETED';
-            const isCancelled = sv.status === 'CANCELLED';
-            const snList = Array.isArray(sv.items) 
-              ? sv.items.map(it => String(it.serial || '').trim().toUpperCase()).filter(s => s && s !== 'N/A')
-              : (sv.serials ? String(sv.serials).split(',').map(s => s.trim().toUpperCase()).filter(s => s && s !== 'N/A') : []);
-
-            snList.forEach(sn => {
-              const found = SERIAL_DB.find(s => s.serial && s.serial.toUpperCase() === sn);
-              if (found) {
-                if (isConfirmed && found.status !== 'SOLD') {
-                  found.status = 'SOLD';
-                  found.khachHang = sv.khachHang || found.khachHang;
-                  found.sdtKhach = sv.sdtKhach || found.sdtKhach;
-                  found.ngayXuat = sv.ngay || found.ngayXuat;
-                  found.maPhieuXuat = sv.maPhieu;
-                  serialsUpdated = true;
-                } else if (isCancelled && (found.maPhieuXuat === sv.maPhieu || found.status === 'SOLD')) {
-                  found.status = 'IN_STOCK';
-                  found.khachHang = '';
-                  found.sdtKhach = '';
-                  found.ngayXuat = '';
-                  found.maPhieuXuat = '';
-                  serialsUpdated = true;
+            if (Array.isArray(sv.items)) {
+              sv.items.forEach(it => {
+                const sn = (it.serial || '').trim().toUpperCase();
+                if (sn && sn !== 'N/A') {
+                  const found = SERIAL_DB.find(s => s.serial && s.serial.toUpperCase() === sn);
+                  if (found && found.status !== 'SOLD') {
+                    found.status = 'SOLD';
+                    found.ngayXuat = sv.ngay || found.ngayXuat || '';
+                    found.maPhieuXuat = sv.maPhieu || found.maPhieuXuat || '';
+                    found.khachHang = sv.khachHang || found.khachHang || '';
+                    found.sdtKhach = sv.sdtKhach || found.sdtKhach || '';
+                    serialsUpdated = true;
+                  }
                 }
-              }
-            });
+              });
+            }
           });
         }
 
         if (Array.isArray(res.nhap)) {
           res.nhap.forEach(sn => {
-            if (sn.status === 'CANCELLED') return;
             if (Array.isArray(sn.items)) {
               sn.items.forEach(it => {
-                const serialNo = String(it.serial || '').trim().toUpperCase();
+                const serialNo = (it.serial || '').trim().toUpperCase();
                 if (serialNo && serialNo !== 'N/A') {
                   const existing = SERIAL_DB.find(s => s.serial && s.serial.toUpperCase() === serialNo);
                   if (!existing) {
@@ -1158,8 +1201,29 @@
           });
         }
 
-        // 3B. Gộp thông tin chi tiết Serial từ Server (đồng bộ kho, model, trạng thái, bảo hành, ghi chú khi máy khác sửa)
+        // 3B. Gộp thông tin chi tiết Serial từ Server & RECONCILE chống "Serial ma" khi đổi tên
         if (Array.isArray(res.serials) && res.serials.length > 0) {
+          const serverSnSet = new Set(res.serials.map(s => String(s.serial || '').trim().toUpperCase()));
+
+          // Lấy danh sách serial đang nằm trong giỏ Draft cục bộ chưa commit để không xóa nhầm
+          const draftSnSet = new Set();
+          if (typeof CURRENT_DRAFT_NHAP_ITEMS !== 'undefined' && Array.isArray(CURRENT_DRAFT_NHAP_ITEMS)) {
+            CURRENT_DRAFT_NHAP_ITEMS.forEach(it => { if (it.serial) draftSnSet.add(String(it.serial).trim().toUpperCase()); });
+          }
+          if (typeof CURRENT_DRAFT_XUAT_ITEMS !== 'undefined' && Array.isArray(CURRENT_DRAFT_XUAT_ITEMS)) {
+            CURRENT_DRAFT_XUAT_ITEMS.forEach(it => { if (it.serial) draftSnSet.add(String(it.serial).trim().toUpperCase()); });
+          }
+
+          // LOẠI BỎ CÁC SERIAL MA ĐÃ BỊ ĐỔI TÊN HOẶC XÓA TRÊN SERVER
+          const beforeLen = SERIAL_DB.length;
+          SERIAL_DB = SERIAL_DB.filter(localItem => {
+            const sn = String(localItem.serial || '').trim().toUpperCase();
+            if (!sn) return false;
+            return serverSnSet.has(sn) || draftSnSet.has(sn);
+          });
+          if (SERIAL_DB.length !== beforeLen) serialsUpdated = true;
+
+          // Merge / Update thông tin từ server
           res.serials.forEach(sServer => {
             const sn = String(sServer.serial || '').trim().toUpperCase();
             if (!sn) return;
@@ -1169,7 +1233,7 @@
               found.model = sServer.model || found.model;
               found.tenHang = sServer.tenHang || found.tenHang;
               found.loaiHang = sServer.loaiHang || found.loaiHang;
-              found.status = sServer.status || found.status;
+              found.status = (typeof normalizeSerialStatus === 'function') ? normalizeSerialStatus(sServer.status) : (sServer.status || found.status);
               found.soThangBh = sServer.soThangBh || found.soThangBh;
               found.ngayHetHanBh = sServer.ngayHetHanBh || found.ngayHetHanBh;
               if (sServer.ghiChu !== undefined) found.ghiChu = sServer.ghiChu;
@@ -1193,6 +1257,11 @@
             }
           } catch(e) {}
         }
+      }
+
+      // Lưu Data Version mới nhất
+      if (res.version) {
+        window.LAST_DATA_VERSION = res.version;
       }
 
       // 4. Lưu bền vững vào localStorage
@@ -1245,24 +1314,54 @@
         });
       }
 
-      if (callback) callback({ success: true, timestamp: res.timestamp });
+      if (callback) callback({ success: true, timestamp: res.timestamp, version: res.version });
     });
   }
   if (typeof window !== 'undefined') window.syncVouchersFromServer = syncVouchersFromServer;
 
-  // Xử lý nút bấm thủ công cập nhật dữ liệu trên Topbar (KHÔNG reload trang)
+  // Xử lý nút bấm thủ công cập nhật dữ liệu trên Topbar (SMART REFRESH: chỉ full sync khi version đổi)
   function handleManualSyncClick() {
     const btn = document.getElementById('btn-manual-sync');
     const icon = document.getElementById('icon-manual-sync');
     if (btn) btn.disabled = true;
     if (icon) icon.classList.add('fa-spin');
 
-    syncVouchersFromServer(false, (res) => {
+    const finish = () => {
       setTimeout(() => {
         if (btn) btn.disabled = false;
         if (icon) icon.classList.remove('fa-spin');
-      }, 500);
-    });
+      }, 400);
+    };
+
+    if (typeof WarehouseAPI !== 'undefined' && WarehouseAPI.isAppsScriptEnvironment()) {
+      WarehouseAPI.checkDataVersion(verRes => {
+        const curVer = verRes && (verRes.version || verRes.timestamp);
+        const lastVer = window.LAST_DATA_VERSION || window.LAST_DATA_SYNC_TS;
+        if (verRes && verRes.success && curVer && lastVer && String(curVer) === String(lastVer)) {
+          // Phiên bản giống nhau -> Không cần full load dữ liệu lớn
+          finish();
+          if (typeof Swal !== 'undefined') {
+            Swal.fire({
+              toast: true,
+              position: 'top-end',
+              icon: 'info',
+              title: `Dữ liệu đã là mới nhất (v${verRes.version || '4.0'})!`,
+              showConfirmButton: false,
+              timer: 1800
+            });
+          }
+          return;
+        }
+        // Có phiên bản mới hơn -> Kéo dữ liệu
+        syncVouchersFromServer(false, (res) => {
+          finish();
+        });
+      });
+    } else {
+      syncVouchersFromServer(false, (res) => {
+        finish();
+      });
+    }
   }
   if (typeof window !== 'undefined') window.handleManualSyncClick = handleManualSyncClick;
 

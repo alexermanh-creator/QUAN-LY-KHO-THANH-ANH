@@ -107,6 +107,8 @@ function executeXuatKho(data) {
       })).filter(it => it.serial);
     }
 
+    const tStart = Date.now();
+
     if (exportItems.length === 0) {
       throw new Error("Chưa có máy nào được chọn để xuất!");
     }
@@ -114,50 +116,70 @@ function executeXuatKho(data) {
     const totalRows = tbSheet.getLastRow() - 1;
     if (totalRows <= 0) throw new Error("Kho hàng hiện đang trống!");
 
-    // Đọc cột Serial (1), Model (2), Kho (6), Trạng thái (10), Mã Nội Bộ (18) để map dòng
-    const numCols = Math.max(18, tbSheet.getLastColumn());
-    const tableData = tbSheet.getRange(2, 1, totalRows, numCols).getValues();
-
-    // Map serial -> index và internalId -> index
+    // TỐI ƯU HÓA HOT PATH: Chỉ đọc duy nhất Cột 1 (Serial) thay vì tải toàn bộ 18 cột cả bảng (giảm 90% dữ liệu truyền)
+    const t0 = Date.now();
+    const serialCol = tbSheet.getRange(2, 1, totalRows, 1).getValues();
     const serialIndexMap = new Map();
-    const internalIdMap = new Map();
     for (let i = 0; i < totalRows; i++) {
-      const sn = String(tableData[i][0] || '').trim().toUpperCase();
-      const internal = String(tableData[i][17] || '').trim().toUpperCase();
+      const sn = String(serialCol[i][0] || '').trim().toUpperCase();
       if (sn) serialIndexMap.set(sn, i);
-      if (internal) internalIdMap.set(internal, i);
     }
 
+    // Nếu có item chỉ định bằng mã nội bộ mà không có serial, mới đọc thêm Cột 18
+    let internalIdMap = null;
+    const needInternalId = exportItems.some(it => it.internalId && (!it.serial || !serialIndexMap.has(String(it.serial).trim().toUpperCase())));
+    if (needInternalId) {
+      internalIdMap = new Map();
+      const internalCol = tbSheet.getRange(2, 18, totalRows, 1).getValues();
+      for (let i = 0; i < totalRows; i++) {
+        const internal = String(internalCol[i][0] || '').trim().toUpperCase();
+        if (internal) internalIdMap.set(internal, i);
+      }
+    }
+    const tLookup = Date.now() - t0;
+
     // 1. Kiểm tra điều kiện tồn kho thực tế cho từng item
+    const tVal0 = Date.now();
     const targetItems = [];
     exportItems.forEach(it => {
       let idx = -1;
-      let matchedSn = it.serial;
+      let matchedSn = it.serial ? String(it.serial).trim().toUpperCase() : '';
       if (matchedSn && serialIndexMap.has(matchedSn)) {
         idx = serialIndexMap.get(matchedSn);
-      } else if (it.internalId && internalIdMap.has(it.internalId)) {
-        idx = internalIdMap.get(it.internalId);
-        matchedSn = String(tableData[idx][0] || '').trim().toUpperCase();
+      } else if (it.internalId && internalIdMap) {
+        const intKey = String(it.internalId).trim().toUpperCase();
+        if (internalIdMap.has(intKey)) {
+          idx = internalIdMap.get(intKey);
+          matchedSn = String(serialCol[idx][0] || '').trim().toUpperCase();
+        }
       }
 
       if (idx === -1) {
         throw new Error(`Không tìm thấy thiết bị với mã [${it.serial || it.internalId}] trong kho dữ liệu!`);
       }
 
-      const currentStatus = String(tableData[idx][9] || '').trim();
+      const rowNum = idx + 2;
+      // Đọc chính xác dòng của thiết bị cần xuất (nhanh hơn đọc cả bảng 18 cột gấp nhiều lần)
+      const rowData = tbSheet.getRange(rowNum, 1, 1, 18).getValues()[0];
+      const rawStatus = String(rowData[9] || '').trim();
+      const currentStatus = (typeof normalizeSerialStatus === 'function') ? normalizeSerialStatus(rawStatus) : rawStatus;
+
       if (currentStatus !== "Tồn kho" && currentStatus !== "IN_STOCK") {
         throw new Error(`Thiết bị [${matchedSn}] hiện không còn trong kho (Đã xuất hoặc ở trạng thái: ${currentStatus})!`);
       }
 
       targetItems.push({
         idx: idx,
+        rowNum: rowNum,
+        rowData: rowData,
         serial: matchedSn,
-        model: String(tableData[idx][1] || '').trim(),
+        model: String(rowData[1] || '').trim(),
         soThangBh: it.soThangBh,
-        kho: it.kho || String(tableData[idx][5] || 'Kho VP').trim(),
+        kho: it.kho || String(rowData[5] || 'Kho VP').trim(),
         ghiChu: it.ghiChu
       });
     });
+    const tValidate = Date.now() - tVal0;
 
     // 2. Chuẩn hóa ngày xuất
     let ngayXuatDate;
@@ -176,9 +198,10 @@ function executeXuatKho(data) {
     const safePhoneCell = safePhone ? ("'" + safePhone) : '';
     const cleanCustomerName = String(data.tenKhach || data.khachHang || 'Khách lẻ').trim();
 
-    // 3. SELECTIVE ROW UPDATES: Cập nhật từng dòng Serial xuất với bảo hành riêng
+    // 3. SELECTIVE ROW UPDATES: Cập nhật từng dòng Serial xuất với bảo hành riêng (Gộp 1 lệnh setValues 12 cột)
+    const tWrite0 = Date.now();
     targetItems.forEach(item => {
-      const rowNum = item.idx + 2;
+      const rowNum = item.rowNum;
       let itemExpStr = "Không BH";
       if (item.soThangBh > 0) {
         const expDate = new Date(ngayXuatDate.getTime());
@@ -192,10 +215,10 @@ function executeXuatKho(data) {
       }
 
       // TỐI ƯU HÓA: Cập nhật Cột 6 đến 17 trong 1 lệnh setValues duy nhất (giảm 50% số lần gọi Sheets API)
-      const currentKho = tableData[item.idx][5] || 'Kho VP';
-      const col7 = tableData[item.idx][6]; // Cột 7: Ngày nhập (giữ nguyên)
-      const col8 = tableData[item.idx][7]; // Cột 8: Mã phiếu nhập (giữ nguyên)
-      const col9 = tableData[item.idx][8]; // Cột 9: Nhà cung cấp (giữ nguyên)
+      const currentKho = item.rowData[5] || 'Kho VP';
+      const col7 = item.rowData[6]; // Cột 7: Ngày nhập (giữ nguyên)
+      const col8 = item.rowData[7]; // Cột 8: Mã phiếu nhập (giữ nguyên)
+      const col9 = item.rowData[8]; // Cột 9: Nhà cung cấp (giữ nguyên)
       const row12Cols = [
         item.kho || currentKho,             // Cột 6: Kho xuất
         col7,                               // Cột 7: Giữ nguyên
@@ -212,6 +235,7 @@ function executeXuatKho(data) {
       ];
       tbSheet.getRange(rowNum, 6, 1, 12).setValues([row12Cols]);
     });
+    const tWrite = Date.now() - tWrite0;
 
     // 4. Ghi nhật ký LICH_SU_XUAT
     const allSnList = targetItems.map(t => t.serial);
@@ -283,6 +307,9 @@ function executeXuatKho(data) {
         CacheService.getScriptCache().put(`REQ_XK_${requestId}`, "DONE", 300);
       } catch (e) {}
     }
+
+    const totalMs = Date.now() - tStart;
+    Logger.log(`[XUAT_KHO_PERF] total=${totalMs}ms, lookup=${tLookup}ms, validate=${tValidate}ms, write=${tWrite}ms, items=${targetItems.length}`);
 
     return `Xuất kho thành công ${targetItems.length} thiết bị cho khách hàng [${cleanCustomerName}]! Phiếu [${data.maPhieu}] đã được lưu an toàn.`;
   } catch (err) {

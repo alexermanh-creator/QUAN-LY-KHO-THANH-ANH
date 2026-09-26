@@ -1191,7 +1191,7 @@
             <input type="text" class="form-control form-control-sm edit-item-model" data-idx="${idx}" value="${it.model || ''}" placeholder="Model thiết bị">
           </td>
           <td>
-            <input type="text" class="form-control form-control-sm font-monospace fw-bold text-primary edit-item-serial" data-idx="${idx}" value="${it.serial || ''}" placeholder="Serial hãng (*)">
+            <input type="text" class="form-control form-control-sm font-monospace fw-bold text-primary edit-item-serial ${!isNhap ? 'bg-light text-muted' : ''}" data-idx="${idx}" value="${it.serial || ''}" placeholder="Serial hãng (*)" ${!isNhap ? 'readonly disabled title="Số Serial ở phiếu xuất không được phép chỉnh sửa"' : ''}>
           </td>
           <td>
             <input type="text" class="form-control form-control-sm font-monospace edit-item-internal" data-idx="${idx}" value="${it.internalId || it.maNoiBo || ''}" placeholder="Mã nội bộ">
@@ -1607,14 +1607,24 @@
     // Đồng bộ trực tiếp xuống Google Sheet nếu ở môi trường Apps Script
     if (typeof google !== 'undefined' && google.script && google.script.run) {
       try {
-        google.script.run.saveVoucherEdit({
-          type: type,
-          maPhieu: maPhieu,
-          voucher: v,
-          removedSerials: removedSerials,
-          changes: changes,
-          reason: reason
-        });
+        google.script.run
+          .withSuccessHandler(res => {
+            if (res && !res.success && res.error) {
+              Swal.fire('Lỗi cập nhật máy chủ', res.error, 'error');
+            }
+          })
+          .withFailureHandler(err => {
+            Swal.fire('Lỗi kết nối máy chủ', (err && err.message) ? err.message : String(err), 'error');
+          })
+          .saveVoucherEdit({
+            type: type,
+            maPhieu: maPhieu,
+            voucher: v,
+            removedSerials: removedSerials,
+            changes: changes,
+            reason: reason,
+            expectedVersion: window.LAST_DATA_VERSION || 100
+          });
       } catch(e) {}
     }
 

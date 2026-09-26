@@ -826,6 +826,7 @@
 
     } else {
       // Lưu DRAFT
+      voucherRecord.type = 'NHAP';
       VOUCHERS_DB.nhap.unshift(voucherRecord);
       recordAuditLog('LƯU NHÁP PHIẾU NHẬP', `Phiếu ${maPhieu} (${CURRENT_DRAFT_NHAP_ITEMS.length} máy)`, 'None', 'DRAFT', 'Lưu nháp chờ hoàn tất', [], 'Nhập kho', '', maPhieu);
       try {
@@ -834,7 +835,13 @@
         }
       } catch(e) {}
 
+      // LƯU DRAFT SERVER-SIDE ĐỂ CÁC MÁY KHÁC ĐỀU THẤY
+      if (typeof WarehouseAPI !== 'undefined' && WarehouseAPI.saveDraftVoucher) {
+        WarehouseAPI.saveDraftVoucher(voucherRecord);
+      }
+
       CURRENT_DRAFT_NHAP_ITEMS = [];
+      CURRENT_NHAP_REQUEST_ID = null;
       if (typeof window !== 'undefined') window.CURRENT_DRAFT_NHAP_ITEMS = [];
       const gcEl = document.getElementById('nhap-ghichu');
       if (gcEl) gcEl.value = '';
@@ -850,7 +857,7 @@
       Swal.fire({
         icon: 'info',
         title: 'Đã lưu phiếu nháp (DRAFT)',
-        html: `Phiếu <strong>${maPhieu}</strong> đã được lưu ở trạng thái nháp.<br>Chưa làm tăng tồn kho. Bạn có thể mở lại để tiếp tục chỉnh sửa.`
+        html: `Phiếu <strong>${maPhieu}</strong> đã được lưu lên hệ thống ở trạng thái nháp.<br>Chưa làm tăng tồn kho. Các máy tính khác có thể mở lại để tiếp tục chỉnh sửa.`
       });
     }
   }

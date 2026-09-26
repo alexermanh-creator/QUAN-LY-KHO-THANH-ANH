@@ -867,6 +867,9 @@
       CURRENT_XUAT_REQUEST_ID = null;
       renderDraftXuatTable();
 
+      // Mở lại nút và tắt trạng thái xử lý sau khi lưu hoàn tất
+      unlockXuatButton();
+
       // Reset các ô giấy tờ
       if (document.getElementById('xuat-giayto-vat')) document.getElementById('xuat-giayto-vat').checked = false;
       if (document.getElementById('xuat-giayto-bbbg')) document.getElementById('xuat-giayto-bbbg').checked = false;
@@ -906,6 +909,15 @@
       });
     };
 
+    function unlockXuatButton() {
+      IS_PROCESSING_XUAT = false;
+      const btn = document.getElementById('btn-final-confirm-xuat');
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-check-double"></i> Xác Nhận Xuất Kho Chính Thức';
+      }
+    }
+
     // Kiểm tra môi trường Google Apps Script
     if (typeof WarehouseAPI !== 'undefined' && WarehouseAPI.isAppsScriptEnvironment()) {
       try {
@@ -914,6 +926,7 @@
             finalizeSuccess(res);
           })
           .withFailureHandler(err => {
+            unlockXuatButton();
             console.error('Lỗi khi lưu phiếu xuất lên Google Sheets:', err);
             Swal.fire({
               icon: 'error',
@@ -951,6 +964,7 @@
             ghiChu: ghiChuGiayTo ? `Xuất bán (${ghiChuGiayTo})` : 'Xuất bán khách hàng'
           });
       } catch(e) {
+        unlockXuatButton();
         Swal.fire('Lỗi kết nối', 'Không thể gửi dữ liệu lên Google Sheets: ' + e.message, 'error');
       }
     } else {
@@ -958,21 +972,23 @@
       finalizeSuccess('Đã lưu local (môi trường Demo)');
     }
   } catch(err) {
+      if (typeof unlockXuatButton === 'function') unlockXuatButton();
+      else {
+        IS_PROCESSING_XUAT = false;
+        const btn = document.getElementById('btn-final-confirm-xuat');
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-check-double"></i> Xác Nhận Xuất Kho Chính Thức';
+        }
+      }
       console.error('Lỗi khi thực hiện xuất kho:', err);
       Swal.fire({
         icon: 'error',
         title: 'Có lỗi xảy ra khi xuất kho',
         html: `<p class="text-danger small mb-0">${typeof escapeHtml === 'function' ? escapeHtml(err.message || String(err)) : String(err.message || err)}</p>`
       });
-    } finally {
-      IS_PROCESSING_XUAT = false;
-      const btn = document.getElementById('btn-final-confirm-xuat');
-      if (btn) {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-check-double"></i> Xác Nhận Xuất Kho Chính Thức';
-      }
-    }
   }
+}
 
   function saveDraftXuatVoucher(isConfirmed) {
     if (IS_PROCESSING_XUAT) return;
@@ -1026,6 +1042,7 @@
       ]
     };
 
+    voucherRecord.type = 'XUAT';
     VOUCHERS_DB.xuat.unshift(voucherRecord);
     recordAuditLog('LƯU NHÁP PHIẾU XUẤT', `Phiếu ${maPhieu} (${CURRENT_DRAFT_XUAT_ITEMS.length} máy)`, 'None', 'DRAFT', 'Lưu nháp xuất kho', [], 'Xuất kho', '', maPhieu);
 
@@ -1035,12 +1052,18 @@
       }
     } catch(e) {}
 
+    // LƯU DRAFT SERVER-SIDE ĐỂ CÁC MÁY KHÁC ĐỀU THẤY
+    if (typeof WarehouseAPI !== 'undefined' && WarehouseAPI.saveDraftVoucher) {
+      WarehouseAPI.saveDraftVoucher(voucherRecord);
+    }
+
     if (typeof markModulesDirty === 'function') {
       markModulesDirty(['Dashboard', 'LichSu']);
     }
 
     const draftCount = CURRENT_DRAFT_XUAT_ITEMS.length;
     CURRENT_DRAFT_XUAT_ITEMS = [];
+    CURRENT_XUAT_REQUEST_ID = null;
     renderDraftXuatTable();
 
     Swal.fire({
