@@ -16,6 +16,78 @@
     if (typeof window !== 'undefined') window.escapeHtml = escapeHtml;
   }
 
+  // TỰ ĐỘNG CHUẨN HÓA MÃ NỘI BỘ VÀ SERIAL TỰ SINH CŨ (MIGRATION AN TOÀN TRÊN CLIENT)
+  function autoMigrateLegacyInternalSerials() {
+    let migrated = false;
+    if (typeof SERIAL_DB !== 'undefined' && Array.isArray(SERIAL_DB)) {
+      SERIAL_DB.forEach((item, idx) => {
+        // 1. Chuẩn hóa 7 serial tự sinh cũ của mực: TA-260911-001 -> TA-260911-000001
+        if (item.serial && /^TA-260911-00[1-7]$/.test(item.serial)) {
+          const suffix = item.serial.slice(-1);
+          item.serial = `TA-260911-00000${suffix}`;
+          migrated = true;
+        }
+        // 2. Chuẩn hóa internalId cũ: TA-001 -> TA-YYMMDD-000001
+        if (item.internalId && /^TA-\d{3}$/.test(item.internalId)) {
+          const num = parseInt(item.internalId.replace('TA-', ''), 10) || (idx + 1);
+          const padNum = String(num).padStart(6, '0');
+          let datePart = '260920';
+          if (item.ngayNhap) {
+            const parts = item.ngayNhap.trim().split('/');
+            if (parts.length === 3) {
+              const dd = parts[0].padStart(2, '0');
+              const mm = parts[1].padStart(2, '0');
+              const yy = parts[2].slice(-2);
+              datePart = `${yy}${mm}${dd}`;
+            }
+          }
+          item.internalId = `TA-${datePart}-${padNum}`;
+          migrated = true;
+        }
+      });
+    }
+
+    if (typeof VOUCHERS_DB !== 'undefined') {
+      ['nhap', 'xuat'].forEach(type => {
+        if (Array.isArray(VOUCHERS_DB[type])) {
+          VOUCHERS_DB[type].forEach(voucher => {
+            if (Array.isArray(voucher.items)) {
+              voucher.items.forEach(it => {
+                if (it.serial && /^TA-260911-00[1-7]$/.test(it.serial)) {
+                  const suffix = it.serial.slice(-1);
+                  it.serial = `TA-260911-00000${suffix}`;
+                  migrated = true;
+                }
+                if (it.internalId && /^TA-\d{3}$/.test(it.internalId)) {
+                  const matched = (typeof SERIAL_DB !== 'undefined') ? SERIAL_DB.find(s => s.serial === it.serial) : null;
+                  if (matched && matched.internalId) {
+                    it.internalId = matched.internalId;
+                  } else {
+                    const num = parseInt(it.internalId.replace('TA-', ''), 10) || 1;
+                    it.internalId = `TA-260920-${String(num).padStart(6, '0')}`;
+                  }
+                  migrated = true;
+                }
+              });
+            }
+          });
+        }
+      });
+    }
+
+    if (migrated && typeof localStorage !== 'undefined') {
+      try {
+        localStorage.setItem('THANH_AN_SERIAL_DB', JSON.stringify(SERIAL_DB.slice(0, 2000)));
+        localStorage.setItem('THANH_AN_VOUCHERS_DB', JSON.stringify(VOUCHERS_DB));
+      } catch(e) {}
+    }
+  }
+
+  // Tự động kích hoạt khi nạp logic
+  try {
+    autoMigrateLegacyInternalSerials();
+  } catch(e) {}
+
   const WarehouseAPI = {
     isAppsScriptEnvironment: function() {
       return typeof google !== 'undefined' && google.script && google.script.run;
