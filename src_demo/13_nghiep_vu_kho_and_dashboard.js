@@ -4112,8 +4112,14 @@
       try {
         WarehouseAPI.getDashboardSummary(KPI_PERIOD, KPI_CUSTOM_FROM, KPI_CUSTOM_TO, function(summary) {
           if (summary) {
-            if (document.getElementById('kpi-total-stock') && summary.inStock !== undefined && summary.inStock > 0) {
-              document.getElementById('kpi-total-stock').textContent = summary.inStock.toLocaleString('vi-VN');
+            // Đảm bảo số liệu thẻ Tổng Tồn luôn khớp 100% với biểu đồ và SERIAL_DB
+            const currentStockCount = (typeof SERIAL_DB !== 'undefined' && Array.isArray(SERIAL_DB))
+              ? SERIAL_DB.filter(s => s.status === 'IN_STOCK' || s.status === 'Tồn kho').length
+              : 0;
+
+            if (document.getElementById('kpi-total-stock')) {
+              const finalStock = currentStockCount > 0 ? currentStockCount : (summary.inStock || 0);
+              document.getElementById('kpi-total-stock').textContent = finalStock.toLocaleString('vi-VN');
             }
             if (document.getElementById('kpi-period-import') && summary.imported !== undefined && summary.imported > 0) {
               document.getElementById('kpi-period-import').textContent = summary.imported.toLocaleString('vi-VN');

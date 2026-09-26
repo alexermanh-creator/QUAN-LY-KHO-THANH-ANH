@@ -252,26 +252,71 @@
 
   function generateSequentialInternalIdsForInput() {
     const textarea = document.getElementById('nhap-serial-input');
-    const lines = textarea.value.split('\n').filter(l => l.trim().length > 0);
-    const count = lines.length > 0 ? lines.length : 3;
+    const existingLines = textarea ? textarea.value.split('\n').filter(l => l.trim().length > 0) : [];
+    const defaultQty = existingLines.length > 0 ? existingLines.length : 1;
 
     Swal.fire({
-      title: 'Tạo mã nội bộ Thành An?',
-      text: `Hệ thống sẽ cấp ${count} mã nội bộ Thành An liên tiếp dạng TA-YYMMDD-XXXXXX tăng dần. Serial hãng in trên máy vẫn do quét hoặc dán.`,
-      icon: 'info',
+      title: 'Tự sinh mã Serial nội bộ',
+      html: `
+        <div class="text-start mb-2">
+          <label class="form-label fw-bold small text-muted">Số lượng Serial cần sinh:</label>
+          <input type="number" id="swal-gen-qty" class="form-control form-control-lg fw-bold text-primary text-center" min="1" max="500" value="${defaultQty}">
+          <div class="form-text small text-muted mt-2">
+            <i class="fa-solid fa-circle-info text-primary me-1"></i> Hệ thống sẽ tự động cấp dải mã tăng dần dạng <code>TA-YYMMDD-XXXXXX</code>, đảm bảo <b>không bao giờ trùng</b> với các lần nhập trước.
+          </div>
+        </div>
+      `,
       showCancelButton: true,
-      confirmButtonText: `Tạo ${count} mã nội bộ`,
-      cancelButtonText: 'Hủy'
-    }).then((res) => {
-      if (res.isConfirmed) {
-        let sampleGenerated = [];
-        for (let i = 0; i < count; i++) {
-          sampleGenerated.push(generateSequentialInternalAssetId());
+      confirmButtonText: '<i class="fa-solid fa-wand-magic-sparkles me-1"></i> Sinh mã & Điền vào ô nhập',
+      cancelButtonText: 'Hủy',
+      focusConfirm: false,
+      didOpen: () => {
+        const inp = document.getElementById('swal-gen-qty');
+        if (inp) {
+          inp.focus();
+          inp.select();
         }
+      },
+      preConfirm: () => {
+        const qtyVal = parseInt(document.getElementById('swal-gen-qty').value, 10);
+        if (isNaN(qtyVal) || qtyVal <= 0) {
+          Swal.showValidationMessage('Vui lòng nhập số lượng lớn hơn 0!');
+          return false;
+        }
+        if (qtyVal > 500) {
+          Swal.showValidationMessage('Số lượng tối đa một lần sinh là 500 serial!');
+          return false;
+        }
+        return qtyVal;
+      }
+    }).then((res) => {
+      if (res.isConfirmed && res.value) {
+        const count = res.value;
+        const generatedList = [];
+        for (let i = 0; i < count; i++) {
+          generatedList.push(generateSequentialInternalAssetId());
+        }
+
+        if (textarea) {
+          const currentVal = textarea.value.trim();
+          if (currentVal.length > 0) {
+            textarea.value = currentVal + '\n' + generatedList.join('\n');
+          } else {
+            textarea.value = generatedList.join('\n');
+          }
+          if (typeof updateNhapSerialCounter === 'function') {
+            updateNhapSerialCounter();
+          }
+          textarea.focus();
+        }
+
         Swal.fire({
+          toast: true,
+          position: 'top-end',
           icon: 'success',
-          title: 'Đã tạo sequence mã nội bộ!',
-          html: `<p class="small text-muted mb-2">Các mã nội bộ Thành An liên tiếp vừa sinh:</p><div class="p-2 bg-light font-monospace small text-start border rounded">${sampleGenerated.join('<br>')}</div><small class="text-primary mt-2 d-block">Khi đưa vào Draft, hệ thống sẽ tự động gán mã nội bộ cho từng Serial hãng.</small>`
+          title: `Đã sinh thành công ${count} mã Serial vào ô nhập!`,
+          showConfirmButton: false,
+          timer: 2500
         });
       }
     });

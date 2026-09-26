@@ -1102,21 +1102,27 @@
         }
       } catch(e) {}
 
-      // 5. Tự động làm mới Dashboard & Tồn Kho ngay lập tức
+      // 5. Đánh dấu dirty cho tất cả các module để khi chuyển tab lập tức nhận số liệu mới nhất từ máy khác
+      if (typeof markModulesDirty === 'function') {
+        markModulesDirty(['Dashboard', 'TonKho', 'LichSu', 'Serial360', 'DanhMuc', 'NhapKho', 'XuatKho']);
+      }
+
       if (typeof updateStats === 'function') {
         try { updateStats(); } catch(e) {}
       }
-      if (typeof renderDashboard === 'function') {
+
+      // Tự động làm mới ngay lập tức màn hình đang hiển thị trước mắt người dùng
+      if (CURRENT_ACTIVE_MODULE === 'Dashboard' && typeof renderDashboard === 'function') {
         try { renderDashboard(); } catch(e) {}
-      }
-      if (typeof renderTonKho === 'function' && document.getElementById('tab-ton-kho')?.classList.contains('active')) {
+      } else if (CURRENT_ACTIVE_MODULE === 'TonKho' && typeof renderTonKho === 'function') {
         try { renderTonKho(); } catch(e) {}
-      }
-      if (typeof renderKhoDetail === 'function' && document.getElementById('tab-chi-tiet-kho')?.classList.contains('active')) {
-        try { renderKhoDetail(); } catch(e) {}
+      } else if (CURRENT_ACTIVE_MODULE === 'LichSu') {
+        if (typeof renderHistoryTables === 'function') {
+          try { renderHistoryTables(); } catch(e) {}
+        }
       }
 
-      // 6. Tự động làm mới giao diện mượt mà nếu đang ở màn hình Lịch Sử Phiếu
+      // 6. Tự động làm mới các bảng chi tiết nếu đang mở
       if (typeof HISTORY_SUBTAB_STATE !== 'undefined') {
         if (HISTORY_SUBTAB_STATE.xuat) HISTORY_SUBTAB_STATE.xuat.dirty = true;
         if (HISTORY_SUBTAB_STATE.nhap) HISTORY_SUBTAB_STATE.nhap.dirty = true;
@@ -1144,7 +1150,7 @@
   }
   if (typeof window !== 'undefined') window.syncVouchersFromServer = syncVouchersFromServer;
 
-  // Heartbeat Auto-Sync: 15s kiểm tra 1 lần siêu nhẹ (<0.1s)
+  // Heartbeat Auto-Sync: 10s kiểm tra 1 lần siêu nhẹ (<0.1s)
   let _AUTO_SYNC_HEARTBEAT_INTERVAL = null;
   function startAutoSyncHeartbeat() {
     if (_AUTO_SYNC_HEARTBEAT_INTERVAL) return;
@@ -1159,7 +1165,7 @@
           }
         });
       }
-    }, 15000);
+    }, 10000);
   }
   if (typeof window !== 'undefined') {
     window.startAutoSyncHeartbeat = startAutoSyncHeartbeat;
@@ -1181,9 +1187,7 @@
         if (res.timestamp !== LAST_SYNCED_TIMESTAMP) {
           console.log(`[SmartSync] Phát hiện dữ liệu vừa cập nhật từ máy khác (${res.timestamp}). Đồng bộ dữ liệu...`);
           LAST_SYNCED_TIMESTAMP = res.timestamp;
-          if (typeof markModulesDirty === 'function') {
-            markModulesDirty(['Dashboard', 'TonKho', 'LichSu', 'Serial360', 'DanhMuc', 'NhapKho', 'XuatKho']);
-          }
+          syncVouchersFromServer(true);
           const syncBadge = document.getElementById('last-sync-time-badge');
           if (syncBadge) {
             const now = new Date();
@@ -1574,15 +1578,53 @@
     }
   }
 
-  // Cơ chế sinh mã nội bộ Thành An theo Sequence tăng dần (Yêu cầu A3: TA-YYMMDD-000001, tuyệt đối không dùng random)
+  // Cơ chế sinh mã nội bộ Thành An theo Sequence tăng dần (Yêu cầu A3: TA-YYMMDD-000001, tuyệt đối không trùng lặp giữa các lần nhập)
   function generateSequentialInternalAssetId() {
     const today = new Date();
     const yy = String(today.getFullYear()).slice(-2);
     const mm = String(today.getMonth() + 1).padStart(2, '0');
     const dd = String(today.getDate()).padStart(2, '0');
+    const dayPrefix = `TA-${yy}${mm}${dd}-`;
+
+    let maxSeq = 0;
+    // 1. Quét SERIAL_DB hiện có để tìm số sequence lớn nhất trong ngày
+    if (typeof SERIAL_DB !== 'undefined' && Array.isArray(SERIAL_DB)) {
+      SERIAL_DB.forEach(item => {
+        [item.internalId, item.maNoiBo, item.serial].forEach(code => {
+          if (code && typeof code === 'string') {
+            const cleanCode = code.trim().toUpperCase();
+            if (cleanCode.startsWith(dayPrefix)) {
+              const parts = cleanCode.split('-');
+              const num = parseInt(parts[parts.length - 1], 10);
+              if (!isNaN(num) && num > maxSeq) maxSeq = num;
+            }
+          }
+        });
+      });
+    }
+
+    // 2. Quét danh sách Draft nhập đang chờ để không trùng với các máy đang nhập trong cùng phiên
+    if (typeof CURRENT_DRAFT_NHAP_ITEMS !== 'undefined' && Array.isArray(CURRENT_DRAFT_NHAP_ITEMS)) {
+      CURRENT_DRAFT_NHAP_ITEMS.forEach(item => {
+        [item.internalId, item.maNoiBo, item.serial].forEach(code => {
+          if (code && typeof code === 'string') {
+            const cleanCode = code.trim().toUpperCase();
+            if (cleanCode.startsWith(dayPrefix)) {
+              const parts = cleanCode.split('-');
+              const num = parseInt(parts[parts.length - 1], 10);
+              if (!isNaN(num) && num > maxSeq) maxSeq = num;
+            }
+          }
+        });
+      });
+    }
+
+    if (INTERNAL_SEQ_COUNTER <= maxSeq) {
+      INTERNAL_SEQ_COUNTER = maxSeq;
+    }
     INTERNAL_SEQ_COUNTER++;
     const seqStr = String(INTERNAL_SEQ_COUNTER).padStart(6, '0');
-    return `TA-${yy}${mm}${dd}-${seqStr}`;
+    return `${dayPrefix}${seqStr}`;
   }
 
   // Bộ đếm sequence chống trùng mã phiếu tuyệt đối khi tạo gần nhau
@@ -2371,7 +2413,7 @@
       // 7. Chuyển việc render nặng vào requestAnimationFrame để đảm bảo 60fps mượt mà
       requestAnimationFrame(() => {
         const modState = MODULE_STATE[tabId];
-        const shouldRender = !modState || !modState.rendered || modState.dirty || tabId === 'DanhMuc';
+        const shouldRender = !modState || !modState.rendered || modState.dirty;
 
         if (shouldRender) {
           try {
@@ -2387,9 +2429,6 @@
               renderWarrantyCasesTable();
             } else if (tabId === 'LichSu' && typeof renderHistoryTables === 'function') {
               renderHistoryTables();
-              if (typeof syncVouchersFromServer === 'function') {
-                syncVouchersFromServer(true);
-              }
             } else if (tabId === 'NghiepVuKho' && typeof renderNghiepVuKhoTables === 'function') {
               renderNghiepVuKhoTables();
             } else if (tabId === 'DanhMuc' && typeof renderCatalogTables === 'function') {
@@ -2417,6 +2456,11 @@
           updateUIPermissions();
         } catch (permErr) {
           console.warn('[Navigation] updateUIPermissions error:', permErr);
+        }
+
+        // Kiểm tra phiên bản ngầm siêu nhẹ (<0.1s) khi chuyển tab để đảm bảo phát hiện ngay nếu máy khác vừa nhập/xuất
+        if (typeof triggerSmartSyncCheck === 'function') {
+          triggerSmartSyncCheck(true);
         }
       });
     } finally {

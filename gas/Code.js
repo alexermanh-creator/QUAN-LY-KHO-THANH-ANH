@@ -1139,13 +1139,15 @@ function getDashboardSummary(period, customFrom, customTo) {
     if (toDate) toDate.setHours(23, 59, 59, 999);
   }
 
-  // Đếm tồn kho hiện tại
+  // Đếm tồn kho hiện tại (chuẩn hóa Unicode, loại bỏ khoảng trắng và không phân biệt hoa thường)
   let inStockCount = 0;
   if (tbSheet && tbSheet.getLastRow() > 1) {
     const statusCol = tbSheet.getRange(2, 10, tbSheet.getLastRow() - 1, 1).getValues();
     for (let i = 0; i < statusCol.length; i++) {
-      const s = String(statusCol[i][0] || '').trim();
-      if (s === "Tồn kho" || s === "IN_STOCK") inStockCount++;
+      const s = String(statusCol[i][0] || '').trim().toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      if (s === "TON KHO" || s === "IN_STOCK" || s === "IN STOCK" || s === "TON" || s === "LUU KHO" || s === "DANG LUU KHO" || s === "SAN SANG") {
+        inStockCount++;
+      }
     }
   }
 
