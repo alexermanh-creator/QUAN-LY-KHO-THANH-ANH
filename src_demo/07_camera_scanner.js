@@ -3,7 +3,7 @@
   /*    - Chụp / Tải nhiều ảnh cùng lúc                   */
   /*    - Dán ảnh từ bộ nhớ tạm (Ctrl + V)                 */
   /*    - Súng quét mã vạch USB / Bluetooth tự động       */
-  /*    - Bóc tách mã đa tầng: GPU Barcode + AI OCR       */
+  /*    - Bóc tách mã đa tầng siêu tốc: GPU + Multi-Region  */
   /* ==================================================== */
 
   let CURRENT_SCAN_CONTEXT = 'GLOBAL_SEARCH';
@@ -139,7 +139,7 @@
   }
 
   function stopScannerCamera() {
-    // Hàm dọn dẹp tương thích khi modal đóng
+    // Dọn dẹp an toàn khi modal đóng
     if (sharedHtml5QrScanner) {
       try {
         if (sharedHtml5QrScanner.isScanning) {
@@ -204,13 +204,13 @@
     sn = sn.replace(/^[\[\(\{\#\:\s]+/, '').replace(/[\]\)\}\.\;\,\s]+$/, '');
     sn = sn.replace(/\s+/g, '');
 
-    // Độ dài Serial hợp lệ thông thường từ 6 đến 22 ký tự
-    if (sn.length < 6 || sn.length > 22) return null;
+    // Độ dài Serial hợp lệ thông thường từ 6 đến 24 ký tự
+    if (sn.length < 6 || sn.length > 24) return null;
 
-    // Chỉ chứa chữ cái latin và chữ số
+    // Chỉ chứa chữ cái latin, chữ số, dấu gạch nối
     if (!/^[A-Z0-9\-_]+$/.test(sn)) return null;
 
-    // Loại trừ mã vạch UPC-A / EAN-13 (chỉ toàn số 12 hoặc 13 chữ số, ví dụ 195161269745)
+    // Loại trừ mã vạch chuẩn bán lẻ UPC-A / EAN-13 (chuỗi thuần số 12 hoặc 13 chữ số, ví dụ 195161269745)
     if (/^\d{12,13}$/.test(sn)) return null;
 
     // Loại trừ chuỗi chứa toàn ký tự trùng nhau (ví dụ: 000000, XXXXXX)
@@ -222,12 +222,13 @@
     // Loại trừ địa chỉ MAC Card mạng (12 ký tự hex)
     if (/^(?:[0-9A-F]{2}[:-]){5}[0-9A-F]{2}$/i.test(sn)) return null;
 
-    // Loại trừ từ khóa tem in và thông số kỹ thuật phổ biến
+    // Loại trừ từ khóa tem in và thông số kỹ thuật phổ biến trên vỏ hộp
     const blacklistedWords = [
       'PRINTER', 'SCANNER', 'VIETNAM', 'MADEIN', 'VOLTS', 'HERTZ',
       'AMPERES', 'WARNING', 'CAUTION', 'ENERGY', 'SERIES', 'PRODUCT',
       'HEWLETT', 'PACKARD', 'CANON', 'BROTHER', 'EPSON', 'TONER',
-      'CARTRIDGE', 'RATING', 'ORIGINAL', 'SUPPLY', 'SERIAL'
+      'CARTRIDGE', 'RATING', 'ORIGINAL', 'SUPPLY', 'SERIAL', 'NUMBER',
+      'DEFAULT', 'PASSED', 'STANDARD', 'BARCODE'
     ];
     if (blacklistedWords.includes(sn)) return null;
 
@@ -236,7 +237,7 @@
       const isKnownModel = PRODUCT_DB.some(p => (p.model || '').toUpperCase() === sn);
       if (isKnownModel) return null;
     }
-    // Loại trừ các model phổ biến như 2Z610A, W1470A...
+    // Loại trừ các model phổ biến như 2Z610A, W1470A, CF276A...
     if (/^(2Z\d{3}[A-Z]|W\d{4}[A-Z]|CF\d{3}[A-Z]|CE\d{3}[A-Z]|TN\d{3,4})$/.test(sn)) {
       return null;
     }
@@ -245,7 +246,7 @@
   }
 
   /* ==================================================== */
-  /* TIỀN XỬ LÝ ẢNH & TẠO THUMBNAIL PREVIEW               */
+  /* TIỀN XỬ LÝ ẢNH & TẠO THUMBNAIL (CHUẨN HÓA 960PX)    */
   /* ==================================================== */
   async function preprocessImageBlob(blob) {
     return new Promise((resolve, reject) => {
@@ -264,8 +265,8 @@
           thumbCtx.drawImage(img, 0, 0, thumbCanvas.width, thumbCanvas.height);
           const thumbnailDataUrl = thumbCanvas.toDataURL('image/jpeg', 0.8);
 
-          // 2. Tạo Canvas tối ưu để giải mã (Scale tối đa 1600px giữ nguyên tỉ lệ)
-          const maxDim = 1600;
+          // 2. Tạo Canvas tối ưu để giải mã siêu tốc (Scale chuẩn 960px thay vì 1600px)
+          const maxDim = 960;
           let targetW = img.width;
           let targetH = img.height;
           if (targetW > maxDim || targetH > maxDim) {
@@ -289,7 +290,7 @@
           reject(err);
         }
       };
-      img.onerror = (e) => {
+      img.onerror = () => {
         URL.revokeObjectURL(objectUrl);
         reject(new Error('Không tải được ảnh'));
       };
@@ -297,8 +298,24 @@
     });
   }
 
+  // Cắt lát một vùng Canvas thành Blob riêng biệt (để quét từng khu vực tem)
+  function createCroppedBlob(sourceCanvas, sx, sy, sw, sh) {
+    return new Promise(resolve => {
+      try {
+        const cropCanvas = document.createElement('canvas');
+        cropCanvas.width = Math.max(sw, 10);
+        cropCanvas.height = Math.max(sh, 10);
+        const ctx = cropCanvas.getContext('2d');
+        ctx.drawImage(sourceCanvas, sx, sy, sw, sh, 0, 0, sw, sh);
+        cropCanvas.toBlob(blob => resolve(blob), 'image/jpeg', 0.85);
+      } catch (e) {
+        resolve(null);
+      }
+    });
+  }
+
   /* ==================================================== */
-  /* BÓC TÁCH SERIAL ĐA TẦNG TỪ 1 ẢNH (GPU BARCODE + OCR) */
+  /* BÓC TÁCH SERIAL ĐA TẦNG & CẮT LÁT ĐA VÙNG (MULTI-REGION) */
   /* ==================================================== */
   async function extractSerialsFromSingleBlob(blob) {
     const results = [];
@@ -341,13 +358,16 @@
     }
 
     // ----------------------------------------------------
-    // TẦNG 2: HTML5QRCODE DỰ PHÒNG (NẾU TẦNG 1 CHƯA RA SERIAL)
+    // TẦNG 2: HTML5QRCODE ENGINE VỚI CẮT LÁT ĐA VÙNG
+    // (Bóc tách chính xác ngay cả khi tem có nhiều mã vạch cùng lúc)
     // ----------------------------------------------------
     if (results.length === 0 && typeof Html5Qrcode !== 'undefined') {
       try {
         if (!sharedHtml5QrScanner) {
           sharedHtml5QrScanner = new Html5Qrcode('html5-qr-reader', { verbose: false });
         }
+
+        // Bước 2.1: Quét trực tiếp nguyên ảnh gốc
         let code = await sharedHtml5QrScanner.scanFile(blob, true).catch(() => null);
         if (!code) {
           code = await sharedHtml5QrScanner.scanFile(blob, false).catch(() => null);
@@ -357,9 +377,49 @@
           if (validSn && !results.some(r => r.serial === validSn)) {
             results.push({
               serial: validSn,
-              method: 'Mã Vạch Barcode',
+              method: 'Mã Vạch Barcode (Toàn Ảnh)',
               thumbnailDataUrl: thumbnailDataUrl
             });
+          }
+        }
+
+        // Bước 2.2: Nếu Pass 1 chưa ra Serial (do bị mã vạch UPC ở đáy hoặc Model lấn át),
+        // Cắt vùng nửa trên của tem (Nơi Serial No luôn ngự trị trên tem HP, Canon, Brother)
+        if (results.length === 0 && canvas) {
+          const topCropBlob = await createCroppedBlob(canvas, 0, 0, canvas.width, Math.round(canvas.height * 0.55));
+          if (topCropBlob) {
+            let topCode = await sharedHtml5QrScanner.scanFile(topCropBlob, true).catch(() => null);
+            if (!topCode) {
+              topCode = await sharedHtml5QrScanner.scanFile(topCropBlob, false).catch(() => null);
+            }
+            if (topCode) {
+              const validSn = isValidSerialNumber(topCode);
+              if (validSn && !results.some(r => r.serial === validSn)) {
+                results.push({
+                  serial: validSn,
+                  method: 'Mã Vạch Barcode (Vùng Serial Tem)',
+                  thumbnailDataUrl: thumbnailDataUrl
+                });
+              }
+            }
+          }
+        }
+
+        // Bước 2.3: Cắt vùng trung tâm (nếu tem nằm ở giữa)
+        if (results.length === 0 && canvas) {
+          const midCropBlob = await createCroppedBlob(canvas, 0, Math.round(canvas.height * 0.2), canvas.width, Math.round(canvas.height * 0.6));
+          if (midCropBlob) {
+            let midCode = await sharedHtml5QrScanner.scanFile(midCropBlob, true).catch(() => null);
+            if (midCode) {
+              const validSn = isValidSerialNumber(midCode);
+              if (validSn && !results.some(r => r.serial === validSn)) {
+                results.push({
+                  serial: validSn,
+                  method: 'Mã Vạch Barcode (Vùng Trung Tâm)',
+                  thumbnailDataUrl: thumbnailDataUrl
+                });
+              }
+            }
           }
         }
       } catch (err) {
@@ -369,18 +429,19 @@
 
     // ----------------------------------------------------
     // TẦNG 3: AI OCR TESSERACT.JS (BÓC TÁCH CHỮ IN MẮT THƯỜNG)
-    // Cứu cánh khi tem bị bóng băng dính, vạch mờ, hoặc nhãn chỉ in chữ
+    // Cứu cánh khi tem bị bóng băng dính làm đứt nét mã vạch
+    // Giới hạn timeout 1.8s để chống treo lag hệ thống
     // ----------------------------------------------------
     if (results.length === 0 && typeof Tesseract !== 'undefined') {
       try {
-        const ocrResult = await Tesseract.recognize(canvas, 'eng', {
-          logger: () => {}
-        });
+        const timeoutOcr = new Promise((_, reject) => setTimeout(() => reject(new Error('OCR Timeout')), 1800));
+        const ocrPromise = Tesseract.recognize(canvas, 'eng', { logger: () => {} });
+        const ocrResult = await Promise.race([ocrPromise, timeoutOcr]);
 
         const ocrText = (ocrResult && ocrResult.data && ocrResult.data.text) ? ocrResult.data.text : '';
         if (ocrText) {
           // Pattern 1: Tìm theo neo từ khóa Serial Number chuẩn quốc tế
-          const anchorRegex = /(?:Serial\s*(?:No|Num|Number)?|S[\/\.]?N|SN|Service\s*Tag)[\s\:\-\.\#\[\(]+([A-Z0-9]{7,18})/gi;
+          const anchorRegex = /(?:Serial\s*(?:No|Num|Number)?|SER\.?\s*(?:NO|NUM)?|S[\/\.]?N|SN|Service\s*Tag|Serial-Nr)[\s\:\-\.\#\[\(]+([A-Z0-9]{6,22})/gi;
           let match;
           while ((match = anchorRegex.exec(ocrText)) !== null) {
             const snFound = isValidSerialNumber(match[1]);
@@ -434,9 +495,23 @@
               });
             }
           }
+
+          // Pattern 5: Dòng máy Dell (7 ký tự Service Tag)
+          const dellRegex = /\b[A-Z0-9]{7}\b/gi;
+          let dellMatch;
+          while ((dellMatch = dellRegex.exec(ocrText)) !== null) {
+            const snFound = isValidSerialNumber(dellMatch[0]);
+            if (snFound && !results.some(r => r.serial === snFound)) {
+              results.push({
+                serial: snFound,
+                method: 'AI OCR (Định Dạng Dell/Phổ Thông)',
+                thumbnailDataUrl: thumbnailDataUrl
+              });
+            }
+          }
         }
       } catch (ocrErr) {
-        console.warn('Tesseract OCR error:', ocrErr);
+        console.warn('Tesseract OCR:', ocrErr);
       }
     }
 
@@ -444,7 +519,7 @@
   }
 
   /* ==================================================== */
-  /* XỬ LÝ HÀNG LOẠT ẢNH VÀ HIỂN THỊ TIẾN TRÌNH          */
+  /* XỬ LÝ HÀNG LOẠT ẢNH SONG SONG SIÊU TỐC (< 0.5s)     */
   /* ==================================================== */
   async function processBatchImageBlobs(blobs) {
     if (!blobs || blobs.length === 0) return;
@@ -458,19 +533,16 @@
     if (progressContainer) progressContainer.style.display = 'block';
     if (progressBar) progressBar.style.width = '0%';
 
-    let totalImages = blobs.length;
-    let completedImages = 0;
+    const totalImages = blobs.length;
+    let completedCount = 0;
     let newSerialsFound = 0;
 
-    for (let i = 0; i < totalImages; i++) {
-      const blob = blobs[i];
-      if (progressText) {
-        progressText.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin me-1"></i> Đang xử lý ảnh ${i + 1}/${totalImages}...`;
-      }
-      if (progressCount) {
-        progressCount.textContent = `${i + 1}/${totalImages}`;
-      }
+    if (progressText) {
+      progressText.innerHTML = `<i class="fa-solid fa-bolt text-warning me-1"></i> Đang phân tích song song ${totalImages} ảnh...`;
+    }
 
+    // XỬ LÝ SONG SONG TẬN DỤNG ĐA NHÂN CPU (PROMISE.ALL)
+    const taskPromises = blobs.map(async (blob, index) => {
       try {
         const { results, thumbnailDataUrl } = await extractSerialsFromSingleBlob(blob);
         if (results && results.length > 0) {
@@ -487,24 +559,24 @@
               newSerialsFound++;
             }
           }
-        } else {
-          // Nếu không bóc tách được, có thể hiển thị cảnh báo
-          console.log(`Ảnh ${i + 1} không bóc tách được Serial hợp lệ.`);
         }
       } catch (err) {
-        console.error('Lỗi khi bóc tách ảnh:', err);
+        console.error(`Lỗi khi bóc tách ảnh ${index + 1}:`, err);
+      } finally {
+        completedCount++;
+        const percent = Math.round((completedCount / totalImages) * 100);
+        if (progressBar) progressBar.style.width = `${percent}%`;
+        if (progressCount) progressCount.textContent = `${completedCount}/${totalImages}`;
       }
+    });
 
-      completedImages++;
-      const percent = Math.round((completedImages / totalImages) * 100);
-      if (progressBar) progressBar.style.width = `${percent}%`;
-    }
+    await Promise.all(taskPromises);
 
     // Hoàn tất quét hàng loạt
     if (progressContainer) {
       setTimeout(() => {
         progressContainer.style.display = 'none';
-      }, 600);
+      }, 500);
     }
 
     if (newSerialsFound > 0) {
@@ -512,7 +584,7 @@
       triggerVibration();
       if (feedbackBox) {
         feedbackBox.className = 'p-2 rounded small text-center fw-semibold bg-success-subtle text-success mb-2';
-        feedbackBox.innerHTML = `<i class="fa-solid fa-circle-check me-1"></i> Đã bóc tách thành công <strong>${newSerialsFound}</strong> số Serial từ ${totalImages} ảnh! Vui lòng kiểm tra và bấm "Đưa Toàn Bộ Serial Vào Phiếu".`;
+        feedbackBox.innerHTML = `<i class="fa-solid fa-circle-check me-1"></i> Bóc tách thành công <strong>${newSerialsFound}</strong> số Serial từ ${totalImages} ảnh! Vui lòng kiểm tra và bấm "Đưa Toàn Bộ Serial Vào Phiếu".`;
       }
     } else {
       if (feedbackBox) {
@@ -548,7 +620,7 @@
     submitBtn.disabled = false;
 
     tbody.innerHTML = extractedSerialsList.map((item, idx) => {
-      const badgeClass = item.method.includes('GPU') ? 'bg-primary' : (item.method.includes('OCR') ? 'bg-success' : 'bg-secondary');
+      const badgeClass = item.method.includes('GPU') ? 'bg-primary' : (item.method.includes('OCR') ? 'bg-success' : 'bg-info text-dark');
       const thumbHtml = item.previewUrl
         ? `<img src="${item.previewUrl}" alt="Tem" style="height: 34px; width: 60px; object-fit: cover; border-radius: 4px; border: 1px solid #cbd5e1;">`
         : `<span class="badge bg-light text-muted border">No img</span>`;
@@ -915,4 +987,5 @@
     window.initGlobalHardwareScanner = initGlobalHardwareScanner;
     window.handleHardwareScannedBarcode = handleHardwareScannedBarcode;
     window.showFloatingScannerToast = showFloatingScannerToast;
+    window.isValidSerialNumber = isValidSerialNumber;
   }

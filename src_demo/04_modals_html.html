@@ -11,6 +11,9 @@
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" onclick="stopScannerCamera()"></button>
         </div>
         <div class="modal-body p-3">
+          <!-- BỘ GIẢI MÃ MÃ VẠCH NGẦM (GIỮ NGUYÊN ĐỂ HTML5QRCODE KHÔNG BỊ LỖI DOM) -->
+          <div id="html5-qr-reader" style="display:none; width: 250px; height: 250px;"></div>
+
           <!-- KHU VỰC THAO TÁC TINH GỌN (CHỤP / CHỌN NHIỀU ẢNH + DÁN CTRL+V + SÚNG QUÉT) -->
           <div class="p-3 bg-light rounded border text-center mb-3">
             <!-- 1. NÚT CHỤP / CHỌN NHIỀU ẢNH -->
