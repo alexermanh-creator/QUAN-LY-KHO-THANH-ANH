@@ -2413,12 +2413,7 @@
             <div class="app-card mb-3">
               <div class="app-card-body p-3">
                 <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
-                  <div class="d-flex align-items-center gap-2">
-                    <span class="small fw-bold text-muted"><i class="fa-solid fa-filter me-1"></i> Bộ Lọc Phiếu Nhập Kho:</span>
-                    <button class="btn btn-xs btn-outline-primary rounded-pill px-2 py-1" onclick="syncVouchersFromServer(false)" title="Đồng bộ ngay dữ liệu mới nhất từ máy chủ Google Sheets">
-                      <i class="fa-solid fa-arrows-rotate me-1"></i>Đồng bộ từ hệ thống
-                    </button>
-                  </div>
+                  <span class="small fw-bold text-muted"><i class="fa-solid fa-filter me-1"></i> Bộ Lọc Phiếu Nhập Kho:</span>
                   <div class="btn-group btn-group-sm">
                     <button class="btn btn-outline-secondary" onclick="setNhapPreset('today')">Hôm nay</button>
                     <button class="btn btn-outline-secondary" onclick="setNhapPreset('7days')">7 ngày</button>
@@ -2493,12 +2488,7 @@
             <div class="app-card mb-3">
               <div class="app-card-body p-3">
                 <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
-                  <div class="d-flex align-items-center gap-2">
-                    <span class="small fw-bold text-muted"><i class="fa-solid fa-filter me-1"></i> Bộ Lọc Phiếu Xuất Kho:</span>
-                    <button class="btn btn-xs btn-outline-primary rounded-pill px-2 py-1" onclick="syncVouchersFromServer(false)" title="Đồng bộ ngay dữ liệu mới nhất từ máy chủ Google Sheets">
-                      <i class="fa-solid fa-arrows-rotate me-1"></i>Đồng bộ từ hệ thống
-                    </button>
-                  </div>
+                  <span class="small fw-bold text-muted"><i class="fa-solid fa-filter me-1"></i> Bộ Lọc Phiếu Xuất Kho:</span>
                   <div class="btn-group btn-group-sm">
                     <button class="btn btn-outline-secondary" onclick="setXuatPreset('today')">Hôm nay</button>
                     <button class="btn btn-outline-secondary" onclick="setXuatPreset('7days')">7 ngày</button>
@@ -12476,154 +12466,8 @@
       } else {
         if (callback) callback({ success: true, timestamp: String(Date.now()) });
       }
-    },
-
-    // 26. Tải toàn bộ danh sách Phiếu Nhập & Phiếu Xuất từ Google Sheets về (Multi-client Auto Sync)
-    getAllVouchers: function(callback) {
-      if (this.isAppsScriptEnvironment()) {
-        google.script.run
-          .withSuccessHandler(res => { if (callback) callback(res); })
-          .withFailureHandler(err => { if (callback) callback({ success: false, message: err.message, xuat: [], nhap: [] }); })
-          .getAllVouchersBackend();
-      } else {
-        const res = {
-          success: true,
-          timestamp: String(Date.now()),
-          xuat: typeof VOUCHERS_DB !== 'undefined' ? (VOUCHERS_DB.xuat || []) : [],
-          nhap: typeof VOUCHERS_DB !== 'undefined' ? (VOUCHERS_DB.nhap || []) : []
-        };
-        if (callback) callback(res);
-        return Promise.resolve(res);
-      }
     }
   };
-
-  // ====================================================
-  // HỆ THỐNG ĐỒNG BỘ ĐA MÁY TỰ ĐỘNG (MULTI-CLIENT REALTIME SYNC)
-  // Không cần người dùng ấn nút, tự động nhận dữ liệu giữa các máy
-  // ====================================================
-  let LAST_DATA_SYNC_TS = '';
-  if (typeof window !== 'undefined') window.LAST_DATA_SYNC_TS = '';
-
-  function syncVouchersFromServer(silent = true, callback) {
-    if (typeof WarehouseAPI === 'undefined' || !WarehouseAPI.isAppsScriptEnvironment()) {
-      if (callback) callback({ success: true, localOnly: true });
-      return;
-    }
-
-    WarehouseAPI.getAllVouchers(res => {
-      if (!res || !res.success) {
-        if (callback) callback(res);
-        return;
-      }
-
-      window.LAST_DATA_SYNC_TS = res.timestamp || String(Date.now());
-
-      // Safe Merge (Gộp an toàn) - Tuyệt đối không làm mất phiếu hiện tại
-      if (typeof VOUCHERS_DB === 'undefined' || !VOUCHERS_DB) {
-        window.VOUCHERS_DB = { nhap: [], xuat: [] };
-      }
-      VOUCHERS_DB.xuat = VOUCHERS_DB.xuat || [];
-      VOUCHERS_DB.nhap = VOUCHERS_DB.nhap || [];
-
-      // 1. Gộp phiếu Xuất từ Server
-      if (Array.isArray(res.xuat)) {
-        res.xuat.forEach(sv => {
-          const localIdx = VOUCHERS_DB.xuat.findIndex(lv => lv.maPhieu === sv.maPhieu);
-          if (localIdx === -1) {
-            // Phiếu mới tạo từ máy khác (ví dụ máy Minh Quân) -> thêm vào đầu
-            VOUCHERS_DB.xuat.unshift(sv);
-          } else {
-            // Phiếu đã có -> cập nhật đồng bộ các trường mới nhất từ server
-            const cur = VOUCHERS_DB.xuat[localIdx];
-            cur.status = sv.status || cur.status;
-            cur.ghiChu = sv.ghiChu || cur.ghiChu;
-            cur.khachHang = sv.khachHang || cur.khachHang;
-            cur.sdtKhach = sv.sdtKhach || cur.sdtKhach;
-            if (Array.isArray(sv.items) && sv.items.length > 0 && (!cur.items || cur.items.length === 0)) {
-              cur.items = sv.items;
-            }
-          }
-        });
-      }
-
-      // 2. Gộp phiếu Nhập từ Server
-      if (Array.isArray(res.nhap)) {
-        res.nhap.forEach(sn => {
-          const localIdx = VOUCHERS_DB.nhap.findIndex(ln => ln.maPhieu === sn.maPhieu);
-          if (localIdx === -1) {
-            VOUCHERS_DB.nhap.unshift(sn);
-          } else {
-            const cur = VOUCHERS_DB.nhap[localIdx];
-            cur.status = sn.status || cur.status;
-            cur.ghiChu = sn.ghiChu || cur.ghiChu;
-            cur.ncc = sn.ncc || cur.ncc;
-            if (Array.isArray(sn.items) && sn.items.length > 0 && (!cur.items || cur.items.length === 0)) {
-              cur.items = sn.items;
-            }
-          }
-        });
-      }
-
-      // 3. Lưu bền vững vào localStorage
-      try {
-        if (typeof localStorage !== 'undefined') {
-          localStorage.setItem('THANH_AN_VOUCHERS_DB', JSON.stringify(VOUCHERS_DB));
-        }
-      } catch(e) {}
-
-      // 4. Tự động làm mới giao diện mượt mà nếu đang ở màn hình Lịch Sử Phiếu
-      if (typeof HISTORY_SUBTAB_STATE !== 'undefined') {
-        if (HISTORY_SUBTAB_STATE.xuat) HISTORY_SUBTAB_STATE.xuat.dirty = true;
-        if (HISTORY_SUBTAB_STATE.nhap) HISTORY_SUBTAB_STATE.nhap.dirty = true;
-      }
-      if (typeof renderHistoryXuatTable === 'function' && document.getElementById('tab-ls-xuat')?.classList.contains('active')) {
-        renderHistoryXuatTable();
-      }
-      if (typeof renderHistoryNhapTable === 'function' && document.getElementById('tab-ls-nhap')?.classList.contains('active')) {
-        renderHistoryNhapTable();
-      }
-
-      if (!silent && typeof Swal !== 'undefined') {
-        Swal.fire({
-          toast: true,
-          position: 'top-end',
-          icon: 'success',
-          title: 'Đã đồng bộ dữ liệu mới nhất từ hệ thống!',
-          showConfirmButton: false,
-          timer: 2000
-        });
-      }
-
-      if (callback) callback({ success: true, timestamp: res.timestamp });
-    });
-  }
-  if (typeof window !== 'undefined') window.syncVouchersFromServer = syncVouchersFromServer;
-
-  // Heartbeat Auto-Sync: 15s kiểm tra 1 lần siêu nhẹ (<0.1s)
-  let _AUTO_SYNC_HEARTBEAT_INTERVAL = null;
-  function startAutoSyncHeartbeat() {
-    if (_AUTO_SYNC_HEARTBEAT_INTERVAL) return;
-    _AUTO_SYNC_HEARTBEAT_INTERVAL = setInterval(() => {
-      if (typeof WarehouseAPI !== 'undefined' && WarehouseAPI.isAppsScriptEnvironment()) {
-        WarehouseAPI.checkDataVersion(res => {
-          if (res && res.success && res.timestamp) {
-            if (window.LAST_DATA_SYNC_TS && res.timestamp !== window.LAST_DATA_SYNC_TS) {
-              console.log('[AutoSync Heartbeat] Phát hiện thay đổi dữ liệu từ máy khác (Minh Quân / Kho), tự động đồng bộ...');
-              syncVouchersFromServer(true);
-            }
-          }
-        });
-      }
-    }, 15000);
-  }
-  if (typeof window !== 'undefined') {
-    window.startAutoSyncHeartbeat = startAutoSyncHeartbeat;
-    // Tự động khởi động heartbeat
-    setTimeout(startAutoSyncHeartbeat, 3000);
-    // Tự động kéo dữ liệu từ server ngay khi mở web app
-    setTimeout(() => { syncVouchersFromServer(true); }, 1000);
-  }
 
   let LAST_SYNCED_TIMESTAMP = "";
   function triggerSmartSyncCheck(silent) {
@@ -13827,9 +13671,6 @@
               renderWarrantyCasesTable();
             } else if (tabId === 'LichSu' && typeof renderHistoryTables === 'function') {
               renderHistoryTables();
-              if (typeof syncVouchersFromServer === 'function') {
-                syncVouchersFromServer(true);
-              }
             } else if (tabId === 'NghiepVuKho' && typeof renderNghiepVuKhoTables === 'function') {
               renderNghiepVuKhoTables();
             } else if (tabId === 'DanhMuc' && typeof renderCatalogTables === 'function') {
@@ -17284,18 +17125,13 @@
     }
 
     try {
-      const rawKhach = (document.getElementById('xuat-khach-select')?.value || document.getElementById('xuat-khach-input')?.value || '').trim();
-      let rawSdt = (document.getElementById('xuat-sdt')?.value || '').trim();
-      const custCleaned = (typeof formatCustomerDisplayName === 'function') 
-        ? formatCustomerDisplayName(rawKhach, rawSdt) 
-        : { name: rawKhach, phone: rawSdt };
-      const khach = custCleaned.name;
-      const sdt = custCleaned.phone || rawSdt;
-      const diachi = document.getElementById('xuat-diachi').value.trim();
-      const kho = (document.getElementById('xuat-kho')?.value) || (CURRENT_DRAFT_XUAT_ITEMS[0]?.kho) || 'Kho Chính';
-      const rawNgay = document.getElementById('xuat-ngay')?.value || getLocalDateStr();
-      const ngay = formatDateDisplay(rawNgay) || formatDateDisplay(getLocalDateStr());
-      const maPhieu = generateVoucherCode('PX');
+      const khach = (document.getElementById('xuat-khach-select')?.value || document.getElementById('xuat-khach-input')?.value || '').trim();
+    const sdt = document.getElementById('xuat-sdt').value.trim();
+    const diachi = document.getElementById('xuat-diachi').value.trim();
+    const kho = (document.getElementById('xuat-kho')?.value) || (CURRENT_DRAFT_XUAT_ITEMS[0]?.kho) || 'Kho Chính';
+    const rawNgay = document.getElementById('xuat-ngay')?.value || getLocalDateStr();
+    const ngay = formatDateDisplay(rawNgay) || formatDateDisplay(getLocalDateStr());
+    const maPhieu = generateVoucherCode('PX');
     const nowStr = `${ngay} ${new Date().toLocaleTimeString('vi-VN')}`;
 
     const giayToArr = [];
@@ -20179,48 +20015,11 @@
     `;
   }
 
-  // Hàm chuẩn hóa làm sạch Tên & SĐT khách hàng, chống lặp chuỗi
-  function formatCustomerDisplayName(rawName, rawPhone) {
-    if (!rawName) return { name: 'Khách lẻ', phone: rawPhone || '' };
-    let name = String(rawName).trim();
-    let phone = String(rawPhone || '').trim();
-
-    // Loại bỏ lặp kiểu: (CÔNG TY CỔ PHẦN CÔNG NGHỆ S9) - CÔNG TY CỔ PHẦN CÔNG NGHỆ S9
-    if (name.includes(') - ')) {
-      const parts = name.split(') - ');
-      if (parts.length >= 2) {
-        const clean0 = parts[0].replace(/^[^\w\sÀ-ỹ]+|[^\w\sÀ-ỹ]+$/g, '').trim().toLowerCase();
-        const clean1 = parts[1].replace(/^[^\w\sÀ-ỹ]+|[^\w\sÀ-ỹ]+$/g, '').trim().toLowerCase();
-        if (clean0 === clean1) {
-          name = parts[1].trim();
-        }
-      }
-    }
-
-    // Bóc tách số điện thoại bị ngoặc trong tên: "C Nhung (0969110828)" hoặc "C Nhung (0969110828 - C Nhung)"
-    const phoneMatch = name.match(/\((\d{9,11})[^\)]*\)/);
-    if (phoneMatch) {
-      if (!phone) phone = phoneMatch[1];
-      name = name.replace(/\s*\([^\)]*\)\s*/g, ' ').trim();
-    }
-
-    // Loại bỏ số điện thoại lẻ ở cuối tên nếu có
-    const trailingPhone = name.match(/^(.*?)\s*(\d{9,11})$/);
-    if (trailingPhone) {
-      name = trailingPhone[1].trim();
-      if (!phone) phone = trailingPhone[2];
-    }
-
-    return { name: name || 'Khách hàng', phone: phone };
-  }
-  if (typeof window !== 'undefined') window.formatCustomerDisplayName = formatCustomerDisplayName;
-
-  function renderVoucherStatusIcon(status, ghiChu) {
-    const isCancelled = status === 'CANCELLED' || (ghiChu && (ghiChu.includes('[CANCELLED:') || ghiChu.toUpperCase().includes('CANCELLED')));
-    if (isCancelled) {
-      return `<span class="badge rounded-circle bg-danger text-white d-inline-flex align-items-center justify-content-center shadow-xs" style="width: 26px; height: 26px; font-size: 0.85rem;" title="Đã hủy"><i class="fa-solid fa-xmark"></i></span>`;
-    } else if (status === 'CONFIRMED') {
+  function renderVoucherStatusIcon(status) {
+    if (status === 'CONFIRMED') {
       return `<span class="badge rounded-circle bg-success text-white d-inline-flex align-items-center justify-content-center shadow-xs" style="width: 26px; height: 26px; font-size: 0.85rem;" title="Đã xác nhận"><i class="fa-solid fa-check"></i></span>`;
+    } else if (status === 'CANCELLED') {
+      return `<span class="badge rounded-circle bg-danger text-white d-inline-flex align-items-center justify-content-center shadow-xs" style="width: 26px; height: 26px; font-size: 0.85rem;" title="Đã hủy"><i class="fa-solid fa-xmark"></i></span>`;
     } else if (status === 'DRAFT') {
       return `<span class="badge rounded-circle bg-warning text-dark d-inline-flex align-items-center justify-content-center shadow-xs" style="width: 26px; height: 26px; font-size: 0.85rem;" title="Phiếu nháp"><i class="fa-solid fa-pen-nib"></i></span>`;
     }
@@ -20426,9 +20225,6 @@
 
     let html = '';
     list.forEach(v => {
-      const isCancelled = v.status === 'CANCELLED' || (v.ghiChu && (v.ghiChu.includes('[CANCELLED:') || v.ghiChu.toUpperCase().includes('CANCELLED')));
-      const effectiveStatus = isCancelled ? 'CANCELLED' : (v.status || 'CONFIRMED');
-
       html += `
         <tr id="voucher-row-NHAP-${v.maPhieu}">
           <!-- Nút Accordion mở chi tiết Serial nhanh -->
@@ -20458,7 +20254,7 @@
           </td>
           <td data-label="Số Thiết Bị" class="text-center font-monospace fw-bold fs-6">${v.items ? v.items.length : 0}</td>
           <!-- Cột Trạng Thái dạng icon dấu tích / x, không dùng chữ -->
-          <td data-label="Trạng Thái" class="text-center">${renderVoucherStatusIcon(effectiveStatus, v.ghiChu)}</td>
+          <td data-label="Trạng Thái" class="text-center">${renderVoucherStatusIcon(v.status)}</td>
           <td data-label="Ghi Chú">
             <div class="small text-muted text-break">${v.ghiChu || '--'}</div>
             ${v.updatedAt ? `<div class="text-info small mt-1"><i class="fa-solid fa-pencil me-1"></i><strong>Sửa:</strong> ${v.updatedBy || ''} (${v.updatedAt})</div>` : ''}
@@ -20468,7 +20264,7 @@
             <button class="btn btn-sm btn-outline-info" onclick="openVoucherDetail('NHAP', '${v.maPhieu}')" title="Xem chi tiết phiếu">
               <i class="fa-solid fa-eye"></i>
             </button>
-            ${effectiveStatus === 'CONFIRMED' ? `
+            ${v.status === 'CONFIRMED' ? `
               <!-- Nút Sửa phiếu nhập (Yêu cầu 3) -->
               <button class="btn btn-sm btn-outline-warning btn-action-edit-voucher" onclick="openEditVoucherModal('NHAP', '${v.maPhieu}')" title="Sửa phiếu nhập">
                 <i class="fa-solid fa-pen-to-square"></i>
@@ -20609,10 +20405,6 @@
 
     let html = '';
     list.forEach(v => {
-      const isCancelled = v.status === 'CANCELLED' || (v.ghiChu && (v.ghiChu.includes('[CANCELLED:') || v.ghiChu.toUpperCase().includes('CANCELLED')));
-      const effectiveStatus = isCancelled ? 'CANCELLED' : (v.status || 'CONFIRMED');
-      const custInfo = formatCustomerDisplayName(v.khachHang, v.sdtKhach);
-
       html += `
         <tr id="voucher-row-XUAT-${v.maPhieu}">
           <!-- Nút Accordion mở chi tiết Serial nhanh -->
@@ -20633,8 +20425,8 @@
           </td>
           <td data-label="Ngày Xuất" class="text-center">${v.ngay}</td>
           <td data-label="Khách Hàng">
-            <strong>${custInfo.name}</strong>
-            ${custInfo.phone ? `<div class="small font-monospace text-muted"><i class="fa-solid fa-phone me-1"></i>${custInfo.phone}</div>` : ''}
+            <strong>${v.khachHang}</strong>
+            ${v.sdtKhach ? `<div class="small font-monospace text-muted"><i class="fa-solid fa-phone me-1"></i>${v.sdtKhach}</div>` : ''}
           </td>
           <!-- Cột Sản Phẩm & Model tóm tắt -->
           <td data-label="Sản Phẩm & Model">
@@ -20645,7 +20437,7 @@
           </td>
           <td data-label="Số Thiết Bị" class="text-center font-monospace fw-bold fs-6">${v.items ? v.items.length : 0}</td>
           <!-- Cột Trạng Thái dạng icon dấu tích / x, không dùng chữ -->
-          <td data-label="Trạng Thái" class="text-center">${renderVoucherStatusIcon(effectiveStatus, v.ghiChu)}</td>
+          <td data-label="Trạng Thái" class="text-center">${renderVoucherStatusIcon(v.status)}</td>
           <td data-label="Ghi Chú">
             <div class="small text-muted text-break">${v.ghiChu || '--'}</div>
             ${v.updatedAt ? `<div class="text-info small mt-1"><i class="fa-solid fa-pencil me-1"></i><strong>Sửa:</strong> ${v.updatedBy || ''} (${v.updatedAt})</div>` : ''}
@@ -20655,7 +20447,7 @@
             <button class="btn btn-sm btn-outline-info" onclick="openVoucherDetail('XUAT', '${v.maPhieu}')" title="Xem chi tiết phiếu">
               <i class="fa-solid fa-eye"></i>
             </button>
-            ${effectiveStatus === 'CONFIRMED' ? `
+            ${v.status === 'CONFIRMED' ? `
               <!-- Nút Sửa phiếu xuất (Yêu cầu 3) -->
               <button class="btn btn-sm btn-outline-warning btn-action-edit-voucher" onclick="openEditVoucherModal('XUAT', '${v.maPhieu}')" title="Sửa phiếu xuất">
                 <i class="fa-solid fa-pen-to-square"></i>
@@ -20664,7 +20456,7 @@
                 <i class="fa-solid fa-ban"></i>
               </button>
             ` : ''}
-            ${effectiveStatus === 'DRAFT' ? `
+            ${v.status === 'DRAFT' ? `
               <!-- Nút Xóa phiếu nháp DRAFT -->
               <button class="btn btn-sm btn-outline-danger btn-action-delete-draft" onclick="deleteDraftExportVoucher('${v.maPhieu}')" title="Xóa phiếu nháp này">
                 <i class="fa-solid fa-trash"></i>
@@ -27023,6 +26815,366 @@
     switchTab('Dashboard');
   });
 </script>
+<script>
+  // =========================================================
+  // GOOGLE APPS SCRIPT LIVE DATA HYDRATION BRIDGE (UTF-8 PROMAX)
+  // =========================================================
+  function syncServerDataToDemo(serverData) {
+    if (!serverData) return;
+    console.log("[GAS Bridge] Hydrating live data from Google Sheets...", serverData);
+    
+    // 0. Kiểm tra phiên đăng nhập an toàn từ localStorage / sessionStorage
+    if (typeof checkAuthOnStartup === 'function') {
+      checkAuthOnStartup();
+    }
+
+    // 1. Đồng bộ Danh mục Sản phẩm / Model
+    if (Array.isArray(serverData.products) && serverData.products.length > 0) {
+      INITIAL_PRODUCTS = serverData.products.map(p => ({
+        id: p.model,
+        productId: p.model,
+        model: p.model,
+        name: p.ten,
+        ten: p.ten,
+        tenHang: p.ten,
+        nhomHang: p.nhom || '',
+        category: p.nhom || '',
+        nhom: p.nhom || '',
+        dvt: p.dvt || 'Chiếc',
+        hang: p.hang || '',
+        brand: p.hang || '',
+        defaultBh: p.defaultBh || 12,
+        manageSerial: p.manageSerial !== false,
+        ghiChu: p.ghiChu || '',
+        active: true
+      }));
+      if (typeof PRODUCTS_DB !== 'undefined') PRODUCTS_DB = INITIAL_PRODUCTS;
+    }
+
+    // 2. Đồng bộ Danh mục Nhà Cung Cấp
+    if (Array.isArray(serverData.ncc) && serverData.ncc.length > 0) {
+      INITIAL_SUPPLIERS = serverData.ncc.map(n => ({
+        id: n.tenTat,
+        supplierId: n.tenTat,
+        code: n.tenTat,
+        tenTat: n.tenTat,
+        name: n.tenDayDu || n.tenTat,
+        tenDayDu: n.tenDayDu || n.tenTat,
+        phone: n.sdt || '',
+        sdt: n.sdt || '',
+        email: n.email || '',
+        diaChi: n.diaChi || '',
+        nguoiLienHe: n.nguoiLienHe || '',
+        mst: n.mst || '',
+        ghiChu: n.ghiChu || '',
+        active: true
+      }));
+      if (typeof SUPPLIERS_DB !== 'undefined') SUPPLIERS_DB = INITIAL_SUPPLIERS;
+    }
+
+    // 3. Đồng bộ Danh mục Khách Hàng (Đầy đủ, không lọc chặn bất kỳ khách nào)
+    if (Array.isArray(serverData.khachHang) && serverData.khachHang.length > 0) {
+      INITIAL_CUSTOMERS = serverData.khachHang.map((k, idx) => ({
+        id: 'KH' + String(idx + 1).padStart(3, '0'),
+        customerId: 'KH' + String(idx + 1).padStart(3, '0'),
+        name: k.ten,
+        ten: k.ten,
+        phone: k.sdt || '',
+        sdt: k.sdt || '',
+        email: k.email || '',
+        address: k.diaChi || '',
+        diaChi: k.diaChi || '',
+        nguoiLienHe: k.nguoiLienHe || '',
+        mst: k.mst || '',
+        nhomKhach: k.nhomKhach || 'Khách lẻ',
+        ghiChu: k.ghiChu || '',
+        active: true
+      }));
+      if (typeof CUSTOMERS_DB !== 'undefined') CUSTOMERS_DB = INITIAL_CUSTOMERS;
+    }
+
+    // 4. Đồng bộ Danh mục Kho Hàng (Tiếng Việt chuẩn)
+    if (Array.isArray(serverData.kho) && serverData.kho.length > 0) {
+      INITIAL_WAREHOUSES = serverData.kho.map(k => ({
+        id: k.val,
+        warehouseId: k.val,
+        code: k.val,
+        name: k.val,
+        maKho: k.val,
+        tenKho: k.val,
+        loaiKho: 'Kho Trung Tâm',
+        active: true
+      }));
+      if (typeof WAREHOUSES_DB !== 'undefined') WAREHOUSES_DB = INITIAL_WAREHOUSES;
+    }
+
+    // 5. Đồng bộ Danh mục Nhóm Hàng
+    if (Array.isArray(serverData.nhomHang) && serverData.nhomHang.length > 0) {
+      INITIAL_CATEGORIES = serverData.nhomHang.map(nh => ({
+        id: nh.val,
+        catId: nh.val,
+        code: nh.val,
+        name: nh.val,
+        maNhom: nh.val,
+        tenNhom: nh.val,
+        active: true
+      }));
+      if (typeof CATEGORIES_DB !== 'undefined') CATEGORIES_DB = INITIAL_CATEGORIES;
+    }
+
+    // 6. Đồng bộ Danh mục Hãng SX
+    if (Array.isArray(serverData.hangSx) && serverData.hangSx.length > 0) {
+      INITIAL_BRANDS = serverData.hangSx.map(h => ({
+        id: h.val,
+        brandId: h.val,
+        code: h.val,
+        name: h.val,
+        maHang: h.val,
+        tenHang: h.val,
+        active: true
+      }));
+      if (typeof BRANDS_DB !== 'undefined') BRANDS_DB = INITIAL_BRANDS;
+    }
+
+    // 7. Đồng bộ Danh mục Thời Gian Bảo Hành (Tiếng Việt chuẩn)
+    if (Array.isArray(serverData.baoHanh) && serverData.baoHanh.length > 0) {
+      INITIAL_WARRANTIES = serverData.baoHanh.map((b, idx) => {
+        const valStr = String(b.val || b);
+        const months = parseInt(valStr.replace(/\D/g, '')) || 0;
+        return {
+          id: 'BH-' + (months || (idx + 1)),
+          tenGoi: valStr,
+          soThang: months,
+          ghiChu: 'Thời hạn bảo hành hệ thống',
+          active: true
+        };
+      });
+      if (typeof window !== 'undefined') window.INITIAL_WARRANTIES = INITIAL_WARRANTIES;
+    }
+
+    // 7b. Đồng bộ Danh mục Loại Hàng (Tiếng Việt chuẩn)
+    if (Array.isArray(serverData.loaiHang) && serverData.loaiHang.length > 0) {
+      INITIAL_CONDITIONS = serverData.loaiHang.map((l, idx) => {
+        const valStr = String(l.val || l);
+        return {
+          id: 'COND-' + (idx + 1),
+          rowId: l.rowId || null,
+          ten: valStr,
+          name: valStr,
+          ghiChu: 'Phân loại hàng hóa quy chuẩn',
+          active: true
+        };
+      });
+      if (typeof window !== 'undefined') window.INITIAL_CONDITIONS = INITIAL_CONDITIONS;
+    }
+
+    // 8. Đồng bộ Tồn kho và Thiết bị thực tế
+    if (Array.isArray(serverData.allSerials) && serverData.allSerials.length > 0) {
+      SERIAL_DATA = serverData.allSerials.map(t => ({
+        serial: t.serial,
+        internalId: t.internalId || t.maNoiBo || t.serial,
+        maNoiBo: t.internalId || t.maNoiBo || t.serial,
+        model: t.model,
+        name: t.tenHang || t.name,
+        tenHang: t.tenHang || t.name,
+        nhom: t.nhom || t.nhomHang || 'Khác',
+        nhomHang: t.nhomHang || t.nhom || 'Khác',
+        category: t.nhomHang || t.nhom || 'Khác',
+        warehouse: t.kho || 'Kho VP',
+        kho: t.kho || 'Kho VP',
+        supplier: t.ncc || 'Chính hãng',
+        ncc: t.ncc || 'Chính hãng',
+        importDate: t.ngayNhap,
+        ngayNhap: t.ngayNhap,
+        importVoucher: t.maPhieuNhap || t.maPhieu,
+        maPhieu: t.maPhieu || t.maPhieuNhap,
+        maPhieuNhap: t.maPhieuNhap || t.maPhieu,
+        status: t.status || 'IN_STOCK',
+        daysInStock: t.soNgayLuuKho || 0,
+        soNgayLuuKho: t.soNgayLuuKho || 0,
+        condition: t.loaiHang || 'Mới 100%',
+        loaiHang: t.loaiHang || 'Mới 100%',
+        soThangBh: t.soThangBh || t.warrantyMonths || 12,
+        warrantyMonths: t.warrantyMonths || t.soThangBh || 12,
+        ngayHetHanBh: t.ngayHetHanBh || '',
+        ngayXuat: t.ngayXuat || '',
+        maPhieuXuat: t.maPhieuXuat || '',
+        khachHang: t.khachHang || '',
+        sdtKhach: t.sdtKhach || '',
+        timeline: Array.isArray(t.timeline) ? t.timeline : []
+      }));
+      if (typeof SERIAL_DB !== 'undefined') SERIAL_DB = SERIAL_DATA;
+    } else if (Array.isArray(serverData.tonKhoList) && serverData.tonKhoList.length > 0) {
+      const map = new Map();
+      (typeof SERIAL_DB !== 'undefined' ? SERIAL_DB : []).forEach(s => map.set(s.serial, s));
+      serverData.tonKhoList.forEach(t => {
+        map.set(t.serial, Object.assign({}, map.get(t.serial) || {}, t, { status: 'IN_STOCK' }));
+      });
+      if (Array.isArray(serverData.baoHanhList)) {
+        serverData.baoHanhList.forEach(b => {
+          map.set(b.serial, Object.assign({}, map.get(b.serial) || {}, b, { status: 'SOLD' }));
+        });
+      }
+      SERIAL_DATA = Array.from(map.values());
+      if (typeof SERIAL_DB !== 'undefined') SERIAL_DB = SERIAL_DATA;
+    }
+
+    // 9. Đồng bộ Phiếu Nhập & Phiếu Xuất (VOUCHERS_DB) - SMART MERGE BẢO TOÀN DỮ LIỆU
+    if (typeof VOUCHERS_DB !== 'undefined') {
+      // 9a. Smart Merge Phiếu Nhập
+      if (Array.isArray(serverData.lsNhap) && serverData.lsNhap.length > 0) {
+        const serverNhapMap = new Map();
+        serverData.lsNhap.forEach(v => {
+          serverNhapMap.set(v.maPhieu, {
+            maPhieu: v.maPhieu,
+            ngay: v.ngayNhap || v.ngay,
+            ncc: v.ncc,
+            kho: v.kho || 'Kho VP',
+            status: 'CONFIRMED',
+            ghiChu: v.ghiChu || '',
+            items: (v.serials || '').split(',').map(sn => {
+              const cleanSn = sn.trim();
+              const found = (typeof SERIAL_DB !== 'undefined' ? SERIAL_DB : []).find(s => s.serial === cleanSn);
+              return {
+                model: (found && found.model) ? found.model : ((v.modelSummary || '').split('(')[0].trim()),
+                serial: cleanSn,
+                internalId: (found && (found.internalId || found.maNoiBo)) ? (found.internalId || found.maNoiBo) : cleanSn,
+                name: (found && (found.name || found.tenHang)) ? (found.name || found.tenHang) : '',
+                tenHang: (found && (found.name || found.tenHang)) ? (found.name || found.tenHang) : '',
+                category: (found && (found.category || found.nhomHang)) ? (found.category || found.nhomHang) : '',
+                kho: v.kho || (found && found.kho) || 'Kho VP'
+              };
+            })
+          });
+        });
+        // Hàm sắp xếp phiếu mới nhất lên đầu
+        const sortVouchersDescending = (a, b) => {
+          const parseT = (v) => {
+            if (!v) return 0;
+            const ds = v.ngayXuat || v.ngayNhap || v.ngay || '';
+            const p = String(ds).split('/');
+            if (p.length === 3) return new Date(parseInt(p[2]), parseInt(p[1]) - 1, parseInt(p[0])).getTime();
+            return 0;
+          };
+          const tA = parseT(a);
+          const tB = parseT(b);
+          if (tB !== tA) return tB - tA;
+          return String(b.maPhieu || '').localeCompare(String(a.maPhieu || ''));
+        };
+
+        // Hợp nhất: Giữ nguyên các phiếu client mà server chưa kịp có
+        const currentNhap = Array.isArray(VOUCHERS_DB.nhap) ? VOUCHERS_DB.nhap : [];
+        currentNhap.forEach(v => {
+          if (!serverNhapMap.has(v.maPhieu)) {
+            serverNhapMap.set(v.maPhieu, v);
+          }
+        });
+        VOUCHERS_DB.nhap = Array.from(serverNhapMap.values()).sort(sortVouchersDescending);
+      }
+
+      // 9b. Smart Merge Phiếu Xuất (BẢO TOÀN 100% PHIẾU XUẤT CỦA KHÁCH HÀNG)
+      if (Array.isArray(serverData.lsXuat) && serverData.lsXuat.length > 0) {
+        const serverXuatMap = new Map();
+        serverData.lsXuat.forEach(v => {
+          const serials = (v.serials || '').split(',').map(sn => sn.trim()).filter(Boolean);
+          const items = serials.map(sn => {
+            const found = (typeof SERIAL_DB !== 'undefined' ? SERIAL_DB : []).find(s => s.serial === sn);
+            return {
+              serial: sn,
+              model: (found && found.model) ? found.model : '',
+              name: (found && (found.name || found.tenHang)) ? (found.name || found.tenHang) : '',
+              tenHang: (found && (found.name || found.tenHang)) ? (found.name || found.tenHang) : '',
+              category: (found && (found.category || found.nhomHang || found.nhom)) ? (found.category || found.nhomHang || found.nhom) : '',
+              nhomHang: (found && (found.category || found.nhomHang || found.nhom)) ? (found.category || found.nhomHang || found.nhom) : '',
+              internalId: (found && (found.internalId || found.maNoiBo)) ? (found.internalId || found.maNoiBo) : sn,
+              kho: (found && found.kho) ? found.kho : (v.kho || 'Kho VP'),
+              soThangBh: (found && found.soThangBh) ? found.soThangBh : 12,
+              ngayHetHanBh: (found && found.ngayHetHanBh) ? found.ngayHetHanBh : ''
+            };
+          });
+
+          serverXuatMap.set(v.maPhieu, {
+            maPhieu: v.maPhieu,
+            ngay: v.ngayXuat || v.ngay,
+            ngayXuat: v.ngayXuat || v.ngay,
+            khachHang: v.khachHang,
+            sdtKhach: v.sdtKhach || '',
+            diaChi: v.diaChi || '',
+            kho: v.kho || (items[0] && items[0].kho) || 'Kho VP',
+            nguoiTao: v.nguoiTao || (typeof CURRENT_USER_NAME !== 'undefined' && CURRENT_USER_NAME ? CURRENT_USER_NAME : 'Thủ Kho'),
+            status: 'CONFIRMED',
+            ghiChu: v.ghiChu || '',
+            items: items
+          });
+        });
+
+        // Hợp nhất: Giữ nguyên các phiếu client/localStorage mà server chưa có hoặc mới xuất
+        const currentXuat = Array.isArray(VOUCHERS_DB.xuat) ? VOUCHERS_DB.xuat : [];
+        currentXuat.forEach(v => {
+          if (!serverXuatMap.has(v.maPhieu)) {
+            serverXuatMap.set(v.maPhieu, v);
+          }
+        });
+        VOUCHERS_DB.xuat = Array.from(serverXuatMap.values()).sort(sortVouchersDescending);
+      }
+
+      try {
+        localStorage.setItem('THANH_AN_VOUCHERS_DB', JSON.stringify(VOUCHERS_DB));
+      } catch(e) {}
+    }
+
+    // 10. Đồng bộ Nhật ký kiểm toán (AUDIT_LOG_DB)
+    if (Array.isArray(serverData.auditLogs) && serverData.auditLogs.length > 0) {
+      if (typeof AUDIT_LOG_DB !== 'undefined') {
+        const serverLogs = serverData.auditLogs.map(a => ({
+          id: a.id || ('AUD-' + Math.floor(Math.random()*10000)),
+          time: a.time,
+          timestamp: a.time,
+          user: a.user,
+          action: a.action,
+          target: a.target,
+          reason: a.detail,
+          detail: a.detail
+        }));
+        AUDIT_LOG_DB = serverLogs;
+        if (typeof window !== 'undefined') window.AUDIT_LOG_DB = AUDIT_LOG_DB;
+        try {
+          localStorage.setItem('THANH_AN_AUDIT_LOGS', JSON.stringify(AUDIT_LOG_DB));
+        } catch(e) {}
+      }
+    }
+
+    // 11. Đánh dấu các module cần render lại khi người dùng bấm vào
+    if (typeof MODULE_STATE !== 'undefined') {
+      Object.keys(MODULE_STATE).forEach(k => {
+        if (MODULE_STATE[k]) {
+          MODULE_STATE[k].rendered = false;
+          MODULE_STATE[k].dirty = true;
+        }
+      });
+    }
+
+    // Render lại toàn bộ giao diện với dữ liệu thật
+    if (typeof syncLoaiHangDropdowns === 'function') syncLoaiHangDropdowns();
+    if (typeof setupNhapKhoForm === 'function') setupNhapKhoForm();
+    if (typeof setupXuatKhoForm === 'function') setupXuatKhoForm();
+    if (typeof populateCatalogFilterDropdowns === 'function') populateCatalogFilterDropdowns();
+    if (typeof renderCatalogTables === 'function') renderCatalogTables(true);
+    if (typeof renderTonKho === 'function') renderTonKho();
+    if (typeof renderDashboard === 'function') renderDashboard();
+    console.log("[GAS Bridge] Live data hydration COMPLETE!");
+  }
+
+  // Khởi động kết nối Google Sheets khi trang tải xong
+  window.addEventListener('DOMContentLoaded', function() {
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+      console.log("[GAS Bridge] Detecting Google Apps Script environment. Fetching live sheet data...");
+      google.script.run.withSuccessHandler(syncServerDataToDemo).withFailureHandler(function(err) {
+        console.warn("[GAS Bridge] Could not fetch server data, fallback to local demo data:", err);
+      }).getInitAppData();
+    }
+  });
+</script>
+
 </body>
 </html>
-

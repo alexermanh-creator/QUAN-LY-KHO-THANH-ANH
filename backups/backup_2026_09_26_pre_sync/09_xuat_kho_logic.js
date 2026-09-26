@@ -657,18 +657,13 @@
     }
 
     try {
-      const rawKhach = (document.getElementById('xuat-khach-select')?.value || document.getElementById('xuat-khach-input')?.value || '').trim();
-      let rawSdt = (document.getElementById('xuat-sdt')?.value || '').trim();
-      const custCleaned = (typeof formatCustomerDisplayName === 'function') 
-        ? formatCustomerDisplayName(rawKhach, rawSdt) 
-        : { name: rawKhach, phone: rawSdt };
-      const khach = custCleaned.name;
-      const sdt = custCleaned.phone || rawSdt;
-      const diachi = document.getElementById('xuat-diachi').value.trim();
-      const kho = (document.getElementById('xuat-kho')?.value) || (CURRENT_DRAFT_XUAT_ITEMS[0]?.kho) || 'Kho Chính';
-      const rawNgay = document.getElementById('xuat-ngay')?.value || getLocalDateStr();
-      const ngay = formatDateDisplay(rawNgay) || formatDateDisplay(getLocalDateStr());
-      const maPhieu = generateVoucherCode('PX');
+      const khach = (document.getElementById('xuat-khach-select')?.value || document.getElementById('xuat-khach-input')?.value || '').trim();
+    const sdt = document.getElementById('xuat-sdt').value.trim();
+    const diachi = document.getElementById('xuat-diachi').value.trim();
+    const kho = (document.getElementById('xuat-kho')?.value) || (CURRENT_DRAFT_XUAT_ITEMS[0]?.kho) || 'Kho Chính';
+    const rawNgay = document.getElementById('xuat-ngay')?.value || getLocalDateStr();
+    const ngay = formatDateDisplay(rawNgay) || formatDateDisplay(getLocalDateStr());
+    const maPhieu = generateVoucherCode('PX');
     const nowStr = `${ngay} ${new Date().toLocaleTimeString('vi-VN')}`;
 
     const giayToArr = [];

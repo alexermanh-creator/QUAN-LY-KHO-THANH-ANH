@@ -192,48 +192,11 @@
     `;
   }
 
-  // Hàm chuẩn hóa làm sạch Tên & SĐT khách hàng, chống lặp chuỗi
-  function formatCustomerDisplayName(rawName, rawPhone) {
-    if (!rawName) return { name: 'Khách lẻ', phone: rawPhone || '' };
-    let name = String(rawName).trim();
-    let phone = String(rawPhone || '').trim();
-
-    // Loại bỏ lặp kiểu: (CÔNG TY CỔ PHẦN CÔNG NGHỆ S9) - CÔNG TY CỔ PHẦN CÔNG NGHỆ S9
-    if (name.includes(') - ')) {
-      const parts = name.split(') - ');
-      if (parts.length >= 2) {
-        const clean0 = parts[0].replace(/^[^\w\sÀ-ỹ]+|[^\w\sÀ-ỹ]+$/g, '').trim().toLowerCase();
-        const clean1 = parts[1].replace(/^[^\w\sÀ-ỹ]+|[^\w\sÀ-ỹ]+$/g, '').trim().toLowerCase();
-        if (clean0 === clean1) {
-          name = parts[1].trim();
-        }
-      }
-    }
-
-    // Bóc tách số điện thoại bị ngoặc trong tên: "C Nhung (0969110828)" hoặc "C Nhung (0969110828 - C Nhung)"
-    const phoneMatch = name.match(/\((\d{9,11})[^\)]*\)/);
-    if (phoneMatch) {
-      if (!phone) phone = phoneMatch[1];
-      name = name.replace(/\s*\([^\)]*\)\s*/g, ' ').trim();
-    }
-
-    // Loại bỏ số điện thoại lẻ ở cuối tên nếu có
-    const trailingPhone = name.match(/^(.*?)\s*(\d{9,11})$/);
-    if (trailingPhone) {
-      name = trailingPhone[1].trim();
-      if (!phone) phone = trailingPhone[2];
-    }
-
-    return { name: name || 'Khách hàng', phone: phone };
-  }
-  if (typeof window !== 'undefined') window.formatCustomerDisplayName = formatCustomerDisplayName;
-
-  function renderVoucherStatusIcon(status, ghiChu) {
-    const isCancelled = status === 'CANCELLED' || (ghiChu && (ghiChu.includes('[CANCELLED:') || ghiChu.toUpperCase().includes('CANCELLED')));
-    if (isCancelled) {
-      return `<span class="badge rounded-circle bg-danger text-white d-inline-flex align-items-center justify-content-center shadow-xs" style="width: 26px; height: 26px; font-size: 0.85rem;" title="Đã hủy"><i class="fa-solid fa-xmark"></i></span>`;
-    } else if (status === 'CONFIRMED') {
+  function renderVoucherStatusIcon(status) {
+    if (status === 'CONFIRMED') {
       return `<span class="badge rounded-circle bg-success text-white d-inline-flex align-items-center justify-content-center shadow-xs" style="width: 26px; height: 26px; font-size: 0.85rem;" title="Đã xác nhận"><i class="fa-solid fa-check"></i></span>`;
+    } else if (status === 'CANCELLED') {
+      return `<span class="badge rounded-circle bg-danger text-white d-inline-flex align-items-center justify-content-center shadow-xs" style="width: 26px; height: 26px; font-size: 0.85rem;" title="Đã hủy"><i class="fa-solid fa-xmark"></i></span>`;
     } else if (status === 'DRAFT') {
       return `<span class="badge rounded-circle bg-warning text-dark d-inline-flex align-items-center justify-content-center shadow-xs" style="width: 26px; height: 26px; font-size: 0.85rem;" title="Phiếu nháp"><i class="fa-solid fa-pen-nib"></i></span>`;
     }
@@ -439,9 +402,6 @@
 
     let html = '';
     list.forEach(v => {
-      const isCancelled = v.status === 'CANCELLED' || (v.ghiChu && (v.ghiChu.includes('[CANCELLED:') || v.ghiChu.toUpperCase().includes('CANCELLED')));
-      const effectiveStatus = isCancelled ? 'CANCELLED' : (v.status || 'CONFIRMED');
-
       html += `
         <tr id="voucher-row-NHAP-${v.maPhieu}">
           <!-- Nút Accordion mở chi tiết Serial nhanh -->
@@ -471,7 +431,7 @@
           </td>
           <td data-label="Số Thiết Bị" class="text-center font-monospace fw-bold fs-6">${v.items ? v.items.length : 0}</td>
           <!-- Cột Trạng Thái dạng icon dấu tích / x, không dùng chữ -->
-          <td data-label="Trạng Thái" class="text-center">${renderVoucherStatusIcon(effectiveStatus, v.ghiChu)}</td>
+          <td data-label="Trạng Thái" class="text-center">${renderVoucherStatusIcon(v.status)}</td>
           <td data-label="Ghi Chú">
             <div class="small text-muted text-break">${v.ghiChu || '--'}</div>
             ${v.updatedAt ? `<div class="text-info small mt-1"><i class="fa-solid fa-pencil me-1"></i><strong>Sửa:</strong> ${v.updatedBy || ''} (${v.updatedAt})</div>` : ''}
@@ -481,7 +441,7 @@
             <button class="btn btn-sm btn-outline-info" onclick="openVoucherDetail('NHAP', '${v.maPhieu}')" title="Xem chi tiết phiếu">
               <i class="fa-solid fa-eye"></i>
             </button>
-            ${effectiveStatus === 'CONFIRMED' ? `
+            ${v.status === 'CONFIRMED' ? `
               <!-- Nút Sửa phiếu nhập (Yêu cầu 3) -->
               <button class="btn btn-sm btn-outline-warning btn-action-edit-voucher" onclick="openEditVoucherModal('NHAP', '${v.maPhieu}')" title="Sửa phiếu nhập">
                 <i class="fa-solid fa-pen-to-square"></i>
@@ -622,10 +582,6 @@
 
     let html = '';
     list.forEach(v => {
-      const isCancelled = v.status === 'CANCELLED' || (v.ghiChu && (v.ghiChu.includes('[CANCELLED:') || v.ghiChu.toUpperCase().includes('CANCELLED')));
-      const effectiveStatus = isCancelled ? 'CANCELLED' : (v.status || 'CONFIRMED');
-      const custInfo = formatCustomerDisplayName(v.khachHang, v.sdtKhach);
-
       html += `
         <tr id="voucher-row-XUAT-${v.maPhieu}">
           <!-- Nút Accordion mở chi tiết Serial nhanh -->
@@ -646,8 +602,8 @@
           </td>
           <td data-label="Ngày Xuất" class="text-center">${v.ngay}</td>
           <td data-label="Khách Hàng">
-            <strong>${custInfo.name}</strong>
-            ${custInfo.phone ? `<div class="small font-monospace text-muted"><i class="fa-solid fa-phone me-1"></i>${custInfo.phone}</div>` : ''}
+            <strong>${v.khachHang}</strong>
+            ${v.sdtKhach ? `<div class="small font-monospace text-muted"><i class="fa-solid fa-phone me-1"></i>${v.sdtKhach}</div>` : ''}
           </td>
           <!-- Cột Sản Phẩm & Model tóm tắt -->
           <td data-label="Sản Phẩm & Model">
@@ -658,7 +614,7 @@
           </td>
           <td data-label="Số Thiết Bị" class="text-center font-monospace fw-bold fs-6">${v.items ? v.items.length : 0}</td>
           <!-- Cột Trạng Thái dạng icon dấu tích / x, không dùng chữ -->
-          <td data-label="Trạng Thái" class="text-center">${renderVoucherStatusIcon(effectiveStatus, v.ghiChu)}</td>
+          <td data-label="Trạng Thái" class="text-center">${renderVoucherStatusIcon(v.status)}</td>
           <td data-label="Ghi Chú">
             <div class="small text-muted text-break">${v.ghiChu || '--'}</div>
             ${v.updatedAt ? `<div class="text-info small mt-1"><i class="fa-solid fa-pencil me-1"></i><strong>Sửa:</strong> ${v.updatedBy || ''} (${v.updatedAt})</div>` : ''}
@@ -668,7 +624,7 @@
             <button class="btn btn-sm btn-outline-info" onclick="openVoucherDetail('XUAT', '${v.maPhieu}')" title="Xem chi tiết phiếu">
               <i class="fa-solid fa-eye"></i>
             </button>
-            ${effectiveStatus === 'CONFIRMED' ? `
+            ${v.status === 'CONFIRMED' ? `
               <!-- Nút Sửa phiếu xuất (Yêu cầu 3) -->
               <button class="btn btn-sm btn-outline-warning btn-action-edit-voucher" onclick="openEditVoucherModal('XUAT', '${v.maPhieu}')" title="Sửa phiếu xuất">
                 <i class="fa-solid fa-pen-to-square"></i>
@@ -677,7 +633,7 @@
                 <i class="fa-solid fa-ban"></i>
               </button>
             ` : ''}
-            ${effectiveStatus === 'DRAFT' ? `
+            ${v.status === 'DRAFT' ? `
               <!-- Nút Xóa phiếu nháp DRAFT -->
               <button class="btn btn-sm btn-outline-danger btn-action-delete-draft" onclick="deleteDraftExportVoucher('${v.maPhieu}')" title="Xóa phiếu nháp này">
                 <i class="fa-solid fa-trash"></i>
