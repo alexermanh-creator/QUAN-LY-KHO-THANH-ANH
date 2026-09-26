@@ -16,12 +16,18 @@
 
           <!-- KHU VỰC THAO TÁC TINH GỌN (CHỤP / CHỌN NHIỀU ẢNH + DÁN CTRL+V + SÚNG QUÉT) -->
           <div class="p-3 bg-light rounded border text-center mb-3">
-            <!-- 1. NÚT CHỤP / CHỌN NHIỀU ẢNH -->
+            <!-- 1. NÚT CHỤP TRỰC TIẾP BẰNG CAMERA & NÚT CHỌN NHIỀU ẢNH -->
             <div class="d-grid gap-2 mb-3">
-              <label class="btn btn-success fw-bold py-3 shadow-sm d-flex align-items-center justify-content-center gap-2" style="cursor:pointer; font-size: 1.05rem;">
-                <i class="fa-solid fa-camera-retro fs-4"></i>
-                <span>BẤM ĐỂ CHỤP / CHỌN ẢNH TEM (CHỌN ĐƯỢC NHIỀU ẢNH)</span>
-                <input type="file" id="scanner-batch-file-input" accept="image/*" multiple capture="environment" style="display:none;" onchange="handleBatchImagesUpload(this)">
+              <label class="btn btn-primary fw-bold py-2 shadow-sm d-flex align-items-center justify-content-center gap-2" style="cursor:pointer; font-size: 1rem;">
+                <i class="fa-solid fa-camera fs-5"></i>
+                <span>CHỤP ẢNH TRỰC TIẾP TỪ CAMERA</span>
+                <input type="file" id="scanner-direct-camera-input" accept="image/*" capture="environment" style="display:none;" onchange="handleBatchImagesUpload(this)">
+              </label>
+
+              <label class="btn btn-outline-success fw-bold py-2 shadow-sm d-flex align-items-center justify-content-center gap-2" style="cursor:pointer; font-size: 0.95rem;">
+                <i class="fa-solid fa-images fs-5"></i>
+                <span>CHỌN 1 HOẶC NHIỀU ẢNH TỪ MÁY / THƯ VIỆN</span>
+                <input type="file" id="scanner-batch-file-input" accept="image/*,image/jpeg,image/png" multiple style="display:none;" onchange="handleBatchImagesUpload(this)">
               </label>
             </div>
 
