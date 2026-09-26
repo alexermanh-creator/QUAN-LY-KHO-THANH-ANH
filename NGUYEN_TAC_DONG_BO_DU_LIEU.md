@@ -59,3 +59,14 @@ Mọi thao tác chỉnh sửa phiếu, chỉnh sửa model, đổi thông tin th
    - **Bộ nhớ Runtime (RAM)**: Cập nhật ngay không khựng lag (60fps).
    - **Bộ nhớ LocalStorage**: Lưu bền vững trên trình duyệt khách hàng.
    - **Google Sheets (Backend)**: Đẩy trực tiếp qua Google Apps Script API.
+
+---
+
+## 6. NGUYÊN TẮC RÀNG BUỘC CHẶT CHẼ DỮ LIỆU ĐẦU VÀO (FAIL-FAST INPUT VALIDATION)
+1. **Chặn ngay tại cửa (Fail-Fast)**:
+   - Tại màn hình **Nhập Kho**: Bắt buộc phải chọn đúng Nhà Cung Cấp hợp lệ (có trong `INITIAL_SUPPLIERS`) và Kho nhập hợp lệ thì MỚI ĐƯỢC PHÉP bấm "Đưa vào danh sách Draft". Nếu để trống hoặc gõ tên NCC không tồn tại trong danh mục, hệ thống lập tức phát âm thanh cảnh báo `Beep!`, hiển thị thông báo yêu cầu chọn lại NCC từ danh mục và chặn đứng việc nạp thiết bị vào danh sách Draft.
+   - Tại màn hình **Xuất Kho**: Bắt buộc phải chọn đúng Khách Hàng hợp lệ (có trong `INITIAL_CUSTOMERS`) và Kho xuất hợp lệ thì MỚI ĐƯỢC PHÉP thêm serial vào danh sách chuẩn bị xuất.
+2. **Tuyệt đối không cho phép "Thêm nhanh" tại phiếu**:
+   - Toàn bộ Nhà Cung Cấp, Khách Hàng, Model mới, Loại hàng, Kho hàng... bắt buộc phải được tạo quy chuẩn từ tab **Danh Mục Hệ Thống**.
+3. **Quy tắc phân tích trước khi code**:
+   - Mọi can thiệp vào logic hệ thống đều phải tuân thủ nghiêm ngặt quy trình: **Phân tích -> Giải thích -> Đưa hướng xử lý trước khi code**.

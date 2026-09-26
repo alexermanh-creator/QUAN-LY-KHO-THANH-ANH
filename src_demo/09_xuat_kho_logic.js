@@ -362,6 +362,42 @@
       return;
     }
 
+    // 1. KIỂM TRA KHÁCH HÀNG HỢP LỆ (FAIL-FAST)
+    const custHidden = document.getElementById('xuat-khach-select');
+    const custInput = document.getElementById('xuat-khach-input');
+    const sdtEl = document.getElementById('xuat-sdt');
+    const typedCust = (custInput?.value || '').trim();
+    const hiddenCust = (custHidden?.value || '').trim();
+    const cleanPhone = (sdtEl?.value || '').replace(/\D/g, '');
+
+    const customers = (typeof INITIAL_CUSTOMERS !== 'undefined' ? INITIAL_CUSTOMERS : []).filter(c => c.active !== false);
+    const matchedCust = customers.find(c => {
+      const cName = (c.ten || '').toLowerCase();
+      const cPhone = (c.sdt || '').replace(/\D/g, '');
+      const typedLower = typedCust.toLowerCase();
+      const hiddenLower = hiddenCust.toLowerCase();
+      return (hiddenLower && (cName === hiddenLower || hiddenLower.includes(cName))) ||
+             cName === typedLower || typedLower.includes(cName) ||
+             (cleanPhone && cPhone && cleanPhone === cPhone);
+    });
+
+    if (!matchedCust || !typedCust) {
+      playBeepSound();
+      if (custInput) {
+        custInput.classList.add('is-invalid');
+        custInput.focus();
+      }
+      Swal.fire({
+        icon: 'warning',
+        title: 'Chưa chọn Khách Hàng',
+        html: `Khách hàng "<strong>${escapeHtml(typedCust || 'Chưa nhập')}</strong>" chưa có trong Danh mục hoặc để trống.<br><br><span class="text-muted small">Quy chuẩn hệ thống: Bắt buộc phải chọn Khách hàng hợp lệ từ <b>Danh Mục Hệ Thống</b> trước khi chọn serial xuất kho.</span>`,
+        confirmButtonText: 'Đã hiểu'
+      });
+      return;
+    }
+
+    if (custInput) custInput.classList.remove('is-invalid');
+
     // Hỗ trợ quét hoặc dán nhiều mã cùng lúc (ngăn cách bởi xuống dòng, dấu phẩy, chấm phẩy)
     const rawTokens = text.split(/[\r\n,;]+/).map(s => s.trim()).filter(Boolean);
     if (rawTokens.length === 0) return;

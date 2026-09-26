@@ -285,11 +285,67 @@
   document.getElementById('nhap-serial-input').addEventListener('input', updateNhapSerialCounter);
 
   function addModelToDraftList() {
+    // 1. BẮT BUỘC PHẢI CÓ NHÀ CUNG CẤP HỢP LỆ (FAIL-FAST)
+    const nccInputEl = document.getElementById('nhap-ncc-input');
+    const nccHiddenEl = document.getElementById('nhap-ncc');
+    const typedNcc = (nccInputEl?.value || '').trim();
+    const hiddenNcc = (nccHiddenEl?.value || '').trim();
+
+    const suppliers = (typeof INITIAL_SUPPLIERS !== 'undefined' ? INITIAL_SUPPLIERS : []).filter(s => s.active !== false);
+    const matchedNcc = suppliers.find(s => {
+      const tt = (s.tenTat || '').toLowerCase();
+      const td = (s.tenDayDu || '').toLowerCase();
+      const combined = `${tt} - ${td}`.toLowerCase();
+      return (hiddenNcc && (tt === hiddenNcc.toLowerCase() || td === hiddenNcc.toLowerCase())) ||
+             tt === typedNcc.toLowerCase() || td === typedNcc.toLowerCase() || combined === typedNcc.toLowerCase();
+    });
+
+    if (!matchedNcc || !typedNcc) {
+      playBeepSound();
+      if (nccInputEl) {
+        nccInputEl.classList.add('is-invalid');
+        nccInputEl.focus();
+      }
+      Swal.fire({
+        icon: 'warning',
+        title: 'Chưa chọn Nhà Cung Cấp',
+        html: `Nhà Cung Cấp "<strong>${escapeHtml(typedNcc || 'Chưa nhập')}</strong>" chưa có trong Danh mục hoặc để trống.<br><br><span class="text-muted small">Quy chuẩn hệ thống: Bắt buộc phải chọn NCC hợp lệ từ <b>Danh Mục Hệ Thống</b> trước khi thêm thiết bị vào Draft.</span>`,
+        confirmButtonText: 'Đã hiểu'
+      });
+      return;
+    }
+
+    // Đồng bộ chuẩn giá trị hidden và input
+    if (nccHiddenEl) nccHiddenEl.value = matchedNcc.tenTat;
+    if (nccInputEl) {
+      nccInputEl.value = matchedNcc.tenDayDu ? `${matchedNcc.tenTat} - ${matchedNcc.tenDayDu}` : matchedNcc.tenTat;
+      nccInputEl.classList.remove('is-invalid');
+    }
+
+    // 2. BẮT BUỘC PHẢI CHỌN KHO NHẬP (FAIL-FAST)
+    const khoEl = document.getElementById('nhap-kho');
+    const kho = (khoEl?.value || '').trim();
+    if (!kho) {
+      playBeepSound();
+      if (khoEl) {
+        khoEl.classList.add('is-invalid');
+        khoEl.focus();
+      }
+      Swal.fire({
+        icon: 'warning',
+        title: 'Chưa chọn Kho nhập',
+        text: 'Vui lòng chọn Kho nhận hàng hợp lệ trước khi đưa máy vào danh sách Draft!',
+        confirmButtonText: 'Đã hiểu'
+      });
+      return;
+    }
+    if (khoEl) khoEl.classList.remove('is-invalid');
+
     const modelHiddenVal = (document.getElementById('nhap-select-model')?.value || '').trim();
     const modelInputVal = (document.getElementById('nhap-model-input')?.value || '').trim();
     const targetModel = modelHiddenVal || modelInputVal;
 
-    // BẮT BUỘC MODEL PHẢI CÓ TRONG DANH MỤC INITIAL_PRODUCTS
+    // 3. BẮT BUỘC MODEL PHẢI CÓ TRONG DANH MỤC INITIAL_PRODUCTS
     const prod = (typeof INITIAL_PRODUCTS !== 'undefined' ? INITIAL_PRODUCTS : []).find(p => 
       p.model.toLowerCase() === targetModel.toLowerCase() ||
       p.ten.toLowerCase() === targetModel.toLowerCase()
@@ -307,7 +363,6 @@
     }
 
     const model = prod.model; // Chuẩn hóa đúng mã model chính thức từ danh mục
-    const kho = document.getElementById('nhap-kho').value;
     const loaiHang = document.getElementById('nhap-item-loai-hang')?.value || document.getElementById('nhap-loai-hang')?.value || 'Chính Hãng';
     const text = document.getElementById('nhap-serial-input').value;
     const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
@@ -516,7 +571,7 @@
       Swal.fire({
         icon: 'error',
         title: 'CÓ MODEL CHƯA KHAI BÁO!',
-        html: `Thiết bị mang Model <strong>"${escapeHtml(invalidItem.model)}"</strong> chưa có trong danh mục sản phẩm!<br><br>Vui lòng bấm nút <strong>"+ Thêm Model mới"</strong> để khai báo trước khi xác nhận nhập kho.`
+        html: `Thiết bị mang Model <strong>"${escapeHtml(invalidItem.model)}"</strong> chưa có trong danh mục sản phẩm!<br><br>Vui lòng khai báo Model tại tab <strong>Danh Mục Hệ Thống</strong> trước khi xác nhận nhập kho.`
       });
       return;
     }
@@ -817,7 +872,55 @@
   function applyExcelParsedToDraft(isDirectConfirm) {
     if (EXCEL_PARSED_ITEMS.length === 0) return;
 
-    const kho = document.getElementById('nhap-kho').value;
+    // 1. KIỂM TRA NHÀ CUNG CẤP HỢP LỆ (FAIL-FAST)
+    const nccInputEl = document.getElementById('nhap-ncc-input');
+    const nccHiddenEl = document.getElementById('nhap-ncc');
+    const typedNcc = (nccInputEl?.value || '').trim();
+    const hiddenNcc = (nccHiddenEl?.value || '').trim();
+
+    const suppliers = (typeof INITIAL_SUPPLIERS !== 'undefined' ? INITIAL_SUPPLIERS : []).filter(s => s.active !== false);
+    const matchedNcc = suppliers.find(s => {
+      const tt = (s.tenTat || '').toLowerCase();
+      const td = (s.tenDayDu || '').toLowerCase();
+      const combined = `${tt} - ${td}`.toLowerCase();
+      return (hiddenNcc && (tt === hiddenNcc.toLowerCase() || td === hiddenNcc.toLowerCase())) ||
+             tt === typedNcc.toLowerCase() || td === typedNcc.toLowerCase() || combined === typedNcc.toLowerCase();
+    });
+
+    if (!matchedNcc || !typedNcc) {
+      playBeepSound();
+      if (nccInputEl) {
+        nccInputEl.classList.add('is-invalid');
+        nccInputEl.focus();
+      }
+      Swal.fire({
+        icon: 'warning',
+        title: 'Chưa chọn Nhà Cung Cấp',
+        html: `Nhà Cung Cấp "<strong>${escapeHtml(typedNcc || 'Chưa nhập')}</strong>" chưa có trong Danh mục hoặc để trống.<br><br><span class="text-muted small">Quy chuẩn hệ thống: Bắt buộc phải chọn NCC hợp lệ từ <b>Danh Mục Hệ Thống</b> trước khi thêm thiết bị vào Draft.</span>`,
+        confirmButtonText: 'Đã hiểu'
+      });
+      return;
+    }
+
+    // 2. KIỂM TRA KHO NHẬP (FAIL-FAST)
+    const khoEl = document.getElementById('nhap-kho');
+    const kho = (khoEl?.value || '').trim();
+    if (!kho) {
+      playBeepSound();
+      if (khoEl) {
+        khoEl.classList.add('is-invalid');
+        khoEl.focus();
+      }
+      Swal.fire({
+        icon: 'warning',
+        title: 'Chưa chọn Kho nhập',
+        text: 'Vui lòng chọn Kho nhận hàng hợp lệ trước khi đưa máy vào danh sách Draft!',
+        confirmButtonText: 'Đã hiểu'
+      });
+      return;
+    }
+    if (khoEl) khoEl.classList.remove('is-invalid');
+
     const modalEl = document.getElementById('previewExcelNhapModal');
     const modal = bootstrap.Modal.getInstance(modalEl);
     if (modal) modal.hide();
