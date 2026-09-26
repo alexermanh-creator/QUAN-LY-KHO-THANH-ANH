@@ -715,6 +715,7 @@
   }
 
   let IS_PROCESSING_XUAT = false;
+  let CURRENT_XUAT_REQUEST_ID = null;
 
   function executeConfirmXuatVoucher() {
     if (IS_PROCESSING_XUAT) return;
@@ -722,6 +723,10 @@
     if (!CURRENT_DRAFT_XUAT_ITEMS || CURRENT_DRAFT_XUAT_ITEMS.length === 0) {
       Swal.fire('Chưa có thiết bị', 'Vui lòng chọn ít nhất một máy để xuất kho!', 'warning');
       return;
+    }
+
+    if (!CURRENT_XUAT_REQUEST_ID) {
+      CURRENT_XUAT_REQUEST_ID = 'TX-XK-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7);
     }
 
     try {
@@ -859,6 +864,7 @@
 
       const itemCount = CURRENT_DRAFT_XUAT_ITEMS.length;
       CURRENT_DRAFT_XUAT_ITEMS = [];
+      CURRENT_XUAT_REQUEST_ID = null;
       renderDraftXuatTable();
 
       // Reset các ô giấy tờ
@@ -926,6 +932,7 @@
             });
           })
           .executeXuatKho({
+            requestId: CURRENT_XUAT_REQUEST_ID,
             maPhieu: maPhieu,
             tenKhach: khach,
             sdtKhach: sdt,

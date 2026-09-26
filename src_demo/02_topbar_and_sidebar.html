@@ -173,8 +173,14 @@
         </div>
       </div>
 
-      <!-- 3 NÚT THAO TÁC TOPBAR: QUẢN LÝ, QUÉT SN, KHO MOBILE -->
+      <!-- 4 NÚT THAO TÁC TOPBAR: ĐỒNG BỘ DỮ LIỆU, QUẢN LÝ, QUÉT SN, KHO MOBILE -->
       <div class="d-flex align-items-center gap-2">
+        <!-- 0. NÚT ĐỒNG BỘ THỦ CÔNG (KHÔNG RELOAD TRANG) -->
+        <button id="btn-manual-sync" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 rounded-pill px-2 py-1 shadow-sm" onclick="handleManualSyncClick()" title="Cập nhật dữ liệu tức thì từ Google Sheets (không reload trang)">
+          <i class="fa-solid fa-arrows-rotate" id="icon-manual-sync"></i>
+          <span class="d-none d-md-inline" style="font-size: 0.8rem; font-weight: 500;">Cập nhật</span>
+        </button>
+
         <!-- 1. TÀI KHOẢN NGƯỜI ĐĂNG NHẬP (HIỂN THỊ ĐÚNG TÊN & VAI TRÒ) -->
         <div class="dropdown">
           <button class="btn-topbar-role dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown" id="roleDropdownBtn" title="Tài khoản đang đăng nhập">

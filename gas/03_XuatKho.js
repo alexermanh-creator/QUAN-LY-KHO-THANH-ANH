@@ -191,23 +191,26 @@ function executeXuatKho(data) {
         itemExpStr = Utilities.formatDate(finalExp, "GMT+7", "dd/MM/yyyy");
       }
 
-      // Cập nhật Cột 6 (Kho xuất nếu chỉ định mới)
-      if (item.kho) {
-        tbSheet.getRange(rowNum, 6).setValue(item.kho);
-      }
-
-      // Cập nhật Cột 10 đến 17
-      const rowPayload = [
-        "Đã xuất",         // Cột 10: Trạng thái
-        ngayXuatFormat,     // Cột 11: Ngày xuất
-        data.maPhieu,       // Cột 12: Mã phiếu xuất
-        cleanCustomerName,  // Cột 13: Tên khách
-        safePhoneCell,      // Cột 14: SĐT khách
-        item.soThangBh,     // Cột 15: Số tháng BH
-        itemExpStr,         // Cột 16: Hạn BH
-        item.ghiChu || data.ghiChu || '' // Cột 17: Ghi chú
+      // TỐI ƯU HÓA: Cập nhật Cột 6 đến 17 trong 1 lệnh setValues duy nhất (giảm 50% số lần gọi Sheets API)
+      const currentKho = tableData[item.idx][5] || 'Kho VP';
+      const col7 = tableData[item.idx][6]; // Cột 7: Ngày nhập (giữ nguyên)
+      const col8 = tableData[item.idx][7]; // Cột 8: Mã phiếu nhập (giữ nguyên)
+      const col9 = tableData[item.idx][8]; // Cột 9: Nhà cung cấp (giữ nguyên)
+      const row12Cols = [
+        item.kho || currentKho,             // Cột 6: Kho xuất
+        col7,                               // Cột 7: Giữ nguyên
+        col8,                               // Cột 8: Giữ nguyên
+        col9,                               // Cột 9: Giữ nguyên
+        "Đã xuất",                          // Cột 10: Trạng thái
+        ngayXuatFormat,                     // Cột 11: Ngày xuất
+        data.maPhieu,                       // Cột 12: Mã phiếu xuất
+        cleanCustomerName,                  // Cột 13: Tên khách
+        safePhoneCell,                      // Cột 14: SĐT khách
+        item.soThangBh,                     // Cột 15: Số tháng BH
+        itemExpStr,                         // Cột 16: Hạn BH
+        item.ghiChu || data.ghiChu || ''    // Cột 17: Ghi chú
       ];
-      tbSheet.getRange(rowNum, 10, 1, 8).setValues([rowPayload]);
+      tbSheet.getRange(rowNum, 6, 1, 12).setValues([row12Cols]);
     });
 
     // 4. Ghi nhật ký LICH_SU_XUAT

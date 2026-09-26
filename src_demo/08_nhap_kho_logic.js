@@ -4,6 +4,7 @@
 
   let CURRENT_DRAFT_NHAP_ITEMS = [];
   let EXCEL_PARSED_ITEMS = [];
+  let CURRENT_NHAP_REQUEST_ID = null;
 
   function setupNhapKhoForm() {
     // 1. Điền thông tin NCC: Để trắng 100% theo chuẩn hệ thống
@@ -563,12 +564,17 @@
     }).then(r => {
       if (r.isConfirmed) {
         CURRENT_DRAFT_NHAP_ITEMS = [];
+        CURRENT_NHAP_REQUEST_ID = null;
         renderDraftNhapTable();
       }
     });
   }
 
+  let IS_PROCESSING_NHAP = false;
+
   function saveDraftNhapVoucher(isConfirmed) {
+    if (IS_PROCESSING_NHAP) return;
+
     if (typeof window !== 'undefined' && window.CURRENT_DRAFT_NHAP_ITEMS && window.CURRENT_DRAFT_NHAP_ITEMS.length > 0) {
       CURRENT_DRAFT_NHAP_ITEMS = window.CURRENT_DRAFT_NHAP_ITEMS;
     }
@@ -653,119 +659,186 @@
       ]
     };
 
-    VOUCHERS_DB.nhap.unshift(voucherRecord);
-
     if (isConfirmed) {
-      CURRENT_DRAFT_NHAP_ITEMS.forEach(item => {
-        const prod = INITIAL_PRODUCTS.find(p => p.model === item.model);
-        const itemLoaiHang = item.loaiHang || generalLoaiHang;
+      // KHÓA NÚT BẤM CHỐNG DOUBLE CLICK
+      IS_PROCESSING_NHAP = true;
+      const btnConfirm = document.getElementById('btn-confirm-nhapkho') || document.querySelector('button[onclick*="saveDraftNhapVoucher(true)"]');
+      const originalBtnText = btnConfirm ? btnConfirm.innerHTML : '';
+      if (btnConfirm) {
+        btnConfirm.disabled = true;
+        btnConfirm.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Đang xác nhận lên máy chủ...';
+      }
 
-        // XÓA BẢN GHI CŨ NẾU LÀ TÁI NHẬP TỪ PHIẾU BỊ HỦY VÀ KẾ THỪA TIMELINE
-        const oldIndex = SERIAL_DB.findIndex(s => s.serial.toLowerCase() === item.serial.toLowerCase());
-        let oldTimeline = [];
-        if (oldIndex !== -1) {
-          oldTimeline = SERIAL_DB[oldIndex].timeline || [];
-          SERIAL_DB.splice(oldIndex, 1);
+      function unlockNhapButton() {
+        IS_PROCESSING_NHAP = false;
+        if (btnConfirm) {
+          btnConfirm.disabled = false;
+          btnConfirm.innerHTML = originalBtnText || '<i class="fa-solid fa-check-double me-1"></i> Xác Nhận Nhập Kho';
         }
+      }
 
-        SERIAL_DB.unshift({
-          serial: item.serial,
-          internalId: item.internalId,
-          model: item.model,
-          tenHang: item.tenHang,
-          nhom: item.nhom,
-          loaiHang: itemLoaiHang,
-          condition: itemLoaiHang,
-          kho: item.kho,
-          ncc: ncc,
-          ngayNhap: ngay,
-          maPhieuNhap: maPhieu,
-          status: 'IN_STOCK',
-          ngayXuat: '',
-          maPhieuXuat: '',
-          khachHang: '',
-          sdtKhach: '',
-          soThangBh: prod ? prod.defaultBh : 12,
-          ngayHetHanBh: '',
-          ghiChu: ghiChu,
-          customFields: {},
-          timeline: [
-            { date: nowStr, user: CURRENT_USER_NAME, action: 'Nhập kho', note: `Nhập kho theo phiếu ${maPhieu} (${itemLoaiHang}) từ NCC ${ncc}` },
-            ...oldTimeline
-          ]
-        });
+      // TẠO HOẶC TÁI SỬ DỤNG REQUEST ID DUY NHẤT (IDEMPOTENCY KEY)
+      if (!CURRENT_NHAP_REQUEST_ID) {
+        CURRENT_NHAP_REQUEST_ID = 'TX-NK-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6);
+      }
+      const requestId = CURRENT_NHAP_REQUEST_ID;
+
+      const itemsByModel = {};
+      CURRENT_DRAFT_NHAP_ITEMS.forEach(it => {
+        if (!itemsByModel[it.model]) {
+          itemsByModel[it.model] = {
+            model: it.model,
+            tenHang: it.tenHang || it.model,
+            nhomHang: it.nhom || 'Khác',
+            serials: []
+          };
+        }
+        itemsByModel[it.model].serials.push(it.serial);
       });
 
-      recordAuditLog('XÁC NHẬN NHẬP KHO', `Phiếu ${maPhieu} (${CURRENT_DRAFT_NHAP_ITEMS.length} máy - ${generalLoaiHang})`, 'DRAFT', 'CONFIRMED', `Nhập kho từ ${ncc}`, [], 'Nhập kho', '', maPhieu);
-      
-      // 1. Lưu trữ bền vững vào localStorage để không bị mất khi F5
-      try {
-        if (typeof localStorage !== 'undefined') {
-          localStorage.setItem('THANH_AN_SERIAL_DB', JSON.stringify(SERIAL_DB.slice(0, 2000)));
-          localStorage.setItem('THANH_AN_VOUCHERS_DB', JSON.stringify(VOUCHERS_DB));
-        }
-      } catch(e) {}
+      const payload = {
+        requestId: requestId,
+        maPhieu: maPhieu,
+        ncc: ncc,
+        kho: kho,
+        loaiHang: generalLoaiHang,
+        ngay: ngay,
+        ngayNhap: ngay,
+        ghiChu: ghiChu,
+        items: Object.values(itemsByModel)
+      };
 
-      // 2. Nếu đang chạy trên Google Apps Script thật, đồng bộ xuống Google Sheet
+      // HÀM CHỈ CHẠY KHI BACKEND GOOGLE SHEETS THỰC SỰ XÁC NHẬN THÀNH CÔNG
+      function finalizeNhapKhoSuccess(serverRes) {
+        // 1. Thêm vào VOUCHERS_DB
+        VOUCHERS_DB.nhap.unshift(voucherRecord);
+
+        // 2. Thêm vào SERIAL_DB
+        CURRENT_DRAFT_NHAP_ITEMS.forEach(item => {
+          const prod = INITIAL_PRODUCTS.find(p => p.model === item.model);
+          const itemLoaiHang = item.loaiHang || generalLoaiHang;
+
+          const oldIndex = SERIAL_DB.findIndex(s => s.serial.toLowerCase() === item.serial.toLowerCase());
+          let oldTimeline = [];
+          if (oldIndex !== -1) {
+            oldTimeline = SERIAL_DB[oldIndex].timeline || [];
+            SERIAL_DB.splice(oldIndex, 1);
+          }
+
+          SERIAL_DB.unshift({
+            serial: item.serial,
+            internalId: item.internalId,
+            model: item.model,
+            tenHang: item.tenHang,
+            nhom: item.nhom,
+            loaiHang: itemLoaiHang,
+            condition: itemLoaiHang,
+            kho: item.kho,
+            ncc: ncc,
+            ngayNhap: ngay,
+            maPhieuNhap: maPhieu,
+            status: 'IN_STOCK',
+            ngayXuat: '',
+            maPhieuXuat: '',
+            khachHang: '',
+            sdtKhach: '',
+            soThangBh: prod ? prod.defaultBh : 12,
+            ngayHetHanBh: '',
+            ghiChu: ghiChu,
+            customFields: {},
+            timeline: [
+              { date: nowStr, user: CURRENT_USER_NAME, action: 'Nhập kho', note: `Nhập kho theo phiếu ${maPhieu} (${itemLoaiHang}) từ NCC ${ncc}` },
+              ...oldTimeline
+            ]
+          });
+        });
+
+        recordAuditLog('XÁC NHẬN NHẬP KHO', `Phiếu ${maPhieu} (${CURRENT_DRAFT_NHAP_ITEMS.length} máy - ${generalLoaiHang})`, 'DRAFT', 'CONFIRMED', `Nhập kho từ ${ncc}`, [], 'Nhập kho', '', maPhieu);
+
+        // 3. Lưu trữ an toàn vào localStorage
+        try {
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('THANH_AN_SERIAL_DB', JSON.stringify(SERIAL_DB.slice(0, 2000)));
+            localStorage.setItem('THANH_AN_VOUCHERS_DB', JSON.stringify(VOUCHERS_DB));
+          }
+        } catch(e) {}
+
+        // 4. DỌN SẠCH GIỎ HÀNG CHỈ SAU KHI THÀNH CÔNG THỰC TẾ
+        const importedCount = CURRENT_DRAFT_NHAP_ITEMS.length;
+        CURRENT_DRAFT_NHAP_ITEMS = [];
+        CURRENT_NHAP_REQUEST_ID = null;
+        if (typeof window !== 'undefined') window.CURRENT_DRAFT_NHAP_ITEMS = [];
+        const gcEl = document.getElementById('nhap-ghichu');
+        if (gcEl) gcEl.value = '';
+        renderDraftNhapTable();
+
+        // 5. Đánh dấu dirty và cập nhật Dashboard & Tồn Kho
+        if (typeof markModulesDirty === 'function') {
+          markModulesDirty(['Dashboard', 'TonKho', 'LichSu', 'Serial360']);
+        }
+        if (typeof renderDashboard === 'function') renderDashboard();
+        if (typeof renderTonKho === 'function') renderTonKho();
+
+        unlockNhapButton();
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Nhập kho thành công!',
+          html: `Phiếu nhập <strong>${maPhieu}</strong> đã được ghi nhận vào hệ thống Google Sheets.<br>Số lượng: <strong>${importedCount} thiết bị</strong>.<br>Trạng thái: <span class="badge bg-success">CONFIRMED</span>`
+        });
+      }
+
+      // XỬ LÝ LỖI TỪ BACKEND: TUYỆT ĐỐI KHÔNG XÓA DỮ LIỆU ĐANG NHẬP
+      function handleNhapKhoError(err) {
+        unlockNhapButton();
+        console.error('[Lỗi Nhập Kho Từ Máy Chủ]', err);
+        Swal.fire({
+          icon: 'error',
+          title: 'Lỗi Ghi Nhận Nhập Kho!',
+          html: `
+            <div class="text-danger mb-2"><b>Máy chủ Google Sheets từ chối ghi nhận:</b></div>
+            <div class="p-2 bg-danger-subtle text-danger rounded border border-danger-subtle font-monospace small text-start">
+              ${(err && err.message) ? err.message : String(err)}
+            </div>
+            <div class="mt-3 text-muted small text-start">
+              <i class="fa-solid fa-triangle-exclamation text-warning me-1"></i> 
+              Giỏ hàng nhập kho của bạn <b>vẫn được giữ nguyên</b>. Vui lòng kiểm tra lại trạng thái thiết bị hoặc thử lưu lại.
+            </div>
+          `,
+          confirmButtonText: 'Đã hiểu'
+        });
+      }
+
+      // GỌI BACKEND GOOGLE APPS SCRIPT VÀ CHỜ PHẢN HỒI
       if (typeof WarehouseAPI !== 'undefined' && WarehouseAPI.isAppsScriptEnvironment()) {
         try {
-          const itemsByModel = {};
-          CURRENT_DRAFT_NHAP_ITEMS.forEach(it => {
-            if (!itemsByModel[it.model]) {
-              itemsByModel[it.model] = {
-                model: it.model,
-                tenHang: it.tenHang || it.model,
-                nhomHang: it.nhom || 'Khác',
-                serials: []
-              };
-            }
-            itemsByModel[it.model].serials.push(it.serial);
-          });
-
-          const payload = {
-            maPhieu: maPhieu,
-            ncc: ncc,
-            kho: kho,
-            loaiHang: generalLoaiHang,
-            ngay: ngay,
-            ngayNhap: ngay,
-            ghiChu: ghiChu,
-            items: Object.values(itemsByModel)
-          };
-
           google.script.run
-            .withSuccessHandler(res => console.log('Đã lưu Google Sheet:', res))
-            .withFailureHandler(err => console.warn('Lỗi lưu Google Sheet:', err))
+            .withSuccessHandler(res => finalizeNhapKhoSuccess(res))
+            .withFailureHandler(err => handleNhapKhoError(err))
             .executeNhapKhoMulti(payload);
-        } catch(err) {
-          console.warn('Lỗi đồng bộ Backend Apps Script:', err);
+        } catch(callErr) {
+          handleNhapKhoError(callErr);
         }
+      } else {
+        // Môi trường demo / offline
+        finalizeNhapKhoSuccess({ success: true, message: 'Đã lưu local (môi trường Demo)' });
       }
 
-      if (typeof markModulesDirty === 'function') {
-        markModulesDirty(['Dashboard', 'TonKho', 'LichSu', 'Serial360']);
-      }
-
-      // 3. Kích hoạt cập nhật số liệu Dashboard và Tồn Kho ngay lập tức
-      if (typeof renderDashboard === 'function') {
-        renderDashboard();
-      }
-      if (typeof renderTonKho === 'function') {
-        renderTonKho();
-      }
-      
-      Swal.fire({
-        icon: 'success',
-        title: 'Nhập kho thành công!',
-        html: `Phiếu nhập <strong>${maPhieu}</strong> đã được ghi nhận vào kho thật.<br>Số lượng: <strong>${CURRENT_DRAFT_NHAP_ITEMS.length} thiết bị</strong>.<br>Trạng thái: <span class="badge bg-success">CONFIRMED</span>`
-      });
     } else {
+      // Lưu DRAFT
+      VOUCHERS_DB.nhap.unshift(voucherRecord);
       recordAuditLog('LƯU NHÁP PHIẾU NHẬP', `Phiếu ${maPhieu} (${CURRENT_DRAFT_NHAP_ITEMS.length} máy)`, 'None', 'DRAFT', 'Lưu nháp chờ hoàn tất', [], 'Nhập kho', '', maPhieu);
       try {
         if (typeof localStorage !== 'undefined') {
           localStorage.setItem('THANH_AN_VOUCHERS_DB', JSON.stringify(VOUCHERS_DB));
         }
       } catch(e) {}
+
+      CURRENT_DRAFT_NHAP_ITEMS = [];
+      if (typeof window !== 'undefined') window.CURRENT_DRAFT_NHAP_ITEMS = [];
+      const gcEl = document.getElementById('nhap-ghichu');
+      if (gcEl) gcEl.value = '';
+      renderDraftNhapTable();
 
       if (typeof markModulesDirty === 'function') {
         markModulesDirty(['Dashboard', 'LichSu']);
@@ -780,10 +853,6 @@
         html: `Phiếu <strong>${maPhieu}</strong> đã được lưu ở trạng thái nháp.<br>Chưa làm tăng tồn kho. Bạn có thể mở lại để tiếp tục chỉnh sửa.`
       });
     }
-
-    CURRENT_DRAFT_NHAP_ITEMS = [];
-    document.getElementById('nhap-ghichu').value = '';
-    renderDraftNhapTable();
   }
 
   function fillSampleExcelPaste() {

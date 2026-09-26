@@ -282,6 +282,17 @@ function executeNhapKhoMulti(data) {
       }
     } catch(err){}
 
+    // 6. Đánh dấu thời gian thay đổi mới nhất để các máy khác tự động Smart Sync
+    try {
+      if (typeof markDataChanged === 'function') {
+        markDataChanged();
+      } else {
+        const nowTs = String(new Date().getTime());
+        CacheService.getScriptCache().put("LAST_DATA_CHANGE_TS", nowTs, 21600);
+        PropertiesService.getScriptProperties().setProperty("LAST_DATA_CHANGE_TS", nowTs);
+      }
+    } catch(e) {}
+
     // Đánh dấu DONE SAU KHI ghi dữ liệu hoàn tất
     if (requestId) {
       try {

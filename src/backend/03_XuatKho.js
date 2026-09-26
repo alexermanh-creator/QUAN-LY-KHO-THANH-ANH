@@ -86,36 +86,80 @@ function executeXuatKho(data) {
       }
     }
 
-    const cleanSerials = data.serials.map(s => String(s).trim().toUpperCase());
+    // Hỗ trợ cả 2 dạng dữ liệu: data.items (chi tiết từng món) hoặc data.serials (danh sách serial phẳng)
+    let exportItems = [];
+    if (data.items && Array.isArray(data.items) && data.items.length > 0) {
+      exportItems = data.items.map(it => ({
+        serial: String(it.serial || '').trim().toUpperCase(),
+        internalId: String(it.internalId || it.maNoiBo || '').trim().toUpperCase(),
+        soThangBh: parseInt(String(it.soThangBh || data.soThangBh || '').replace(/\D/g, ''), 10) || 0,
+        kho: String(it.kho || data.kho || '').trim(),
+        ghiChu: String(it.ghiChu || data.ghiChu || '').trim()
+      })).filter(it => it.serial || it.internalId);
+    } else if (data.serials && Array.isArray(data.serials)) {
+      const defaultMonths = parseInt(String(data.soThangBh || '').replace(/\D/g, ''), 10) || 0;
+      exportItems = data.serials.map(s => ({
+        serial: String(s).trim().toUpperCase(),
+        internalId: '',
+        soThangBh: defaultMonths,
+        kho: String(data.kho || '').trim(),
+        ghiChu: String(data.ghiChu || '').trim()
+      })).filter(it => it.serial);
+    }
+
+    if (exportItems.length === 0) {
+      throw new Error("Chưa có máy nào được chọn để xuất!");
+    }
+
     const totalRows = tbSheet.getLastRow() - 1;
     if (totalRows <= 0) throw new Error("Kho hàng hiện đang trống!");
 
-    // Đọc cột Serial (1), Model (2), Trạng thái (10) để map dòng (Tiết kiệm bộ nhớ gấp nhiều lần)
-    const serialCols = tbSheet.getRange(2, 1, totalRows, 2).getValues();
-    const statusCol = tbSheet.getRange(2, 10, totalRows, 1).getValues();
+    // Đọc cột Serial (1), Model (2), Kho (6), Trạng thái (10), Mã Nội Bộ (18) để map dòng
+    const numCols = Math.max(18, tbSheet.getLastColumn());
+    const tableData = tbSheet.getRange(2, 1, totalRows, numCols).getValues();
 
-    // Map serial -> index
+    // Map serial -> index và internalId -> index
     const serialIndexMap = new Map();
+    const internalIdMap = new Map();
     for (let i = 0; i < totalRows; i++) {
-      const sn = String(serialCols[i][0]).trim().toUpperCase();
+      const sn = String(tableData[i][0] || '').trim().toUpperCase();
+      const internal = String(tableData[i][17] || '').trim().toUpperCase();
       if (sn) serialIndexMap.set(sn, i);
+      if (internal) internalIdMap.set(internal, i);
     }
 
-    // 1. Kiểm tra điều kiện tồn kho thực tế
-    const targetIndices = [];
-    cleanSerials.forEach(sn => {
-      if (!serialIndexMap.has(sn)) {
-        throw new Error(`Không tìm thấy mã Serial [${sn}] trong kho dữ liệu!`);
+    // 1. Kiểm tra điều kiện tồn kho thực tế cho từng item
+    const targetItems = [];
+    exportItems.forEach(it => {
+      let idx = -1;
+      let matchedSn = it.serial;
+      if (matchedSn && serialIndexMap.has(matchedSn)) {
+        idx = serialIndexMap.get(matchedSn);
+      } else if (it.internalId && internalIdMap.has(it.internalId)) {
+        idx = internalIdMap.get(it.internalId);
+        matchedSn = String(tableData[idx][0] || '').trim().toUpperCase();
       }
-      const idx = serialIndexMap.get(sn);
-      const currentStatus = String(statusCol[idx][0]).trim();
+
+      if (idx === -1) {
+        throw new Error(`Không tìm thấy thiết bị với mã [${it.serial || it.internalId}] trong kho dữ liệu!`);
+      }
+
+      const currentStatus = String(tableData[idx][9] || '').trim();
       if (currentStatus !== "Tồn kho" && currentStatus !== "IN_STOCK") {
-        throw new Error(`Serial [${sn}] hiện không còn trong kho (Đã xuất hoặc ở trạng thái: ${currentStatus})!`);
+        throw new Error(`Thiết bị [${matchedSn}] hiện không còn trong kho (Đã xuất hoặc ở trạng thái: ${currentStatus})!`);
       }
-      targetIndices.push(idx);
+
+      targetItems.push({
+        idx: idx,
+        serial: matchedSn,
+        model: String(tableData[idx][1] || '').trim(),
+        soThangBh: it.soThangBh,
+        kho: it.kho || String(tableData[idx][5] || 'Kho VP').trim(),
+        ghiChu: it.ghiChu
+      });
     });
 
-    // 2. Tính ngày hết hạn bảo hành theo tháng lịch chuẩn xác (Q01)
+    // 2. Chuẩn hóa ngày xuất
     let ngayXuatDate;
     if (String(data.ngayXuat).includes('/')) {
       const p = String(data.ngayXuat).split('/');
@@ -126,53 +170,60 @@ function executeXuatKho(data) {
     } else {
       ngayXuatDate = new Date();
     }
-    const soThang = parseInt(String(data.soThangBh || '').replace(/\D/g, ''), 10) || 0;
-    
-    let ngayHetHanFormat = "Không BH";
-    if (soThang > 0) {
-      const expDate = new Date(ngayXuatDate.getTime());
-      const tMonth = expDate.getMonth() + soThang;
-      const tYear = expDate.getFullYear() + Math.floor(tMonth / 12);
-      const normMonth = ((tMonth % 12) + 12) % 12;
-      const maxDays = new Date(tYear, normMonth + 1, 0).getDate();
-      const tDay = Math.min(expDate.getDate(), maxDays);
-      const finalExp = new Date(tYear, normMonth, tDay);
-      ngayHetHanFormat = Utilities.formatDate(finalExp, "GMT+7", "dd/MM/yyyy");
-    }
-
     const ngayXuatFormat = Utilities.formatDate(ngayXuatDate, "GMT+7", "dd/MM/yyyy");
 
     const safePhone = data.sdtKhach ? (typeof formatPhoneNumberBackend === 'function' ? formatPhoneNumberBackend(data.sdtKhach) : String(data.sdtKhach).trim()) : '';
     const safePhoneCell = safePhone ? ("'" + safePhone) : '';
+    const cleanCustomerName = String(data.tenKhach || data.khachHang || 'Khách lẻ').trim();
 
-    // 3. SELECTIVE ROW UPDATES: Chỉ cập nhật đúng các dòng Serial bị ảnh hưởng
-    // Thay vì setValues(allTbData) ghi đè 170.000 cell, ta chỉ ghi 8 cell cho từng serial xuất
-    const updatedPayload = [
-      "Đã xuất",         // Cột 10: Trạng thái
-      ngayXuatFormat,     // Cột 11: Ngày xuất
-      data.maPhieu,       // Cột 12: Mã phiếu xuất
-      data.tenKhach,      // Cột 13: Tên khách
-      safePhoneCell,      // Cột 14: SĐT khách
-      soThang,            // Cột 15: Số tháng BH
-      ngayHetHanFormat,   // Cột 16: Hạn BH
-      data.ghiChu || ''   // Cột 17: Ghi chú
-    ];
+    // 3. SELECTIVE ROW UPDATES: Cập nhật từng dòng Serial xuất với bảo hành riêng
+    targetItems.forEach(item => {
+      const rowNum = item.idx + 2;
+      let itemExpStr = "Không BH";
+      if (item.soThangBh > 0) {
+        const expDate = new Date(ngayXuatDate.getTime());
+        const tMonth = expDate.getMonth() + item.soThangBh;
+        const tYear = expDate.getFullYear() + Math.floor(tMonth / 12);
+        const normMonth = ((tMonth % 12) + 12) % 12;
+        const maxDays = new Date(tYear, normMonth + 1, 0).getDate();
+        const tDay = Math.min(expDate.getDate(), maxDays);
+        const finalExp = new Date(tYear, normMonth, tDay);
+        itemExpStr = Utilities.formatDate(finalExp, "GMT+7", "dd/MM/yyyy");
+      }
 
-    // Nhóm các dòng liên tiếp nếu có để tối ưu lệnh write
-    targetIndices.forEach(idx => {
-      const rowNum = idx + 2;
-      tbSheet.getRange(rowNum, 10, 1, 8).setValues([updatedPayload]);
+      // TỐI ƯU HÓA: Cập nhật Cột 6 đến 17 trong 1 lệnh setValues duy nhất (giảm 50% số lần gọi Sheets API)
+      const currentKho = tableData[item.idx][5] || 'Kho VP';
+      const col7 = tableData[item.idx][6]; // Cột 7: Ngày nhập (giữ nguyên)
+      const col8 = tableData[item.idx][7]; // Cột 8: Mã phiếu nhập (giữ nguyên)
+      const col9 = tableData[item.idx][8]; // Cột 9: Nhà cung cấp (giữ nguyên)
+      const row12Cols = [
+        item.kho || currentKho,             // Cột 6: Kho xuất
+        col7,                               // Cột 7: Giữ nguyên
+        col8,                               // Cột 8: Giữ nguyên
+        col9,                               // Cột 9: Giữ nguyên
+        "Đã xuất",                          // Cột 10: Trạng thái
+        ngayXuatFormat,                     // Cột 11: Ngày xuất
+        data.maPhieu,                       // Cột 12: Mã phiếu xuất
+        cleanCustomerName,                  // Cột 13: Tên khách
+        safePhoneCell,                      // Cột 14: SĐT khách
+        item.soThangBh,                     // Cột 15: Số tháng BH
+        itemExpStr,                         // Cột 16: Hạn BH
+        item.ghiChu || data.ghiChu || ''    // Cột 17: Ghi chú
+      ];
+      tbSheet.getRange(rowNum, 6, 1, 12).setValues([row12Cols]);
     });
 
     // 4. Ghi nhật ký LICH_SU_XUAT
+    const allSnList = targetItems.map(t => t.serial);
     if (lsSheet) {
+      const bhSummary = targetItems.map(t => `${t.serial} (${t.soThangBh}T)`).join('; ');
       lsSheet.appendRow([
         data.maPhieu,
         ngayXuatFormat,
-        `${data.tenKhach} (${safePhone || 'N/A'})`,
-        cleanSerials.length,
-        cleanSerials.join(', '),
-        data.soThangBh,
+        `${cleanCustomerName} (${safePhone || 'N/A'})`,
+        targetItems.length,
+        allSnList.join(', '),
+        bhSummary,
         data.ghiChu || ''
       ]);
     }
@@ -184,36 +235,47 @@ function executeXuatKho(data) {
       iHeadSheet.appendRow([
         data.maPhieu,
         ngayXuatFormat,
-        data.tenKhach,
+        cleanCustomerName,
         safePhoneCell,
-        cleanSerials.length,
-        data.soThangBh,
+        targetItems.length,
+        data.soThangBh || 12,
         "CONFIRMED",
         data.ghiChu || '',
-        "Thủ Kho",
+        data.nguoiXuat || "Thủ Kho",
         new Date()
       ]);
-      const issueDetails = targetIndices.map((idx, i) => [
+      const issueDetails = targetItems.map((item, i) => [
         `${data.maPhieu}-${i+1}`,
         data.maPhieu,
-        serialCols[idx][1], // model
-        serialCols[idx][0], // serial
-        soThang,
-        ngayHetHanFormat,
-        data.ghiChu || '',
+        item.model,
+        item.serial,
+        item.soThangBh,
+        item.soThangBh > 0 ? `${item.soThangBh} tháng` : "Không BH",
+        item.ghiChu || data.ghiChu || '',
         new Date()
       ]);
       iDetailSheet.getRange(iDetailSheet.getLastRow() + 1, 1, issueDetails.length, 8).setValues(issueDetails);
     }
 
-    // Audit Log
+    // 6. Ghi vết kiểm toán NHAT_KY_HOAT_DONG
     try {
       let logSheet = ss.getSheetByName("NHAT_KY_HOAT_DONG");
       if (logSheet) {
         const timeStr = Utilities.formatDate(new Date(), "GMT+7", "dd/MM/yyyy HH:mm:ss");
-        logSheet.appendRow([timeStr, "Thủ Kho", "XUẤT KHO", data.maPhieu, `Xuất ${cleanSerials.length} máy cho ${data.tenKhach}`]);
+        logSheet.appendRow([timeStr, data.nguoiXuat || "Thủ Kho", "XUẤT KHO", data.maPhieu, `Xuất ${targetItems.length} máy cho ${cleanCustomerName}`]);
       }
     } catch(err){}
+
+    // 7. Đánh dấu thời gian thay đổi mới nhất để các máy khác tự động Smart Sync
+    try {
+      if (typeof markDataChanged === 'function') {
+        markDataChanged();
+      } else {
+        const nowTs = String(new Date().getTime());
+        CacheService.getScriptCache().put("LAST_DATA_CHANGE_TS", nowTs, 21600);
+        PropertiesService.getScriptProperties().setProperty("LAST_DATA_CHANGE_TS", nowTs);
+      }
+    } catch(e) {}
 
     // Đánh dấu DONE SAU KHI ghi dữ liệu hoàn tất
     if (requestId) {
@@ -222,7 +284,7 @@ function executeXuatKho(data) {
       } catch (e) {}
     }
 
-    return `Xuất kho thành công ${cleanSerials.length} thiết bị! Đã kích hoạt bảo hành đến ${ngayHetHanFormat}.`;
+    return `Xuất kho thành công ${targetItems.length} thiết bị cho khách hàng [${cleanCustomerName}]! Phiếu [${data.maPhieu}] đã được lưu an toàn.`;
   } catch (err) {
     if (data && (data.requestId || data.transactionId)) {
       try {

@@ -1594,6 +1594,11 @@ function saveVoucherEdit(payload) {
       detail: `Điều chỉnh thông tin phiếu${payload.removedSerials && payload.removedSerials.length > 0 ? ` (Hoàn trả ${payload.removedSerials.length} serial: ${payload.removedSerials.join(', ')})` : ''}. Lý do: ${reason}`
     });
 
+    // Đánh dấu dữ liệu đã thay đổi để các máy khác tự động Smart Sync
+    try {
+      if (typeof markDataChanged === 'function') markDataChanged();
+    } catch(e) {}
+
     return { success: true };
   } catch(err) {
     return { success: false, error: err.message };
@@ -1641,6 +1646,11 @@ function saveQuickEditSerial(payload) {
       target: payload.newSerial || payload.oldSerial,
       detail: `Điều chỉnh thông tin thiết bị. Lý do: ${payload.reason || 'Sửa nhanh'}`
     });
+
+    // Đánh dấu dữ liệu đã thay đổi để các máy khác tự động Smart Sync
+    try {
+      if (typeof markDataChanged === 'function') markDataChanged();
+    } catch(e) {}
 
     return { success: true };
   } catch(err) {
@@ -1979,17 +1989,41 @@ function getAllVouchersBackend() {
       });
     }
 
-    // Map serial -> { model, tenHang, kho } từ SERIAL_MASTER
+    // Map serial -> { model, tenHang, kho } từ SERIAL_MASTER và xuất danh sách serial đồng bộ
     const serialInfoMap = new Map();
+    const serialList = [];
     if (tbSheet && tbSheet.getLastRow() > 1) {
-      const tbData = tbSheet.getRange(2, 1, tbSheet.getLastRow() - 1, 6).getValues();
+      const numCols = Math.min(18, tbSheet.getLastColumn());
+      const tbData = tbSheet.getRange(2, 1, tbSheet.getLastRow() - 1, numCols).getValues();
       tbData.forEach(r => {
-        const sn = String(r[0] || '').trim().toUpperCase();
+        const rawSn = String(r[0] || '').trim();
+        const sn = rawSn.toUpperCase();
         if (sn) {
           serialInfoMap.set(sn, {
             model: String(r[1] || '').trim(),
             tenHang: String(r[2] || '').trim(),
             kho: String(r[5] || 'Kho VP').trim()
+          });
+
+          serialList.push({
+            serial: rawSn,
+            model: String(r[1] || '').trim(),
+            tenHang: String(r[2] || '').trim(),
+            nhomHang: String(r[3] || '').trim(),
+            loaiHang: String(r[4] || '').trim(),
+            kho: String(r[5] || 'Kho VP').trim(),
+            ncc: String(r[6] || '').trim(),
+            ngayNhap: r[7] instanceof Date ? Utilities.formatDate(r[7], "GMT+7", "dd/MM/yyyy") : String(r[7] || ''),
+            maPhieuNhap: String(r[8] || '').trim(),
+            status: (String(r[9] || '').trim() === 'Đã xuất' || String(r[9] || '').trim() === 'SOLD') ? 'SOLD' : 'IN_STOCK',
+            ngayXuat: r[10] instanceof Date ? Utilities.formatDate(r[10], "GMT+7", "dd/MM/yyyy") : String(r[10] || ''),
+            maPhieuXuat: String(r[11] || '').trim(),
+            khachHang: String(r[12] || '').trim(),
+            sdtKhach: (typeof formatPhoneNumberBackend === 'function') ? formatPhoneNumberBackend(r[13]) : String(r[13] || '').trim(),
+            soThangBh: String(r[14] || '').trim(),
+            ngayHetHanBh: r[15] instanceof Date ? Utilities.formatDate(r[15], "GMT+7", "dd/MM/yyyy") : String(r[15] || ''),
+            ghiChu: String(r[16] || '').trim(),
+            internalId: String(r[17] || '').trim()
           });
         }
       });
@@ -2111,7 +2145,8 @@ function getAllVouchersBackend() {
       success: true,
       timestamp: version.timestamp,
       xuat: xuatList,
-      nhap: nhapList
+      nhap: nhapList,
+      serials: serialList
     };
   } catch(err) {
     return { success: false, message: err.message, xuat: [], nhap: [] };

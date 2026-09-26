@@ -1158,6 +1158,34 @@
           });
         }
 
+        // 3B. Gộp thông tin chi tiết Serial từ Server (đồng bộ kho, model, trạng thái, bảo hành, ghi chú khi máy khác sửa)
+        if (Array.isArray(res.serials) && res.serials.length > 0) {
+          res.serials.forEach(sServer => {
+            const sn = String(sServer.serial || '').trim().toUpperCase();
+            if (!sn) return;
+            const found = SERIAL_DB.find(s => s.serial && s.serial.toUpperCase() === sn);
+            if (found) {
+              found.kho = sServer.kho || found.kho;
+              found.model = sServer.model || found.model;
+              found.tenHang = sServer.tenHang || found.tenHang;
+              found.loaiHang = sServer.loaiHang || found.loaiHang;
+              found.status = sServer.status || found.status;
+              found.soThangBh = sServer.soThangBh || found.soThangBh;
+              found.ngayHetHanBh = sServer.ngayHetHanBh || found.ngayHetHanBh;
+              if (sServer.ghiChu !== undefined) found.ghiChu = sServer.ghiChu;
+              if (sServer.internalId) found.internalId = sServer.internalId;
+              if (sServer.khachHang) found.khachHang = sServer.khachHang;
+              if (sServer.sdtKhach) found.sdtKhach = sServer.sdtKhach;
+              if (sServer.maPhieuXuat) found.maPhieuXuat = sServer.maPhieuXuat;
+              if (sServer.ngayXuat) found.ngayXuat = sServer.ngayXuat;
+              serialsUpdated = true;
+            } else {
+              SERIAL_DB.unshift(sServer);
+              serialsUpdated = true;
+            }
+          });
+        }
+
         if (serialsUpdated) {
           try {
             if (typeof localStorage !== 'undefined') {
@@ -1221,6 +1249,22 @@
     });
   }
   if (typeof window !== 'undefined') window.syncVouchersFromServer = syncVouchersFromServer;
+
+  // Xử lý nút bấm thủ công cập nhật dữ liệu trên Topbar (KHÔNG reload trang)
+  function handleManualSyncClick() {
+    const btn = document.getElementById('btn-manual-sync');
+    const icon = document.getElementById('icon-manual-sync');
+    if (btn) btn.disabled = true;
+    if (icon) icon.classList.add('fa-spin');
+
+    syncVouchersFromServer(false, (res) => {
+      setTimeout(() => {
+        if (btn) btn.disabled = false;
+        if (icon) icon.classList.remove('fa-spin');
+      }, 500);
+    });
+  }
+  if (typeof window !== 'undefined') window.handleManualSyncClick = handleManualSyncClick;
 
   // Heartbeat Auto-Sync: 10s kiểm tra 1 lần siêu nhẹ (<0.1s)
   let _AUTO_SYNC_HEARTBEAT_INTERVAL = null;
@@ -1521,7 +1565,8 @@
               .withSuccessHandler(function(res) {
                 if (res && res.success) {
                   Swal.fire({ icon: 'success', title: 'Thành công!', text: res.message || 'Đã nạp toàn bộ CSDL chuẩn hóa lên Google Sheets thành công!' }).then(() => {
-                    location.reload();
+                    if (typeof syncVouchersFromServer === 'function') syncVouchersFromServer(false);
+                    if (typeof switchTab === 'function') switchTab('Dashboard');
                   });
                 } else {
                   Swal.fire({ icon: 'error', title: 'Lỗi', text: (res && res.message) || 'Không thể nạp dữ liệu' });
