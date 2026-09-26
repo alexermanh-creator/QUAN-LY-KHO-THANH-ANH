@@ -23332,7 +23332,7 @@
     });
   }
 
-  // XÓA PHIẾU NHÁP DRAFT XUẤT KHO
+  // XÓA PHIẾU NHÁP DRAFT XUẤT KHO (SERVER-AUTHORITATIVE)
   function deleteDraftExportVoucher(maPhieu) {
     const v = VOUCHERS_DB.xuat.find(x => x.maPhieu === maPhieu);
     if (!v) return;
@@ -23343,7 +23343,7 @@
 
     Swal.fire({
       title: `Xóa phiếu nháp ${maPhieu}?`,
-      text: 'Phiếu dự thảo xuất kho này sẽ bị xóa hoàn toàn khỏi hệ thống.',
+      text: 'Phiếu dự thảo xuất kho này sẽ bị xóa hoàn toàn khỏi hệ thống Google Sheets.',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#dc2626',
@@ -23351,24 +23351,64 @@
       cancelButtonText: 'Quay lại'
     }).then(r => {
       if (r.isConfirmed) {
-        if (typeof WarehouseAPI !== 'undefined' && WarehouseAPI.deleteDraftVoucher) {
-          WarehouseAPI.deleteDraftVoucher(maPhieu);
-        }
-        VOUCHERS_DB.xuat = VOUCHERS_DB.xuat.filter(x => x.maPhieu !== maPhieu);
-        try {
-          if (typeof localStorage !== 'undefined') {
-            localStorage.setItem('THANH_AN_VOUCHERS_DB', JSON.stringify(VOUCHERS_DB));
+        // 1. Hiển thị loading & khóa tương tác
+        Swal.fire({
+          title: 'Đang xóa phiếu nháp...',
+          html: '<span class="text-muted small">Đang gửi yêu cầu xóa tới máy chủ Google Sheets...</span>',
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading();
           }
-        } catch(e) {}
-        recordAuditLog('XÓA PHIẾU NHÁP', `Phiếu xuất ${maPhieu}`, 'DRAFT', 'DELETED', 'Xóa phiếu xuất nháp trên server', [], 'Lịch sử phiếu', '', maPhieu);
-        if (typeof markModulesDirty === 'function') markModulesDirty(['Dashboard', 'LichSu']);
-        renderHistoryXuatTable();
-        Swal.fire('Đã xóa', `Đã xóa thành công phiếu nháp ${maPhieu}.`, 'success');
+        });
+
+        const performLocalDelete = () => {
+          VOUCHERS_DB.xuat = VOUCHERS_DB.xuat.filter(x => x.maPhieu !== maPhieu);
+          try {
+            if (typeof localStorage !== 'undefined') {
+              localStorage.setItem('THANH_AN_VOUCHERS_DB', JSON.stringify(VOUCHERS_DB));
+            }
+          } catch(e) {}
+          recordAuditLog('XÓA PHIẾU NHÁP', `Phiếu xuất ${maPhieu}`, 'DRAFT', 'DELETED', 'Xóa phiếu xuất nháp trên server thành công', [], 'Lịch sử phiếu', '', maPhieu);
+          if (typeof markModulesDirty === 'function') markModulesDirty(['Dashboard', 'LichSu']);
+          renderHistoryXuatTable();
+          Swal.fire('Đã xóa', `Đã xóa thành công phiếu nháp ${maPhieu} khỏi hệ thống.`, 'success');
+        };
+
+        const handleLocalFail = (errMsg) => {
+          Swal.fire({
+            icon: 'error',
+            title: 'Lỗi xóa phiếu nháp!',
+            html: `
+              <div class="text-start">
+                <p class="text-danger fw-semibold mb-2">Máy chủ Google Sheets từ chối xóa hoặc mất kết nối mạng:</p>
+                <div class="p-2 bg-danger-subtle text-danger rounded border border-danger-subtle font-monospace small mb-2">
+                  ${errMsg || 'Không nhận được phản hồi từ server'}
+                </div>
+                <div class="alert alert-warning small py-2 mb-0">
+                  <i class="fa-solid fa-shield-halved me-1"></i> <strong>Bảo vệ dữ liệu:</strong> Phiếu nháp <b>vẫn được giữ nguyên 100%</b> trên máy của bạn. Vui lòng kiểm tra lại mạng và thử lại.
+                </div>
+              </div>
+            `
+          });
+        };
+
+        if (typeof WarehouseAPI !== 'undefined' && WarehouseAPI.isAppsScriptEnvironment()) {
+          WarehouseAPI.deleteDraftVoucher(maPhieu, res => {
+            if (res && res.success) {
+              performLocalDelete();
+            } else {
+              handleLocalFail(res ? (res.error || res.message) : 'Máy chủ từ chối xóa!');
+            }
+          });
+        } else {
+          // Demo offline
+          performLocalDelete();
+        }
       }
     });
   }
 
-  // XÓA PHIẾU NHÁP DRAFT NHẬP KHO
+  // XÓA PHIẾU NHÁP DRAFT NHẬP KHO (SERVER-AUTHORITATIVE)
   function deleteDraftImportVoucher(maPhieu) {
     const v = VOUCHERS_DB.nhap.find(x => x.maPhieu === maPhieu);
     if (!v) return;
@@ -23379,7 +23419,7 @@
 
     Swal.fire({
       title: `Xóa phiếu nháp ${maPhieu}?`,
-      text: 'Phiếu dự thảo nhập kho này sẽ bị xóa hoàn toàn khỏi hệ thống.',
+      text: 'Phiếu dự thảo nhập kho này sẽ bị xóa hoàn toàn khỏi hệ thống Google Sheets.',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#dc2626',
@@ -23387,19 +23427,59 @@
       cancelButtonText: 'Quay lại'
     }).then(r => {
       if (r.isConfirmed) {
-        if (typeof WarehouseAPI !== 'undefined' && WarehouseAPI.deleteDraftVoucher) {
-          WarehouseAPI.deleteDraftVoucher(maPhieu);
-        }
-        VOUCHERS_DB.nhap = VOUCHERS_DB.nhap.filter(x => x.maPhieu !== maPhieu);
-        try {
-          if (typeof localStorage !== 'undefined') {
-            localStorage.setItem('THANH_AN_VOUCHERS_DB', JSON.stringify(VOUCHERS_DB));
+        // 1. Hiển thị loading & khóa tương tác
+        Swal.fire({
+          title: 'Đang xóa phiếu nháp...',
+          html: '<span class="text-muted small">Đang gửi yêu cầu xóa tới máy chủ Google Sheets...</span>',
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading();
           }
-        } catch(e) {}
-        recordAuditLog('XÓA PHIẾU NHÁP', `Phiếu nhập ${maPhieu}`, 'DRAFT', 'DELETED', 'Xóa phiếu nhập nháp trên server', [], 'Lịch sử phiếu', '', maPhieu);
-        if (typeof markModulesDirty === 'function') markModulesDirty(['Dashboard', 'LichSu']);
-        renderHistoryNhapTable();
-        Swal.fire('Đã xóa', `Đã xóa thành công phiếu nháp ${maPhieu}.`, 'success');
+        });
+
+        const performLocalDelete = () => {
+          VOUCHERS_DB.nhap = VOUCHERS_DB.nhap.filter(x => x.maPhieu !== maPhieu);
+          try {
+            if (typeof localStorage !== 'undefined') {
+              localStorage.setItem('THANH_AN_VOUCHERS_DB', JSON.stringify(VOUCHERS_DB));
+            }
+          } catch(e) {}
+          recordAuditLog('XÓA PHIẾU NHÁP', `Phiếu nhập ${maPhieu}`, 'DRAFT', 'DELETED', 'Xóa phiếu nhập nháp trên server thành công', [], 'Lịch sử phiếu', '', maPhieu);
+          if (typeof markModulesDirty === 'function') markModulesDirty(['Dashboard', 'LichSu']);
+          renderHistoryNhapTable();
+          Swal.fire('Đã xóa', `Đã xóa thành công phiếu nháp ${maPhieu} khỏi hệ thống.`, 'success');
+        };
+
+        const handleLocalFail = (errMsg) => {
+          Swal.fire({
+            icon: 'error',
+            title: 'Lỗi xóa phiếu nháp!',
+            html: `
+              <div class="text-start">
+                <p class="text-danger fw-semibold mb-2">Máy chủ Google Sheets từ chối xóa hoặc mất kết nối mạng:</p>
+                <div class="p-2 bg-danger-subtle text-danger rounded border border-danger-subtle font-monospace small mb-2">
+                  ${errMsg || 'Không nhận được phản hồi từ server'}
+                </div>
+                <div class="alert alert-warning small py-2 mb-0">
+                  <i class="fa-solid fa-shield-halved me-1"></i> <strong>Bảo vệ dữ liệu:</strong> Phiếu nháp <b>vẫn được giữ nguyên 100%</b> trên máy của bạn. Vui lòng kiểm tra lại mạng và thử lại.
+                </div>
+              </div>
+            `
+          });
+        };
+
+        if (typeof WarehouseAPI !== 'undefined' && WarehouseAPI.isAppsScriptEnvironment()) {
+          WarehouseAPI.deleteDraftVoucher(maPhieu, res => {
+            if (res && res.success) {
+              performLocalDelete();
+            } else {
+              handleLocalFail(res ? (res.error || res.message) : 'Máy chủ từ chối xóa!');
+            }
+          });
+        } else {
+          // Demo offline
+          performLocalDelete();
+        }
       }
     });
   }
