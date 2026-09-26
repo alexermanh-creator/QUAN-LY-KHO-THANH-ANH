@@ -1529,18 +1529,34 @@
     return `${dayPrefix}${String(VOUCHER_SEQ_COUNTER[prefix]).padStart(2, '0')}`;
   }
 
-  // Tính ngày hết hạn bảo hành từ ngày xuất và số tháng bảo hành
+  // Tính ngày hết hạn bảo hành từ ngày xuất và số tháng bảo hành (Chính xác theo lịch, chống tràn ngày)
   function calculateExpiryDate(dateStr, months) {
-    if (!dateStr || months <= 0) return 'Không BH';
+    const m = parseInt(String(months || '').replace(/\D/g, ''), 10) || 0;
+    if (!dateStr || m <= 0) return 'Không BH';
     const parts = dateStr.includes('/') ? dateStr.split('/') : dateStr.split('-');
-    let d, m, y;
-    if (parts[0].length === 4) { y = parseInt(parts[0]); m = parseInt(parts[1]) - 1; d = parseInt(parts[2]); }
-    else { d = parseInt(parts[0]); m = parseInt(parts[1]) - 1; y = parseInt(parts[2]); }
-    const date = new Date(y, m, d);
-    date.setMonth(date.getMonth() + parseInt(months));
-    const resD = String(date.getDate()).padStart(2, '0');
-    const resM = String(date.getMonth() + 1).padStart(2, '0');
-    const resY = date.getFullYear();
+    if (parts.length !== 3) return 'Không BH';
+    let d, monthIdx, y;
+    if (parts[0].length === 4) { // YYYY-MM-DD
+      y = parseInt(parts[0], 10);
+      monthIdx = parseInt(parts[1], 10) - 1;
+      d = parseInt(parts[2], 10);
+    } else { // DD/MM/YYYY
+      d = parseInt(parts[0], 10);
+      monthIdx = parseInt(parts[1], 10) - 1;
+      y = parseInt(parts[2], 10);
+    }
+    if (isNaN(y) || isNaN(monthIdx) || isNaN(d)) return 'Không BH';
+
+    // Tính chính xác tháng theo lịch, chống nhảy tràn ngày (VD: 31/03 + 1 tháng = 30/04, không tràn sang 01/05)
+    const targetMonth = monthIdx + m;
+    const targetYear = y + Math.floor(targetMonth / 12);
+    const normalizedMonth = ((targetMonth % 12) + 12) % 12;
+    const maxDaysInTargetMonth = new Date(targetYear, normalizedMonth + 1, 0).getDate();
+    const targetDay = Math.min(d, maxDaysInTargetMonth);
+
+    const resD = String(targetDay).padStart(2, '0');
+    const resM = String(normalizedMonth + 1).padStart(2, '0');
+    const resY = targetYear;
     return `${resD}/${resM}/${resY}`;
   }
 
@@ -2443,7 +2459,6 @@
     if (matchedSerials.length > 0) {
       totalFound += matchedSerials.length;
       // Sắp xếp theo mức độ khớp liên quan (Relevance Scoring): Ưu tiên Model khớp từ khóa trước
-      const kw = val.trim().toLowerCase();
       matchedSerials.sort((a, b) => {
         const getScore = (s) => {
           let score = 0;

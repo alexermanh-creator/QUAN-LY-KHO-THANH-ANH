@@ -131,8 +131,13 @@ function executeXuatKho(data) {
     let ngayHetHanFormat = "Không BH";
     if (soThang > 0) {
       const expDate = new Date(ngayXuatDate.getTime());
-      expDate.setMonth(expDate.getMonth() + soThang);
-      ngayHetHanFormat = Utilities.formatDate(expDate, "GMT+7", "dd/MM/yyyy");
+      const tMonth = expDate.getMonth() + soThang;
+      const tYear = expDate.getFullYear() + Math.floor(tMonth / 12);
+      const normMonth = ((tMonth % 12) + 12) % 12;
+      const maxDays = new Date(tYear, normMonth + 1, 0).getDate();
+      const tDay = Math.min(expDate.getDate(), maxDays);
+      const finalExp = new Date(tYear, normMonth, tDay);
+      ngayHetHanFormat = Utilities.formatDate(finalExp, "GMT+7", "dd/MM/yyyy");
     }
 
     const ngayXuatFormat = Utilities.formatDate(ngayXuatDate, "GMT+7", "dd/MM/yyyy");

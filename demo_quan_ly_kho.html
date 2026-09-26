@@ -1886,11 +1886,8 @@
           <div class="app-card-body p-3">
             <div class="row g-3">
               <div class="col-12 col-md-3">
-                <div class="d-flex justify-content-between align-items-center mb-1">
+                <div class="mb-1">
                   <label class="form-label small fw-semibold text-muted mb-0">Nhà Cung Cấp (*)</label>
-                  <button class="btn btn-link p-0 text-primary small text-decoration-none" onclick="openQuickAddSupplierModal()">
-                    <i class="fa-solid fa-plus-circle me-1"></i>Thêm NCC
-                  </button>
                 </div>
                 <div class="smart-suggest-wrap">
                   <div class="input-group input-group-sm">
@@ -1916,11 +1913,8 @@
                 </select>
               </div>
               <div class="col-6 col-md-2">
-                <div class="d-flex justify-content-between align-items-center mb-1">
+                <div class="mb-1">
                   <label class="form-label small fw-semibold text-muted mb-0">Loại Hàng (*)</label>
-                  <a href="javascript:void(0)" class="text-primary small text-decoration-none" onclick="openAddLoaiHangModal()" title="Thêm loại hàng mới">
-                    <i class="fa-solid fa-plus-circle"></i>
-                  </a>
                 </div>
                 <select id="nhap-loai-hang" class="form-select form-select-sm" onchange="syncNhapItemLoaiHang(this.value)">
                 </select>
@@ -1942,9 +1936,6 @@
             <div class="app-card mb-3">
               <div class="app-card-header bg-light">
                 <h6 class="app-card-title mb-0"><i class="fa-solid fa-boxes-packing text-primary"></i> Thêm Model & Thiết Bị Vào Draft</h6>
-                <button class="btn btn-sm btn-outline-primary" onclick="openQuickAddModelModal()">
-                  <i class="fa-solid fa-plus-circle me-1"></i>Thêm Model mới
-                </button>
               </div>
               <div class="app-card-body p-3">
                 <div class="row g-3">
@@ -2085,12 +2076,8 @@
           <div class="app-card-body p-3">
             <div class="row g-3">
               <div class="col-12 col-md-5">
-                <div class="d-flex justify-content-between align-items-center mb-1">
+                <div class="mb-1">
                   <label class="form-label small fw-semibold text-muted mb-0">Khách Hàng (*)</label>
-                  <!-- Nút thêm khách hàng nhanh (Yêu cầu 4.3) -->
-                  <button class="btn btn-link p-0 text-primary small text-decoration-none" onclick="openQuickAddCustomerModal()">
-                    <i class="fa-solid fa-user-plus me-1"></i> Thêm KH
-                  </button>
                 </div>
                 <div class="smart-suggest-wrap">
                   <div class="input-group input-group-sm">
@@ -13070,18 +13057,34 @@
     return `${dayPrefix}${String(VOUCHER_SEQ_COUNTER[prefix]).padStart(2, '0')}`;
   }
 
-  // Tính ngày hết hạn bảo hành từ ngày xuất và số tháng bảo hành
+  // Tính ngày hết hạn bảo hành từ ngày xuất và số tháng bảo hành (Chính xác theo lịch, chống tràn ngày)
   function calculateExpiryDate(dateStr, months) {
-    if (!dateStr || months <= 0) return 'Không BH';
+    const m = parseInt(String(months || '').replace(/\D/g, ''), 10) || 0;
+    if (!dateStr || m <= 0) return 'Không BH';
     const parts = dateStr.includes('/') ? dateStr.split('/') : dateStr.split('-');
-    let d, m, y;
-    if (parts[0].length === 4) { y = parseInt(parts[0]); m = parseInt(parts[1]) - 1; d = parseInt(parts[2]); }
-    else { d = parseInt(parts[0]); m = parseInt(parts[1]) - 1; y = parseInt(parts[2]); }
-    const date = new Date(y, m, d);
-    date.setMonth(date.getMonth() + parseInt(months));
-    const resD = String(date.getDate()).padStart(2, '0');
-    const resM = String(date.getMonth() + 1).padStart(2, '0');
-    const resY = date.getFullYear();
+    if (parts.length !== 3) return 'Không BH';
+    let d, monthIdx, y;
+    if (parts[0].length === 4) { // YYYY-MM-DD
+      y = parseInt(parts[0], 10);
+      monthIdx = parseInt(parts[1], 10) - 1;
+      d = parseInt(parts[2], 10);
+    } else { // DD/MM/YYYY
+      d = parseInt(parts[0], 10);
+      monthIdx = parseInt(parts[1], 10) - 1;
+      y = parseInt(parts[2], 10);
+    }
+    if (isNaN(y) || isNaN(monthIdx) || isNaN(d)) return 'Không BH';
+
+    // Tính chính xác tháng theo lịch, chống nhảy tràn ngày (VD: 31/03 + 1 tháng = 30/04, không tràn sang 01/05)
+    const targetMonth = monthIdx + m;
+    const targetYear = y + Math.floor(targetMonth / 12);
+    const normalizedMonth = ((targetMonth % 12) + 12) % 12;
+    const maxDaysInTargetMonth = new Date(targetYear, normalizedMonth + 1, 0).getDate();
+    const targetDay = Math.min(d, maxDaysInTargetMonth);
+
+    const resD = String(targetDay).padStart(2, '0');
+    const resM = String(normalizedMonth + 1).padStart(2, '0');
+    const resY = targetYear;
     return `${resD}/${resM}/${resY}`;
   }
 
@@ -13984,7 +13987,6 @@
     if (matchedSerials.length > 0) {
       totalFound += matchedSerials.length;
       // Sắp xếp theo mức độ khớp liên quan (Relevance Scoring): Ưu tiên Model khớp từ khóa trước
-      const kw = val.trim().toLowerCase();
       matchedSerials.sort((a, b) => {
         const getScore = (s) => {
           let score = 0;
@@ -15534,12 +15536,10 @@
 
     if (matched.length === 0) {
       dropdown.innerHTML = `
-        <div class="suggest-item text-primary fw-semibold d-flex justify-content-between align-items-center" style="cursor: pointer; padding: 10px 14px;" onmousedown="openQuickAddSupplierModal('${escapeHtml(query).replace(/'/g, "\\'")}')">
-          <div class="d-flex align-items-center text-truncate me-2">
-            <i class="fa-solid fa-plus-circle text-success me-2 fs-6"></i>
-            <span>+ Thêm mới NCC: <strong>"${escapeHtml(query)}"</strong></span>
-          </div>
-          <span class="badge bg-success text-white" style="font-size: 0.72rem;">Tạo mới</span>
+        <div class="p-3 text-center text-muted small">
+          <i class="fa-solid fa-circle-exclamation text-warning me-1"></i>
+          Không tìm thấy NCC "<strong>${escapeHtml(query)}</strong>".<br>
+          <span class="text-secondary" style="font-size:0.75rem;">Mọi thông tin NCC mới phải được thêm từ <b>Danh Mục Hệ Thống</b>.</span>
         </div>
       `;
       dropdown.style.display = 'block';
@@ -15625,12 +15625,10 @@
 
     if (matched.length === 0) {
       dropdown.innerHTML = `
-        <div class="suggest-item text-primary fw-semibold d-flex justify-content-between align-items-center" style="cursor: pointer; padding: 10px 14px;" onmousedown="openQuickAddModelModal('${escapeHtml(query).replace(/'/g, "\\'")}')">
-          <div class="d-flex align-items-center text-truncate me-2">
-            <i class="fa-solid fa-plus-circle text-primary me-2 fs-6"></i>
-            <span>+ Thêm mới Model: <strong>"${escapeHtml(query)}"</strong></span>
-          </div>
-          <span class="badge bg-primary text-white" style="font-size: 0.72rem;">Tạo mới</span>
+        <div class="p-3 text-center text-muted small">
+          <i class="fa-solid fa-circle-exclamation text-warning me-1"></i>
+          Không tìm thấy Model "<strong>${escapeHtml(query)}</strong>".<br>
+          <span class="text-secondary" style="font-size:0.75rem;">Mọi Model mới phải được thêm từ <b>Danh Mục Hệ Thống</b>.</span>
         </div>
       `;
       dropdown.style.display = 'block';
@@ -15698,11 +15696,8 @@
       if (modelHidden) modelHidden.value = '';
       if (val) {
         infoBox.innerHTML = `
-          <div class="text-muted small">
-            Model: <strong class="font-monospace text-dark">${escapeHtml(val)}</strong> (Chưa có trong danh mục)
-            <a href="javascript:void(0)" class="fw-semibold ms-1 text-primary text-decoration-none" onclick="openQuickAddModelModal('${escapeHtml(val).replace(/'/g, "\\'")}')">
-              <i class="fa-solid fa-plus-circle me-1"></i>+ Thêm Model
-            </a>
+          <div class="text-danger small">
+            <i class="fa-solid fa-circle-xmark me-1"></i> Model: <strong class="font-monospace text-dark">${escapeHtml(val)}</strong> (Chưa có trong Danh Mục Hệ Thống)
           </div>
         `;
       } else {
@@ -15760,16 +15755,9 @@
       playBeepSound();
       Swal.fire({
         icon: 'warning',
-        title: 'Chưa chọn Model từ danh mục',
-        text: `Model "${targetModel || 'Chưa nhập'}" chưa có trong danh mục sản phẩm. Vui lòng chọn Model có sẵn hoặc thêm Model mới.`,
-        showCancelButton: true,
-        confirmButtonColor: '#2563eb',
-        confirmButtonText: '<i class="fa-solid fa-plus-circle me-1"></i> + Thêm Model mới',
-        cancelButtonText: 'Đóng để chọn lại'
-      }).then(res => {
-        if (res.isConfirmed) {
-          openQuickAddModelModal(targetModel);
-        }
+        title: 'Model chưa có trong Danh mục',
+        html: `Model "<strong>${escapeHtml(targetModel || 'Chưa nhập')}</strong>" chưa có trong danh mục sản phẩm.<br><br><span class="text-muted small">Quy chuẩn hệ thống: Mọi Model mới phải được tạo trước tại tab <b>Danh Mục Hệ Thống</b>.</span>`,
+        confirmButtonText: 'Đã hiểu'
       });
       return;
     }
@@ -15967,16 +15955,9 @@
       playBeepSound();
       Swal.fire({
         icon: 'warning',
-        title: 'Chưa chọn Nhà Cung Cấp',
-        text: `Nhà cung cấp "${nccInput || 'Chưa chọn'}" chưa có trong danh mục hệ thống. Vui lòng chọn NCC từ danh sách hoặc thêm mới.`,
-        showCancelButton: true,
-        confirmButtonColor: '#2563eb',
-        confirmButtonText: '<i class="fa-solid fa-plus-circle me-1"></i> + Thêm NCC mới',
-        cancelButtonText: 'Đóng để chọn lại'
-      }).then(r => {
-        if (r.isConfirmed && typeof openQuickAddSupplierModal === 'function') {
-          openQuickAddSupplierModal(nccInput);
-        }
+        title: 'Nhà Cung Cấp chưa có trong Danh mục',
+        html: `Nhà cung cấp "<strong>${escapeHtml(nccInput || 'Chưa chọn')}</strong>" chưa có trong hệ thống.<br><br><span class="text-muted small">Quy chuẩn hệ thống: Mọi Nhà Cung Cấp phải được tạo trước tại tab <b>Danh Mục Hệ Thống</b>.</span>`,
+        confirmButtonText: 'Đã hiểu'
       });
       return;
     }
@@ -16427,6 +16408,7 @@
       defaultBh: defaultBh,
       manageSerial: manageSerial,
       ghiChu: note,
+      rowId: 999999,
       active: true
     };
 
@@ -16560,6 +16542,7 @@
       nguoiLienHe: contact,
       mst: tax,
       ghiChu: note,
+      rowId: 999999,
       active: true
     };
 
@@ -16645,7 +16628,20 @@
 
     const today = getLocalDateStr();
     const ngayEl = document.getElementById('xuat-ngay');
-    if (ngayEl) ngayEl.value = today;
+    if (ngayEl) {
+      ngayEl.value = today;
+      if (!ngayEl._hasChangeHandler) {
+        ngayEl.addEventListener('change', function() {
+          const newDate = this.value;
+          if (!newDate) return;
+          CURRENT_DRAFT_XUAT_ITEMS.forEach(it => {
+            it.ngayHetHanBh = calculateExpiryDate(newDate, it.soThangBh);
+          });
+          renderDraftXuatTable();
+        });
+        ngayEl._hasChangeHandler = true;
+      }
+    }
 
     renderDraftXuatTable();
   }
@@ -16679,7 +16675,7 @@
     });
 
     if (matched.length === 0) {
-      dropdown.innerHTML = '<div class="p-2 text-muted small text-center">Không tìm thấy khách hàng khớp. Bấm <b>+ Thêm KH</b> để tạo mới.</div>';
+      dropdown.innerHTML = '<div class="p-3 text-muted small text-center"><i class="fa-solid fa-circle-exclamation text-warning me-1"></i> Không tìm thấy khách hàng.<br><span class="text-secondary" style="font-size:0.75rem;">Mọi khách hàng mới phải được thêm từ <b>Danh Mục Hệ Thống</b>.</span></div>';
       dropdown.style.display = 'block';
       return;
     }
@@ -16792,6 +16788,7 @@
       mst: mst,
       nhomKhach: 'Khách lẻ',
       ghiChu: (source === 'DANH_MUC') ? 'Thêm từ Danh mục' : 'Thêm nhanh từ form xuất kho',
+      rowId: 999999,
       active: true
     };
 
@@ -17015,9 +17012,9 @@
         return;
       }
 
-      const prod = INITIAL_PRODUCTS.find(p => p.model === target.model);
-      const defaultWarranty = prod ? prod.defaultBh : (target.soThangBh || 12);
-      const ngayXuat = document.getElementById('xuat-ngay').value;
+      const prod = (typeof INITIAL_PRODUCTS !== 'undefined' ? INITIAL_PRODUCTS : []).find(p => (p.model || '').trim().toLowerCase() === (target.model || '').trim().toLowerCase());
+      const defaultWarranty = prod && prod.defaultBh !== undefined ? Number(prod.defaultBh) : (Number(target.soThangBh) || 12);
+      const ngayXuat = document.getElementById('xuat-ngay').value || getLocalDateStr();
       const expiryDate = calculateExpiryDate(ngayXuat, defaultWarranty);
 
       CURRENT_DRAFT_XUAT_ITEMS.push({
@@ -17063,9 +17060,9 @@
           return;
         }
 
-        const prod = INITIAL_PRODUCTS.find(p => p.model === target.model);
-        const defaultWarranty = prod ? prod.defaultBh : (target.soThangBh || 12);
-        const ngayXuat = document.getElementById('xuat-ngay').value;
+        const prod = (typeof INITIAL_PRODUCTS !== 'undefined' ? INITIAL_PRODUCTS : []).find(p => (p.model || '').trim().toLowerCase() === (target.model || '').trim().toLowerCase());
+        const defaultWarranty = prod && prod.defaultBh !== undefined ? Number(prod.defaultBh) : (Number(target.soThangBh) || 12);
+        const ngayXuat = document.getElementById('xuat-ngay').value || getLocalDateStr();
         const expiryDate = calculateExpiryDate(ngayXuat, defaultWarranty);
 
         CURRENT_DRAFT_XUAT_ITEMS.push({
@@ -17211,7 +17208,25 @@
     const ghiChuGiayTo = document.getElementById('xuat-ghichu-giayto')?.value.trim() || '';
 
     if (!khach) {
-      Swal.fire('Thiếu khách hàng', 'Vui lòng chọn hoặc nhập tên Khách hàng nhận máy!', 'warning');
+      Swal.fire('Thiếu khách hàng', 'Vui lòng chọn Khách hàng nhận máy!', 'warning');
+      return;
+    }
+
+    const cleanPhone = (sdt || '').replace(/\D/g, '');
+    const cleanKhach = khach.toLowerCase();
+    const existingCust = (typeof INITIAL_CUSTOMERS !== 'undefined' ? INITIAL_CUSTOMERS : []).find(c => {
+      const cPhone = (c.sdt || '').replace(/\D/g, '');
+      const cName = (c.ten || '').toLowerCase();
+      return (cleanPhone && cPhone === cleanPhone) || (cName === cleanKhach || cleanKhach.includes(cName));
+    });
+
+    if (!existingCust) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Khách hàng chưa có trong Danh mục',
+        html: `Khách hàng "<strong>${escapeHtml(khach)}</strong>" chưa có trong Danh mục hệ thống.<br><br><span class="text-muted small">Quy chuẩn hệ thống: Mọi Khách hàng phải được tạo trước tại tab <b>Danh Mục Hệ Thống</b> trước khi xuất kho!</span>`,
+        confirmButtonText: 'Đã hiểu'
+      });
       return;
     }
 
@@ -21528,9 +21543,11 @@
           changes.push({ field: `Gói BH (${it.serial})`, oldVal: `${oldMonths} tháng`, newVal: `${it.soThangBh} tháng` });
         }
 
-        // Tự động tính lại hạn BH nếu chưa có
-        if (!it.ngayHetHanBh && typeof calculateExpiryDate === 'function') {
-          it.ngayHetHanBh = calculateExpiryDate(newNgay, it.soThangBh || 12);
+        // Tự động tính lại hạn BH nếu chưa có hoặc nếu ngày xuất / số tháng BH thay đổi
+        if (typeof calculateExpiryDate === 'function') {
+          if (!it.ngayHetHanBh || it.soThangBh !== oldMonths || newNgay !== oldNgay) {
+            it.ngayHetHanBh = calculateExpiryDate(newNgay, it.soThangBh !== undefined ? it.soThangBh : 12);
+          }
         }
 
         if (s) {
@@ -22764,11 +22781,14 @@
       return true;
     });
 
-    // MẶC ĐỊNH: SẮP XẾP TOÀN BỘ MODEL THEO THỜI GIAN NHẬP TỪ MỚI NHẤT ĐẾN CŨ
+    // MẶC ĐỊNH: SẮP XẾP TOÀN BỘ MODEL TỪ MỚI NHẤT ĐẾN CŨ NHẤT
     list.sort((a, b) => {
+      const rowA = Number(a.rowId) || 0;
+      const rowB = Number(b.rowId) || 0;
+      if (rowB !== rowA) return rowB - rowA; // Ưu tiên hàng có rowId lớn hơn (mới tạo trên Sheet)
       const infA = getModelLatestImportInfo(a.model);
       const infB = getModelLatestImportInfo(b.model);
-      if (infB.time !== infA.time) return infB.time - infA.time; // Giảm dần: Mới nhất lên đầu
+      if (infB.time !== infA.time) return infB.time - infA.time;
       return String(a.model || '').localeCompare(String(b.model || ''));
     });
 
@@ -23051,6 +23071,9 @@
       return true;
     });
 
+    // MẶC ĐỊNH: SẮP XẾP NHÀ CUNG CẤP TỪ MỚI NHẤT ĐẾN CŨ NHẤT
+    list.sort((a, b) => (Number(b.rowId) || 0) - (Number(a.rowId) || 0));
+
     if (list.length === 0) {
       const isFiltered = !!sQ;
       tbody.innerHTML = `
@@ -23256,6 +23279,9 @@
       }
       return true;
     });
+
+    // MẶC ĐỊNH: SẮP XẾP KHÁCH HÀNG TỪ MỚI NHẤT ĐẾN CŨ NHẤT
+    list.sort((a, b) => (Number(b.rowId) || 0) - (Number(a.rowId) || 0));
 
     if (list.length === 0) {
       const isFiltered = !!sQ;
@@ -23504,6 +23530,9 @@
       return true;
     });
 
+    // MẶC ĐỊNH: SẮP XẾP KHO HÀNG TỪ MỚI NHẤT ĐẾN CŨ NHẤT
+    list.sort((a, b) => (Number(b.rowId) || 0) - (Number(a.rowId) || 0));
+
     if (list.length === 0) {
       const isFiltered = !!sQ;
       tbody.innerHTML = `
@@ -23587,12 +23616,13 @@
           loaiKho: document.getElementById('swal-add-w-type').value,
           diaDiem: document.getElementById('swal-add-w-location').value.trim(),
           ghiChu: document.getElementById('swal-add-w-note').value.trim(),
+          rowId: 999999,
           active: true
         };
       }
     }).then(res => {
       if (res.isConfirmed) {
-        INITIAL_WAREHOUSES.push(res.value);
+        INITIAL_WAREHOUSES.unshift(res.value);
         try {
           if (typeof localStorage !== 'undefined') {
             localStorage.setItem('THANH_AN_WAREHOUSES', JSON.stringify(INITIAL_WAREHOUSES));
@@ -23779,7 +23809,11 @@
       return;
     }
 
-    tbody.innerHTML = INITIAL_BRANDS.map(b => `
+    let list = INITIAL_BRANDS.slice();
+    // MẶC ĐỊNH: SẮP XẾP HÃNG SẢN XUẤT TỪ MỚI NHẤT ĐẾN CŨ NHẤT
+    list.sort((a, b) => (Number(b.rowId) || 0) - (Number(a.rowId) || 0));
+
+    tbody.innerHTML = list.map(b => `
         <td data-label="Brand ID"><span class="font-monospace fw-bold text-secondary">${b.brandId || b.id}</span></td>
         <td data-label="Mã Hãng"><strong class="text-primary font-monospace">${b.maHang || b.code}</strong></td>
         <td data-label="Tên Hãng"><strong>${b.tenHang || b.name}</strong></td>
@@ -23831,12 +23865,13 @@
           maHang,
           tenHang,
           ghiChu: document.getElementById('swal-add-b-note').value.trim(),
+          rowId: 999999,
           active: true
         });
       }
     }).then(res => {
       if (res.isConfirmed) {
-        INITIAL_BRANDS.push(res.value);
+        INITIAL_BRANDS.unshift(res.value);
         try {
           if (typeof localStorage !== 'undefined') {
             localStorage.setItem('THANH_AN_BRANDS', JSON.stringify(INITIAL_BRANDS));
@@ -23969,7 +24004,11 @@
       return;
     }
 
-    tbody.innerHTML = INITIAL_CATEGORIES.map(c => `
+    let list = INITIAL_CATEGORIES.slice();
+    // MẶC ĐỊNH: SẮP XẾP NHÓM HÀNG TỪ MỚI NHẤT ĐẾN CŨ NHẤT
+    list.sort((a, b) => (Number(b.rowId) || 0) - (Number(a.rowId) || 0));
+
+    tbody.innerHTML = list.map(c => `
       <tr class="${c.active === false ? 'table-secondary text-muted' : ''}">
         <td data-label="Category ID"><span class="font-monospace fw-bold text-secondary">${c.catId || c.id}</span></td>
         <td data-label="Mã Nhóm"><strong class="text-primary font-monospace">${c.maNhom || c.code}</strong></td>
@@ -24022,12 +24061,13 @@
           maNhom,
           tenNhom,
           ghiChu: document.getElementById('swal-add-c-note').value.trim(),
+          rowId: 999999,
           active: true
         });
       }
     }).then(res => {
       if (res.isConfirmed) {
-        INITIAL_CATEGORIES.push(res.value);
+        INITIAL_CATEGORIES.unshift(res.value);
         try {
           if (typeof localStorage !== 'undefined') {
             localStorage.setItem('THANH_AN_CATEGORIES', JSON.stringify(INITIAL_CATEGORIES));
@@ -24158,6 +24198,9 @@
       return true;
     });
 
+    // MẶC ĐỊNH: SẮP XẾP GÓI BẢO HÀNH TỪ MỚI NHẤT ĐẾN CŨ NHẤT
+    list.sort((a, b) => (Number(b.rowId) || 0) - (Number(a.rowId) || 0));
+
     if (list.length === 0) {
       tbody.innerHTML = `
         <tr>
@@ -24238,9 +24281,10 @@
           soThang: res.value.soThang,
           tenGoi: res.value.tenGoi,
           ghiChu: res.value.ghiChu,
+          rowId: 999999,
           active: true
         };
-        INITIAL_WARRANTIES.push(item);
+        INITIAL_WARRANTIES.unshift(item);
         if (WarehouseAPI && WarehouseAPI.saveWarranty) {
           WarehouseAPI.saveWarranty(item);
         }
@@ -24339,6 +24383,9 @@
       return true;
     });
 
+    // MẶC ĐỊNH: SẮP XẾP LOẠI HÀNG TỪ MỚI NHẤT ĐẾN CŨ NHẤT
+    list.sort((a, b) => (Number(b.rowId) || 0) - (Number(a.rowId) || 0));
+
     if (list.length === 0) {
       tbody.innerHTML = `
         <tr>
@@ -24417,9 +24464,10 @@
           ten: res.value.ten,
           name: res.value.ten,
           ghiChu: res.value.ghiChu,
+          rowId: 999999,
           active: true
         };
-        INITIAL_CONDITIONS.push(item);
+        INITIAL_CONDITIONS.unshift(item);
 
         if (typeof WarehouseAPI !== 'undefined' && WarehouseAPI.isAppsScriptEnvironment()) {
           google.script.run

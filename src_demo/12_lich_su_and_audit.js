@@ -1541,9 +1541,11 @@
           changes.push({ field: `Gói BH (${it.serial})`, oldVal: `${oldMonths} tháng`, newVal: `${it.soThangBh} tháng` });
         }
 
-        // Tự động tính lại hạn BH nếu chưa có
-        if (!it.ngayHetHanBh && typeof calculateExpiryDate === 'function') {
-          it.ngayHetHanBh = calculateExpiryDate(newNgay, it.soThangBh || 12);
+        // Tự động tính lại hạn BH nếu chưa có hoặc nếu ngày xuất / số tháng BH thay đổi
+        if (typeof calculateExpiryDate === 'function') {
+          if (!it.ngayHetHanBh || it.soThangBh !== oldMonths || newNgay !== oldNgay) {
+            it.ngayHetHanBh = calculateExpiryDate(newNgay, it.soThangBh !== undefined ? it.soThangBh : 12);
+          }
         }
 
         if (s) {

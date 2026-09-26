@@ -663,11 +663,14 @@
       return true;
     });
 
-    // MẶC ĐỊNH: SẮP XẾP TOÀN BỘ MODEL THEO THỜI GIAN NHẬP TỪ MỚI NHẤT ĐẾN CŨ
+    // MẶC ĐỊNH: SẮP XẾP TOÀN BỘ MODEL TỪ MỚI NHẤT ĐẾN CŨ NHẤT
     list.sort((a, b) => {
+      const rowA = Number(a.rowId) || 0;
+      const rowB = Number(b.rowId) || 0;
+      if (rowB !== rowA) return rowB - rowA; // Ưu tiên hàng có rowId lớn hơn (mới tạo trên Sheet)
       const infA = getModelLatestImportInfo(a.model);
       const infB = getModelLatestImportInfo(b.model);
-      if (infB.time !== infA.time) return infB.time - infA.time; // Giảm dần: Mới nhất lên đầu
+      if (infB.time !== infA.time) return infB.time - infA.time;
       return String(a.model || '').localeCompare(String(b.model || ''));
     });
 
@@ -950,6 +953,9 @@
       return true;
     });
 
+    // MẶC ĐỊNH: SẮP XẾP NHÀ CUNG CẤP TỪ MỚI NHẤT ĐẾN CŨ NHẤT
+    list.sort((a, b) => (Number(b.rowId) || 0) - (Number(a.rowId) || 0));
+
     if (list.length === 0) {
       const isFiltered = !!sQ;
       tbody.innerHTML = `
@@ -1155,6 +1161,9 @@
       }
       return true;
     });
+
+    // MẶC ĐỊNH: SẮP XẾP KHÁCH HÀNG TỪ MỚI NHẤT ĐẾN CŨ NHẤT
+    list.sort((a, b) => (Number(b.rowId) || 0) - (Number(a.rowId) || 0));
 
     if (list.length === 0) {
       const isFiltered = !!sQ;
@@ -1403,6 +1412,9 @@
       return true;
     });
 
+    // MẶC ĐỊNH: SẮP XẾP KHO HÀNG TỪ MỚI NHẤT ĐẾN CŨ NHẤT
+    list.sort((a, b) => (Number(b.rowId) || 0) - (Number(a.rowId) || 0));
+
     if (list.length === 0) {
       const isFiltered = !!sQ;
       tbody.innerHTML = `
@@ -1486,12 +1498,13 @@
           loaiKho: document.getElementById('swal-add-w-type').value,
           diaDiem: document.getElementById('swal-add-w-location').value.trim(),
           ghiChu: document.getElementById('swal-add-w-note').value.trim(),
+          rowId: 999999,
           active: true
         };
       }
     }).then(res => {
       if (res.isConfirmed) {
-        INITIAL_WAREHOUSES.push(res.value);
+        INITIAL_WAREHOUSES.unshift(res.value);
         try {
           if (typeof localStorage !== 'undefined') {
             localStorage.setItem('THANH_AN_WAREHOUSES', JSON.stringify(INITIAL_WAREHOUSES));
@@ -1678,7 +1691,11 @@
       return;
     }
 
-    tbody.innerHTML = INITIAL_BRANDS.map(b => `
+    let list = INITIAL_BRANDS.slice();
+    // MẶC ĐỊNH: SẮP XẾP HÃNG SẢN XUẤT TỪ MỚI NHẤT ĐẾN CŨ NHẤT
+    list.sort((a, b) => (Number(b.rowId) || 0) - (Number(a.rowId) || 0));
+
+    tbody.innerHTML = list.map(b => `
         <td data-label="Brand ID"><span class="font-monospace fw-bold text-secondary">${b.brandId || b.id}</span></td>
         <td data-label="Mã Hãng"><strong class="text-primary font-monospace">${b.maHang || b.code}</strong></td>
         <td data-label="Tên Hãng"><strong>${b.tenHang || b.name}</strong></td>
@@ -1730,12 +1747,13 @@
           maHang,
           tenHang,
           ghiChu: document.getElementById('swal-add-b-note').value.trim(),
+          rowId: 999999,
           active: true
         });
       }
     }).then(res => {
       if (res.isConfirmed) {
-        INITIAL_BRANDS.push(res.value);
+        INITIAL_BRANDS.unshift(res.value);
         try {
           if (typeof localStorage !== 'undefined') {
             localStorage.setItem('THANH_AN_BRANDS', JSON.stringify(INITIAL_BRANDS));
@@ -1868,7 +1886,11 @@
       return;
     }
 
-    tbody.innerHTML = INITIAL_CATEGORIES.map(c => `
+    let list = INITIAL_CATEGORIES.slice();
+    // MẶC ĐỊNH: SẮP XẾP NHÓM HÀNG TỪ MỚI NHẤT ĐẾN CŨ NHẤT
+    list.sort((a, b) => (Number(b.rowId) || 0) - (Number(a.rowId) || 0));
+
+    tbody.innerHTML = list.map(c => `
       <tr class="${c.active === false ? 'table-secondary text-muted' : ''}">
         <td data-label="Category ID"><span class="font-monospace fw-bold text-secondary">${c.catId || c.id}</span></td>
         <td data-label="Mã Nhóm"><strong class="text-primary font-monospace">${c.maNhom || c.code}</strong></td>
@@ -1921,12 +1943,13 @@
           maNhom,
           tenNhom,
           ghiChu: document.getElementById('swal-add-c-note').value.trim(),
+          rowId: 999999,
           active: true
         });
       }
     }).then(res => {
       if (res.isConfirmed) {
-        INITIAL_CATEGORIES.push(res.value);
+        INITIAL_CATEGORIES.unshift(res.value);
         try {
           if (typeof localStorage !== 'undefined') {
             localStorage.setItem('THANH_AN_CATEGORIES', JSON.stringify(INITIAL_CATEGORIES));
@@ -2057,6 +2080,9 @@
       return true;
     });
 
+    // MẶC ĐỊNH: SẮP XẾP GÓI BẢO HÀNH TỪ MỚI NHẤT ĐẾN CŨ NHẤT
+    list.sort((a, b) => (Number(b.rowId) || 0) - (Number(a.rowId) || 0));
+
     if (list.length === 0) {
       tbody.innerHTML = `
         <tr>
@@ -2137,9 +2163,10 @@
           soThang: res.value.soThang,
           tenGoi: res.value.tenGoi,
           ghiChu: res.value.ghiChu,
+          rowId: 999999,
           active: true
         };
-        INITIAL_WARRANTIES.push(item);
+        INITIAL_WARRANTIES.unshift(item);
         if (WarehouseAPI && WarehouseAPI.saveWarranty) {
           WarehouseAPI.saveWarranty(item);
         }
@@ -2238,6 +2265,9 @@
       return true;
     });
 
+    // MẶC ĐỊNH: SẮP XẾP LOẠI HÀNG TỪ MỚI NHẤT ĐẾN CŨ NHẤT
+    list.sort((a, b) => (Number(b.rowId) || 0) - (Number(a.rowId) || 0));
+
     if (list.length === 0) {
       tbody.innerHTML = `
         <tr>
@@ -2316,9 +2346,10 @@
           ten: res.value.ten,
           name: res.value.ten,
           ghiChu: res.value.ghiChu,
+          rowId: 999999,
           active: true
         };
-        INITIAL_CONDITIONS.push(item);
+        INITIAL_CONDITIONS.unshift(item);
 
         if (typeof WarehouseAPI !== 'undefined' && WarehouseAPI.isAppsScriptEnvironment()) {
           google.script.run

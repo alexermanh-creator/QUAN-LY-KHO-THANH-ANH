@@ -18,7 +18,20 @@
 
     const today = getLocalDateStr();
     const ngayEl = document.getElementById('xuat-ngay');
-    if (ngayEl) ngayEl.value = today;
+    if (ngayEl) {
+      ngayEl.value = today;
+      if (!ngayEl._hasChangeHandler) {
+        ngayEl.addEventListener('change', function() {
+          const newDate = this.value;
+          if (!newDate) return;
+          CURRENT_DRAFT_XUAT_ITEMS.forEach(it => {
+            it.ngayHetHanBh = calculateExpiryDate(newDate, it.soThangBh);
+          });
+          renderDraftXuatTable();
+        });
+        ngayEl._hasChangeHandler = true;
+      }
+    }
 
     renderDraftXuatTable();
   }
@@ -52,7 +65,7 @@
     });
 
     if (matched.length === 0) {
-      dropdown.innerHTML = '<div class="p-2 text-muted small text-center">Không tìm thấy khách hàng khớp. Bấm <b>+ Thêm KH</b> để tạo mới.</div>';
+      dropdown.innerHTML = '<div class="p-3 text-muted small text-center"><i class="fa-solid fa-circle-exclamation text-warning me-1"></i> Không tìm thấy khách hàng.<br><span class="text-secondary" style="font-size:0.75rem;">Mọi khách hàng mới phải được thêm từ <b>Danh Mục Hệ Thống</b>.</span></div>';
       dropdown.style.display = 'block';
       return;
     }
@@ -165,6 +178,7 @@
       mst: mst,
       nhomKhach: 'Khách lẻ',
       ghiChu: (source === 'DANH_MUC') ? 'Thêm từ Danh mục' : 'Thêm nhanh từ form xuất kho',
+      rowId: 999999,
       active: true
     };
 
@@ -388,9 +402,9 @@
         return;
       }
 
-      const prod = INITIAL_PRODUCTS.find(p => p.model === target.model);
-      const defaultWarranty = prod ? prod.defaultBh : (target.soThangBh || 12);
-      const ngayXuat = document.getElementById('xuat-ngay').value;
+      const prod = (typeof INITIAL_PRODUCTS !== 'undefined' ? INITIAL_PRODUCTS : []).find(p => (p.model || '').trim().toLowerCase() === (target.model || '').trim().toLowerCase());
+      const defaultWarranty = prod && prod.defaultBh !== undefined ? Number(prod.defaultBh) : (Number(target.soThangBh) || 12);
+      const ngayXuat = document.getElementById('xuat-ngay').value || getLocalDateStr();
       const expiryDate = calculateExpiryDate(ngayXuat, defaultWarranty);
 
       CURRENT_DRAFT_XUAT_ITEMS.push({
@@ -436,9 +450,9 @@
           return;
         }
 
-        const prod = INITIAL_PRODUCTS.find(p => p.model === target.model);
-        const defaultWarranty = prod ? prod.defaultBh : (target.soThangBh || 12);
-        const ngayXuat = document.getElementById('xuat-ngay').value;
+        const prod = (typeof INITIAL_PRODUCTS !== 'undefined' ? INITIAL_PRODUCTS : []).find(p => (p.model || '').trim().toLowerCase() === (target.model || '').trim().toLowerCase());
+        const defaultWarranty = prod && prod.defaultBh !== undefined ? Number(prod.defaultBh) : (Number(target.soThangBh) || 12);
+        const ngayXuat = document.getElementById('xuat-ngay').value || getLocalDateStr();
         const expiryDate = calculateExpiryDate(ngayXuat, defaultWarranty);
 
         CURRENT_DRAFT_XUAT_ITEMS.push({
@@ -584,7 +598,25 @@
     const ghiChuGiayTo = document.getElementById('xuat-ghichu-giayto')?.value.trim() || '';
 
     if (!khach) {
-      Swal.fire('Thiếu khách hàng', 'Vui lòng chọn hoặc nhập tên Khách hàng nhận máy!', 'warning');
+      Swal.fire('Thiếu khách hàng', 'Vui lòng chọn Khách hàng nhận máy!', 'warning');
+      return;
+    }
+
+    const cleanPhone = (sdt || '').replace(/\D/g, '');
+    const cleanKhach = khach.toLowerCase();
+    const existingCust = (typeof INITIAL_CUSTOMERS !== 'undefined' ? INITIAL_CUSTOMERS : []).find(c => {
+      const cPhone = (c.sdt || '').replace(/\D/g, '');
+      const cName = (c.ten || '').toLowerCase();
+      return (cleanPhone && cPhone === cleanPhone) || (cName === cleanKhach || cleanKhach.includes(cName));
+    });
+
+    if (!existingCust) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Khách hàng chưa có trong Danh mục',
+        html: `Khách hàng "<strong>${escapeHtml(khach)}</strong>" chưa có trong Danh mục hệ thống.<br><br><span class="text-muted small">Quy chuẩn hệ thống: Mọi Khách hàng phải được tạo trước tại tab <b>Danh Mục Hệ Thống</b> trước khi xuất kho!</span>`,
+        confirmButtonText: 'Đã hiểu'
+      });
       return;
     }
 

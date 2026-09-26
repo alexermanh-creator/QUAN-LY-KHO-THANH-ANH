@@ -80,12 +80,10 @@
 
     if (matched.length === 0) {
       dropdown.innerHTML = `
-        <div class="suggest-item text-primary fw-semibold d-flex justify-content-between align-items-center" style="cursor: pointer; padding: 10px 14px;" onmousedown="openQuickAddSupplierModal('${escapeHtml(query).replace(/'/g, "\\'")}')">
-          <div class="d-flex align-items-center text-truncate me-2">
-            <i class="fa-solid fa-plus-circle text-success me-2 fs-6"></i>
-            <span>+ Thêm mới NCC: <strong>"${escapeHtml(query)}"</strong></span>
-          </div>
-          <span class="badge bg-success text-white" style="font-size: 0.72rem;">Tạo mới</span>
+        <div class="p-3 text-center text-muted small">
+          <i class="fa-solid fa-circle-exclamation text-warning me-1"></i>
+          Không tìm thấy NCC "<strong>${escapeHtml(query)}</strong>".<br>
+          <span class="text-secondary" style="font-size:0.75rem;">Mọi thông tin NCC mới phải được thêm từ <b>Danh Mục Hệ Thống</b>.</span>
         </div>
       `;
       dropdown.style.display = 'block';
@@ -171,12 +169,10 @@
 
     if (matched.length === 0) {
       dropdown.innerHTML = `
-        <div class="suggest-item text-primary fw-semibold d-flex justify-content-between align-items-center" style="cursor: pointer; padding: 10px 14px;" onmousedown="openQuickAddModelModal('${escapeHtml(query).replace(/'/g, "\\'")}')">
-          <div class="d-flex align-items-center text-truncate me-2">
-            <i class="fa-solid fa-plus-circle text-primary me-2 fs-6"></i>
-            <span>+ Thêm mới Model: <strong>"${escapeHtml(query)}"</strong></span>
-          </div>
-          <span class="badge bg-primary text-white" style="font-size: 0.72rem;">Tạo mới</span>
+        <div class="p-3 text-center text-muted small">
+          <i class="fa-solid fa-circle-exclamation text-warning me-1"></i>
+          Không tìm thấy Model "<strong>${escapeHtml(query)}</strong>".<br>
+          <span class="text-secondary" style="font-size:0.75rem;">Mọi Model mới phải được thêm từ <b>Danh Mục Hệ Thống</b>.</span>
         </div>
       `;
       dropdown.style.display = 'block';
@@ -244,11 +240,8 @@
       if (modelHidden) modelHidden.value = '';
       if (val) {
         infoBox.innerHTML = `
-          <div class="text-muted small">
-            Model: <strong class="font-monospace text-dark">${escapeHtml(val)}</strong> (Chưa có trong danh mục)
-            <a href="javascript:void(0)" class="fw-semibold ms-1 text-primary text-decoration-none" onclick="openQuickAddModelModal('${escapeHtml(val).replace(/'/g, "\\'")}')">
-              <i class="fa-solid fa-plus-circle me-1"></i>+ Thêm Model
-            </a>
+          <div class="text-danger small">
+            <i class="fa-solid fa-circle-xmark me-1"></i> Model: <strong class="font-monospace text-dark">${escapeHtml(val)}</strong> (Chưa có trong Danh Mục Hệ Thống)
           </div>
         `;
       } else {
@@ -306,16 +299,9 @@
       playBeepSound();
       Swal.fire({
         icon: 'warning',
-        title: 'Chưa chọn Model từ danh mục',
-        text: `Model "${targetModel || 'Chưa nhập'}" chưa có trong danh mục sản phẩm. Vui lòng chọn Model có sẵn hoặc thêm Model mới.`,
-        showCancelButton: true,
-        confirmButtonColor: '#2563eb',
-        confirmButtonText: '<i class="fa-solid fa-plus-circle me-1"></i> + Thêm Model mới',
-        cancelButtonText: 'Đóng để chọn lại'
-      }).then(res => {
-        if (res.isConfirmed) {
-          openQuickAddModelModal(targetModel);
-        }
+        title: 'Model chưa có trong Danh mục',
+        html: `Model "<strong>${escapeHtml(targetModel || 'Chưa nhập')}</strong>" chưa có trong danh mục sản phẩm.<br><br><span class="text-muted small">Quy chuẩn hệ thống: Mọi Model mới phải được tạo trước tại tab <b>Danh Mục Hệ Thống</b>.</span>`,
+        confirmButtonText: 'Đã hiểu'
       });
       return;
     }
@@ -513,16 +499,9 @@
       playBeepSound();
       Swal.fire({
         icon: 'warning',
-        title: 'Chưa chọn Nhà Cung Cấp',
-        text: `Nhà cung cấp "${nccInput || 'Chưa chọn'}" chưa có trong danh mục hệ thống. Vui lòng chọn NCC từ danh sách hoặc thêm mới.`,
-        showCancelButton: true,
-        confirmButtonColor: '#2563eb',
-        confirmButtonText: '<i class="fa-solid fa-plus-circle me-1"></i> + Thêm NCC mới',
-        cancelButtonText: 'Đóng để chọn lại'
-      }).then(r => {
-        if (r.isConfirmed && typeof openQuickAddSupplierModal === 'function') {
-          openQuickAddSupplierModal(nccInput);
-        }
+        title: 'Nhà Cung Cấp chưa có trong Danh mục',
+        html: `Nhà cung cấp "<strong>${escapeHtml(nccInput || 'Chưa chọn')}</strong>" chưa có trong hệ thống.<br><br><span class="text-muted small">Quy chuẩn hệ thống: Mọi Nhà Cung Cấp phải được tạo trước tại tab <b>Danh Mục Hệ Thống</b>.</span>`,
+        confirmButtonText: 'Đã hiểu'
       });
       return;
     }
@@ -973,6 +952,7 @@
       defaultBh: defaultBh,
       manageSerial: manageSerial,
       ghiChu: note,
+      rowId: 999999,
       active: true
     };
 
@@ -1106,6 +1086,7 @@
       nguoiLienHe: contact,
       mst: tax,
       ghiChu: note,
+      rowId: 999999,
       active: true
     };
 

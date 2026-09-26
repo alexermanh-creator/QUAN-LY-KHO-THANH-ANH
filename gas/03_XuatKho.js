@@ -182,8 +182,13 @@ function executeXuatKho(data) {
       let itemExpStr = "Không BH";
       if (item.soThangBh > 0) {
         const expDate = new Date(ngayXuatDate.getTime());
-        expDate.setMonth(expDate.getMonth() + item.soThangBh);
-        itemExpStr = Utilities.formatDate(expDate, "GMT+7", "dd/MM/yyyy");
+        const tMonth = expDate.getMonth() + item.soThangBh;
+        const tYear = expDate.getFullYear() + Math.floor(tMonth / 12);
+        const normMonth = ((tMonth % 12) + 12) % 12;
+        const maxDays = new Date(tYear, normMonth + 1, 0).getDate();
+        const tDay = Math.min(expDate.getDate(), maxDays);
+        const finalExp = new Date(tYear, normMonth, tDay);
+        itemExpStr = Utilities.formatDate(finalExp, "GMT+7", "dd/MM/yyyy");
       }
 
       // Cập nhật Cột 6 (Kho xuất nếu chỉ định mới)
