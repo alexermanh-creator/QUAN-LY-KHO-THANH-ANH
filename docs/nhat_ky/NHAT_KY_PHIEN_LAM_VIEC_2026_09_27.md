@@ -56,4 +56,27 @@ Toàn bộ 3 bộ test suite độc lập đều đạt chuẩn tuyệt đối:
 
 - **Đóng gói Bundle**: `demo_quan_ly_kho.html`, `gas/Index.html`, `src/frontend/Index.html` (100% UTF-8, đã build).
 - **Google Apps Script**: Đã triển khai thành công 22 file qua `clasp push -f`.
-- **Git Commit**: Commit `fc2a115` và commit nhật ký làm việc đã đồng bộ lên cả nhánh `main` và `master`.
+- **Git Commit**: Đã đồng bộ toàn bộ lên cả 2 nhánh `main` và `master`.
+
+---
+
+## IV. DỌN DẸP & QUY HOẠCH THƯ MỤC HỆ THỐNG
+- **Bảo tồn**: Giữ nguyên file `zixfel.ag-auto-click-scroll-10.5.0.vsix` tại thư mục gốc theo yêu cầu người dùng.
+- **Xóa file rác / file tạm**: Đã xóa `temp_migration/` (5 file migration cũ) và `scratch/` (file test nháp).
+- **Quy hoạch tài liệu vào `docs/`**:
+  - `docs/nhat_ky/`: Lưu toàn bộ nhật ký phiên làm việc.
+  - `docs/bao_cao/`: Lưu các biên bản backtest và kịch bản hệ thống.
+  - `docs/data_goc/`: Lưu file Excel ban đầu đối soát.
+  - `docs/prototypes/`: Lưu file thử nghiệm camera cũ (`scanner.html`).
+- **Tập trung test vào `tests/`**: Di chuyển `test_harden_backtest.js` vào `tests/`.
+
+---
+
+## V. ĐẶC TẢ & HƯỚNG DẪN BẮT ĐẦU CHO PHIÊN KẾ TIẾP: MODULE NHẬN DIỆN SERIAL TỪ ẢNH
+- **Mục tiêu**: Nhận diện Serial Number từ ảnh tem thiết bị cho chức năng **Nhập Kho**.
+- **Kiến trúc 2 tầng (Graceful Degradation)**:
+  - **Tầng 1 (Local Barcode)**: Đọc mã vạch trực tiếp trên trình duyệt (không tốn quota, siêu tốc < 0.2s, giữ nguyên ảnh độ nét cao không nén quá mức).
+  - **Tầng 2 (Gemini Vision Fallback)**: Chỉ kích hoạt khi barcode mờ/hỏng/không đọc được. Backend gọi qua `google.script.run` $\rightarrow$ `gas/06_GeminiVision.js` $\rightarrow$ Google AI Studio.
+  - **Bảo mật**: `GEMINI_API_KEY` lưu tại `ScriptProperties` phía máy chủ, không lộ ra Frontend.
+  - **Độc lập**: Model cấu hình linh hoạt (ví dụ: `gemini-2.0-flash`), không hard-code. Dù AI có lỗi hay mất mạng thì hệ thống kho vẫn hoạt động bình thường 100%.
+- **3 ảnh mẫu kiểm định hồi quy**: Phải nhận diện chính xác 3 serial `VNM1908585`, `VNM1908583`, `VNM1908452`.
