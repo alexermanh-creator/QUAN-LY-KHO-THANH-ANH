@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
+const ROOT_DIR = fs.existsSync(path.join(__dirname, 'gas')) ? __dirname : path.resolve(__dirname, '..');
 
 console.log('====================================================');
 console.log('CHƯƠNG TRÌNH BACKTEST TỰ ĐỘNG - THANH AN WAREHOUSE V4');
@@ -39,7 +40,7 @@ const filesToCheck = [
 ];
 
 filesToCheck.forEach(relPath => {
-  const fullPath = path.join(__dirname, relPath);
+  const fullPath = path.join(ROOT_DIR, relPath);
   try {
     const content = fs.readFileSync(fullPath, 'utf8');
     if (relPath.endsWith('.js')) {
@@ -55,8 +56,8 @@ filesToCheck.forEach(relPath => {
 // TEST 2: CHUẨN HÓA TRẠNG THÁI SERIAL (normalizeSerialStatus)
 // ----------------------------------------------------
 console.log('\n--- 2. KIỂM TRA CHUẨN HÓA TRẠNG THÁI SERIAL ---');
-const gasCode = fs.readFileSync(path.join(__dirname, 'gas/Code.js'), 'utf8');
-const clientAppLogic = fs.readFileSync(path.join(__dirname, 'src_demo/06_app_logic.js'), 'utf8');
+const gasCode = fs.readFileSync(path.join(ROOT_DIR, 'gas/Code.js'), 'utf8');
+const clientAppLogic = fs.readFileSync(path.join(ROOT_DIR, 'src_demo/06_app_logic.js'), 'utf8');
 
 assert(gasCode.includes('function normalizeSerialStatus(rawStatus)'), 'gas/Code.js định nghĩa normalizeSerialStatus.');
 assert(clientAppLogic.includes('function normalizeSerialStatus(rawStatus)'), 'src_demo/06_app_logic.js định nghĩa normalizeSerialStatus.');
@@ -126,14 +127,14 @@ assert(gasCode.includes("Số Serial mới [${newSn}] đã tồn tại trong h�
 assert(gasCode.includes('lsNhapSheet.getRange(i + 2, 6).setValue(snArr.join'), 'Cascade update số serial trong LICH_SU_NHAP khi rename.');
 
 // UI lock serial on export vouchers
-const lichSuJs = fs.readFileSync(path.join(__dirname, 'src_demo/12_lich_su_and_audit.js'), 'utf8');
+const lichSuJs = fs.readFileSync(path.join(ROOT_DIR, 'src_demo/12_lich_su_and_audit.js'), 'utf8');
 assert(lichSuJs.includes('${!isNhap ? \'readonly disabled title="Số Serial ở phiếu xuất không được phép chỉnh sửa"\' : \'\'}'), 'Modal sửa phiếu xuất khóa readonly và disabled ô Serial.');
 
 // ----------------------------------------------------
 // TEST 5: SỬA LỖI UX XUẤT KHO (BUTTON UNLOCK TIMING)
 // ----------------------------------------------------
 console.log('\n--- 5. KIỂM TRA UX XUẤT KHO KHÔNG UNLOCK SỚM ---');
-const xuatKhoLogicJs = fs.readFileSync(path.join(__dirname, 'src_demo/09_xuat_kho_logic.js'), 'utf8');
+const xuatKhoLogicJs = fs.readFileSync(path.join(ROOT_DIR, 'src_demo/09_xuat_kho_logic.js'), 'utf8');
 assert(xuatKhoLogicJs.includes('function unlockXuatButton()'), 'Định nghĩa hàm unlockXuatButton tập trung.');
 assert(!xuatKhoLogicJs.includes('finally {\n      IS_PROCESSING_XUAT = false;'), 'Đã loại bỏ outer finally giải phóng sớm.');
 assert(xuatKhoLogicJs.includes('unlockXuatButton();\n      const itemCount = CURRENT_DRAFT_XUAT_ITEMS.length;') || xuatKhoLogicJs.includes('unlockXuatButton();\n\n      // Reset các ô giấy tờ'), 'Chỉ unlock nút khi finalizeSuccess hoặc withFailureHandler được gọi.');
@@ -148,7 +149,7 @@ assert(gasCode.includes('function deleteDraftVoucherBackend(maPhieu)'), 'Backend
 assert(gasCode.includes('V4_DRAFT_VOUCHERS'), 'Sử dụng sheet riêng V4_DRAFT_VOUCHERS cách ly khỏi sổ kho.');
 assert(gasCode.includes('drafts: serverDrafts'), 'getAllVouchersBackend trả về danh sách serverDrafts.');
 
-const nhapKhoLogicJs = fs.readFileSync(path.join(__dirname, 'src_demo/08_nhap_kho_logic.js'), 'utf8');
+const nhapKhoLogicJs = fs.readFileSync(path.join(ROOT_DIR, 'src_demo/08_nhap_kho_logic.js'), 'utf8');
 assert(nhapKhoLogicJs.includes('WarehouseAPI.saveDraftVoucher(voucherRecord'), 'Nhập kho lưu draft lên server-side.');
 assert(xuatKhoLogicJs.includes('WarehouseAPI.saveDraftVoucher(voucherRecord'), 'Xuất kho lưu draft lên server-side.');
 
@@ -165,7 +166,7 @@ assert(clientAppLogic.includes('WarehouseAPI.checkDataVersion(verRes =>'), 'hand
 // TEST 8: HOT PATH XUẤT KHO: LOOKUP 1 CỘT SERIAL
 // ----------------------------------------------------
 console.log('\n--- 8. KIỂM TRA TỐI ƯU HOT PATH XUẤT KHO ---');
-const xuatKhoGasJs = fs.readFileSync(path.join(__dirname, 'gas/03_XuatKho.js'), 'utf8');
+const xuatKhoGasJs = fs.readFileSync(path.join(ROOT_DIR, 'gas/03_XuatKho.js'), 'utf8');
 assert(xuatKhoGasJs.includes('tbSheet.getRange(2, 1, totalRows, 1).getValues()'), 'Chỉ đọc duy nhất Cột 1 (Serial) để map dòng.');
 assert(!xuatKhoGasJs.includes('const tableData = tbSheet.getRange(2, 1, totalRows, numCols).getValues()'), 'Đã loại bỏ lệnh đọc toàn bộ 18 cột cả bảng.');
 assert(xuatKhoGasJs.includes('tbSheet.getRange(rowNum, 6, 1, 12).setValues([row12Cols])'), 'Gộp cập nhật cột 6-17 vào 1 lệnh setValues 12 cột.');
