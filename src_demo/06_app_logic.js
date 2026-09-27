@@ -3,18 +3,16 @@
   /* Bỏ phụ thuộc getInitAppData snapshot, dùng pagination */
   /* ==================================================== */
 
-  if (typeof escapeHtml !== 'function') {
-    function escapeHtml(str) {
-      if (str === null || str === undefined) return '';
-      return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-    }
-    if (typeof window !== 'undefined') window.escapeHtml = escapeHtml;
-  }
+  var escapeHtml = function(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  };
+  if (typeof window !== 'undefined') window.escapeHtml = escapeHtml;
 
   // TỰ ĐỘNG CHUẨN HÓA MÃ NỘI BỘ VÀ SERIAL TỰ SINH CŨ (MIGRATION AN TOÀN TRÊN CLIENT)
   function autoMigrateLegacyInternalSerials() {

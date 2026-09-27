@@ -11686,18 +11686,16 @@
   /* Bỏ phụ thuộc getInitAppData snapshot, dùng pagination */
   /* ==================================================== */
 
-  if (typeof escapeHtml !== 'function') {
-    function escapeHtml(str) {
-      if (str === null || str === undefined) return '';
-      return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-    }
-    if (typeof window !== 'undefined') window.escapeHtml = escapeHtml;
-  }
+  var escapeHtml = function(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  };
+  if (typeof window !== 'undefined') window.escapeHtml = escapeHtml;
 
   // TỰ ĐỘNG CHUẨN HÓA MÃ NỘI BỘ VÀ SERIAL TỰ SINH CŨ (MIGRATION AN TOÀN TRÊN CLIENT)
   function autoMigrateLegacyInternalSerials() {
@@ -16576,6 +16574,19 @@ CÁC QUY TẮC BẮT BUỘC:
     if (item) {
       item.serial = cleanSn;
     }
+    renderExtractedSerialsTable();
+  }
+
+  function deleteExtractedSerial(id) {
+    extractedSerialsList = extractedSerialsList.filter(s => s.id !== id);
+    if (typeof window !== 'undefined') window.extractedSerialsList = extractedSerialsList;
+    renderExtractedSerialsTable();
+  }
+
+  function clearExtractedSerials() {
+    extractedSerialsList = [];
+    if (typeof window !== 'undefined') window.extractedSerialsList = [];
+    renderExtractedSerialsTable();
   }
 
   /* ==================================================== */

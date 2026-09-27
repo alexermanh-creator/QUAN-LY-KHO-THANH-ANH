@@ -915,6 +915,19 @@
     if (item) {
       item.serial = cleanSn;
     }
+    renderExtractedSerialsTable();
+  }
+
+  function deleteExtractedSerial(id) {
+    extractedSerialsList = extractedSerialsList.filter(s => s.id !== id);
+    if (typeof window !== 'undefined') window.extractedSerialsList = extractedSerialsList;
+    renderExtractedSerialsTable();
+  }
+
+  function clearExtractedSerials() {
+    extractedSerialsList = [];
+    if (typeof window !== 'undefined') window.extractedSerialsList = [];
+    renderExtractedSerialsTable();
   }
 
   /* ==================================================== */
