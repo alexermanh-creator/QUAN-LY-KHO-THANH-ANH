@@ -84,26 +84,29 @@
   /* MỞ MODAL SCANNER VÀ QUẢN LÝ GIAO DIỆN TINH GỌN       */
   /* ==================================================== */
   function setScanContext(ctx) {
-    CURRENT_SCAN_CONTEXT = ctx || 'NHAP_KHO';
+    CURRENT_SCAN_CONTEXT = ctx || 'AUTO_UNIVERSAL';
+    const btnAuto = document.getElementById('scan-ctx-auto');
     const btnNhap = document.getElementById('scan-ctx-nhap');
     const btnXuat = document.getElementById('scan-ctx-xuat');
     const btn360 = document.getElementById('scan-ctx-360');
 
-    if (btnNhap && btnXuat && btn360) {
-      const isNhap = CURRENT_SCAN_CONTEXT === 'NHAP_KHO' || CURRENT_SCAN_CONTEXT === 'NHAP_KHO_SINGLE';
-      const isXuat = CURRENT_SCAN_CONTEXT === 'XUAT_KHO';
-      const is360 = CURRENT_SCAN_CONTEXT === 'SERIAL_360';
+    const isAuto = CURRENT_SCAN_CONTEXT === 'AUTO_UNIVERSAL';
+    const isNhap = CURRENT_SCAN_CONTEXT === 'NHAP_KHO' || CURRENT_SCAN_CONTEXT === 'NHAP_KHO_SINGLE';
+    const isXuat = CURRENT_SCAN_CONTEXT === 'XUAT_KHO';
+    const is360 = CURRENT_SCAN_CONTEXT === 'SERIAL_360';
 
-      btnNhap.className = isNhap ? 'btn btn-sm btn-primary py-1 px-3 fw-bold rounded-pill shadow-sm' : 'btn btn-sm btn-outline-secondary py-1 px-3 fw-semibold rounded-pill';
-      btnXuat.className = isXuat ? 'btn btn-sm btn-primary py-1 px-3 fw-bold rounded-pill shadow-sm' : 'btn btn-sm btn-outline-secondary py-1 px-3 fw-semibold rounded-pill';
-      btn360.className = is360 ? 'btn btn-sm btn-primary py-1 px-3 fw-bold rounded-pill shadow-sm' : 'btn btn-sm btn-outline-secondary py-1 px-3 fw-semibold rounded-pill';
-    }
+    if (btnAuto) btnAuto.className = isAuto ? 'btn btn-sm btn-primary py-1 px-3 fw-bold rounded-pill shadow-sm' : 'btn btn-sm btn-outline-secondary py-1 px-3 fw-semibold rounded-pill';
+    if (btnNhap) btnNhap.className = isNhap ? 'btn btn-sm btn-primary py-1 px-3 fw-bold rounded-pill shadow-sm' : 'btn btn-sm btn-outline-secondary py-1 px-3 fw-semibold rounded-pill';
+    if (btnXuat) btnXuat.className = isXuat ? 'btn btn-sm btn-primary py-1 px-3 fw-bold rounded-pill shadow-sm' : 'btn btn-sm btn-outline-secondary py-1 px-3 fw-semibold rounded-pill';
+    if (btn360) btn360.className = is360 ? 'btn btn-sm btn-primary py-1 px-3 fw-bold rounded-pill shadow-sm' : 'btn btn-sm btn-outline-secondary py-1 px-3 fw-semibold rounded-pill';
 
     const titleEl = document.getElementById('scanner-modal-title');
     if (titleEl) {
-      if (CURRENT_SCAN_CONTEXT === 'XUAT_KHO') {
+      if (isAuto) {
+        titleEl.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles text-warning me-1"></i> Quét Đa Năng Thông Minh';
+      } else if (isXuat) {
         titleEl.innerHTML = '<i class="fa-solid fa-truck-fast text-primary me-1"></i> Quét Serial Xuất Kho';
-      } else if (CURRENT_SCAN_CONTEXT === 'SERIAL_360') {
+      } else if (is360) {
         titleEl.innerHTML = '<i class="fa-solid fa-qrcode text-primary me-1"></i> Tra Cứu Hồ Sơ Serial 360';
       } else {
         titleEl.innerHTML = '<i class="fa-solid fa-box-archive text-success me-1"></i> Quét Serial Nhập Kho';
@@ -117,9 +120,10 @@
       // Tự động suy luận ngữ cảnh theo tab người dùng đang mở
       const activeTabEl = document.querySelector('.main-content-tab.active, .tab-pane.active');
       const activeTabId = activeTabEl ? activeTabEl.id : '';
-      if (activeTabId.includes('xuat') || activeTabId.includes('Xuat')) initialCtx = 'XUAT_KHO';
+      if (activeTabId.includes('nhap') || activeTabId.includes('Nhap')) initialCtx = 'NHAP_KHO';
+      else if (activeTabId.includes('xuat') || activeTabId.includes('Xuat')) initialCtx = 'XUAT_KHO';
       else if (activeTabId.includes('360')) initialCtx = 'SERIAL_360';
-      else initialCtx = 'NHAP_KHO';
+      else initialCtx = 'AUTO_UNIVERSAL';
     } else if (initialCtx === 'NHAP_KHO_SINGLE') {
       initialCtx = 'NHAP_KHO';
     }
@@ -929,7 +933,36 @@
       return;
     }
 
-    if (CURRENT_SCAN_CONTEXT === 'NHAP_KHO_SINGLE' || CURRENT_SCAN_CONTEXT === 'NHAP_KHO') {
+    if (CURRENT_SCAN_CONTEXT === 'AUTO_UNIVERSAL') {
+      const firstSn = validSerials[0];
+      const foundInDb = (typeof SERIAL_DB !== 'undefined' && Array.isArray(SERIAL_DB))
+        ? SERIAL_DB.find(s => String(s.serial || '').trim().toUpperCase() === firstSn || String(s.internalId || '').trim().toUpperCase() === firstSn)
+        : null;
+
+      if (foundInDb) {
+        // Đã có trong kho => Tự động mở Hồ Sơ 360°
+        const inp = document.getElementById('serial-360-search-input');
+        if (inp) inp.value = firstSn;
+        if (typeof switchTab === 'function') switchTab('Serial360');
+        if (typeof lookupSerial360 === 'function') lookupSerial360(firstSn);
+        if (typeof showFloatingScannerToast === 'function') {
+          showFloatingScannerToast(`✨ Đã nhận diện máy <b>${foundInDb.model || firstSn}</b> (${foundInDb.kho || 'Kho VP'}) - Mở 360°`);
+        }
+      } else {
+        // Chưa có trong kho => Tự động đưa vào Nhập Kho
+        const textarea = document.getElementById('nhap-serial-input');
+        if (textarea) {
+          const curVal = textarea.value.trim();
+          const addedText = validSerials.join('\n');
+          textarea.value = curVal ? `${curVal}\n${addedText}` : addedText;
+          if (typeof updateNhapSerialCounter === 'function') updateNhapSerialCounter();
+        }
+        if (typeof switchTab === 'function') switchTab('NhapKho');
+        if (typeof showFloatingScannerToast === 'function') {
+          showFloatingScannerToast(`✨ Thiết bị mới chưa có trong kho - Đã đưa <b>${validSerials.length}</b> serial vào Nhập Kho`);
+        }
+      }
+    } else if (CURRENT_SCAN_CONTEXT === 'NHAP_KHO_SINGLE' || CURRENT_SCAN_CONTEXT === 'NHAP_KHO') {
       const textarea = document.getElementById('nhap-serial-input');
       if (textarea) {
         const curVal = textarea.value.trim();
@@ -944,6 +977,7 @@
       if (typeof switchTab === 'function') switchTab('XuatKho');
       if (typeof addSerialToXuatDraft === 'function') {
         validSerials.forEach(sn => addSerialToXuatDraft(sn));
+      }
     } else if (CURRENT_SCAN_CONTEXT === 'INVENTORY_SESSION') {
       if (typeof addSerialToInventorySession === 'function') {
         validSerials.forEach(sn => addSerialToInventorySession(sn));
@@ -1042,7 +1076,33 @@
   }
 
   function routeScannedCodeToContext(code) {
-    if (CURRENT_SCAN_CONTEXT === 'GLOBAL_SEARCH') {
+    if (CURRENT_SCAN_CONTEXT === 'AUTO_UNIVERSAL') {
+      const foundInDb = (typeof SERIAL_DB !== 'undefined' && Array.isArray(SERIAL_DB))
+        ? SERIAL_DB.find(s => String(s.serial || '').trim().toUpperCase() === code.toUpperCase() || String(s.internalId || '').trim().toUpperCase() === code.toUpperCase())
+        : null;
+
+      if (foundInDb) {
+        const inp = document.getElementById('serial-360-search-input');
+        if (inp) inp.value = code;
+        if (typeof switchTab === 'function') switchTab('Serial360');
+        if (typeof lookupSerial360 === 'function') lookupSerial360(code);
+        if (typeof showFloatingScannerToast === 'function') {
+          showFloatingScannerToast(`✨ Máy <b>${foundInDb.model || code}</b> (${foundInDb.kho || 'Kho VP'}) - Mở 360°`);
+        }
+      } else {
+        const textarea = document.getElementById('nhap-serial-input');
+        if (textarea) {
+          const curVal = textarea.value.trim();
+          textarea.value = curVal ? `${curVal}\n${code}` : code;
+          if (typeof updateNhapSerialCounter === 'function') updateNhapSerialCounter();
+        }
+        if (typeof switchTab === 'function') switchTab('NhapKho');
+        if (typeof showFloatingScannerToast === 'function') {
+          showFloatingScannerToast(`✨ Thiết bị mới: Đã đưa <b>${code}</b> vào Nhập Kho`);
+        }
+      }
+      return;
+    } else if (CURRENT_SCAN_CONTEXT === 'GLOBAL_SEARCH') {
       const inp = document.getElementById('global-search-input');
       if (inp) inp.value = code;
       if (typeof handleGlobalSearch === 'function') handleGlobalSearch(code);

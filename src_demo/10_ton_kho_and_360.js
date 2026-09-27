@@ -818,6 +818,150 @@
     }
   }
 
+  /* ==================================================== */
+  /* ĐỔI KHO NHANH 1-CHẠM (QUICK WAREHOUSE TRANSFER)      */
+  /* ==================================================== */
+  function quickTransferSerialWarehouse(serial) {
+    if (!serial) return;
+    const s = (typeof SERIAL_DB !== 'undefined' ? SERIAL_DB : []).find(x => 
+      (x.serial && x.serial.toLowerCase() === String(serial).toLowerCase()) ||
+      (x.internalId && x.internalId.toLowerCase() === String(serial).toLowerCase())
+    );
+    if (!s) {
+      if (typeof Swal !== 'undefined') Swal.fire('Lỗi', `Không tìm thấy thiết bị [${serial}]!`, 'error');
+      else alert(`Không tìm thấy thiết bị [${serial}]!`);
+      return;
+    }
+
+    const currentKho = s.kho || 'Kho VP';
+    const warehouses = (typeof INITIAL_WAREHOUSES !== 'undefined' && Array.isArray(INITIAL_WAREHOUSES) && INITIAL_WAREHOUSES.length > 0)
+      ? INITIAL_WAREHOUSES
+      : [{ ten: 'Kho VP' }, { ten: 'Kho Linh Kiện' }, { ten: 'Kho Tổng' }, { ten: 'Kho Bảo Hành' }];
+
+    const warehouseOptions = warehouses
+      .filter(w => (w.ten || w.name) !== currentKho)
+      .map(w => `<option value="${w.ten || w.name}">${w.ten || w.name}</option>`)
+      .join('');
+
+    if (typeof Swal !== 'undefined') {
+      Swal.fire({
+        title: '<i class="fa-solid fa-right-left text-primary me-2"></i>Đổi Kho Nhanh',
+        html: `
+          <div class="text-start small mb-3">
+            <div class="p-3 bg-light rounded border mb-3">
+              <div class="mb-1">Thiết bị: <strong class="text-primary">${s.model || '--'}</strong> - <span class="text-muted">${s.tenHang || ''}</span></div>
+              <div class="mb-1">Serial Hãng: <strong class="font-monospace text-danger">${s.serial}</strong></div>
+              <div>Kho hiện tại: <span class="badge bg-warning text-dark"><i class="fa-solid fa-warehouse me-1"></i>${currentKho}</span></div>
+            </div>
+            <label class="form-label fw-bold">Chọn Kho Chuyển Đến <span class="text-danger">*</span>:</label>
+            <select id="swal-quick-transfer-kho" class="form-select mb-3">
+              ${warehouseOptions}
+            </select>
+            <label class="form-label fw-bold">Lý Do Chuyển Kho:</label>
+            <input type="text" id="swal-quick-transfer-reason" class="form-control" value="Điều chuyển nội bộ tại kho" placeholder="Nhập lý do chuyển kho...">
+          </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: '<i class="fa-solid fa-check me-1"></i> Xác Nhận Đổi Kho',
+        cancelButtonText: 'Hủy bỏ',
+        confirmButtonColor: '#0284c7',
+        preConfirm: () => {
+          const targetKho = document.getElementById('swal-quick-transfer-kho')?.value;
+          const reason = document.getElementById('swal-quick-transfer-reason')?.value?.trim() || 'Điều chuyển nội bộ tại kho';
+          if (!targetKho) {
+            Swal.showValidationMessage('Vui lòng chọn kho chuyển đến!');
+            return false;
+          }
+          return { targetKho, reason };
+        }
+      }).then(result => {
+        if (result.isConfirmed && result.value) {
+          const { targetKho, reason } = result.value;
+          performQuickWarehouseTransfer(s, targetKho, reason);
+        }
+      });
+    }
+  }
+
+  function performQuickWarehouseTransfer(item, newKho, reason) {
+    const oldKho = item.kho || 'Kho VP';
+    if (oldKho === newKho) return;
+
+    if (typeof Swal !== 'undefined') {
+      Swal.fire({
+        title: 'Đang chuyển kho...',
+        html: `Đang chuyển thiết bị <b>${item.serial}</b> sang <b>${newKho}</b>...`,
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+      });
+    }
+
+    // 1. Cập nhật local state
+    item.kho = newKho;
+    const nowStr = `${formatDateDisplay(getLocalDateStr())} ${new Date().toLocaleTimeString('vi-VN')}`;
+    if (!item.timeline) item.timeline = [];
+    item.timeline.unshift({
+      date: nowStr,
+      user: typeof CURRENT_USER_NAME !== 'undefined' ? CURRENT_USER_NAME : 'Thủ kho',
+      action: 'Chuyển kho',
+      note: `Chuyển kho từ [${oldKho}] sang [${newKho}]. Lý do: ${reason}`
+    });
+
+    // 2. Ghi Audit Log
+    if (typeof recordAuditLog === 'function') {
+      recordAuditLog(
+        'ĐIỀU CHUYỂN KHO',
+        `Serial ${item.serial}`,
+        oldKho,
+        newKho,
+        reason,
+        [{ field: 'Kho hàng', oldVal: oldKho, newVal: newKho }],
+        'Thiết bị',
+        '',
+        item.maPhieuNhap || ''
+      );
+    }
+
+    // 3. Đồng bộ Google Sheets backend
+    if (typeof WarehouseAPI !== 'undefined' && typeof WarehouseAPI.updateThietBi === 'function') {
+      WarehouseAPI.updateThietBi({
+        oldSerial: item.serial,
+        newSerial: item.serial,
+        kho: newKho,
+        reason: reason
+      }, function(res) {
+        if (typeof Swal !== 'undefined') {
+          Swal.fire({
+            icon: 'success',
+            title: 'Chuyển kho thành công!',
+            html: `Thiết bị <b class="font-monospace">${item.serial}</b> đã được chuyển sang <b class="text-primary">${newKho}</b>.`,
+            timer: 2000,
+            showConfirmButton: false
+          });
+        }
+        if (typeof lookupSerial360 === 'function') {
+          lookupSerial360(item.serial);
+        }
+        if (typeof renderTonKhoTable === 'function') {
+          renderTonKhoTable();
+        }
+      });
+    } else {
+      if (typeof Swal !== 'undefined') {
+        Swal.fire({
+          icon: 'success',
+          title: 'Đã đổi kho!',
+          html: `Thiết bị <b class="font-monospace">${item.serial}</b>: <span class="badge bg-secondary">${oldKho}</span> <i class="fa-solid fa-arrow-right mx-1"></i> <span class="badge bg-success">${newKho}</span>`,
+          timer: 1800,
+          showConfirmButton: false
+        });
+      }
+      if (typeof lookupSerial360 === 'function') {
+        lookupSerial360(item.serial);
+      }
+    }
+  }
+
   // XEM & IN TEM MÃ VẠCH BARCODE / QR
   function openPrintBarcodeModal(serial) {
     const item = (typeof SERIAL_DB !== 'undefined' ? SERIAL_DB : []).find(s => s.serial === serial);
@@ -1269,9 +1413,12 @@
               · Phân nhóm: <a href="javascript:void(0)" onclick="goToTonKhoByCategory('${displayNhom}')" class="fw-semibold text-decoration-none text-primary">${displayNhom} <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:0.7rem;"></i></a>
             </div>
           </div>
-          <div class="d-flex align-items-center gap-2">
+          <div class="d-flex align-items-center gap-2 flex-wrap">
             <button class="btn btn-sm btn-outline-warning text-dark fw-bold" onclick="openQuickEditSerialModal('${target.serial}', 'Serial360')" title="Sửa nhanh thông tin thiết bị này">
               <i class="fa-solid fa-pen-to-square me-1"></i> Sửa nhanh
+            </button>
+            <button class="btn btn-sm btn-primary fw-bold" onclick="quickTransferSerialWarehouse('${target.serial}')" title="Đổi kho lưu trữ cho thiết bị này">
+              <i class="fa-solid fa-right-left me-1"></i> Đổi kho
             </button>
             <button class="btn btn-sm btn-outline-secondary" onclick="openCreateWarrantyCaseModal('${target.serial}')" title="Tiếp nhận ca bảo hành cho thiết bị này">
               <i class="fa-solid fa-shield-halved text-warning me-1"></i> Tạo ca bảo hành
@@ -1338,10 +1485,15 @@
                     <span class="fw-semibold text-dark"><i class="fa-regular fa-calendar-check me-1 text-muted"></i>${target.ngayNhap || '--'}</span>
                   </div>
                   <div class="d-flex justify-content-between align-items-center py-1 border-bottom border-light">
-                    <span class="text-secondary">Kho hàng tiếp nhận:</span>
-                    <a href="javascript:void(0)" onclick="goToTonKhoByKho('${target.kho}')" class="fw-bold text-decoration-none text-dark hover-text-primary" title="Bấm để xem danh sách máy tại kho ${target.kho}">
-                      <i class="fa-solid fa-warehouse me-1 text-muted"></i>${target.kho || '--'} <i class="fa-solid fa-arrow-up-right-from-square small text-muted ms-1"></i>
-                    </a>
+                    <span class="text-secondary">Kho hàng hiện tại:</span>
+                    <div class="d-flex align-items-center gap-2">
+                      <a href="javascript:void(0)" onclick="goToTonKhoByKho('${target.kho}')" class="fw-bold text-decoration-none text-dark hover-text-primary" title="Bấm để xem danh sách máy tại kho ${target.kho}">
+                        <i class="fa-solid fa-warehouse me-1 text-primary"></i>${target.kho || '--'}
+                      </a>
+                      <button class="btn btn-xs btn-outline-primary py-0 px-2 rounded-pill fw-bold" style="font-size: 0.75rem;" onclick="quickTransferSerialWarehouse('${target.serial}')" title="Đổi kho cho máy này">
+                        <i class="fa-solid fa-right-left me-1"></i>Đổi kho
+                      </button>
+                    </div>
                   </div>
                   <div class="d-flex justify-content-between align-items-center py-1 border-bottom border-light">
                     <span class="text-secondary">Loại hàng / Tình trạng:</span>
@@ -1545,4 +1697,5 @@
     window.renderSerial360MultiResults = renderSerial360MultiResults;
     window.openQuickEditSerialModal = openQuickEditSerialModal;
     window.submitQuickEditSerial = submitQuickEditSerial;
+    window.quickTransferSerialWarehouse = quickTransferSerialWarehouse;
   }

@@ -14,9 +14,12 @@
           <!-- BỘ GIẢI MÃ MÃ VẠCH NGẦM (GIỮ NGUYÊN ĐỂ HTML5QRCODE KHÔNG BỊ LỖI DOM) -->
           <div id="html5-qr-reader" style="display:none; width: 250px; height: 250px;"></div>
 
-          <!-- BỘ CHỌN NGỮ CẢNH QUÉT TRỰC QUAN (NHẬP KHO / XUẤT KHO / TRA CỨU) -->
-          <div class="d-flex justify-content-center gap-1 mb-3 p-1 bg-light rounded border">
-            <button type="button" class="btn btn-sm btn-primary py-1 px-3 fw-bold rounded-pill shadow-sm" id="scan-ctx-nhap" onclick="setScanContext('NHAP_KHO')">
+          <!-- BỘ CHỌN NGỮ CẢNH QUÉT TRỰC QUAN (TỰ ĐỘNG ĐA NĂNG / NHẬP KHO / XUẤT KHO / TRA CỨU) -->
+          <div class="d-flex justify-content-center gap-1 mb-3 p-1 bg-light rounded border flex-wrap">
+            <button type="button" class="btn btn-sm btn-primary py-1 px-3 fw-bold rounded-pill shadow-sm" id="scan-ctx-auto" onclick="setScanContext('AUTO_UNIVERSAL')">
+              <i class="fa-solid fa-wand-magic-sparkles me-1 text-warning"></i> ✨ Tự Động Đa Năng
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary py-1 px-3 fw-semibold rounded-pill" id="scan-ctx-nhap" onclick="setScanContext('NHAP_KHO')">
               <i class="fa-solid fa-box-archive me-1"></i> Quét Nhập Kho
             </button>
             <button type="button" class="btn btn-sm btn-outline-secondary py-1 px-3 fw-semibold rounded-pill" id="scan-ctx-xuat" onclick="setScanContext('XUAT_KHO')">
