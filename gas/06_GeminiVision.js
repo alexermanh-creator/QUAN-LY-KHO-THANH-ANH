@@ -198,10 +198,15 @@ function callGeminiVisionBackend(base64Image, mimeType) {
     }
   }
 
+  let displayError = lastError;
+  if (displayError && (displayError.includes('UrlFetchApp') || displayError.includes('external_request') || displayError.includes('permission') || displayError.includes('quyền'))) {
+    displayError = 'Chưa cấp quyền kết nối mạng cho Google Apps Script. Vui lòng vào Google Sheets -> Menu [THÀNH AN ERP] -> chọn [🔑 Cấp Quyền AI Gemini (Ủy Quyền 1 Lần)] và bấm Cho Phép.';
+  }
+
   const totalDuration = new Date().getTime() - startTime;
   return {
     success: false,
-    error: 'Lỗi bóc tách AI: ' + lastError,
+    error: 'Lỗi bóc tách AI: ' + displayError,
     duration: totalDuration
   };
 }
@@ -252,9 +257,13 @@ function testGeminiConnectionBackend(testApiKey, testModel) {
       };
     }
   } catch (e) {
+    let msg = e.message;
+    if (msg.includes('UrlFetchApp') || msg.includes('external_request') || msg.includes('permission') || msg.includes('quyền')) {
+      msg = 'Chưa cấp quyền kết nối mạng cho Google Apps Script. Vui lòng mở Google Sheets -> Menu [THÀNH AN ERP] -> chọn [🔑 Cấp Quyền AI Gemini (Ủy Quyền 1 Lần)] và bấm Cho Phép.';
+    }
     return {
       success: false,
-      message: 'Lỗi kiểm tra kết nối: ' + e.message
+      message: 'Lỗi kiểm tra kết nối: ' + msg
     };
   }
 }

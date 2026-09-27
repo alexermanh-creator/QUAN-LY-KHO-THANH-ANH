@@ -52,10 +52,24 @@ function onOpen(e) {
       .addItem(' Định Dạng Số Điện Thoại Giữ Số 0 (Format Text)', 'menuFormatPhoneNumbers')
       .addItem(' Chuẩn Hóa & Dọn Dẹp CSDL (8 Sheet Chuẩn)', 'menuChuanHoaGoogleSheets')
       .addSeparator()
+      .addItem('🔑 Cấp Quyền AI Gemini (Ủy Quyền 1 Lần)', 'menuAuthorizeGemini')
       .addItem(' Sao Lưu Toàn Bộ CSDL (Backup)', 'menuCreateBackupSheet')
       .addToUi();
   } catch(err) {
     Logger.log("onOpen error: " + err.message);
+  }
+}
+
+/**
+ * HÀM KÍCH HOẠT ỦY QUYỀN URLFETCHAPP CHO AI GEMINI TRÊN GOOGLE SHEETS
+ */
+function menuAuthorizeGemini() {
+  const ui = SpreadsheetApp.getUi();
+  try {
+    const res = UrlFetchApp.fetch("https://www.google.com", { muteHttpExceptions: true });
+    ui.alert(" THÀNH AN ERP", "Chúc mừng! Quyền kết nối mạng và AI Gemini đã được kích hoạt thành công trên tài khoản của bạn!", ui.ButtonSet.OK);
+  } catch(err) {
+    ui.alert("Lỗi cấp quyền", err.message, ui.ButtonSet.OK);
   }
 }
 

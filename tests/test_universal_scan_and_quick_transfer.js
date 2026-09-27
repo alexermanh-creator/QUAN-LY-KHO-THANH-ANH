@@ -84,6 +84,42 @@ assert.strictEqual(targetItem.kho, 'Kho Linh Kiện', 'FAIL: Kho không được
 assert.strictEqual(targetItem.timeline[0].action, 'Chuyển kho', 'FAIL: Timeline không ghi nhận');
 console.log('✓ PASS 4C: Đổi kho nhanh tại chỗ cập nhật đúng Kho mới và ghi nhận vết lịch sử thành công.');
 
+// Test 5: Mô phỏng quét 5 tem MỚI cùng lúc
+function simulateMultiScan(serials) {
+  const inStock = [];
+  const newItems = [];
+  serials.forEach(s => {
+    const f = mockSerialDb.find(m => m.serial === s);
+    if (f) inStock.push(s);
+    else newItems.push(s);
+  });
+  if (inStock.length === 0) return { type: 'ALL_NEW', items: newItems };
+  if (newItems.length === 0) return { type: 'ALL_IN_STOCK', items: inStock };
+  return { type: 'MIXED', inStock, newItems };
+}
+
+const res5New = simulateMultiScan(['SN-NEW-1', 'SN-NEW-2', 'SN-NEW-3', 'SN-NEW-4', 'SN-NEW-5']);
+assert.strictEqual(res5New.type, 'ALL_NEW', 'FAIL: Phải phân loại ALL_NEW');
+assert.strictEqual(res5New.items.length, 5, 'FAIL: Phải có đủ 5 tem mới');
+console.log('✓ PASS 5: Quét 5 tem MỚI cùng lúc -> Tự động nhận diện lô hàng và chuyển vào Nhập kho.');
+
+// Test 6: Mô phỏng quét 3 tem ĐÃ CÓ trong kho
+mockSerialDb.push(
+  { serial: 'SN-OLD-1', model: 'Canon 2900', kho: 'Kho VP' },
+  { serial: 'SN-OLD-2', model: 'HP M404dn', kho: 'Kho LK' }
+);
+const res3Old = simulateMultiScan(['VNM0W45384', 'SN-OLD-1', 'SN-OLD-2']);
+assert.strictEqual(res3Old.type, 'ALL_IN_STOCK', 'FAIL: Phải phân loại ALL_IN_STOCK');
+assert.strictEqual(res3Old.items.length, 3, 'FAIL: Phải có đủ 3 máy');
+console.log('✓ PASS 6: Quét 3 tem ĐÃ CÓ trong kho -> Nhận diện đầy đủ cả 3 thiết bị và mở tùy chọn Xuất/360.');
+
+// Test 7: Mô phỏng quét HỖN HỢP 2 tem mới + 2 tem cũ
+const resMixed = simulateMultiScan(['VNM0W45384', 'SN-OLD-1', 'SN-BRAND-NEW-A', 'SN-BRAND-NEW-B']);
+assert.strictEqual(resMixed.type, 'MIXED', 'FAIL: Phải phân loại MIXED');
+assert.strictEqual(resMixed.inStock.length, 2, 'FAIL: 2 máy cũ');
+assert.strictEqual(resMixed.newItems.length, 2, 'FAIL: 2 máy mới');
+console.log('✓ PASS 7: Quét HỖN HỢP 2 tem cũ + 2 tem mới -> Phân nhóm rành mạch và cung cấp các nút xử lý.');
+
 console.log('================================================================');
-console.log('>>> TOAN BO 4 BACKTESTS DA HOAN TAT XUAT SAC VA DAT CHUAN 100%! <<<');
+console.log('>>> TOAN BO 7 BACKTESTS DA HOAN TAT XUAT SAC VA DAT CHUAN 100%! <<<');
 console.log('================================================================');

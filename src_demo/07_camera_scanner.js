@@ -934,34 +934,150 @@
     }
 
     if (CURRENT_SCAN_CONTEXT === 'AUTO_UNIVERSAL') {
-      const firstSn = validSerials[0];
-      const foundInDb = (typeof SERIAL_DB !== 'undefined' && Array.isArray(SERIAL_DB))
-        ? SERIAL_DB.find(s => String(s.serial || '').trim().toUpperCase() === firstSn || String(s.internalId || '').trim().toUpperCase() === firstSn)
-        : null;
+      // Phân loại toàn bộ danh sách tem quét được đối chiếu với SERIAL_DB
+      const inStockItems = [];
+      const newSerials = [];
 
-      if (foundInDb) {
-        // Đã có trong kho => Tự động mở Hồ Sơ 360°
-        const inp = document.getElementById('serial-360-search-input');
-        if (inp) inp.value = firstSn;
-        if (typeof switchTab === 'function') switchTab('Serial360');
-        if (typeof lookupSerial360 === 'function') lookupSerial360(firstSn);
-        if (typeof showFloatingScannerToast === 'function') {
-          showFloatingScannerToast(`✨ Đã nhận diện máy <b>${foundInDb.model || firstSn}</b> (${foundInDb.kho || 'Kho VP'}) - Mở 360°`);
+      validSerials.forEach(sn => {
+        const found = (typeof SERIAL_DB !== 'undefined' && Array.isArray(SERIAL_DB))
+          ? SERIAL_DB.find(s => String(s.serial || '').trim().toUpperCase() === sn || String(s.internalId || '').trim().toUpperCase() === sn)
+          : null;
+        if (found) {
+          inStockItems.push({ serial: sn, item: found });
+        } else {
+          newSerials.push(sn);
         }
-      } else {
-        // Chưa có trong kho => Tự động đưa vào Nhập Kho
+      });
+
+      // TRƯỜNG HỢP 1: CHỈ CÓ 1 TEM DUY NHẤT
+      if (validSerials.length === 1) {
+        const firstSn = validSerials[0];
+        if (inStockItems.length === 1) {
+          const found = inStockItems[0].item;
+          const inp = document.getElementById('serial-360-search-input');
+          if (inp) inp.value = firstSn;
+          if (typeof switchTab === 'function') switchTab('Serial360');
+          if (typeof lookupSerial360 === 'function') lookupSerial360(firstSn);
+          if (typeof showFloatingScannerToast === 'function') {
+            showFloatingScannerToast(`✨ Đã nhận diện máy <b>${found.model || firstSn}</b> (${found.kho || 'Kho VP'}) - Mở 360°`);
+          }
+        } else {
+          const textarea = document.getElementById('nhap-serial-input');
+          if (textarea) {
+            const curVal = textarea.value.trim();
+            textarea.value = curVal ? `${curVal}\n${firstSn}` : firstSn;
+            if (typeof updateNhapSerialCounter === 'function') updateNhapSerialCounter();
+          }
+          if (typeof switchTab === 'function') switchTab('NhapKho');
+          if (typeof showFloatingScannerToast === 'function') {
+            showFloatingScannerToast(`✨ Thiết bị mới: Đã đưa <b>${firstSn}</b> vào Nhập Kho`);
+          }
+        }
+        return;
+      }
+
+      // TRƯỜNG HỢP 2: QUÉT ĐƯỢC NHIỀU TEM (2, 3, 5 TEM CÙNG LÚC)
+      // 2A. Nếu TOÀN BỘ là máy mới (chưa có trong kho) => Lô hàng Nhập Kho mới!
+      if (inStockItems.length === 0) {
         const textarea = document.getElementById('nhap-serial-input');
         if (textarea) {
           const curVal = textarea.value.trim();
-          const addedText = validSerials.join('\n');
+          const addedText = newSerials.join('\n');
           textarea.value = curVal ? `${curVal}\n${addedText}` : addedText;
           if (typeof updateNhapSerialCounter === 'function') updateNhapSerialCounter();
         }
         if (typeof switchTab === 'function') switchTab('NhapKho');
         if (typeof showFloatingScannerToast === 'function') {
-          showFloatingScannerToast(`✨ Thiết bị mới chưa có trong kho - Đã đưa <b>${validSerials.length}</b> serial vào Nhập Kho`);
+          showFloatingScannerToast(`✨ Phát hiện <b>${newSerials.length}</b> thiết bị mới chưa có trong kho - Đã đưa vào Nhập Kho!`);
         }
+        return;
       }
+
+      // 2B. Nếu TOÀN BỘ là máy đã có trong kho => Xuất kho hoặc Xem 360
+      if (newSerials.length === 0) {
+        if (typeof Swal !== 'undefined') {
+          const listHtml = inStockItems.map(it => `
+            <div class="d-flex justify-content-between align-items-center py-1 border-bottom text-start font-monospace small">
+              <div><strong class="text-primary">${it.serial}</strong> <span class="text-dark">(${it.item.model || ''})</span></div>
+              <span class="badge bg-secondary">${it.item.kho || 'Kho VP'}</span>
+            </div>
+          `).join('');
+
+          Swal.fire({
+            title: `✨ Đã Nhận Diện ${inStockItems.length} Thiết Bị Trong Kho`,
+            html: `
+              <div class="p-2 mb-3 bg-light rounded border text-start" style="max-height: 180px; overflow-y: auto;">
+                ${listHtml}
+              </div>
+              <div class="text-muted small mb-2">Toàn bộ ${inStockItems.length} thiết bị này <b>đã tồn tại trong kho</b>. Bạn muốn thao tác gì?</div>
+            `,
+            showDenyButton: true,
+            showCancelButton: true,
+            confirmButtonText: `<i class="fa-solid fa-truck-fast me-1"></i> Đưa vào Xuất Kho (${inStockItems.length})`,
+            confirmButtonColor: '#198754',
+            denyButtonText: `<i class="fa-solid fa-rotate-left me-1"></i> Xem 360° Máy Đầu`,
+            denyButtonColor: '#0d6efd',
+            cancelButtonText: 'Đóng'
+          }).then(res => {
+            if (res.isConfirmed) {
+              if (typeof switchTab === 'function') switchTab('XuatKho');
+              if (typeof addSerialToXuatDraft === 'function') {
+                inStockItems.forEach(it => addSerialToXuatDraft(it.serial));
+              }
+            } else if (res.isDenied) {
+              const firstSn = inStockItems[0].serial;
+              const inp = document.getElementById('serial-360-search-input');
+              if (inp) inp.value = firstSn;
+              if (typeof switchTab === 'function') switchTab('Serial360');
+              if (typeof lookupSerial360 === 'function') lookupSerial360(firstSn);
+            }
+          });
+        }
+        return;
+      }
+
+      // 2C. TRƯỜNG HỢP HỖN HỢP: Vừa có máy mới, vừa có máy cũ trong kho
+      if (typeof Swal !== 'undefined') {
+        const newHtml = newSerials.map(sn => `<span class="badge bg-success-subtle text-success border border-success-subtle me-1 mb-1 font-monospace">${sn}</span>`).join('');
+        const oldHtml = inStockItems.map(it => `<span class="badge bg-primary-subtle text-primary border border-primary-subtle me-1 mb-1 font-monospace">${it.serial} (${it.item.kho || 'Kho'})</span>`).join('');
+
+        Swal.fire({
+          title: `✨ Kết Quả Nhận Diện Đa Năng (${validSerials.length} Tem)`,
+          html: `
+            <div class="text-start small mb-2">
+              <div class="fw-bold text-success mb-1"><i class="fa-solid fa-plus-circle me-1"></i> ${newSerials.length} Thiết bị MỚI (chưa có trong kho):</div>
+              <div class="p-2 bg-light rounded border mb-2">${newHtml}</div>
+              <div class="fw-bold text-primary mb-1"><i class="fa-solid fa-warehouse me-1"></i> ${inStockItems.length} Thiết bị ĐÃ CÓ trong kho:</div>
+              <div class="p-2 bg-light rounded border">${oldHtml}</div>
+            </div>
+            <div class="text-muted small">Vui lòng chọn hướng xử lý cho danh sách trên:</div>
+          `,
+          showDenyButton: true,
+          showCancelButton: true,
+          confirmButtonText: `<i class="fa-solid fa-box-archive me-1"></i> Nhập Kho máy mới (${newSerials.length})`,
+          confirmButtonColor: '#198754',
+          denyButtonText: `<i class="fa-solid fa-truck-fast me-1"></i> Xuất Kho máy sẵn (${inStockItems.length})`,
+          denyButtonColor: '#0d6efd',
+          cancelButtonText: 'Đóng'
+        }).then(res => {
+          if (res.isConfirmed) {
+            const textarea = document.getElementById('nhap-serial-input');
+            if (textarea) {
+              const curVal = textarea.value.trim();
+              const addedText = newSerials.join('\n');
+              textarea.value = curVal ? `${curVal}\n${addedText}` : addedText;
+              if (typeof updateNhapSerialCounter === 'function') updateNhapSerialCounter();
+            }
+            if (typeof switchTab === 'function') switchTab('NhapKho');
+          } else if (res.isDenied) {
+            if (typeof switchTab === 'function') switchTab('XuatKho');
+            if (typeof addSerialToXuatDraft === 'function') {
+              inStockItems.forEach(it => addSerialToXuatDraft(it.serial));
+            }
+          }
+        });
+      }
+      return;
     } else if (CURRENT_SCAN_CONTEXT === 'NHAP_KHO_SINGLE' || CURRENT_SCAN_CONTEXT === 'NHAP_KHO') {
       const textarea = document.getElementById('nhap-serial-input');
       if (textarea) {
