@@ -2600,6 +2600,7 @@ CÁC QUY TẮC BẮT BUỘC:
             onLoginSuccess(u, defaultAccounts[u].name, defaultAccounts[u].role, 'SES-ERR-FALLBACK-' + Date.now());
           } else {
             showErrMsg('Lỗi kết nối xác thực: ' + apiErr.message);
+          }
         }
         return;
       }
