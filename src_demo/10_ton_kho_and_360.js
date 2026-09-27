@@ -1203,10 +1203,24 @@
     openSerial360Direct(serial);
   }
 
+  // Hàm mở xem chi tiết một máy trong danh sách kết quả nhiều máy
+  function openSerial360MultiItem(serial, idx) {
+    if (typeof window !== 'undefined' && Array.isArray(window._CURRENT_360_SEARCH_LIST) && window._CURRENT_360_SEARCH_LIST.length > 0) {
+      window.CURRENT_SCAN_360_LIST = window._CURRENT_360_SEARCH_LIST.map(item => item.serial).filter(Boolean);
+      window.CURRENT_SCAN_360_INDEX = idx;
+    }
+    lookupSerial360(serial);
+  }
+
   // Hiển thị danh sách thiết bị khi tra cứu theo Model hoặc từ khóa chung
   function renderSerial360MultiResults(keyword, list) {
     const container = document.getElementById('serial-360-profile-container');
     if (!container) return;
+
+    if (typeof window !== 'undefined') {
+      window._CURRENT_360_SEARCH_LIST = list;
+      window._CURRENT_360_SEARCH_KEYWORD = keyword;
+    }
 
     let rowsHtml = list.map((s, idx) => {
       let badgeStatus = '';
@@ -1216,7 +1230,7 @@
       else badgeStatus = `<span class="badge bg-secondary">${s.status || 'N/A'}</span>`;
 
       return `
-        <tr class="align-middle" style="cursor: pointer;" onclick="lookupSerial360('${escapeHtml(s.serial)}')">
+        <tr class="align-middle" style="cursor: pointer;" onclick="openSerial360MultiItem('${escapeHtml(s.serial)}', ${idx})">
           <td class="text-center font-monospace text-muted small">${idx + 1}</td>
           <td>
             <span class="font-monospace fw-bold text-primary fs-6">${escapeHtml(s.serial)}</span>
@@ -1233,7 +1247,7 @@
             ${s.ngayNhap ? `<div class="small text-muted">Nhập: ${escapeHtml(s.ngayNhap)}</div>` : ''}
           </td>
           <td class="text-end">
-            <button class="btn btn-sm btn-primary px-3 shadow-sm" onclick="event.stopPropagation(); lookupSerial360('${escapeHtml(s.serial)}')">
+            <button class="btn btn-sm btn-primary px-3 shadow-sm" onclick="event.stopPropagation(); openSerial360MultiItem('${escapeHtml(s.serial)}', ${idx})">
               <i class="fa-solid fa-fingerprint me-1"></i> Mở 360°
             </button>
           </td>
@@ -1304,6 +1318,25 @@
 
     const inputEl = document.getElementById('serial-360-search-input');
     if (inputEl) inputEl.value = q;
+
+    // Tự động nhận diện trường hợp người dùng dán hoặc nhập nhiều Serial (phân tách bởi phẩy, khoảng trắng, xuống dòng)
+    const multiTokens = q.split(/[\s,;\n\r]+/).filter(Boolean);
+    if (multiTokens.length > 1) {
+      const sDb = (typeof SERIAL_DB !== 'undefined' ? SERIAL_DB : []);
+      const isSingleExact = sDb.some(s => 
+        (s.serial && s.serial.toLowerCase() === q.toLowerCase()) || 
+        (s.internalId && s.internalId.toLowerCase() === q.toLowerCase())
+      );
+      const isModelMatch = !isSingleExact && sDb.some(s => s.model && s.model.toLowerCase().includes(q.toLowerCase()));
+
+      if (!isSingleExact && !isModelMatch) {
+        window.CURRENT_SCAN_360_LIST = multiTokens;
+        window.CURRENT_SCAN_360_INDEX = 0;
+        window._CURRENT_360_SEARCH_KEYWORD = '';
+        lookupSerial360(multiTokens[0]);
+        return;
+      }
+    }
 
     // Tìm trong SERIAL_DB
     let target = (typeof SERIAL_DB !== 'undefined' ? SERIAL_DB : []).find(s => 
@@ -1714,7 +1747,14 @@
     let navBarHtml = '';
     if (typeof window !== 'undefined' && Array.isArray(window.CURRENT_SCAN_360_LIST) && window.CURRENT_SCAN_360_LIST.length > 1) {
       const list = window.CURRENT_SCAN_360_LIST;
-      const curIdx = window.CURRENT_SCAN_360_INDEX || 0;
+      let curIdx = (typeof window.CURRENT_SCAN_360_INDEX === 'number') ? window.CURRENT_SCAN_360_INDEX : 0;
+      if (target && target.serial) {
+        const foundIdx = list.findIndex(sn => (sn || '').toLowerCase() === target.serial.toLowerCase());
+        if (foundIdx !== -1) {
+          curIdx = foundIdx;
+          window.CURRENT_SCAN_360_INDEX = curIdx;
+        }
+      }
       const hasPrev = curIdx > 0;
       const hasNext = curIdx < list.length - 1;
 
@@ -1722,7 +1762,7 @@
         <div class="alert alert-primary py-2 px-3 mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2 shadow-sm rounded-3 border-primary">
           <div class="d-flex align-items-center gap-2">
             <span class="badge bg-primary fs-6 px-2 py-1"><i class="fa-solid fa-list-check me-1"></i> Máy ${curIdx + 1} / ${list.length}</span>
-            <span class="small fw-bold text-dark">Lô quét ${list.length} thiết bị: <code class="text-primary fs-6">${escapeHtml(target.serial)}</code></span>
+            <span class="small fw-bold text-dark">Lô ${list.length} thiết bị: <code class="text-primary fs-6">${escapeHtml(target.serial)}</code></span>
           </div>
           <div class="d-flex gap-2">
             <button class="btn btn-sm btn-outline-primary fw-semibold" onclick="navigateScan360(-1)" ${hasPrev ? '' : 'disabled'}>
@@ -1731,9 +1771,15 @@
             <button class="btn btn-sm btn-outline-primary fw-semibold" onclick="navigateScan360(1)" ${hasNext ? '' : 'disabled'}>
               Mã tiếp <i class="fa-solid fa-chevron-right ms-1"></i>
             </button>
-            <button class="btn btn-sm btn-outline-secondary fw-semibold" onclick="openScannerModal('SERIAL_360')">
-              <i class="fa-solid fa-camera me-1"></i> Danh sách quét
-            </button>
+            ${(window._CURRENT_360_SEARCH_KEYWORD) ? `
+              <button class="btn btn-sm btn-outline-secondary fw-semibold" onclick="lookupSerial360(window._CURRENT_360_SEARCH_KEYWORD)">
+                <i class="fa-solid fa-list me-1"></i> Về danh sách (${list.length})
+              </button>
+            ` : `
+              <button class="btn btn-sm btn-outline-secondary fw-semibold" onclick="openScannerModal('SERIAL_360')">
+                <i class="fa-solid fa-camera me-1"></i> Quét thêm mã
+              </button>
+            `}
           </div>
         </div>
       `;
@@ -1755,6 +1801,7 @@
     window.lookupSerial360 = lookupSerial360;
     window.navigateScan360 = navigateScan360;
     window.renderSerial360MultiResults = renderSerial360MultiResults;
+    window.openSerial360MultiItem = openSerial360MultiItem;
     window.openQuickEditSerialModal = openQuickEditSerialModal;
     window.submitQuickEditSerial = submitQuickEditSerial;
     window.quickTransferSerialWarehouse = quickTransferSerialWarehouse;
