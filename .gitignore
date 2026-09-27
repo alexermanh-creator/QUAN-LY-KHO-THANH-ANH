@@ -10,3 +10,6 @@ copy_frontend.bat
 *.zip
 *.vsix
 .clasprc.json
+.env*
+tests/secret_*
+

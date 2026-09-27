@@ -430,8 +430,37 @@
     }
 
     // ----------------------------------------------------
-    // TẦNG 3: AI OCR TESSERACT.JS (BÓC TÁCH CHỮ IN MẮT THƯỜNG)
-    // Cứu cánh khi tem bị bóng băng dính làm đứt nét mã vạch
+    // TẦNG 2: GEMINI VISION CLOUD AI (BÓC TÁCH THỊ GIÁC ĐA PHƯƠNG THỨC)
+    // Kích hoạt khi tem bị bóng lóa băng dính, mờ hoặc mã vạch bị khuất
+    // ----------------------------------------------------
+    if (results.length === 0 && typeof WarehouseAPI !== 'undefined' && typeof WarehouseAPI.callGeminiVision === 'function') {
+      try {
+        const base64Data = canvas.toDataURL('image/jpeg', 0.95);
+        const geminiRes = await new Promise(resolve => {
+          WarehouseAPI.callGeminiVision(base64Data, 'image/jpeg', res => resolve(res));
+        });
+
+        if (geminiRes && geminiRes.success && Array.isArray(geminiRes.serials) && geminiRes.serials.length > 0) {
+          for (const item of geminiRes.serials) {
+            const validSn = isValidSerialNumber(item.serial);
+            if (validSn && !results.some(r => r.serial === validSn)) {
+              results.push({
+                serial: validSn,
+                method: `Gemini AI Vision (${geminiRes.model || 'Flash'})`,
+                thumbnailDataUrl: thumbnailDataUrl,
+                modelName: item.model || ''
+              });
+            }
+          }
+        }
+      } catch (geminiErr) {
+        console.warn('Lỗi gọi Gemini Vision AI:', geminiErr);
+      }
+    }
+
+    // ----------------------------------------------------
+    // TẦNG 3: AI OCR TESSERACT.JS (BÓC TÁCH CHỮ IN MẮT THƯỜNG CỤC BỘ)
+    // Cứu cánh dự phòng khi mất mạng hoặc không có API
     // Giới hạn timeout 1.8s để chống treo lag hệ thống
     // ----------------------------------------------------
     if (results.length === 0 && typeof Tesseract !== 'undefined') {
@@ -622,7 +651,9 @@
     submitBtn.disabled = false;
 
     tbody.innerHTML = extractedSerialsList.map((item, idx) => {
-      const badgeClass = item.method.includes('GPU') ? 'bg-primary' : (item.method.includes('OCR') ? 'bg-success' : 'bg-info text-dark');
+      const badgeClass = item.method.includes('Gemini')
+        ? 'bg-primary text-white shadow-sm'
+        : (item.method.includes('GPU') ? 'bg-info text-dark' : (item.method.includes('OCR') ? 'bg-success' : 'bg-secondary text-white'));
       const thumbHtml = item.previewUrl
         ? `<img src="${item.previewUrl}" alt="Tem" style="height: 34px; width: 60px; object-fit: cover; border-radius: 4px; border: 1px solid #cbd5e1;">`
         : `<span class="badge bg-light text-muted border">No img</span>`;

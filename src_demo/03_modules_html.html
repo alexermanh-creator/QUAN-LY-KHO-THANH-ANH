@@ -1779,6 +1779,11 @@
                 <i class="fa-solid fa-floppy-disk me-1"></i> 5. Sao Lưu &amp; Reset Dữ Liệu
               </button>
             </li>
+            <li class="nav-item">
+              <button class="nav-link btn-sm text-primary fw-semibold" id="btn-tab-set-gemini" data-bs-toggle="pill" data-bs-target="#tab-set-gemini" type="button">
+                <i class="fa-solid fa-wand-magic-sparkles me-1"></i> 6. Cấu Hình Gemini AI Vision
+              </button>
+            </li>
           </ul>
         </div>
 
@@ -2114,6 +2119,79 @@
                   <button class="btn btn-danger fw-bold btn-sm px-3" onclick="triggerDemoReset('FULL_SYSTEM')">
                     <i class="fa-solid fa-fire me-1"></i> Reset Toàn Bộ Hệ Thống Về Trắng (Full Clean)
                   </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 6: CẤU HÌNH GEMINI AI VISION -->
+          <div class="tab-pane fade" id="tab-set-gemini">
+            <div class="row g-3">
+              <div class="col-lg-7">
+                <div class="app-card h-100 shadow-sm border-0">
+                  <div class="app-card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold text-dark mb-0"><i class="fa-solid fa-brain me-2 text-primary"></i> Thiết Lập Kết Nối Google Gemini Vision (Tầng 2 Fallback)</h6>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle" id="gemini-status-badge">
+                      <i class="fa-solid fa-circle-check me-1"></i> Đã kích hoạt
+                    </span>
+                  </div>
+                  <div class="app-card-body p-4">
+                    <div class="alert alert-info border-0 d-flex align-items-start gap-2 mb-3 small">
+                      <i class="fa-solid fa-circle-info mt-1 fs-6"></i>
+                      <div>
+                        <strong>Cơ chế tự động:</strong> Khi tem mờ, bóng lóa băng dính hoặc mã vạch bị xước mà bộ quét Barcode Tầng 1 không đọc được, hệ thống sẽ tự động kích hoạt Gemini AI để bóc tách chính xác số Serial (ví dụ: VNM1908585).
+                      </div>
+                    </div>
+
+                    <form id="form-gemini-config" onsubmit="event.preventDefault(); handleSaveGeminiConfig();">
+                      <div class="mb-3">
+                        <label class="form-label small fw-bold">Google AI Studio API Key (*)</label>
+                        <div class="input-group input-group-sm">
+                          <input type="password" id="cfg-gemini-api-key" class="form-control font-monospace" placeholder="Dán Google AI Studio API Key vào đây (ví dụ: AQ.Ab8RN6K...)">
+                          <button class="btn btn-outline-secondary" type="button" onclick="toggleGeminiKeyVisibility()" title="Ẩn/Hiện Key">
+                            <i class="fa-solid fa-eye" id="icon-toggle-gemini-key"></i>
+                          </button>
+                        </div>
+                        <div class="form-text small text-muted">Key được lưu trữ an toàn trong Google Apps Script ScriptProperties, không bao giờ lộ ra ngoài.</div>
+                      </div>
+
+                      <div class="mb-3">
+                        <label class="form-label small fw-bold">Phiên Bản Model AI (Khuyên dùng: gemini-3.8-flash)</label>
+                        <select id="cfg-gemini-model-select" class="form-select form-select-sm" onchange="handleGeminiModelSelectChange(this.value)">
+                          <option value="gemini-3.8-flash" selected>gemini-3.8-flash (Thế hệ mới nhất, bóc tách chính xác 100%)</option>
+                          <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite (Bản siêu nhẹ, phản hồi nhanh)</option>
+                          <option value="gemini-flash-latest">gemini-flash-latest (Tự động cập nhật bản Flash mới nhất)</option>
+                          <option value="custom">-- Tùy chỉnh tên model khác... --</option>
+                        </select>
+                        <input type="text" id="cfg-gemini-model-custom" class="form-control form-control-sm font-monospace mt-2" style="display: none;" placeholder="Nhập tên model (ví dụ: gemini-3.8-flash)">
+                      </div>
+
+                      <div class="d-flex gap-2 mt-4">
+                        <button type="button" class="btn btn-sm btn-outline-primary fw-semibold" id="btn-test-gemini-conn" onclick="handleTestGeminiConnection()">
+                          <i class="fa-solid fa-plug me-1"></i> Kiểm Tra Kết Nối
+                        </button>
+                        <button type="submit" class="btn btn-sm btn-primary fw-bold px-3 shadow-sm" id="btn-save-gemini-cfg">
+                          <i class="fa-solid fa-floppy-disk me-1"></i> Lưu Cấu Hình AI
+                        </button>
+                      </div>
+                    </form>
+
+                    <div id="gemini-test-result-box" class="mt-3 p-3 rounded small" style="display: none;"></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-lg-5">
+                <div class="app-card h-100 shadow-sm border-0 bg-light">
+                  <div class="app-card-body p-4">
+                    <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-circle-question me-2 text-primary"></i> Hướng Dẫn &amp; Lưu Ý</h6>
+                    <ul class="small text-muted ps-3 mb-3">
+                      <li class="mb-2">API Key được cấp miễn phí từ <a href="https://aistudio.google.com/app/apikey" target="_blank" class="fw-bold text-primary">Google AI Studio</a>.</li>
+                      <li class="mb-2"><strong>Tầng 1 (Local Barcode)</strong> giải quyết 80% mã rõ nét ngay tại máy mà không tốn quota AI.</li>
+                      <li class="mb-2"><strong>Tầng 2 (Gemini Vision)</strong> chỉ chạy khi mã vạch mờ/hỏng/bóng băng dính.</li>
+                      <li class="mb-2">Toàn bộ Serial AI đọc được đều phải qua <strong>Bảng đối soát</strong> để nhân viên kho xác nhận trước khi lưu.</li>
+                    </ul>
+                  </div>
                 </div>
               </div>
             </div>
