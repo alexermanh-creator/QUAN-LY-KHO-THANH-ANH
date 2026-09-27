@@ -79,7 +79,34 @@
         }
       }
     }
-    if (typeof window !== 'undefined') window.togglePasswordVisibility = togglePasswordVisibility;
+    if (typeof window !== 'undefined') {
+      window.togglePasswordVisibility = togglePasswordVisibility;
+
+      // Early Bootstrap Guard cho handleSystemLogin: Khởi tạo sớm hàm đăng nhập để tránh bấm nút khi file lớn chưa nạp xong
+      window._earlyLoginQueue = null;
+      function handleSystemLoginEarly(source) {
+        if (typeof window._FULL_SYSTEM_LOGIN_READY === 'function') {
+          return window._FULL_SYSTEM_LOGIN_READY(source);
+        }
+        var btn = document.getElementById(source === 'modal' ? 'btn-submit-login' : 'btn-submit-screen-login');
+        if (btn) {
+          btn.disabled = true;
+          btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Đang khởi tạo hệ thống...';
+        }
+        window._earlyLoginQueue = source || 'screen';
+        var waitInterval = setInterval(function() {
+          if (typeof window._FULL_SYSTEM_LOGIN_READY === 'function') {
+            clearInterval(waitInterval);
+            var q = window._earlyLoginQueue;
+            window._earlyLoginQueue = null;
+            window._FULL_SYSTEM_LOGIN_READY(q);
+          }
+        }, 100);
+      }
+      if (!window.handleSystemLogin) {
+        window.handleSystemLogin = handleSystemLoginEarly;
+      }
+    }
   </script>
 
   <!-- ==================================================== -->

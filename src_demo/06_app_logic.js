@@ -2662,7 +2662,13 @@ CÁC QUY TẮC BẮT BUỘC:
   }
 
   if (typeof window !== 'undefined') {
+    window._FULL_SYSTEM_LOGIN_READY = handleSystemLogin;
     window.handleSystemLogin = handleSystemLogin;
+    if (window._earlyLoginQueue) {
+      const q = window._earlyLoginQueue;
+      window._earlyLoginQueue = null;
+      setTimeout(() => handleSystemLogin(q), 50);
+    }
   }
 
   // Đăng nhập bảo mật qua Backend authenticateUser (Mục 2)
