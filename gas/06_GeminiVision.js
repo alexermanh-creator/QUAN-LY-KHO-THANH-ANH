@@ -273,15 +273,7 @@ function saveGeminiConfigBackend(apiKey, model) {
     const cleanKey = apiKey.trim();
     const cleanModel = (model && model.trim()) || 'gemini-3.8-flash';
 
-    // Kiểm tra ping trước khi lưu
-    const check = testGeminiConnectionBackend(cleanKey, cleanModel);
-    if (!check.success) {
-      return {
-        success: false,
-        message: 'Không thể lưu vì kiểm tra kết nối thất bại: ' + check.message
-      };
-    }
-
+    // Lưu trực tiếp vào ScriptProperties bảo mật
     PropertiesService.getScriptProperties().setProperties({
       GEMINI_API_KEY: cleanKey,
       GEMINI_MODEL: cleanModel
