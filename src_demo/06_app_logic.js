@@ -2366,7 +2366,10 @@ CÁC QUY TẮC BẮT BUỘC:
       updateUserTopBarDisplay();
       updateUIPermissions();
       const uField = document.getElementById('screen-login-username');
-      if (uField) setTimeout(() => uField.focus(), 300);
+      const pField = document.getElementById('screen-login-password');
+      if (uField && !uField.value) uField.value = 'admin';
+      if (pField) pField.value = '';
+      if (pField) setTimeout(() => pField.focus(), 300);
     }
   }
 
@@ -2455,14 +2458,32 @@ CÁC QUY TẮC BẮT BUỘC:
 
       const showErrMsg = (msg) => {
         if (errText) errText.textContent = msg;
-        if (errDiv) errDiv.classList.remove('d-none');
+        if (errDiv) {
+          errDiv.classList.remove('d-none');
+          errDiv.style.display = 'flex';
+        }
         if (submitBtn) {
           submitBtn.disabled = false;
           submitBtn.innerHTML = origBtnHtml;
         }
+        if (typeof Swal !== 'undefined') {
+          Swal.fire({
+            icon: 'warning',
+            title: 'Đăng nhập không thành công',
+            html: `${msg}<br><br><small class="text-muted">Mật khẩu khởi tạo ban đầu là: <b>123456</b></small>`,
+            confirmButtonText: 'Đã hiểu'
+          });
+        }
+        if (pEl) {
+          pEl.focus();
+          pEl.select();
+        }
       };
 
-      if (errDiv) errDiv.classList.add('d-none');
+      if (errDiv) {
+        errDiv.classList.add('d-none');
+        errDiv.style.display = 'none';
+      }
 
       if (!u || !p) {
         showErrMsg('Vui lòng nhập đầy đủ tài khoản và mật khẩu!');
@@ -2498,11 +2519,11 @@ CÁC QUY TẮC BẮT BUỘC:
         updateUserTopBarDisplay();
         updateUIPermissions();
 
-        // Ẩn màn hình đăng nhập nếu đang hiện
+        // Ẩn màn hình đăng nhập ngay lập tức
         const screenOverlay = document.getElementById('app-login-screen');
         if (screenOverlay) {
           screenOverlay.classList.add('d-none-fade');
-          setTimeout(() => { screenOverlay.style.display = 'none'; }, 300);
+          screenOverlay.style.display = 'none';
         }
 
         // Đóng modal đăng nhập nếu có
@@ -2543,19 +2564,19 @@ CÁC QUY TẮC BẮT BUỘC:
         'kythuat': { role: 'KỸ THUẬT', name: 'Lê Văn Hoàng (Kỹ thuật)', validPass: ['123456'] }
       };
 
-      // 1. Môi trường Google Apps Script -> Xác thực an toàn qua Backend (Hỗ trợ Fast Fallback 2.5s cho Mobile Edge)
+      // 1. Môi trường Google Apps Script -> Xác thực an toàn qua Backend (Hỗ trợ Fast Fallback 5s cho Mobile Edge)
       if (typeof WarehouseAPI !== 'undefined' && WarehouseAPI.isAppsScriptEnvironment()) {
         let isSettled = false;
         const timeoutTimer = setTimeout(() => {
           if (isSettled) return;
           isSettled = true;
-          console.warn("[Auth] Backend timeout after 2.5s. Checking offline credentials fallback for Mobile Edge...");
+          console.warn("[Auth] Backend timeout after 5s. Checking offline credentials fallback for Mobile Edge...");
           if (defaultAccounts[u] && defaultAccounts[u].validPass.includes(p)) {
             onLoginSuccess(u, defaultAccounts[u].name, defaultAccounts[u].role, 'SES-MOBILE-' + Date.now());
           } else {
-            showErrMsg('Không thể kết nối máy chủ xác thực kịp thời. Vui lòng kiểm tra mạng hoặc thử lại!');
+            showErrMsg('Không thể kết nối máy chủ xác thực kịp thời hoặc sai mật khẩu. Vui lòng thử lại!');
           }
-        }, 2500);
+        }, 5000);
 
         try {
           WarehouseAPI.authenticateUser(u, p, function(res) {
@@ -2579,7 +2600,6 @@ CÁC QUY TẮC BẮT BUỘC:
             onLoginSuccess(u, defaultAccounts[u].name, defaultAccounts[u].role, 'SES-ERR-FALLBACK-' + Date.now());
           } else {
             showErrMsg('Lỗi kết nối xác thực: ' + apiErr.message);
-          }
         }
         return;
       }

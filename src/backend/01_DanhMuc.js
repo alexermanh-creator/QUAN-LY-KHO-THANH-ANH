@@ -813,7 +813,7 @@ function getCaiDatData() {
   const userSheet = ss.getSheetByName("USERS");
 
   let config = {
-    tenDoanhNghiep: "CÔNG TY TNHH THIẾT BỊ VĂN PHÒNG THÀNH AN",
+    tenDoanhNghiep: "CÔNG TY TNHH THƯƠNG MẠI VÀ ĐẦU TƯ CÔNG NGHỆ THÀNH AN",
     tenVietTat: "THÀNH AN",
     nguongDongKho: 60,
     nguongBaoHanh: 30,
