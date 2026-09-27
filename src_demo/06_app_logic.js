@@ -1087,76 +1087,235 @@
       }
     },
 
-    // 29. Gọi Gemini Vision OCR bóc tách Serial (Tầng 2 Fallback - 100% Server ScriptProperties)
+    // 29. Gọi Gemini Vision OCR bóc tách Serial (Tầng 2 Fallback - Smart Dual Engine)
     callGeminiVision: function(base64Image, mimeType, callback) {
+      const self = this;
       if (this.isAppsScriptEnvironment()) {
         google.script.run
-          .withSuccessHandler(res => { if (callback) callback(res); })
-          .withFailureHandler(err => { if (callback) callback({ success: false, error: err.message || String(err) }); })
+          .withSuccessHandler(res => {
+            if (res && res.success) {
+              if (callback) callback(res);
+            } else if (res && !res.success && (String(res.error || '').includes('UrlFetchApp') || String(res.error || '').includes('quyền') || String(res.error || '').includes('external_request'))) {
+              // Tự động chuyển luồng Trình duyệt Client-side nếu Server bị chặn quyền
+              self.callGeminiVisionDirectClient(base64Image, mimeType, callback);
+            } else {
+              if (callback) callback(res);
+            }
+          })
+          .withFailureHandler(err => {
+            const errStr = String(err && err.message ? err.message : err);
+            if (errStr.includes('UrlFetchApp') || errStr.includes('quyền') || errStr.includes('external_request')) {
+              self.callGeminiVisionDirectClient(base64Image, mimeType, callback);
+            } else {
+              if (callback) callback({ success: false, error: errStr });
+            }
+          })
           .callGeminiVisionBackend(base64Image, mimeType);
       } else {
-        // Môi trường Local Mock Demo
-        if (callback) callback({
-          success: true,
-          serials: [{ serial: 'VNM0W45384', confidence: 0.99, detectedFrom: 'Gemini AI Vision (Demo Mode)' }],
-          model: 'gemini-3.8-flash'
-        });
+        self.callGeminiVisionDirectClient(base64Image, mimeType, callback);
       }
     },
 
-    // 30. Kiểm tra kết nối Gemini AI (100% qua Google Apps Script Backend)
+    // 29B. Trình duyệt gọi trực tiếp Gemini API (Không phụ thuộc quyền Google Apps Script)
+    callGeminiVisionDirectClient: function(base64Image, mimeType, callback) {
+      try {
+        const clientKey = (typeof localStorage !== 'undefined') ? localStorage.getItem('THANH_AN_GEMINI_CLIENT_KEY') : '';
+        const clientModel = (typeof localStorage !== 'undefined') ? (localStorage.getItem('THANH_AN_GEMINI_CLIENT_MODEL') || 'gemini-2.5-flash') : 'gemini-2.5-flash';
+
+        if (!clientKey) {
+          if (callback) callback({
+            success: false,
+            error: 'Chưa có API Key. Vui lòng vào Cài Đặt -> nhập Google AI Studio API Key để kích hoạt AI.'
+          });
+          return;
+        }
+
+        let cleanBase64 = String(base64Image || '').trim();
+        if (cleanBase64.includes(';base64,')) {
+          cleanBase64 = cleanBase64.split(';base64,')[1];
+        }
+
+        const promptText = `Bạn là chuyên gia OCR tem nhãn thiết bị kho vận chuyên nghiệp.
+Nhiệm vụ: Đọc ảnh tem thiết bị / vỏ hộp và bóc tách CHÍNH XÁC Manufacturer Serial Number (Số Serial của thiết bị).
+
+CÁC QUY TẮC BẮT BUỘC:
+1. Nhận diện số Serial đi kèm các từ khóa: "Serial No", "Serial Number", "S/N", "SN", "(1P) Serial No", "Service Tag", "ST".
+2. TUYỆT ĐỐI KHÔNG nhầm lẫn với Product Number / Part No (9YF83A, F6W14A, 4731C054CA, 2Z610A...), Model Name, hoặc mã vạch UPC/EAN.
+3. Chỉ trả về JSON duy nhất:
+{"serials":[{"serial":"CHUỖI_SERIAL_VIẾT_HOA","confidence":0.98,"detectedFrom":"Serial No trên tem","model":"Tên Model"}]}`;
+
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(clientModel)}:generateContent?key=${clientKey}`;
+        const body = {
+          contents: [{
+            parts: [
+              { text: promptText },
+              { inlineData: { mimeType: mimeType || 'image/jpeg', data: cleanBase64 } }
+            ]
+          }],
+          generationConfig: {
+            temperature: 0.1,
+            responseMimeType: 'application/json'
+          }
+        };
+
+        const startTime = Date.now();
+        fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        })
+        .then(r => r.json())
+        .then(data => {
+          if (data.error) {
+            if (callback) callback({ success: false, error: 'Google AI phản hồi: ' + (data.error.message || JSON.stringify(data.error)) });
+            return;
+          }
+          const candidate = data.candidates && data.candidates[0];
+          const rawText = candidate && candidate.content && candidate.content.parts && candidate.content.parts[0] && candidate.content.parts[0].text;
+          if (!rawText) {
+            if (callback) callback({ success: false, error: 'AI không trích xuất được số Serial nào từ ảnh.' });
+            return;
+          }
+          let cleanStr = rawText.trim().replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/, '');
+          const parsed = JSON.parse(cleanStr);
+          const rawSerials = parsed.serials || [];
+          const validSerials = [];
+          rawSerials.forEach(it => {
+            let sn = String(it.serial || '').trim().toUpperCase().replace(/^[\[\(\{\#\:\s]+/, '').replace(/[\]\)\}\.\;\,\s]+$/, '');
+            if (sn.length >= 6 && sn.length <= 24 && !/^\d{12,13}$/.test(sn)) {
+              validSerials.push({
+                serial: sn,
+                confidence: it.confidence || 0.95,
+                detectedFrom: it.detectedFrom || 'Gemini AI (Direct Engine)',
+                model: it.model || ''
+              });
+            }
+          });
+          const duration = Date.now() - startTime;
+          if (callback) callback({
+            success: true,
+            serials: validSerials,
+            model: clientModel,
+            duration: duration
+          });
+        })
+        .catch(fetchErr => {
+          if (callback) callback({ success: false, error: 'Lỗi kết nối AI: ' + fetchErr.message });
+        });
+      } catch (ex) {
+        if (callback) callback({ success: false, error: 'Lỗi Client AI: ' + ex.message });
+      }
+    },
+
+    // 30. Kiểm tra kết nối Gemini AI (Hỗ trợ Smart Dual Engine)
     testGeminiConnection: function(apiKey, model, callback) {
       const k = String(apiKey || '').trim();
-      const m = String(model || '').trim() || 'gemini-3.8-flash';
+      const m = String(model || '').trim() || 'gemini-2.5-flash';
+      const self = this;
 
       if (this.isAppsScriptEnvironment()) {
         google.script.run
-          .withSuccessHandler(res => { if (callback) callback(res); })
-          .withFailureHandler(err => { if (callback) callback({ success: false, message: err.message || String(err) }); })
+          .withSuccessHandler(res => {
+            if (res && res.success) {
+              if (callback) callback(res);
+            } else if (res && !res.success && (String(res.message || '').includes('UrlFetchApp') || String(res.message || '').includes('quyền') || String(res.message || '').includes('external_request'))) {
+              // Thử kiểm tra trực tiếp qua fetch trình duyệt
+              self.testGeminiConnectionDirectClient(k, m, callback);
+            } else {
+              if (callback) callback(res);
+            }
+          })
+          .withFailureHandler(err => {
+            self.testGeminiConnectionDirectClient(k, m, callback);
+          })
           .testGeminiConnectionBackend(k, m);
       } else {
-        if (!k) {
-          if (callback) callback({ success: false, message: 'Chưa có API Key để kiểm tra.' });
-        } else {
-          if (callback) callback({ success: true, message: 'Kết nối thành công tới model ' + m + ' (Demo Mode)!', activeModel: m });
-        }
+        self.testGeminiConnectionDirectClient(k, m, callback);
       }
     },
 
-    // 31. Lưu cấu hình Gemini (100% lưu vào ScriptProperties của Google Apps Script)
+    testGeminiConnectionDirectClient: function(apiKey, model, callback) {
+      const k = String(apiKey || '').trim();
+      const m = String(model || '').trim() || 'gemini-2.5-flash';
+      if (!k) {
+        if (callback) callback({ success: false, message: 'Chưa có API Key để kiểm tra.' });
+        return;
+      }
+      fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(m)}:generateContent?key=${k}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: 'Ping test' }] }] })
+      })
+      .then(r => r.json())
+      .then(res => {
+        if (res.error) {
+          if (callback) callback({ success: false, message: 'Google AI phản hồi: ' + (res.error.message || JSON.stringify(res.error)) });
+        } else {
+          if (callback) callback({ success: true, message: 'Kết nối thành công tới model ' + m + '!', activeModel: m });
+        }
+      })
+      .catch(e => {
+        if (callback) callback({ success: false, message: 'Lỗi kiểm tra kết nối: ' + e.message });
+      });
+    },
+
+    // 31. Lưu cấu hình Gemini (Lưu đồng thời Server & LocalStorage an toàn)
     saveGeminiConfig: function(apiKey, model, callback) {
       const cleanKey = String(apiKey || '').trim();
-      const cleanModel = String(model || '').trim() || 'gemini-3.8-flash';
+      const cleanModel = String(model || '').trim() || 'gemini-2.5-flash';
 
-      // Xóa bỏ sạch mọi key cũ trong localStorage nếu có
       if (typeof localStorage !== 'undefined') {
-        localStorage.removeItem('THANH_AN_GEMINI_API_KEY');
+        if (cleanKey) {
+          localStorage.setItem('THANH_AN_GEMINI_CLIENT_KEY', cleanKey);
+          localStorage.setItem('THANH_AN_GEMINI_CLIENT_MODEL', cleanModel);
+        } else {
+          localStorage.removeItem('THANH_AN_GEMINI_CLIENT_KEY');
+        }
       }
 
       if (this.isAppsScriptEnvironment()) {
         google.script.run
           .withSuccessHandler(res => { if (callback) callback(res); })
-          .withFailureHandler(err => { if (callback) callback({ success: false, message: err.message || String(err) }); })
+          .withFailureHandler(err => {
+            // Dù server lưu lỗi thì client đã lưu thành công
+            if (callback) callback({ success: true, message: 'Đã lưu cấu hình AI Gemini trực tiếp trên máy của bạn!' });
+          })
           .saveGeminiConfigBackend(cleanKey, cleanModel);
       } else {
-        if (callback) callback({ success: true, message: 'Đã lưu cấu hình Gemini AI thành công (Demo Mode)!' });
+        if (callback) callback({ success: true, message: 'Đã lưu cấu hình Gemini AI thành công!' });
       }
     },
 
-    // 32. Lấy cấu hình Gemini (Chỉ nhận maskedKey và trạng thái configured từ Server)
+    // 32. Lấy cấu hình Gemini
     getGeminiConfig: function(callback) {
-      // Dọn dẹp key trong localStorage
-      if (typeof localStorage !== 'undefined') {
-        localStorage.removeItem('THANH_AN_GEMINI_API_KEY');
-      }
+      const hasClientKey = (typeof localStorage !== 'undefined') && !!localStorage.getItem('THANH_AN_GEMINI_CLIENT_KEY');
+      const clientModel = (typeof localStorage !== 'undefined') ? (localStorage.getItem('THANH_AN_GEMINI_CLIENT_MODEL') || 'gemini-2.5-flash') : 'gemini-2.5-flash';
 
       if (this.isAppsScriptEnvironment()) {
         google.script.run
-          .withSuccessHandler(res => { if (callback) callback(res); })
-          .withFailureHandler(err => { if (callback) callback({ configured: false, model: 'gemini-3.8-flash' }); })
+          .withSuccessHandler(res => {
+            if (res && res.configured) {
+              if (callback) callback(res);
+            } else if (hasClientKey) {
+              if (callback) callback({ configured: true, model: clientModel, maskedKey: 'AIzaSy... (Direct Engine)' });
+            } else {
+              if (callback) callback(res || { configured: false, model: 'gemini-2.5-flash' });
+            }
+          })
+          .withFailureHandler(err => {
+            if (hasClientKey) {
+              if (callback) callback({ configured: true, model: clientModel, maskedKey: 'AIzaSy... (Direct Engine)' });
+            } else {
+              if (callback) callback({ configured: false, model: 'gemini-2.5-flash' });
+            }
+          })
           .getGeminiConfigBackend();
       } else {
-        if (callback) callback({ configured: false, model: 'gemini-3.8-flash' });
+        if (hasClientKey) {
+          if (callback) callback({ configured: true, model: clientModel, maskedKey: 'AIzaSy... (Demo Mode)' });
+        } else {
+          if (callback) callback({ configured: false, model: 'gemini-2.5-flash' });
+        }
       }
     }
   };

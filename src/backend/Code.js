@@ -62,15 +62,11 @@ function onOpen(e) {
 
 /**
  * HÀM KÍCH HOẠT ỦY QUYỀN URLFETCHAPP CHO AI GEMINI TRÊN GOOGLE SHEETS
+ * Không dùng try/catch để Google Apps Script tự động kích hoạt cửa sổ OAuth Authorization
  */
 function menuAuthorizeGemini() {
-  const ui = SpreadsheetApp.getUi();
-  try {
-    const res = UrlFetchApp.fetch("https://www.google.com", { muteHttpExceptions: true });
-    ui.alert(" THÀNH AN ERP", "Chúc mừng! Quyền kết nối mạng và AI Gemini đã được kích hoạt thành công trên tài khoản của bạn!", ui.ButtonSet.OK);
-  } catch(err) {
-    ui.alert("Lỗi cấp quyền", err.message, ui.ButtonSet.OK);
-  }
+  UrlFetchApp.fetch("https://www.google.com");
+  Logger.log("Kích hoạt quyền kết nối mạng UrlFetchApp thành công!");
 }
 
 function menuChuanHoaGoogleSheets() {
