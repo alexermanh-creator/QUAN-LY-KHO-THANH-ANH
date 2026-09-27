@@ -21,9 +21,6 @@
   <!-- Tesseract.js (Optical Character Recognition - OCR đọc chữ số Serial mắt thường) -->
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <script>
-    if (typeof Html5Qrcode === 'undefined') {
-      document.write('<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"><\\/script>');
-    }
     // Định nghĩa hàm escapeHtml toàn cục để chống lỗi Uncaught ReferenceError
     function escapeHtml(str) {
       if (str === null || str === undefined) return '';
@@ -1239,6 +1236,28 @@
       </div>
     </div>
   </div>
+
+  <script>
+    function togglePasswordVisibility(inputId, iconId) {
+      var input = document.getElementById(inputId);
+      var icon = document.getElementById(iconId);
+      if (!input) return;
+      if (input.type === 'password') {
+        input.type = 'text';
+        if (icon) {
+          icon.classList.remove('fa-eye');
+          icon.classList.add('fa-eye-slash');
+        }
+      } else {
+        input.type = 'password';
+        if (icon) {
+          icon.classList.remove('fa-eye-slash');
+          icon.classList.add('fa-eye');
+        }
+      }
+    }
+    if (typeof window !== 'undefined') window.togglePasswordVisibility = togglePasswordVisibility;
+  </script>
 
   <!-- ==================================================== -->
   <!-- SIDEBAR BÊN TRÁI ĐẨY LÊN TRÊN CÙNG (100VH TỪ TOP:0)  -->
