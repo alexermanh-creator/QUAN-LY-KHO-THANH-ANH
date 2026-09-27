@@ -15,8 +15,9 @@ Nhiệm vụ: Đọc ảnh tem thiết bị / vỏ hộp và bóc tách CHÍNH X
 CÁC QUY TẮC BẮT BUỘC:
 1. Nhận diện số Serial đi kèm các từ khóa: "Serial No", "Serial Number", "S/N", "SN", "(1P) Serial No", "Service Tag", "ST".
 2. TUYỆT ĐỐI KHÔNG nhầm lẫn với:
-   - Product Number / Part No (ví dụ: F6W14A, 4731C054CA, 2Z610A, W1470A...)
-   - Model Name (ví dụ: LaserJet Pro MFP, Canon LBP...)
+   - Product Number / Part No (ví dụ: 9YF83A, F6W14A, 4731C054CA, 2Z610A, W1470A, 3904C016CA...)
+   - Chú ý: Trên tem HP có cả Serial No (thường bắt đầu bằng VNM, CNB, VN, SG... ví dụ: VNM0W45384) và Product No (ví dụ: 9YF83A). BẮT BUỘC chỉ lấy Serial No, TUYỆT ĐỐI KHÔNG lấy Product No!
+   - Model Name / Regulatory / Option BBU (ví dụ: LaserJet M211dw, SHNGC-1900-01...)
    - Mã vạch bán lẻ UPC / EAN (chuỗi 12-13 chữ số)
    - Địa chỉ MAC hoặc Regulatory / Postel ID.
 3. Chỉ trả về duy nhất định dạng JSON thuần túy (không dùng markdown code blocks) theo cấu trúc:
