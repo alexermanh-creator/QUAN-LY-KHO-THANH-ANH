@@ -1334,10 +1334,32 @@
 
     if (!target) {
       if (typeof playBeepSound === 'function') playBeepSound();
+      let notFoundNav = '';
+      if (typeof window !== 'undefined' && Array.isArray(window.CURRENT_SCAN_360_LIST) && window.CURRENT_SCAN_360_LIST.length > 1) {
+        const list = window.CURRENT_SCAN_360_LIST;
+        const curIdx = window.CURRENT_SCAN_360_INDEX || 0;
+        const hasPrev = curIdx > 0;
+        const hasNext = curIdx < list.length - 1;
+        notFoundNav = `
+          <div class="d-flex justify-content-center align-items-center gap-2 mb-3">
+            <button class="btn btn-sm btn-outline-primary" onclick="navigateScan360(-1)" ${hasPrev ? '' : 'disabled'}>
+              <i class="fa-solid fa-chevron-left me-1"></i> Mã trước
+            </button>
+            <span class="badge bg-primary px-2 py-1">Máy ${curIdx + 1} / ${list.length}</span>
+            <button class="btn btn-sm btn-outline-primary" onclick="navigateScan360(1)" ${hasNext ? '' : 'disabled'}>
+              Mã tiếp <i class="fa-solid fa-chevron-right ms-1"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-secondary ms-2" onclick="openScannerModal('SERIAL_360')">
+              <i class="fa-solid fa-camera me-1"></i> Danh sách quét
+            </button>
+          </div>
+        `;
+      }
       container.innerHTML = `
         <div class="app-card p-5 text-center text-muted">
+          ${notFoundNav}
           <i class="fa-solid fa-circle-question fs-1 text-danger mb-3"></i>
-          <h5 class="text-danger fw-bold">Không tìm thấy thiết bị "${q}"</h5>
+          <h5 class="text-danger fw-bold">Không tìm thấy thiết bị "${escapeHtml(q)}"</h5>
           <p class="small text-muted mb-3">Không có Serial, Mã nội bộ hoặc Model nào khớp với từ khóa trong cơ sở dữ liệu kho Thành An.</p>
           <button class="btn btn-sm btn-outline-secondary" onclick="lookupSerial360('')">
             <i class="fa-solid fa-arrow-left me-1"></i> Quay lại tra cứu khác
@@ -1689,11 +1711,49 @@
       </div>
     `;
 
-    container.innerHTML = html;
+    let navBarHtml = '';
+    if (typeof window !== 'undefined' && Array.isArray(window.CURRENT_SCAN_360_LIST) && window.CURRENT_SCAN_360_LIST.length > 1) {
+      const list = window.CURRENT_SCAN_360_LIST;
+      const curIdx = window.CURRENT_SCAN_360_INDEX || 0;
+      const hasPrev = curIdx > 0;
+      const hasNext = curIdx < list.length - 1;
+
+      navBarHtml = `
+        <div class="alert alert-primary py-2 px-3 mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2 shadow-sm rounded-3 border-primary">
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-primary fs-6 px-2 py-1"><i class="fa-solid fa-list-check me-1"></i> Máy ${curIdx + 1} / ${list.length}</span>
+            <span class="small fw-bold text-dark">Lô quét ${list.length} thiết bị: <code class="text-primary fs-6">${escapeHtml(target.serial)}</code></span>
+          </div>
+          <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-outline-primary fw-semibold" onclick="navigateScan360(-1)" ${hasPrev ? '' : 'disabled'}>
+              <i class="fa-solid fa-chevron-left me-1"></i> Mã trước
+            </button>
+            <button class="btn btn-sm btn-outline-primary fw-semibold" onclick="navigateScan360(1)" ${hasNext ? '' : 'disabled'}>
+              Mã tiếp <i class="fa-solid fa-chevron-right ms-1"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-secondary fw-semibold" onclick="openScannerModal('SERIAL_360')">
+              <i class="fa-solid fa-camera me-1"></i> Danh sách quét
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    container.innerHTML = navBarHtml + html;
+  }
+
+  function navigateScan360(offset) {
+    if (typeof window === 'undefined' || !Array.isArray(window.CURRENT_SCAN_360_LIST) || window.CURRENT_SCAN_360_LIST.length === 0) return;
+    let newIdx = (window.CURRENT_SCAN_360_INDEX || 0) + offset;
+    if (newIdx < 0) newIdx = 0;
+    if (newIdx >= window.CURRENT_SCAN_360_LIST.length) newIdx = window.CURRENT_SCAN_360_LIST.length - 1;
+    window.CURRENT_SCAN_360_INDEX = newIdx;
+    lookupSerial360(window.CURRENT_SCAN_360_LIST[newIdx]);
   }
 
   if (typeof window !== 'undefined') {
     window.lookupSerial360 = lookupSerial360;
+    window.navigateScan360 = navigateScan360;
     window.renderSerial360MultiResults = renderSerial360MultiResults;
     window.openQuickEditSerialModal = openQuickEditSerialModal;
     window.submitQuickEditSerial = submitQuickEditSerial;

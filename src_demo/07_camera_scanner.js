@@ -83,6 +83,36 @@
   /* ==================================================== */
   /* MỞ MODAL SCANNER VÀ QUẢN LÝ GIAO DIỆN TINH GỌN       */
   /* ==================================================== */
+  function updateScannerSubmitButtonLabel() {
+    const submitBtn = document.getElementById('btn-submit-extracted-serials');
+    const labelEl = document.getElementById('btn-submit-extracted-label');
+    if (!submitBtn) return;
+
+    const sourceList = (typeof window !== 'undefined' && Array.isArray(window.extractedSerialsList) && window.extractedSerialsList.length > 0)
+      ? window.extractedSerialsList
+      : extractedSerialsList;
+    const count = sourceList ? sourceList.length : 0;
+
+    let text = 'Đưa Vào Form';
+    if (CURRENT_SCAN_CONTEXT === 'NHAP_KHO' || CURRENT_SCAN_CONTEXT === 'NHAP_KHO_SINGLE') {
+      text = count > 0 ? `Thêm ${count} SN vào phiếu nhập` : 'Thêm vào phiếu nhập';
+    } else if (CURRENT_SCAN_CONTEXT === 'XUAT_KHO') {
+      text = count > 0 ? `Thêm ${count} SN vào phiếu xuất` : 'Thêm vào phiếu xuất';
+    } else if (CURRENT_SCAN_CONTEXT === 'SERIAL_360') {
+      text = count > 0 ? `Xem hồ sơ ${count} SN` : 'Xem hồ sơ 360';
+    } else if (CURRENT_SCAN_CONTEXT === 'TRANSFER_WAREHOUSE') {
+      text = count > 0 ? `Chuyển ${count} máy sang kho đích` : 'Chuyển kho';
+    } else if (CURRENT_SCAN_CONTEXT === 'AUTO_UNIVERSAL') {
+      text = count > 0 ? `Xử lý ${count} SN đã quét` : 'Tự động đa năng';
+    }
+
+    if (labelEl) {
+      labelEl.textContent = text;
+    } else {
+      submitBtn.innerHTML = `<i class="fa-solid fa-circle-check fs-6"></i> <span>${text}</span>`;
+    }
+  }
+
   function setScanContext(ctx) {
     CURRENT_SCAN_CONTEXT = ctx || 'AUTO_UNIVERSAL';
     const btnAuto = document.getElementById('scan-ctx-auto');
@@ -95,23 +125,28 @@
     const isXuat = CURRENT_SCAN_CONTEXT === 'XUAT_KHO';
     const is360 = CURRENT_SCAN_CONTEXT === 'SERIAL_360';
 
-    if (btnAuto) btnAuto.className = isAuto ? 'btn btn-sm btn-primary py-1 px-3 fw-bold rounded-pill shadow-sm' : 'btn btn-sm btn-outline-secondary py-1 px-3 fw-semibold rounded-pill';
-    if (btnNhap) btnNhap.className = isNhap ? 'btn btn-sm btn-primary py-1 px-3 fw-bold rounded-pill shadow-sm' : 'btn btn-sm btn-outline-secondary py-1 px-3 fw-semibold rounded-pill';
-    if (btnXuat) btnXuat.className = isXuat ? 'btn btn-sm btn-primary py-1 px-3 fw-bold rounded-pill shadow-sm' : 'btn btn-sm btn-outline-secondary py-1 px-3 fw-semibold rounded-pill';
-    if (btn360) btn360.className = is360 ? 'btn btn-sm btn-primary py-1 px-3 fw-bold rounded-pill shadow-sm' : 'btn btn-sm btn-outline-secondary py-1 px-3 fw-semibold rounded-pill';
+    if (btnAuto) btnAuto.className = isAuto ? 'scanner-ctx-btn active' : 'scanner-ctx-btn';
+    if (btnNhap) btnNhap.className = isNhap ? 'scanner-ctx-btn active' : 'scanner-ctx-btn';
+    if (btnXuat) btnXuat.className = isXuat ? 'scanner-ctx-btn active' : 'scanner-ctx-btn';
+    if (btn360) btn360.className = is360 ? 'scanner-ctx-btn active' : 'scanner-ctx-btn';
 
     const titleEl = document.getElementById('scanner-modal-title');
     if (titleEl) {
       if (isAuto) {
-        titleEl.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles text-warning me-1"></i> Quét Đa Năng Thông Minh';
+        titleEl.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles text-warning me-1"></i> Tự Động Đa Năng';
       } else if (isXuat) {
-        titleEl.innerHTML = '<i class="fa-solid fa-truck-fast text-primary me-1"></i> Quét Serial Xuất Kho';
+        titleEl.innerHTML = '<i class="fa-solid fa-truck-fast text-danger me-1"></i> Quét Serial Xuất Kho';
       } else if (is360) {
         titleEl.innerHTML = '<i class="fa-solid fa-qrcode text-primary me-1"></i> Tra Cứu Hồ Sơ Serial 360';
       } else {
         titleEl.innerHTML = '<i class="fa-solid fa-box-archive text-success me-1"></i> Quét Serial Nhập Kho';
       }
     }
+
+    const helper = document.getElementById('scanner-inline-helper');
+    if (helper) helper.style.display = 'none';
+
+    updateScannerSubmitButtonLabel();
   }
 
   function openScannerModal(targetContext) {
@@ -123,24 +158,31 @@
       if (activeTabId.includes('nhap') || activeTabId.includes('Nhap')) initialCtx = 'NHAP_KHO';
       else if (activeTabId.includes('xuat') || activeTabId.includes('Xuat')) initialCtx = 'XUAT_KHO';
       else if (activeTabId.includes('360')) initialCtx = 'SERIAL_360';
+      else if (activeTabId.includes('nghiep-vu') || activeTabId.includes('NghiepVu')) initialCtx = 'TRANSFER_WAREHOUSE';
       else initialCtx = 'AUTO_UNIVERSAL';
     } else if (initialCtx === 'NHAP_KHO_SINGLE') {
       initialCtx = 'NHAP_KHO';
     }
 
     setScanContext(initialCtx);
-    sessionScannedSerials = [];
-    extractedSerialsList = [];
 
-    // Reset giao diện về trạng thái ban đầu
+    // GIỮ NGUYÊN DANH SÁCH extractedSerialsList ĐỂ KHÔNG BỊ MẤT MÃ KHI MỞ LẠI SCANNER
     const progressContainer = document.getElementById('scanner-batch-progress');
     if (progressContainer) progressContainer.style.display = 'none';
 
     const feedbackBox = document.getElementById('scanner-feedback-box');
     if (feedbackBox) {
-      feedbackBox.className = 'p-2 rounded small text-center fw-semibold bg-light text-muted mb-2';
-      feedbackBox.innerHTML = '<i class="fa-solid fa-circle-info me-1 text-primary"></i> Sẵn sàng! Hãy chọn ảnh tem hoặc dán ảnh (<kbd>Ctrl + V</kbd>) để bóc tách Serial.';
+      if (extractedSerialsList.length > 0) {
+        feedbackBox.className = 'p-2 rounded small text-center fw-semibold bg-light text-primary mb-2';
+        feedbackBox.innerHTML = `<i class="fa-solid fa-layer-group me-1"></i> Đang có <strong>${extractedSerialsList.length}</strong> số Serial trong danh sách. Bạn có thể chụp tiếp hoặc xử lý.`;
+      } else {
+        feedbackBox.className = 'p-2 rounded small text-center fw-semibold bg-light text-muted mb-2';
+        feedbackBox.innerHTML = '<i class="fa-solid fa-circle-info me-1 text-primary"></i> Sẵn sàng! Hãy chọn ảnh tem hoặc chụp trực tiếp để bóc tách Serial.';
+      }
     }
+
+    const helper = document.getElementById('scanner-inline-helper');
+    if (helper) helper.style.display = 'none';
 
     const fileInput = document.getElementById('scanner-batch-file-input');
     if (fileInput) fileInput.value = '';
@@ -644,10 +686,11 @@
         const { results, thumbnailDataUrl } = await extractSerialsFromSingleBlob(blob, forceGemini);
         if (results && results.length > 0) {
           for (const item of results) {
-            if (!extractedSerialsList.some(s => s.serial === item.serial)) {
+            const cleanSn = (item.serial || '').trim().toUpperCase().replace(/[\s\r\n\t]/g, '');
+            if (cleanSn && cleanSn.length >= 3 && !extractedSerialsList.some(s => s.serial === cleanSn)) {
               extractedSerialsList.push({
                 id: 'sn_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
-                serial: item.serial,
+                serial: cleanSn,
                 method: item.method,
                 previewUrl: item.thumbnailDataUrl || thumbnailDataUrl,
                 modelName: item.modelName || '',
@@ -703,6 +746,9 @@
   /* ==================================================== */
   /* BẢNG ĐỐI SOÁT & DANH SÁCH SERIAL ĐÃ BÓC TÁCH        */
   /* ==================================================== */
+  /* ==================================================== */
+  /* BẢNG ĐỐI SOÁT & DANH SÁCH SERIAL ĐÃ BÓC TÁCH        */
+  /* ==================================================== */
   function renderExtractedSerialsTable() {
     const resultsContainer = document.getElementById('scanner-results-container');
     const tbody = document.getElementById('scanner-extracted-tbody');
@@ -711,54 +757,60 @@
     const submitBtn = document.getElementById('btn-submit-extracted-serials');
     const saveDraftBtn = document.getElementById('btn-save-extracted-to-server-draft');
 
-    if (!totalCountEl || !resultsContainer) return;
+    if (typeof window !== 'undefined') window.extractedSerialsList = extractedSerialsList;
 
-    totalCountEl.textContent = extractedSerialsList.length;
+    if (totalCountEl) totalCountEl.textContent = extractedSerialsList.length;
 
     if (extractedSerialsList.length === 0) {
-      resultsContainer.style.display = 'none';
+      if (resultsContainer) resultsContainer.style.display = 'none';
       if (submitBtn) submitBtn.disabled = true;
       if (saveDraftBtn) saveDraftBtn.disabled = true;
       if (tbody) tbody.innerHTML = '';
       if (cardList) cardList.innerHTML = '';
+      updateScannerSubmitButtonLabel();
       return;
     }
 
-    resultsContainer.style.display = 'block';
+    if (resultsContainer) resultsContainer.style.display = 'block';
     if (submitBtn) submitBtn.disabled = false;
     if (saveDraftBtn) saveDraftBtn.disabled = false;
 
-    // 1. Render Card List cho Mobile (Hiển thị trọn vẹn số Serial, không bị cắt xén)
+    // 1. Render Card List cho Mobile (Chữ to, chỉ mở ô input và bàn phím khi bấm "Sửa")
     if (cardList) {
       cardList.innerHTML = extractedSerialsList.map((item, idx) => {
-        const isGemini = item.method.includes('Gemini');
+        const isGemini = (item.method || '').includes('Gemini');
         const badgeColor = isGemini ? 'bg-primary text-white shadow-sm' : 'bg-success text-white shadow-sm';
         const thumbHtml = item.previewUrl
-          ? `<img src="${item.previewUrl}" alt="Tem" style="height: 38px; width: 55px; object-fit: cover; border-radius: 4px; border: 1px solid #cbd5e1;" class="d-none d-sm-block flex-shrink-0">`
+          ? `<img src="${item.previewUrl}" alt="Tem" style="height: 38px; width: 50px; object-fit: cover; border-radius: 4px; border: 1px solid #cbd5e1;" class="flex-shrink-0">`
           : '';
 
         return `
-          <div class="card border p-2 shadow-sm rounded-3">
-            <div class="d-flex align-items-center justify-content-between gap-2">
-              <div class="d-flex align-items-center gap-2 flex-grow-1 min-w-0">
-                <span class="badge bg-secondary fw-bold">#${idx + 1}</span>
-                ${thumbHtml}
-                <div class="flex-grow-1 min-w-0">
-                  <input type="text" class="form-control form-control-sm font-monospace fw-bold text-primary py-1 px-2 border-primary" 
-                         value="${escapeHtml(item.serial)}" 
-                         onchange="updateExtractedSerialValue('${item.id}', this.value)" 
-                         style="font-size: 1.05rem; letter-spacing: 0.5px; width: 100%;">
+          <div class="scanner-serial-card shadow-sm" id="scanner-item-${item.id}">
+            <div class="d-flex align-items-center gap-2 flex-grow-1 overflow-hidden">
+              <span class="badge bg-secondary-subtle text-dark border px-2 py-1">${idx + 1}</span>
+              ${thumbHtml}
+              <div class="flex-grow-1 overflow-hidden" id="scanner-view-sn-${item.id}">
+                <div class="scanner-serial-sn text-truncate" title="${escapeHtml(item.serial)}">${escapeHtml(item.serial)}</div>
+                <div class="d-flex align-items-center gap-2 mt-1">
+                  <span class="badge ${badgeColor}" style="font-size: 0.65rem;">${escapeHtml(item.method || 'Mã Vạch')}</span>
+                  ${item.modelName ? `<small class="text-secondary text-truncate fw-semibold" style="font-size: 0.75rem;"><i class="fa-solid fa-tag me-1 text-primary"></i>${escapeHtml(item.modelName)}</small>` : ''}
                 </div>
               </div>
-              <div class="d-flex align-items-center gap-1 flex-shrink-0">
-                <button class="btn btn-sm btn-outline-danger py-1 px-2" onclick="deleteExtractedSerial('${item.id}')" title="Xóa mã này">
-                  <i class="fa-solid fa-trash-can"></i>
-                </button>
+              <div class="d-none flex-grow-1" id="scanner-edit-sn-${item.id}">
+                <div class="input-group input-group-sm">
+                  <input type="text" class="form-control font-monospace fw-bold text-primary" id="input-sn-${item.id}" value="${escapeHtml(item.serial)}" onkeydown="if(event.key==='Enter') saveSerialEdit('${item.id}')">
+                  <button class="btn btn-success" type="button" onclick="saveSerialEdit('${item.id}')"><i class="fa-solid fa-check"></i></button>
+                  <button class="btn btn-secondary" type="button" onclick="cancelSerialEdit('${item.id}')"><i class="fa-solid fa-xmark"></i></button>
+                </div>
               </div>
             </div>
-            <div class="d-flex justify-content-between align-items-center mt-1 pt-1 border-top small text-muted">
-              <span class="badge ${badgeColor} small">${escapeHtml(item.method)}</span>
-              ${item.modelName ? `<span class="small fw-semibold text-dark"><i class="fa-solid fa-tag me-1 text-primary"></i>${escapeHtml(item.modelName)}</span>` : '<span class="small text-muted">Chạm vào ô để sửa nếu cần</span>'}
+            <div class="d-flex align-items-center gap-1 flex-shrink-0" id="scanner-actions-${item.id}">
+              <button type="button" class="btn btn-sm btn-light text-primary border p-2" onclick="toggleSerialEdit('${item.id}')" title="Sửa Serial">
+                <i class="fa-solid fa-pen-to-square"></i>
+              </button>
+              <button type="button" class="btn btn-sm btn-light text-danger border p-2" onclick="deleteExtractedSerial('${item.id}')" title="Xóa">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
             </div>
           </div>
         `;
@@ -768,7 +820,7 @@
     // 2. Render Table cho Desktop nếu tbody tồn tại
     if (tbody) {
       tbody.innerHTML = extractedSerialsList.map((item, idx) => {
-        const badgeClass = item.method.includes('Gemini') ? 'bg-primary text-white shadow-sm' : 'bg-success text-white shadow-sm';
+        const badgeClass = (item.method || '').includes('Gemini') ? 'bg-primary text-white shadow-sm' : 'bg-success text-white shadow-sm';
         const thumbHtml = item.previewUrl
           ? `<img src="${item.previewUrl}" alt="Tem" style="height: 34px; width: 60px; object-fit: cover; border-radius: 4px; border: 1px solid #cbd5e1;">`
           : `<span class="badge bg-light text-muted border">No img</span>`;
@@ -794,27 +846,74 @@
         `;
       }).join('');
     }
+
+    updateScannerSubmitButtonLabel();
   }
 
-  function updateExtractedSerialValue(id, newVal) {
-    const item = extractedSerialsList.find(s => s.id === id);
-    if (item) {
-      item.serial = (newVal || '').trim().toUpperCase();
+  function toggleSerialEdit(id) {
+    const viewEl = document.getElementById(`scanner-view-sn-${id}`);
+    const editEl = document.getElementById(`scanner-edit-sn-${id}`);
+    const actionsEl = document.getElementById(`scanner-actions-${id}`);
+    const inputEl = document.getElementById(`input-sn-${id}`);
+
+    if (viewEl && editEl) {
+      viewEl.classList.add('d-none');
+      editEl.classList.remove('d-none');
+      if (actionsEl) actionsEl.classList.add('d-none');
+      if (inputEl) {
+        inputEl.focus();
+        inputEl.select();
+      }
     }
   }
 
-  function deleteExtractedSerial(id) {
-    extractedSerialsList = extractedSerialsList.filter(s => s.id !== id);
+  function cancelSerialEdit(id) {
+    const viewEl = document.getElementById(`scanner-view-sn-${id}`);
+    const editEl = document.getElementById(`scanner-edit-sn-${id}`);
+    const actionsEl = document.getElementById(`scanner-actions-${id}`);
+
+    if (viewEl && editEl) {
+      viewEl.classList.remove('d-none');
+      editEl.classList.add('d-none');
+      if (actionsEl) actionsEl.classList.remove('d-none');
+    }
+  }
+
+  function saveSerialEdit(id) {
+    const inputEl = document.getElementById(`input-sn-${id}`);
+    if (!inputEl) return;
+    const newVal = (inputEl.value || '').trim().toUpperCase().replace(/[\s\r\n\t]/g, '');
+
+    if (!newVal || newVal.length < 3) {
+      alert('Số Serial không được để trống và phải có ít nhất 3 ký tự!');
+      return;
+    }
+
+    // Chống trùng với serial khác trong danh sách
+    const isDuplicate = extractedSerialsList.some(s => s.id !== id && s.serial === newVal);
+    if (isDuplicate) {
+      alert(`Mã Serial "${newVal}" đã có trong danh sách bóc tách!`);
+      return;
+    }
+
+    const item = extractedSerialsList.find(s => s.id === id);
+    if (item) {
+      item.serial = newVal;
+    }
     renderExtractedSerialsTable();
   }
 
-  function clearExtractedSerials() {
-    extractedSerialsList = [];
-    renderExtractedSerialsTable();
-    const feedbackBox = document.getElementById('scanner-feedback-box');
-    if (feedbackBox) {
-      feedbackBox.className = 'p-2 rounded small text-center fw-semibold bg-light text-muted mb-2';
-      feedbackBox.innerHTML = '<i class="fa-solid fa-circle-info me-1 text-primary"></i> Đã xóa danh sách Serial bóc tách.';
+  function updateExtractedSerialValue(id, newVal) {
+    const cleanSn = (newVal || '').trim().toUpperCase().replace(/[\s\r\n\t]/g, '');
+    if (!cleanSn) return;
+    if (extractedSerialsList.some(s => s.id !== id && s.serial === cleanSn)) {
+      alert(`Mã Serial "${cleanSn}" đã có trong danh sách!`);
+      renderExtractedSerialsTable();
+      return;
+    }
+    const item = extractedSerialsList.find(s => s.id === id);
+    if (item) {
+      item.serial = cleanSn;
     }
   }
 
@@ -823,19 +922,68 @@
   /* ==================================================== */
   function saveExtractedSerialsToServerDraft() {
     const validSerials = extractedSerialsList
-      .map(s => (s.serial || '').trim().toUpperCase())
-      .filter(s => s.length >= 4);
+      .map(s => (s.serial || '').trim().toUpperCase().replace(/[\s\r\n\t]/g, ''))
+      .filter(s => s.length >= 3);
 
     if (validSerials.length === 0) {
-      if (typeof Swal !== 'undefined') {
-        Swal.fire('Chưa có Serial', 'Không có mã Serial nào hợp lệ để lưu vào phiếu nháp!', 'warning');
-      } else {
-        alert('Không có mã Serial nào hợp lệ!');
-      }
+      alert('Không có mã Serial nào hợp lệ để lưu vào phiếu nháp!');
       return;
     }
 
+    const isNhap = CURRENT_SCAN_CONTEXT === 'NHAP_KHO' || CURRENT_SCAN_CONTEXT === 'NHAP_KHO_SINGLE';
     const isXuat = CURRENT_SCAN_CONTEXT === 'XUAT_KHO';
+
+    if (!isNhap && !isXuat) {
+      alert('Chức năng Lưu Nháp Server chỉ áp dụng khi đang ở chế độ Nhập Kho hoặc Xuất Kho!\nVui lòng chọn ngữ cảnh "Quét Nhập Kho" hoặc "Quét Xuất Kho".');
+      return;
+    }
+
+    let ncc = '';
+    let kho = '';
+    let khachHang = '';
+    let model = '';
+
+    if (isNhap) {
+      const nccHidden = (document.getElementById('nhap-ncc')?.value || '').trim();
+      const nccInput = (document.getElementById('nhap-ncc-input')?.value || '').trim();
+      kho = (document.getElementById('nhap-kho')?.value || '').trim();
+      const modelHidden = (document.getElementById('nhap-select-model')?.value || '').trim();
+      const modelInput = (document.getElementById('nhap-model-input')?.value || '').trim();
+
+      const suppliers = (typeof INITIAL_SUPPLIERS !== 'undefined' ? INITIAL_SUPPLIERS : []).filter(s => s.active !== false);
+      const matchedNcc = suppliers.find(s => {
+        const tt = (s.tenTat || '').toLowerCase();
+        const td = (s.tenDayDu || '').toLowerCase();
+        return (nccHidden && (tt === nccHidden.toLowerCase() || td === nccHidden.toLowerCase())) ||
+               tt === nccInput.toLowerCase() || td === nccInput.toLowerCase();
+      });
+
+      ncc = matchedNcc ? (matchedNcc.tenDayDu || matchedNcc.tenTat) : nccInput;
+      model = modelHidden || modelInput;
+
+      if (!ncc || !kho || !model) {
+        alert('Không thể lưu Phiếu Nháp Server khi thiếu dữ liệu bắt buộc!\nVui lòng chọn đầy đủ: Nhà Cung Cấp, Kho nhận và Model từ danh mục hệ thống.');
+        return;
+      }
+    } else if (isXuat) {
+      const custInput = (document.getElementById('xuat-khach-input')?.value || '').trim();
+      const custHidden = (document.getElementById('xuat-khach-select')?.value || '').trim();
+      kho = (document.getElementById('xuat-kho-select')?.value || '').trim();
+
+      const customers = (typeof INITIAL_CUSTOMERS !== 'undefined' ? INITIAL_CUSTOMERS : []).filter(c => c.active !== false);
+      const matchedCust = customers.find(c => {
+        const cName = (c.ten || '').toLowerCase();
+        return (custHidden && cName === custHidden.toLowerCase()) || cName === custInput.toLowerCase();
+      });
+
+      khachHang = matchedCust ? matchedCust.ten : custInput;
+
+      if (!khachHang || !kho) {
+        alert('Không thể lưu Phiếu Nháp Server khi thiếu dữ liệu bắt buộc!\nVui lòng chọn đầy đủ: Khách Hàng và Kho xuất từ danh mục hệ thống.');
+        return;
+      }
+    }
+
     const prefix = isXuat ? 'XK-DRAFT' : 'NK-DRAFT';
     const now = new Date();
     const dateStr = now.toISOString().slice(2, 10).replace(/-/g, '');
@@ -859,9 +1007,9 @@
       ngay: nowFormatted,
       ngayTao: nowFormatted,
       nguoiTao: typeof CURRENT_USER_NAME !== 'undefined' ? CURRENT_USER_NAME : 'Thủ kho Mobile',
-      ncc: (typeof INITIAL_SUPPLIERS !== 'undefined' && INITIAL_SUPPLIERS[0]?.ten) || 'HP Vietnam',
-      khachHang: isXuat ? ((typeof INITIAL_CUSTOMERS !== 'undefined' && INITIAL_CUSTOMERS[0]?.ten) || 'Khách Lẻ') : undefined,
-      kho: 'Kho VP',
+      ncc: isNhap ? ncc : undefined,
+      khachHang: isXuat ? khachHang : undefined,
+      kho: kho,
       loaiHang: 'Chính Hãng',
       ghiChu: `Quét từ Mobile Camera (${validSerials.length} serials)`,
       items: validSerials.map((sn, idx) => {
@@ -869,10 +1017,10 @@
         return {
           id: 'it_' + (isXuat ? 'xuat_' : 'nhap_') + Date.now() + '_' + idx,
           stt: idx + 1,
-          model: itemObj?.modelName || 'HP LaserJet M211dw',
+          model: (itemObj && itemObj.modelName) || model || 'Thiết bị',
           serial: sn,
           internalId: (typeof generateSequentialInternalAssetId === 'function') ? generateSequentialInternalAssetId() : '',
-          kho: 'Kho VP',
+          kho: kho,
           loaiHang: 'Chính Hãng',
           soLuong: 1
         };
@@ -883,65 +1031,71 @@
     if (typeof WarehouseAPI !== 'undefined' && typeof WarehouseAPI.saveDraftVoucher === 'function') {
       WarehouseAPI.saveDraftVoucher(draftPayload, function(res) {
         if (res && res.success) {
-          // Đóng modal quét
-          const modalEl = document.getElementById('scannerModal');
-          if (modalEl && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-            const m = bootstrap.Modal.getInstance(modalEl);
-            if (m) m.hide();
-          }
-
-          if (typeof Swal !== 'undefined') {
-            Swal.fire({
-              icon: 'success',
-              title: 'Đã lưu Phiếu Nháp Server!',
-              html: `Mã phiếu nháp: <b class="text-primary font-monospace fs-5">${draftId}</b><br>` +
-                    `Số lượng: <b>${validSerials.length}</b> thiết bị.<br><br>` +
-                    `<div class="alert alert-info text-start small mb-0">` +
-                    `<strong>Đồng bộ đa thiết bị:</strong> Phiếu nháp đã được lưu an toàn trên máy chủ Google Sheets.<br>` +
-                    `Khi bạn ngồi vào máy tính PC, mở tab <b>${isXuat ? 'Lịch Sử Xuất Kho' : 'Lịch Sử Nhập Kho'}</b> là phiếu này đã hiện sẵn để bấm <b>[Tiếp tục ${isXuat ? 'xuất' : 'nhập'}]</b>!` +
-                    `</div>`,
-              confirmButtonText: 'Đã hiểu'
-            });
-          } else {
-            alert(`Đã lưu phiếu nháp ${draftId} thành công lên máy chủ!`);
-          }
+          closeScannerModalSafely(function() {
+            extractedSerialsList = [];
+            if (typeof window !== 'undefined') window.extractedSerialsList = [];
+            if (typeof Swal !== 'undefined') {
+              Swal.fire({
+                icon: 'success',
+                title: 'Đã lưu Phiếu Nháp Server!',
+                html: `Mã phiếu nháp: <b class="text-primary font-monospace fs-5">${draftId}</b><br>` +
+                      `Số lượng: <b>${validSerials.length}</b> thiết bị.<br><br>` +
+                      `<div class="alert alert-info text-start small mb-0">` +
+                      `Phiếu nháp đã được lưu an toàn trên máy chủ Google Sheets. Bạn có thể mở tab <b>${isXuat ? 'Lịch Sử Xuất Kho' : 'Lịch Sử Nhập Kho'}</b> để tiếp tục xử lý bất kỳ lúc nào!` +
+                      `</div>`,
+                confirmButtonText: 'Đã hiểu'
+              });
+            } else {
+              alert(`Đã lưu phiếu nháp ${draftId} thành công lên máy chủ!`);
+            }
+          });
         } else {
+          // Lưu thất bại: GIỮ NGUYÊN DANH SÁCH SERIAL
           if (typeof Swal !== 'undefined') {
-            Swal.fire('Lỗi lưu nháp', (res && res.message) || 'Không thể lưu phiếu nháp lên máy chủ!', 'error');
+            Swal.fire('Lỗi lưu nháp', (res && res.message) || 'Không thể lưu phiếu nháp lên máy chủ! Danh sách Serial vẫn được giữ nguyên.', 'error');
           } else {
-            alert('Lỗi lưu nháp lên máy chủ!');
+            alert('Lỗi lưu nháp lên máy chủ! Danh sách Serial vẫn được giữ nguyên.');
           }
         }
       });
     } else {
-      alert(`Đã tạo phiếu nháp: ${draftId}`);
+      closeScannerModalSafely(function() {
+        extractedSerialsList = [];
+        if (typeof window !== 'undefined') window.extractedSerialsList = [];
+        alert(`Đã lưu phiếu nháp ${draftId} (${validSerials.length} serials)!`);
+      });
     }
   }
 
   /* ==================================================== */
-  /* HÀM ĐÓNG MODAL QUÉT AN TOÀN TUYỆT ĐỐI (TRÁNH KẸT LAYER) */
+  /* HÀM ĐÓNG MODAL QUÉT AN TOÀN THEO VÒNG ĐỜI BOOTSTRAP  */
   /* ==================================================== */
-  function closeScannerModalSafely() {
-    try {
-      const modalEl = document.getElementById('scannerModal');
-      if (modalEl && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-        const modal = bootstrap.Modal.getInstance(modalEl) || bootstrap.Modal.getOrCreateInstance(modalEl);
-        if (modal) modal.hide();
-      }
-      if (modalEl) {
-        modalEl.classList.remove('show');
-        modalEl.style.display = 'none';
-        modalEl.setAttribute('aria-hidden', 'true');
-      }
-    } catch (e) {}
+  function closeScannerModalSafely(callback) {
+    const modalEl = document.getElementById('scannerModal');
+    if (!modalEl) {
+      if (typeof callback === 'function') callback();
+      return;
+    }
 
-    // Dọn dẹp triệt để backdrop và class modal-open trên body
-    try {
-      document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
-      document.body.classList.remove('modal-open');
-      document.body.style.removeProperty('padding-right');
-      document.body.style.removeProperty('overflow');
-    } catch (e) {}
+    stopScannerCamera();
+
+    // Nếu modal đang không hiển thị hoặc không có Bootstrap
+    if (!modalEl.classList.contains('show') || typeof bootstrap === 'undefined' || !bootstrap.Modal) {
+      modalEl.style.display = 'none';
+      if (typeof callback === 'function') callback();
+      return;
+    }
+
+    const modal = bootstrap.Modal.getInstance(modalEl) || bootstrap.Modal.getOrCreateInstance(modalEl);
+
+    // Lắng nghe sự kiện hidden.bs.modal chuẩn của Bootstrap 5
+    const onModalHidden = function() {
+      modalEl.removeEventListener('hidden.bs.modal', onModalHidden);
+      if (typeof callback === 'function') callback();
+    };
+
+    modalEl.addEventListener('hidden.bs.modal', onModalHidden);
+    modal.hide();
   }
 
   /* ==================================================== */
@@ -955,234 +1109,243 @@
     if (!sourceList || sourceList.length === 0) return;
 
     const validSerials = sourceList
-      .map(s => (s.serial || '').trim().toUpperCase())
-      .filter(s => s.length >= 4);
+      .map(s => (s.serial || '').trim().toUpperCase().replace(/[\s\r\n\t]/g, ''))
+      .filter(s => s.length >= 3);
 
     if (validSerials.length === 0) {
-      alert('Không có mã Serial nào hợp lệ để đưa vào phiếu!');
+      alert('Không có mã Serial nào hợp lệ để xử lý!');
       return;
     }
 
-    // ĐÓNG MODAL NGAY LẬP TỨC để người dùng thấy giao diện form phía sau
-    closeScannerModalSafely();
+    const helper = document.getElementById('scanner-inline-helper');
+    const helperBody = document.getElementById('scanner-inline-helper-body');
 
+    // ----------------------------------------------------
+    // XỬ LÝ THEO NGỮ CẢNH: 1. NHẬP KHO
+    // ----------------------------------------------------
+    if (CURRENT_SCAN_CONTEXT === 'NHAP_KHO' || CURRENT_SCAN_CONTEXT === 'NHAP_KHO_SINGLE') {
+      const nccHidden = (document.getElementById('nhap-ncc')?.value || '').trim();
+      const nccInput = (document.getElementById('nhap-ncc-input')?.value || '').trim();
+      const kho = (document.getElementById('nhap-kho')?.value || '').trim();
+      const modelHidden = (document.getElementById('nhap-select-model')?.value || '').trim();
+      const modelInput = (document.getElementById('nhap-model-input')?.value || '').trim();
+
+      const suppliers = (typeof INITIAL_SUPPLIERS !== 'undefined' ? INITIAL_SUPPLIERS : []).filter(s => s.active !== false);
+      const matchedNcc = suppliers.find(s => {
+        const tt = (s.tenTat || '').toLowerCase();
+        const td = (s.tenDayDu || '').toLowerCase();
+        return (nccHidden && (tt === nccHidden.toLowerCase() || td === nccHidden.toLowerCase())) ||
+               tt === nccInput.toLowerCase() || td === nccInput.toLowerCase();
+      });
+
+      const missing = [];
+      if (!matchedNcc && !nccInput) missing.push('Nhà Cung Cấp');
+      if (!kho) missing.push('Kho nhận');
+      if (!modelHidden && !modelInput) missing.push('Model thiết bị');
+
+      if (missing.length > 0) {
+        if (helper && helperBody) {
+          helper.style.display = 'block';
+          helperBody.innerHTML = `Vui lòng chọn <strong>${missing.join(', ')}</strong> tại phiếu nhập trước khi thêm danh sách ${validSerials.length} Serial vào bảng nháp.`;
+        }
+        playBeepSound();
+        alert(`Chưa đủ thông tin phiếu nhập!\nVui lòng chọn: ${missing.join(', ')} trước khi thêm vào phiếu.`);
+        return;
+      }
+
+      // Đã đủ thông tin -> Đưa serial vào textarea và gọi addModelToDraftList()
+      const textarea = document.getElementById('nhap-serial-input');
+      if (textarea) {
+        textarea.value = validSerials.join('\n');
+      }
+
+      // Đóng modal an toàn theo vòng đời Bootstrap
+      closeScannerModalSafely(function() {
+        if (typeof switchTab === 'function') switchTab('NhapKho');
+        if (typeof addModelToDraftList === 'function') {
+          addModelToDraftList();
+        }
+        // Xóa các serial đã đưa thành công vào nháp
+        extractedSerialsList = [];
+        if (typeof window !== 'undefined') window.extractedSerialsList = [];
+        if (typeof showFloatingScannerToast === 'function') {
+          showFloatingScannerToast(`✨ Đã thêm <b>${validSerials.length}</b> Serial vào phiếu nhập!`);
+        }
+      });
+      return;
+    }
+
+    // ----------------------------------------------------
+    // XỬ LÝ THEO NGỮ CẢNH: 2. XUẤT KHO
+    // ----------------------------------------------------
+    if (CURRENT_SCAN_CONTEXT === 'XUAT_KHO') {
+      const custInput = (document.getElementById('xuat-khach-input')?.value || '').trim();
+      const custHidden = (document.getElementById('xuat-khach-select')?.value || '').trim();
+      const kho = (document.getElementById('xuat-kho-select')?.value || '').trim();
+
+      const customers = (typeof INITIAL_CUSTOMERS !== 'undefined' ? INITIAL_CUSTOMERS : []).filter(c => c.active !== false);
+      const matchedCust = customers.find(c => {
+        const cName = (c.ten || '').toLowerCase();
+        return (custHidden && cName === custHidden.toLowerCase()) || cName === custInput.toLowerCase();
+      });
+
+      const missing = [];
+      if (!matchedCust && !custInput) missing.push('Khách Hàng');
+      if (!kho) missing.push('Kho xuất');
+
+      if (missing.length > 0) {
+        if (helper && helperBody) {
+          helper.style.display = 'block';
+          helperBody.innerHTML = `Vui lòng chọn <strong>${missing.join(', ')}</strong> tại phiếu xuất trước khi thêm danh sách ${validSerials.length} Serial vào bảng nháp.`;
+        }
+        playBeepSound();
+        alert(`Chưa đủ thông tin phiếu xuất!\nVui lòng chọn: ${missing.join(', ')} trước khi thêm vào phiếu.`);
+        return;
+      }
+
+      // Đóng modal an toàn theo vòng đời Bootstrap rồi gọi addSerialToXuatDraft
+      closeScannerModalSafely(function() {
+        if (typeof switchTab === 'function') switchTab('XuatKho');
+        if (typeof addSerialToXuatDraft === 'function') {
+          addSerialToXuatDraft(validSerials.join('\n'));
+        }
+        extractedSerialsList = [];
+        if (typeof window !== 'undefined') window.extractedSerialsList = [];
+        if (typeof showFloatingScannerToast === 'function') {
+          showFloatingScannerToast(`✨ Đã thêm <b>${validSerials.length}</b> Serial vào phiếu xuất!`);
+        }
+      });
+      return;
+    }
+
+    // ----------------------------------------------------
+    // XỬ LÝ THEO NGỮ CẢNH: 3. TRA CỨU HỒ SƠ 360 (MULTI-SN)
+    // ----------------------------------------------------
+    if (CURRENT_SCAN_CONTEXT === 'SERIAL_360') {
+      window.CURRENT_SCAN_360_LIST = validSerials;
+      window.CURRENT_SCAN_360_INDEX = 0;
+
+      closeScannerModalSafely(function() {
+        if (typeof switchTab === 'function') switchTab('Serial360');
+        if (typeof lookupSerial360 === 'function') {
+          lookupSerial360(validSerials[0]);
+        }
+      });
+      return;
+    }
+
+    // ----------------------------------------------------
+    // XỬ LÝ THEO NGỮ CẢNH: 4. CHUYỂN KHO HÀNG LOẠT
+    // ----------------------------------------------------
+    if (CURRENT_SCAN_CONTEXT === 'TRANSFER_WAREHOUSE') {
+      const textarea = document.getElementById('transfer-serial');
+      if (textarea) {
+        textarea.value = validSerials.join('\n');
+      }
+      if (typeof updateTransferCounter === 'function') {
+        updateTransferCounter();
+      }
+
+      closeScannerModalSafely(function() {
+        if (typeof switchTab === 'function') switchTab('NghiepVuKho');
+        if (typeof showFloatingScannerToast === 'function') {
+          showFloatingScannerToast(`✨ Đã nạp <b>${validSerials.length}</b> Serial vào form Chuyển Kho!`);
+        }
+      });
+      return;
+    }
+
+    // ----------------------------------------------------
+    // XỬ LÝ THEO NGỮ CẢNH: 5. TỰ ĐỘNG ĐA NĂNG (GỢI Ý TẠI CHỖ)
+    // ----------------------------------------------------
     if (CURRENT_SCAN_CONTEXT === 'AUTO_UNIVERSAL') {
-      // Phân loại toàn bộ danh sách tem quét được đối chiếu với SERIAL_DB
-      const inStockItems = [];
-      const newSerials = [];
+      const inStock = [];
+      const notInStock = [];
 
       validSerials.forEach(sn => {
         const found = (typeof SERIAL_DB !== 'undefined' && Array.isArray(SERIAL_DB))
           ? SERIAL_DB.find(s => String(s.serial || '').trim().toUpperCase() === sn || String(s.internalId || '').trim().toUpperCase() === sn)
           : null;
-        if (found) {
-          inStockItems.push({ serial: sn, item: found });
-        } else {
-          newSerials.push(sn);
-        }
+        if (found) inStock.push({ serial: sn, item: found });
+        else notInStock.push(sn);
       });
 
-      // TRƯỜNG HỢP 1: CHỈ CÓ 1 TEM DUY NHẤT
       if (validSerials.length === 1) {
-        const firstSn = validSerials[0];
-        if (inStockItems.length === 1) {
-          const found = inStockItems[0].item;
-          const inp = document.getElementById('serial-360-search-input');
-          if (inp) inp.value = firstSn;
-          if (typeof switchTab === 'function') switchTab('Serial360');
-          if (typeof lookupSerial360 === 'function') lookupSerial360(firstSn);
-          if (typeof showFloatingScannerToast === 'function') {
-            showFloatingScannerToast(`✨ Đã nhận diện máy <b>${found.model || firstSn}</b> (${found.kho || 'Kho VP'}) - Mở 360°`);
-          }
-        } else {
-          const textarea = document.getElementById('nhap-serial-input');
-          if (textarea) {
-            const curVal = textarea.value.trim();
-            textarea.value = curVal ? `${curVal}\n${firstSn}` : firstSn;
-            if (typeof updateNhapSerialCounter === 'function') updateNhapSerialCounter();
-          }
-          if (typeof switchTab === 'function') switchTab('NhapKho');
-          if (typeof showFloatingScannerToast === 'function') {
-            showFloatingScannerToast(`✨ Thiết bị mới: Đã đưa <b>${firstSn}</b> vào Nhập Kho`);
-          }
-        }
-        return;
-      }
-
-      // TRƯỜNG HỢP 2: QUÉT ĐƯỢC NHIỀU TEM (2, 3, 5 TEM CÙNG LÚC)
-      // 2A. Nếu TOÀN BỘ là máy mới (chưa có trong kho) => Lô hàng Nhập Kho mới!
-      if (inStockItems.length === 0) {
-        const textarea = document.getElementById('nhap-serial-input');
-        if (textarea) {
-          const curVal = textarea.value.trim();
-          const addedText = newSerials.join('\n');
-          textarea.value = curVal ? `${curVal}\n${addedText}` : addedText;
-          if (typeof updateNhapSerialCounter === 'function') updateNhapSerialCounter();
-        }
-        if (typeof switchTab === 'function') switchTab('NhapKho');
-        if (typeof showFloatingScannerToast === 'function') {
-          showFloatingScannerToast(`✨ Phát hiện <b>${newSerials.length}</b> thiết bị mới chưa có trong kho - Đã đưa vào Nhập Kho!`);
-        }
-        return;
-      }
-
-      // 2B. Nếu TOÀN BỘ là máy đã có trong kho => Xuất kho hoặc Xem 360
-      if (newSerials.length === 0) {
-        if (typeof Swal !== 'undefined') {
-          const listHtml = inStockItems.map(it => `
-            <div class="d-flex justify-content-between align-items-center py-1 border-bottom text-start font-monospace small">
-              <div><strong class="text-primary">${it.serial}</strong> <span class="text-dark">(${it.item.model || ''})</span></div>
-              <span class="badge bg-secondary">${it.item.kho || 'Kho VP'}</span>
-            </div>
-          `).join('');
-
-          Swal.fire({
-            title: `✨ Đã Nhận Diện ${inStockItems.length} Thiết Bị Trong Kho`,
-            html: `
-              <div class="p-2 mb-3 bg-light rounded border text-start" style="max-height: 180px; overflow-y: auto;">
-                ${listHtml}
-              </div>
-              <div class="text-muted small mb-2">Toàn bộ ${inStockItems.length} thiết bị này <b>đã tồn tại trong kho</b>. Bạn muốn thao tác gì?</div>
-            `,
-            showDenyButton: true,
-            showCancelButton: true,
-            confirmButtonText: `<i class="fa-solid fa-truck-fast me-1"></i> Đưa vào Xuất Kho (${inStockItems.length})`,
-            confirmButtonColor: '#198754',
-            denyButtonText: `<i class="fa-solid fa-rotate-left me-1"></i> Xem 360° Máy Đầu`,
-            denyButtonColor: '#0d6efd',
-            cancelButtonText: 'Đóng'
-          }).then(res => {
-            if (res.isConfirmed) {
-              if (typeof switchTab === 'function') switchTab('XuatKho');
-              if (typeof addSerialToXuatDraft === 'function') {
-                inStockItems.forEach(it => addSerialToXuatDraft(it.serial));
-              }
-            } else if (res.isDenied) {
-              const firstSn = inStockItems[0].serial;
-              const inp = document.getElementById('serial-360-search-input');
-              if (inp) inp.value = firstSn;
-              if (typeof switchTab === 'function') switchTab('Serial360');
-              if (typeof lookupSerial360 === 'function') lookupSerial360(firstSn);
-            }
+        const sn = validSerials[0];
+        if (inStock.length === 1) {
+          window.CURRENT_SCAN_360_LIST = [sn];
+          window.CURRENT_SCAN_360_INDEX = 0;
+          closeScannerModalSafely(function() {
+            if (typeof switchTab === 'function') switchTab('Serial360');
+            if (typeof lookupSerial360 === 'function') lookupSerial360(sn);
           });
+        } else {
+          setScanContext('NHAP_KHO');
+          if (helper && helperBody) {
+            helper.style.display = 'block';
+            helperBody.innerHTML = `Mã <strong>${sn}</strong> chưa có trong kho. Đã chuyển sang ngữ cảnh <strong>Quét Nhập Kho</strong>. Vui lòng chọn thông tin phiếu nhập rồi bấm thêm.`;
+          }
         }
         return;
       }
 
-      // 2C. TRƯỜNG HỢP HỖN HỢP: Vừa có máy mới, vừa có máy cũ trong kho
-      if (typeof Swal !== 'undefined') {
-        const newHtml = newSerials.map(sn => `<span class="badge bg-success-subtle text-success border border-success-subtle me-1 mb-1 font-monospace">${sn}</span>`).join('');
-        const oldHtml = inStockItems.map(it => `<span class="badge bg-primary-subtle text-primary border border-primary-subtle me-1 mb-1 font-monospace">${it.serial} (${it.item.kho || 'Kho'})</span>`).join('');
-
-        Swal.fire({
-          title: `✨ Kết Quả Nhận Diện Đa Năng (${validSerials.length} Tem)`,
-          html: `
-            <div class="text-start small mb-2">
-              <div class="fw-bold text-success mb-1"><i class="fa-solid fa-plus-circle me-1"></i> ${newSerials.length} Thiết bị MỚI (chưa có trong kho):</div>
-              <div class="p-2 bg-light rounded border mb-2">${newHtml}</div>
-              <div class="fw-bold text-primary mb-1"><i class="fa-solid fa-warehouse me-1"></i> ${inStockItems.length} Thiết bị ĐÃ CÓ trong kho:</div>
-              <div class="p-2 bg-light rounded border">${oldHtml}</div>
-            </div>
-            <div class="text-muted small">Vui lòng chọn hướng xử lý cho danh sách trên:</div>
-          `,
-          showDenyButton: true,
-          showCancelButton: true,
-          confirmButtonText: `<i class="fa-solid fa-box-archive me-1"></i> Nhập Kho máy mới (${newSerials.length})`,
-          confirmButtonColor: '#198754',
-          denyButtonText: `<i class="fa-solid fa-truck-fast me-1"></i> Xuất Kho máy sẵn (${inStockItems.length})`,
-          denyButtonColor: '#0d6efd',
-          cancelButtonText: 'Đóng'
-        }).then(res => {
-          if (res.isConfirmed) {
-            const textarea = document.getElementById('nhap-serial-input');
-            if (textarea) {
-              const curVal = textarea.value.trim();
-              const addedText = newSerials.join('\n');
-              textarea.value = curVal ? `${curVal}\n${addedText}` : addedText;
-              if (typeof updateNhapSerialCounter === 'function') updateNhapSerialCounter();
-            }
-            if (typeof switchTab === 'function') switchTab('NhapKho');
-          } else if (res.isDenied) {
-            if (typeof switchTab === 'function') switchTab('XuatKho');
-            if (typeof addSerialToXuatDraft === 'function') {
-              inStockItems.forEach(it => addSerialToXuatDraft(it.serial));
-            }
-          }
-        });
+      // Nhiều mã: Hiển thị gợi ý trực tiếp ngay trong modal (không mở popup đè)
+      if (helper && helperBody) {
+        helper.style.display = 'block';
+        helperBody.innerHTML = `
+          Phát hiện <strong>${validSerials.length}</strong> thiết bị: 
+          <strong>${inStock.length}</strong> máy đã có trong kho, <strong>${notInStock.length}</strong> máy mới.<br>
+          <div class="mt-2 d-flex gap-2 flex-wrap">
+            <button class="btn btn-sm btn-success fw-bold py-1 px-3" onclick="setScanContext('NHAP_KHO'); submitExtractedSerialsToContext();">
+              <i class="fa-solid fa-box-archive me-1"></i> Đưa vào Nhập Kho (${notInStock.length || validSerials.length})
+            </button>
+            <button class="btn btn-sm btn-danger fw-bold py-1 px-3" onclick="setScanContext('XUAT_KHO'); submitExtractedSerialsToContext();">
+              <i class="fa-solid fa-dolly me-1"></i> Đưa vào Xuất Kho (${inStock.length || validSerials.length})
+            </button>
+            <button class="btn btn-sm btn-primary fw-bold py-1 px-3" onclick="setScanContext('SERIAL_360'); submitExtractedSerialsToContext();">
+              <i class="fa-solid fa-magnifying-glass me-1"></i> Xem hồ sơ 360
+            </button>
+          </div>
+        `;
       }
       return;
-    } else if (CURRENT_SCAN_CONTEXT === 'NHAP_KHO_SINGLE' || CURRENT_SCAN_CONTEXT === 'NHAP_KHO') {
-      const textarea = document.getElementById('nhap-serial-input');
-      if (textarea) {
-        const curVal = textarea.value.trim();
-        const addedText = validSerials.join('\n');
-        textarea.value = curVal ? `${curVal}\n${addedText}` : addedText;
-        if (typeof updateNhapSerialCounter === 'function') {
-          updateNhapSerialCounter();
-        }
-      }
-      if (typeof switchTab === 'function') switchTab('NhapKho');
-    } else if (CURRENT_SCAN_CONTEXT === 'XUAT_KHO') {
-      if (typeof switchTab === 'function') switchTab('XuatKho');
-      if (typeof addSerialToXuatDraft === 'function') {
-        validSerials.forEach(sn => addSerialToXuatDraft(sn));
-      }
-    } else if (CURRENT_SCAN_CONTEXT === 'INVENTORY_SESSION') {
-      if (typeof addSerialToInventorySession === 'function') {
-        validSerials.forEach(sn => addSerialToInventorySession(sn));
-      }
-    } else if (CURRENT_SCAN_CONTEXT === 'SERIAL_360') {
-      const firstSn = validSerials[0];
-      const inp = document.getElementById('serial-360-search-input');
-      if (inp) inp.value = firstSn;
-      if (typeof switchTab === 'function') switchTab('Serial360');
-      if (typeof lookupSerial360 === 'function') lookupSerial360(firstSn);
-    } else if (CURRENT_SCAN_CONTEXT === 'GLOBAL_SEARCH') {
-      const firstSn = validSerials[0];
-      const inp = document.getElementById('global-search-input');
-      if (inp) inp.value = firstSn;
-      if (typeof handleGlobalSearch === 'function') handleGlobalSearch(firstSn);
-    } else if (CURRENT_SCAN_CONTEXT === 'WARRANTY_CASE') {
-      const firstSn = validSerials[0];
-      const inp = document.getElementById('case-serial');
-      if (inp) {
-        inp.value = firstSn;
-        if (typeof onWarrantySerialChange === 'function') onWarrantySerialChange(firstSn);
-      }
-    } else if (CURRENT_SCAN_CONTEXT === 'STOCK_LOOKUP') {
-      const firstSn = validSerials[0];
-      const inp = document.getElementById('filter-stock-keyword');
-      if (inp) {
-        inp.value = firstSn;
-        if (typeof applyStockFilter === 'function') applyStockFilter();
-      }
-    } else if (CURRENT_SCAN_CONTEXT === 'STOCK_ADJUSTMENT') {
-      const firstSn = validSerials[0];
-      const inp = document.getElementById('adj-serial');
-      if (inp) inp.value = firstSn;
-    } else if (CURRENT_SCAN_CONTEXT === 'RETURN_CUSTOMER') {
-      const firstSn = validSerials[0];
-      const inp = document.getElementById('return-cust-serial');
-      if (inp) inp.value = firstSn;
-    } else if (CURRENT_SCAN_CONTEXT === 'RETURN_SUPPLIER') {
-      const firstSn = validSerials[0];
-      const inp = document.getElementById('return-supp-serial');
-      if (inp) inp.value = firstSn;
-    } else if (CURRENT_SCAN_CONTEXT === 'TRANSFER_WAREHOUSE') {
-      const inp = document.getElementById('transfer-serial');
-      if (inp) {
-        const curVal = inp.value.trim();
-        const addedText = validSerials.join('\n');
-        inp.value = curVal ? (curVal + '\n' + addedText) : addedText;
-        if (typeof updateTransferSerialCounter === 'function') updateTransferSerialCounter();
-      }
-      if (typeof switchTab === 'function') switchTab('NghiepVuKho');
     }
 
-    // Đảm bảo dọn dẹp modal và thông báo thành công
-    closeScannerModalSafely();
-
-    showFloatingScannerToast(`✅ Đã nạp thành công <strong>${validSerials.length}</strong> số Serial vào phiếu!`);
+    // CÁC NGỮ CẢNH BỔ TRỢ KHÁC (TÌM KIẾM, BẢO HÀNH, TRẢ HÀNG)
+    const firstSn = validSerials[0];
+    if (CURRENT_SCAN_CONTEXT === 'GLOBAL_SEARCH') {
+      const inp = document.getElementById('global-search-input');
+      if (inp) inp.value = firstSn;
+      closeScannerModalSafely(function() {
+        if (typeof handleGlobalSearch === 'function') handleGlobalSearch(firstSn);
+      });
+    } else if (CURRENT_SCAN_CONTEXT === 'WARRANTY_CASE') {
+      const inp = document.getElementById('case-serial');
+      if (inp) inp.value = firstSn;
+      closeScannerModalSafely(function() {
+        if (typeof onWarrantySerialChange === 'function') onWarrantySerialChange(firstSn);
+      });
+    } else if (CURRENT_SCAN_CONTEXT === 'STOCK_LOOKUP') {
+      const inp = document.getElementById('filter-stock-keyword');
+      if (inp) inp.value = firstSn;
+      closeScannerModalSafely(function() {
+        if (typeof applyStockFilter === 'function') applyStockFilter();
+      });
+    } else if (CURRENT_SCAN_CONTEXT === 'STOCK_ADJUSTMENT') {
+      const inp = document.getElementById('adj-serial');
+      if (inp) inp.value = firstSn;
+      closeScannerModalSafely();
+    } else if (CURRENT_SCAN_CONTEXT === 'RETURN_CUSTOMER') {
+      const inp = document.getElementById('return-cust-serial');
+      if (inp) inp.value = firstSn;
+      closeScannerModalSafely();
+    } else if (CURRENT_SCAN_CONTEXT === 'RETURN_SUPPLIER') {
+      const inp = document.getElementById('return-supp-serial');
+      if (inp) inp.value = firstSn;
+      closeScannerModalSafely();
+    } else {
+      closeScannerModalSafely();
+    }
   }
 
   /* ==================================================== */
@@ -1461,4 +1624,9 @@
     window.setScanContext = setScanContext;
     window.saveExtractedSerialsToServerDraft = saveExtractedSerialsToServerDraft;
     window.handleGeminiDirectScan = handleGeminiDirectScan;
+    window.toggleSerialEdit = toggleSerialEdit;
+    window.cancelSerialEdit = cancelSerialEdit;
+    window.saveSerialEdit = saveSerialEdit;
+    window.closeScannerModalSafely = closeScannerModalSafely;
+    window.updateScannerSubmitButtonLabel = updateScannerSubmitButtonLabel;
   }

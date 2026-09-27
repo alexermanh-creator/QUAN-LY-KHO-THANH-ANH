@@ -1,12 +1,12 @@
   <!-- ==================================================== -->
-  <!-- MODAL: CAMERA SCANNER (YÊU CẦU I & 11) -->
+  <!-- MODAL: CAMERA SCANNER (TỐI ƯU TOÀN DIỆN CHO MOBILE) -->
   <!-- ==================================================== -->
   <div class="modal fade" id="scannerModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-dialog modal-fullscreen-sm-down modal-lg modal-dialog-centered">
       <div class="modal-content border-0 shadow">
         <div class="modal-header bg-dark text-white py-2">
           <h6 class="modal-title d-flex align-items-center gap-2 mb-0">
-            <span id="scanner-modal-title"><i class="fa-solid fa-camera text-success me-1"></i> Camera Quét Barcode / QR Code</span>
+            <span id="scanner-modal-title"><i class="fa-solid fa-camera text-success me-1"></i> Quét Mã Vạch &amp; Bóc Tách Serial</span>
           </h6>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" onclick="stopScannerCamera()"></button>
         </div>
@@ -14,57 +14,67 @@
           <!-- BỘ GIẢI MÃ MÃ VẠCH NGẦM (GIỮ NGUYÊN ĐỂ HTML5QRCODE KHÔNG BỊ LỖI DOM) -->
           <div id="html5-qr-reader" style="display:none; width: 250px; height: 250px;"></div>
 
-          <!-- BỘ CHỌN NGỮ CẢNH QUÉT TRỰC QUAN (TỰ ĐỘNG ĐA NĂNG / NHẬP KHO / XUẤT KHO / TRA CỨU) -->
-          <div class="d-flex justify-content-center gap-1 mb-3 p-1 bg-light rounded border flex-wrap">
-            <button type="button" class="btn btn-sm btn-primary py-1 px-3 fw-bold rounded-pill shadow-sm" id="scan-ctx-auto" onclick="setScanContext('AUTO_UNIVERSAL')">
-              <i class="fa-solid fa-wand-magic-sparkles me-1 text-warning"></i> ✨ Tự Động Đa Năng
+          <!-- BỘ CHỌN NGỮ CẢNH DẠNG LƯỚI 2x2 (CHUẨN TOUCH TARGET >= 48PX CHO MOBILE) -->
+          <div class="scanner-ctx-grid mb-3">
+            <button type="button" class="scanner-ctx-btn active" id="scan-ctx-auto" onclick="setScanContext('AUTO_UNIVERSAL')">
+              <i class="fa-solid fa-wand-magic-sparkles me-2 text-warning fs-6"></i>
+              <span>Tự Động Đa Năng</span>
             </button>
-            <button type="button" class="btn btn-sm btn-outline-secondary py-1 px-3 fw-semibold rounded-pill" id="scan-ctx-nhap" onclick="setScanContext('NHAP_KHO')">
-              <i class="fa-solid fa-box-archive me-1"></i> Quét Nhập Kho
+            <button type="button" class="scanner-ctx-btn" id="scan-ctx-nhap" onclick="setScanContext('NHAP_KHO')">
+              <i class="fa-solid fa-box-archive me-2 text-success fs-6"></i>
+              <span>Quét Nhập Kho</span>
             </button>
-            <button type="button" class="btn btn-sm btn-outline-secondary py-1 px-3 fw-semibold rounded-pill" id="scan-ctx-xuat" onclick="setScanContext('XUAT_KHO')">
-              <i class="fa-solid fa-dolly me-1"></i> Quét Xuất Kho
+            <button type="button" class="scanner-ctx-btn" id="scan-ctx-xuat" onclick="setScanContext('XUAT_KHO')">
+              <i class="fa-solid fa-dolly me-2 text-danger fs-6"></i>
+              <span>Quét Xuất Kho</span>
             </button>
-            <button type="button" class="btn btn-sm btn-outline-secondary py-1 px-3 fw-semibold rounded-pill" id="scan-ctx-360" onclick="setScanContext('SERIAL_360')">
-              <i class="fa-solid fa-magnifying-glass me-1"></i> Tra Cứu 360
+            <button type="button" class="scanner-ctx-btn" id="scan-ctx-360" onclick="setScanContext('SERIAL_360')">
+              <i class="fa-solid fa-magnifying-glass me-2 text-primary fs-6"></i>
+              <span>Tra Cứu 360</span>
             </button>
           </div>
 
-          <!-- KHU VỰC THAO TÁC TINH GỌN (CHỤP / CHỌN NHIỀU ẢNH + DÁN CTRL+V + SÚNG QUÉT) -->
-          <div class="p-3 bg-light rounded border text-center mb-3">
-            <!-- 1. NÚT CHỤP TRỰC TIẾP BẰNG CAMERA & NÚT CHỌN NHIỀU ẢNH -->
-            <div class="d-grid gap-2 mb-2">
-              <label class="btn btn-primary fw-bold py-2 shadow-sm d-flex align-items-center justify-content-center gap-2" style="cursor:pointer; font-size: 1rem;">
-                <i class="fa-solid fa-camera fs-5"></i>
-                <span>CHỤP ẢNH TEM TRỰC TIẾP TỪ CAMERA</span>
-                <input type="file" id="scanner-direct-camera-input" accept="image/*" capture="environment" style="display:none;" onchange="handleBatchImagesUpload(this)">
-              </label>
+          <!-- KHU VỰC THAO TÁC CHÍNH (NÚT BẤM TO RÕ, CAO >= 48PX CHO NGÓN TAY) -->
+          <div class="d-grid gap-2 mb-3">
+            <label class="btn btn-primary fw-bold py-2 px-3 shadow-sm d-flex align-items-center justify-content-center gap-2" style="cursor:pointer; min-height: 48px; font-size: 0.95rem;">
+              <i class="fa-solid fa-camera fs-5"></i>
+              <span>CHỤP ẢNH TEM TỪ CAMERA</span>
+              <input type="file" id="scanner-direct-camera-input" accept="image/*" capture="environment" style="display:none;" onchange="handleBatchImagesUpload(this)">
+            </label>
 
-              <!-- NÚT QUÉT BẰNG AI GEMINI (CHUYÊN TRỊ TEM NHIỀU MÃ VẠCH / BÓNG LÓA) -->
-              <label class="btn fw-bold py-2 shadow-sm d-flex align-items-center justify-content-center gap-2 text-white border-0" style="cursor:pointer; font-size: 0.95rem; background: linear-gradient(135deg, #4f46e5, #7c3aed);">
-                <i class="fa-solid fa-wand-magic-sparkles fs-5"></i>
-                <span>CHỤP &amp; QUÉT BẰNG AI GEMINI (ĐỌC TEM PHỨC TẠP)</span>
-                <input type="file" id="scanner-gemini-camera-input" accept="image/*" capture="environment" style="display:none;" onchange="handleGeminiDirectScan(this)">
-              </label>
+            <label class="btn fw-bold py-2 px-3 shadow-sm d-flex align-items-center justify-content-center gap-2 text-white border-0" style="cursor:pointer; min-height: 48px; font-size: 0.95rem; background: linear-gradient(135deg, #4f46e5, #7c3aed);">
+              <i class="fa-solid fa-wand-magic-sparkles fs-5"></i>
+              <span>CHỤP &amp; QUÉT BẰNG AI GEMINI (ĐỌC TEM PHỨC TẠP)</span>
+              <input type="file" id="scanner-gemini-camera-input" accept="image/*" capture="environment" style="display:none;" onchange="handleGeminiDirectScan(this)">
+            </label>
 
-              <label class="btn btn-outline-success fw-bold py-2 shadow-sm d-flex align-items-center justify-content-center gap-2" style="cursor:pointer; font-size: 0.95rem;">
-                <i class="fa-solid fa-images fs-5"></i>
-                <span>CHỌN 1 HOẶC NHIỀU ẢNH TỪ THƯ VIỆN</span>
-                <input type="file" id="scanner-batch-file-input" accept="image/*,image/jpeg,image/png" multiple style="display:none;" onchange="handleBatchImagesUpload(this)">
-              </label>
-            </div>
+            <label class="btn btn-outline-success fw-bold py-2 px-3 shadow-sm d-flex align-items-center justify-content-center gap-2" style="cursor:pointer; min-height: 48px; font-size: 0.95rem;">
+              <i class="fa-solid fa-images fs-5"></i>
+              <span>CHỌN 1 HOẶC NHIỀU ẢNH TỪ THƯ VIỆN</span>
+              <input type="file" id="scanner-batch-file-input" accept="image/*,image/jpeg,image/png" multiple style="display:none;" onchange="handleBatchImagesUpload(this)">
+            </label>
+          </div>
 
-            <!-- 2. KHU VỰC DÁN ẢNH TỪ BỘ NHỚ TẠM (CTRL + V) -->
-            <div id="paste-drop-zone" class="p-3 border border-2 border-primary border-dashed rounded bg-white text-center shadow-sm" style="cursor: pointer;" onclick="focusPasteZone()" tabindex="0">
-              <i class="fa-solid fa-clipboard text-primary fs-3 d-block mb-1"></i>
-              <span class="fw-bold text-primary d-block">BẤM VÀO ĐÂY HOẶC NHẤN <kbd class="bg-primary text-white px-2 py-1 rounded">Ctrl + V</kbd> ĐỂ DÁN ẢNH TỪ BỘ NHỚ TẠM</span>
-              <small class="text-muted d-block mt-1">Hỗ trợ dán ảnh chụp màn hình, ảnh copy từ Zalo, ảnh gửi từ điện thoại...</small>
-            </div>
-
-            <!-- 3. NHẮC NHỞ SÚNG QUÉT MÃ VẠCH PHẦN CỨNG -->
-            <div class="mt-2 text-muted small d-flex align-items-center justify-content-center gap-2">
-              <i class="fa-solid fa-barcode text-secondary"></i>
-              <span>Súng quét USB / Bluetooth: Luôn tự động nhận diện ngầm khi bóp cò.</span>
+          <!-- MỤC PHỤ: DÁN ẢNH CTRL+V VÀ SÚNG QUÉT (THU GỌN VÀO ACCORDION ĐỂ KHÔNG CHOÁN CHỖ TRÊN MOBILE) -->
+          <div class="accordion mb-3" id="scanner-pc-options-accordion">
+            <div class="accordion-item border rounded">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed py-2 px-3 bg-light text-muted small fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#collapsePcTools">
+                  <i class="fa-solid fa-laptop me-2"></i> Tùy chọn máy tính (Dán ảnh Ctrl+V, Súng quét)
+                </button>
+              </h2>
+              <div id="collapsePcTools" class="accordion-collapse collapse" data-bs-parent="#scanner-pc-options-accordion">
+                <div class="accordion-body p-2 pt-3">
+                  <div id="paste-drop-zone" class="p-3 border border-2 border-primary border-dashed rounded bg-white text-center shadow-sm" style="cursor: pointer;" onclick="focusPasteZone()" tabindex="0">
+                    <i class="fa-solid fa-clipboard text-primary fs-3 d-block mb-1"></i>
+                    <span class="fw-bold text-primary d-block small">BẤM VÀO ĐÂY HOẶC NHẤN <kbd class="bg-primary text-white px-2 py-1 rounded">Ctrl + V</kbd> ĐỂ DÁN ẢNH</span>
+                    <small class="text-muted d-block mt-1" style="font-size:0.75rem;">Hỗ trợ dán ảnh chụp màn hình, ảnh copy từ Zalo, Telegram...</small>
+                  </div>
+                  <div class="mt-2 text-muted small text-center">
+                    <i class="fa-solid fa-barcode text-secondary me-1"></i> Súng quét USB / Bluetooth: Tự động nhận diện ngầm khi bóp cò.
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -79,34 +89,57 @@
             </div>
           </div>
 
+          <!-- HỘP THÔNG BÁO / GỢI Ý XỬ LÝ NGAY TRONG MODAL -->
           <div id="scanner-feedback-box" class="p-2 rounded small text-center fw-semibold bg-light text-muted mb-2">
-            <i class="fa-solid fa-circle-info me-1 text-primary"></i> Sẵn sàng! Hãy chọn ảnh tem hoặc dán ảnh (Ctrl+V) để đọc Serial.
+            <i class="fa-solid fa-circle-info me-1 text-primary"></i> Sẵn sàng! Hãy chọn ảnh tem hoặc chụp trực tiếp để bóc tách Serial.
+          </div>
+
+          <!-- HỘP CẢNH BÁO BỔ SUNG THÔNG TIN PHIẾU THIẾU (FAIL-FAST INLINE) -->
+          <div id="scanner-inline-helper" class="alert alert-warning p-2 mb-2 small shadow-sm" style="display: none;">
+            <div class="d-flex align-items-center gap-2 mb-1 fw-bold text-dark">
+              <i class="fa-solid fa-triangle-exclamation text-warning fs-6"></i>
+              <span id="scanner-inline-helper-title">Cần bổ sung thông tin phiếu</span>
+            </div>
+            <div id="scanner-inline-helper-body" class="text-secondary mb-2"></div>
+            <div id="scanner-inline-helper-fields" class="row g-2"></div>
           </div>
 
           <!-- BẢNG ĐỐI SOÁT VÀ XEM TRƯỚC CÁC SERIAL BÓC TÁCH ĐƯỢC (RESPONSIVE CARD CHO MOBILE) -->
           <div id="scanner-results-container" style="display: none;">
             <div class="d-flex justify-content-between align-items-center mb-2">
-              <span class="small fw-bold text-dark"><i class="fa-solid fa-list-check me-1 text-success"></i> Danh sách Serial bóc tách thành công (<span id="scanner-total-extracted" class="text-success fw-bold">0</span>):</span>
+              <span class="small fw-bold text-dark"><i class="fa-solid fa-list-check me-1 text-success"></i> Danh sách Serial (<span id="scanner-total-extracted" class="text-success fw-bold">0</span>):</span>
               <button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="clearExtractedSerials()"><i class="fa-solid fa-trash me-1"></i> Xóa danh sách</button>
             </div>
-            <div class="border rounded bg-white shadow-sm p-2" style="max-height: 260px; overflow-y: auto;">
+            <div class="border rounded bg-white shadow-sm p-2" style="max-height: 320px; overflow-y: auto;">
               <!-- Container thẻ danh sách Responsive (Hiển thị trọn vẹn số Serial trên Mobile) -->
               <div id="scanner-extracted-list" class="d-flex flex-column gap-2"></div>
             </div>
           </div>
         </div>
-        <div class="modal-footer py-2 d-flex flex-wrap justify-content-between gap-2 bg-light">
-          <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Đóng</button>
-          
+
+        <!-- THANH HÀNH ĐỘNG CỐ ĐỊNH ĐÁY (STICKY BOTTOM ACTION BAR) -->
+        <div class="scanner-sticky-footer modal-footer py-2 d-flex justify-content-between align-items-center bg-white">
           <div class="d-flex gap-2">
-            <!-- Nút Lưu Thẳng Vào Phiếu Nháp Server (Quy trình quét Mobile -> PC làm tiếp) -->
-            <button type="button" id="btn-save-extracted-to-server-draft" class="btn btn-sm btn-warning text-dark fw-bold px-3 shadow-sm" onclick="saveExtractedSerialsToServerDraft()" disabled>
-              <i class="fa-solid fa-cloud-arrow-up me-1"></i> Lưu Vào Phiếu Nháp Server
+            <button type="button" class="btn btn-outline-secondary fw-semibold py-2 px-3" data-bs-dismiss="modal" style="min-height: 48px;">
+              <i class="fa-solid fa-xmark me-1"></i> Đóng
+            </button>
+            <label class="btn btn-outline-primary fw-semibold py-2 px-3 d-flex align-items-center gap-1" style="min-height: 48px; cursor: pointer;" title="Chụp ảnh quét tiếp">
+              <i class="fa-solid fa-camera"></i>
+              <span class="d-none d-sm-inline">Quét tiếp</span>
+              <input type="file" accept="image/*" capture="environment" style="display:none;" onchange="handleBatchImagesUpload(this)">
+            </label>
+          </div>
+          
+          <div class="d-flex gap-2 flex-grow-1 justify-content-end">
+            <!-- Nút Lưu Thẳng Vào Phiếu Nháp Server (Chỉ hiện khi trên desktop/máy tính hoặc ngữ cảnh hợp lệ) -->
+            <button type="button" id="btn-save-extracted-to-server-draft" class="btn btn-outline-warning text-dark fw-bold py-2 px-2 d-none d-lg-inline-block" onclick="saveExtractedSerialsToServerDraft()" disabled style="min-height: 48px;">
+              <i class="fa-solid fa-cloud-arrow-up me-1"></i> Lưu Nháp Server
             </button>
 
-            <!-- Nút Đưa Vào Form Hiện Tại -->
-            <button type="button" id="btn-submit-extracted-serials" class="btn btn-sm btn-success fw-bold px-3 shadow-sm" onclick="submitExtractedSerialsToContext()" disabled>
-              <i class="fa-solid fa-circle-check me-1"></i> Đưa Vào Form
+            <!-- Nút Xử Lý Chính Theo Ngữ Cảnh Có Số Lượng Rõ Ràng -->
+            <button type="button" id="btn-submit-extracted-serials" class="btn btn-success fw-bold py-2 px-3 shadow flex-grow-1 flex-md-grow-0 d-flex align-items-center justify-content-center gap-2" onclick="submitExtractedSerialsToContext()" disabled style="min-height: 48px; font-size: 0.95rem;">
+              <i class="fa-solid fa-circle-check fs-6"></i>
+              <span id="btn-submit-extracted-label">Đưa Vào Form</span>
             </button>
           </div>
         </div>

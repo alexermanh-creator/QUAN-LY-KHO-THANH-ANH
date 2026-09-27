@@ -1598,4 +1598,9 @@
     window.onInputModelNhap = onInputModelNhap;
     window.openQuickAddModelModal = openQuickAddModelModal;
     window.submitQuickAddModel = submitQuickAddModel;
+    window.addModelToDraftList = addModelToDraftList;
+    window.renderDraftNhapTable = renderDraftNhapTable;
+    window.removeDraftNhapItem = removeDraftNhapItem;
+    window.clearDraftNhapList = clearDraftNhapList;
+    window.saveDraftNhapVoucher = saveDraftNhapVoucher;
   }
