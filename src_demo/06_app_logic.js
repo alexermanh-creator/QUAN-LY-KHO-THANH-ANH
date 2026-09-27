@@ -1144,7 +1144,7 @@ CÁC QUY TẮC BẮT BUỘC:
 3. Chỉ trả về JSON duy nhất:
 {"serials":[{"serial":"CHUỖI_SERIAL_VIẾT_HOA","confidence":0.98,"detectedFrom":"Serial No trên tem","model":"Tên Model"}]}`;
 
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(clientModel)}:generateContent?key=${clientKey}`;
+        const url = 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(clientModel) + ':generateContent?key=' + clientKey;
         const body = {
           contents: [{
             parts: [
@@ -1241,7 +1241,7 @@ CÁC QUY TẮC BẮT BUỘC:
         if (callback) callback({ success: false, message: 'Chưa có API Key để kiểm tra.' });
         return;
       }
-      fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(m)}:generateContent?key=${k}`, {
+      fetch('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(m) + ':generateContent?key=' + k, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ contents: [{ parts: [{ text: 'Ping test' }] }] })
