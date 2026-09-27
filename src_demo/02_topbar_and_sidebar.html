@@ -28,12 +28,12 @@
         <span id="login-screen-error-text">Tài khoản hoặc mật khẩu không chính xác!</span>
       </div>
 
-      <form id="form-screen-login" onsubmit="event.preventDefault(); handleSystemLogin('screen');" autocomplete="off">
+      <form id="form-screen-login" onsubmit="event.preventDefault(); handleSystemLogin('screen'); return false;" autocomplete="off" novalidate>
         <div class="login-form-group">
           <label class="login-form-label" for="screen-login-username">Tên tài khoản</label>
           <div class="login-input-wrap">
             <i class="fa-solid fa-user login-input-icon"></i>
-            <input type="text" id="screen-login-username" class="login-field-input" placeholder="Nhập tên tài khoản..." required autocomplete="off" spellcheck="false">
+            <input type="text" id="screen-login-username" class="login-field-input" placeholder="Nhập tên tài khoản..." required autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" inputmode="text" onkeydown="if(event.key==='Enter'){event.preventDefault();handleSystemLogin('screen');}">
           </div>
         </div>
 
@@ -41,14 +41,14 @@
           <label class="login-form-label" for="screen-login-password">Mật khẩu</label>
           <div class="login-input-wrap">
             <i class="fa-solid fa-lock login-input-icon"></i>
-            <input type="password" id="screen-login-password" class="login-field-input" placeholder="Nhập mật khẩu..." required autocomplete="new-password">
+            <input type="password" id="screen-login-password" class="login-field-input" placeholder="Nhập mật khẩu..." required autocomplete="current-password" autocapitalize="none" autocorrect="off" onkeydown="if(event.key==='Enter'){event.preventDefault();handleSystemLogin('screen');}">
             <button type="button" class="login-eye-btn" onclick="togglePasswordVisibility('screen-login-password', 'login-screen-pwd-icon')" tabindex="-1">
               <i class="fa-solid fa-eye" id="login-screen-pwd-icon"></i>
             </button>
           </div>
         </div>
 
-        <button type="submit" class="login-action-btn" id="btn-submit-screen-login">
+        <button type="button" class="login-action-btn" id="btn-submit-screen-login" onclick="handleSystemLogin('screen');">
           <i class="fa-solid fa-right-to-bracket"></i> Đăng Nhập Hệ Thống
         </button>
       </form>

@@ -1195,19 +1195,19 @@
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" id="login-modal-close-btn"></button>
         </div>
         <div class="modal-body p-4">
-          <form id="form-system-login" onsubmit="event.preventDefault(); handleSystemLogin('modal');" autocomplete="off">
+          <form id="form-system-login" onsubmit="event.preventDefault(); handleSystemLogin('modal'); return false;" autocomplete="off" novalidate>
             <div class="mb-3">
               <label class="form-label small fw-bold text-secondary mb-1">Tên đăng nhập / Tài khoản (*)</label>
               <div class="input-group">
                 <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-user"></i></span>
-                <input type="text" id="modal-login-username" class="form-control" placeholder="Nhập tên tài khoản..." required autocomplete="off" spellcheck="false">
+                <input type="text" id="modal-login-username" class="form-control" placeholder="Nhập tên tài khoản..." required autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" inputmode="text" onkeydown="if(event.key==='Enter'){event.preventDefault();handleSystemLogin('modal');}">
               </div>
             </div>
             <div class="mb-3">
               <label class="form-label small fw-bold text-secondary mb-1">Mật khẩu (*)</label>
               <div class="input-group">
                 <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-lock"></i></span>
-                <input type="password" id="modal-login-password" class="form-control" placeholder="Nhập mật khẩu..." required autocomplete="new-password">
+                <input type="password" id="modal-login-password" class="form-control" placeholder="Nhập mật khẩu..." required autocomplete="current-password" autocapitalize="none" autocorrect="off" onkeydown="if(event.key==='Enter'){event.preventDefault();handleSystemLogin('modal');}">
                 <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('modal-login-password', 'modal-login-pwd-icon')">
                   <i class="fa-solid fa-eye" id="modal-login-pwd-icon"></i>
                 </button>
@@ -1215,7 +1215,7 @@
             </div>
             <div id="login-error-msg" class="alert alert-danger small py-2 d-none"></div>
 
-            <button type="submit" class="btn btn-primary w-100 py-2 fw-bold" id="btn-submit-login">
+            <button type="button" class="btn btn-primary w-100 py-2 fw-bold" id="btn-submit-login" onclick="handleSystemLogin('modal');">
               <i class="fa-solid fa-right-to-bracket me-1"></i> Đăng Nhập
             </button>
           </form>
