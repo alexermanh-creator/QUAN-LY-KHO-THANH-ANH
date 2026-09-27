@@ -11,6 +11,21 @@
 
   function renderNghiepVuKhoTables() {
     renderInventorySessionsList();
+    populateTransferWarehouseSelect();
+  }
+
+  function populateTransferWarehouseSelect() {
+    const sel = document.getElementById('transfer-target-kho');
+    if (!sel) return;
+    const curVal = sel.value;
+    let html = '<option value="">-- Chọn kho chuyển đến --</option>';
+    if (typeof INITIAL_WAREHOUSES !== 'undefined' && Array.isArray(INITIAL_WAREHOUSES)) {
+      INITIAL_WAREHOUSES.filter(w => w.active !== false).forEach(w => {
+        const val = w.tenKho || w.name || w.maKho;
+        html += `<option value="${escapeHtml(val)}"${val === curVal ? ' selected' : ''}>${escapeHtml(val)}</option>`;
+      });
+    }
+    sel.innerHTML = html;
   }
 
   // G1: ĐIỀU CHỈNH TỒN KHO (Chỉ Manager/Admin - Yêu cầu G1)
@@ -383,46 +398,141 @@
     });
   }
 
-  // Nghiệp vụ Chuyển kho nội bộ
+  function updateTransferSerialCounter() {
+    const textarea = document.getElementById('transfer-serial');
+    const badge = document.getElementById('transfer-serial-counter');
+    if (!textarea || !badge) return;
+    const rawVal = textarea.value;
+    const serials = rawVal.split(/[\r\n,;]+/).map(s => s.trim()).filter(Boolean);
+    badge.textContent = `${serials.length} máy`;
+    badge.className = serials.length > 0 ? 'badge bg-primary' : 'badge bg-secondary';
+  }
+
+  function clearTransferSerials() {
+    const textarea = document.getElementById('transfer-serial');
+    if (textarea) textarea.value = '';
+    updateTransferSerialCounter();
+  }
+
+  // Nghiệp vụ Chuyển kho nội bộ (Hỗ trợ 1 hoặc nhiều máy đồng thời)
   function submitTransferWarehouse() {
-    const sn = document.getElementById('transfer-serial').value.trim();
-    const targetKho = document.getElementById('transfer-target-kho').value;
+    const rawVal = (document.getElementById('transfer-serial') ? document.getElementById('transfer-serial').value : '').trim();
+    const targetKho = (document.getElementById('transfer-target-kho') ? document.getElementById('transfer-target-kho').value : '').trim();
+    const note = (document.getElementById('transfer-batch-note') ? document.getElementById('transfer-batch-note').value : '').trim() || 'Luân chuyển nội bộ';
 
-    if (!sn) {
-      Swal.fire('Thiếu Serial', 'Vui lòng nhập Serial máy chuyển kho!', 'warning');
+    if (!rawVal) {
+      if (typeof Swal !== 'undefined') {
+        Swal.fire('Thiếu Serial', 'Vui lòng nhập hoặc quét Serial máy chuyển kho!', 'warning');
+      } else {
+        alert('Vui lòng nhập Serial máy chuyển kho!');
+      }
       return;
     }
 
-    const s = SERIAL_DB.find(x => x.serial.toLowerCase() === sn.toLowerCase());
-    if (!s) {
-      Swal.fire('Không tìm thấy', `Serial "${sn}" không tồn tại!`, 'error');
+    if (!targetKho) {
+      if (typeof Swal !== 'undefined') {
+        Swal.fire('Thiếu Kho Đến', 'Vui lòng chọn Kho đến hợp lệ!', 'warning');
+      } else {
+        alert('Vui lòng chọn Kho đến hợp lệ!');
+      }
       return;
     }
 
-    const oldKho = s.kho;
-    if (oldKho === targetKho) {
-      Swal.fire('Trùng kho', `Máy hiện tại đã ở sẵn [${targetKho}] rồi!`, 'info');
+    const serials = rawVal.split(/[\r\n,;]+/).map(s => s.trim().toUpperCase()).filter(Boolean);
+    if (serials.length === 0) {
+      if (typeof Swal !== 'undefined') {
+        Swal.fire('Thiếu Serial', 'Không tìm thấy số Serial hợp lệ nào!', 'warning');
+      } else {
+        alert('Không tìm thấy số Serial hợp lệ nào!');
+      }
       return;
     }
 
-    s.kho = targetKho;
-    const nowStr = `${formatDateDisplay(getLocalDateStr())} ${new Date().toLocaleTimeString('vi-VN')}`;
+    const successItems = [];
+    const notFoundSerials = [];
+    const sameKhoSerials = [];
+    const nowStr = `${typeof formatDateDisplay === 'function' ? formatDateDisplay(getLocalDateStr()) : new Date().toLocaleDateString('vi-VN')} ${new Date().toLocaleTimeString('vi-VN')}`;
 
-    s.timeline.unshift({
-      date: nowStr,
-      user: CURRENT_USER_NAME,
-      action: 'Chuyển kho',
-      note: `Luân chuyển từ [${oldKho}] sang [${targetKho}]`
+    serials.forEach(sn => {
+      const s = (typeof SERIAL_DB !== 'undefined' && Array.isArray(SERIAL_DB))
+        ? SERIAL_DB.find(x => String(x.serial || '').trim().toUpperCase() === sn || String(x.internalId || '').trim().toUpperCase() === sn)
+        : null;
+
+      if (!s) {
+        notFoundSerials.push(sn);
+        return;
+      }
+
+      const oldKho = s.kho || 'Kho VP';
+      if (oldKho === targetKho) {
+        sameKhoSerials.push({ serial: sn, kho: oldKho });
+        return;
+      }
+
+      s.kho = targetKho;
+      if (!Array.isArray(s.timeline)) s.timeline = [];
+      s.timeline.unshift({
+        date: nowStr,
+        user: CURRENT_USER_NAME || 'Admin',
+        action: 'Chuyển kho',
+        note: `Luân chuyển từ [${oldKho}] sang [${targetKho}]. ${note}`
+      });
+
+      if (typeof recordAuditLog === 'function') {
+        recordAuditLog('CHUYỂN KHO', `${s.serial} (${s.model || ''})`, oldKho, targetKho, note);
+      }
+
+      successItems.push({ serial: s.serial, model: s.model || '', oldKho: oldKho });
     });
 
-    recordAuditLog('CHUYỂN KHO', `${s.serial} (${s.model})`, oldKho, targetKho, 'Luân chuyển nội bộ');
-    document.getElementById('transfer-serial').value = '';
+    // Đồng bộ LocalStorage & hệ thống
+    try {
+      if (typeof SERIAL_DB !== 'undefined') {
+        localStorage.setItem('THANH_AN_SERIAL_DB', JSON.stringify(SERIAL_DB));
+      }
+    } catch(e) {}
 
-    Swal.fire({
-      icon: 'success',
-      title: 'Chuyển kho thành công!',
-      text: `Máy ${s.serial} đã được chuyển từ [${oldKho}] sang [${targetKho}].`
-    });
+    if (typeof markModulesDirty === 'function') {
+      markModulesDirty(['TonKho', 'Serial360', 'LichSu', 'Dashboard', 'NghiepVuKho']);
+    }
+
+    // Reset form
+    if (document.getElementById('transfer-serial')) {
+      document.getElementById('transfer-serial').value = '';
+    }
+    if (document.getElementById('transfer-batch-note')) {
+      document.getElementById('transfer-batch-note').value = '';
+    }
+    updateTransferSerialCounter();
+
+    // Thông báo kết quả
+    if (typeof Swal !== 'undefined') {
+      if (successItems.length > 0 && notFoundSerials.length === 0 && sameKhoSerials.length === 0) {
+        Swal.fire({
+          icon: 'success',
+          title: `Chuyển kho thành công (${successItems.length} máy)!`,
+          html: `Đã chuyển toàn bộ <b>${successItems.length}</b> thiết bị sang [<strong>${targetKho}</strong>].`
+        });
+      } else {
+        let msgHtml = '';
+        if (successItems.length > 0) {
+          msgHtml += `<div class="text-success fw-bold mb-1">✅ Thành công (${successItems.length} máy): Đã chuyển sang [${targetKho}]</div>`;
+        }
+        if (sameKhoSerials.length > 0) {
+          msgHtml += `<div class="text-warning fw-semibold mb-1">⚠️ Trùng kho (${sameKhoSerials.length} máy): Đã ở sẵn [${targetKho}]</div>`;
+        }
+        if (notFoundSerials.length > 0) {
+          msgHtml += `<div class="text-danger fw-semibold mb-1">❌ Không tìm thấy trong kho (${notFoundSerials.length} máy): ${notFoundSerials.join(', ')}</div>`;
+        }
+        Swal.fire({
+          icon: successItems.length > 0 ? 'success' : 'error',
+          title: 'Kết quả chuyển kho',
+          html: `<div class="text-start small">${msgHtml}</div>`
+        });
+      }
+    } else {
+      alert(`Đã chuyển kho thành công ${successItems.length} máy sang [${targetKho}]!`);
+    }
   }
 
   /* ==================================================== */
@@ -4967,6 +5077,10 @@
     window.goToTonKhoByModel = goToTonKhoByModel;
     window.openStockAgingAction = openStockAgingAction;
     window.deleteCustomer = deleteCustomer;
+    window.submitTransferWarehouse = submitTransferWarehouse;
+    window.updateTransferSerialCounter = updateTransferSerialCounter;
+    window.clearTransferSerials = clearTransferSerials;
+    window.populateTransferWarehouseSelect = populateTransferWarehouseSelect;
   }
 
   window.addEventListener('DOMContentLoaded', () => {

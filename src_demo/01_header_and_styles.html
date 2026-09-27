@@ -977,8 +977,18 @@
       .sidebar.show { left: 0; box-shadow: 4px 0 20px rgba(0,0,0,0.3); }
       .topbar { margin-left: 0; width: 100%; }
       .mobile-bottom-nav { display: flex; }
-      .content-area { margin-left: 0; width: 100%; padding: 12px; margin-bottom: 65px; }
+      .content-area { margin-left: 0; width: 100%; padding: 12px; margin-bottom: 75px; padding-bottom: 35px; }
       .topbar-search-container { max-width: 260px; margin: 0 8px; }
+
+      /* CHỐNG KẸT LỚP PHỦ BACKDROP & NỔI PHẦN TỬ TRÊN MOBILE */
+      .modal-backdrop:not(.show) {
+        display: none !important;
+        pointer-events: none !important;
+      }
+      body:not(.modal-open) .modal-backdrop {
+        display: none !important;
+        pointer-events: none !important;
+      }
       
       .table-responsive-card thead { display: none; }
       .table-responsive-card tbody tr {

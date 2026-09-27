@@ -1010,7 +1010,7 @@
     document.getElementById('transfer-current-kho').innerText = currentKho || item.kho;
     document.getElementById('transfer-note').value = '';
 
-    const selKho = document.getElementById('transfer-target-kho');
+    const selKho = document.getElementById('modal-quick-transfer-target-kho');
     if (selKho) {
       let html = '';
       if (typeof INITIAL_WAREHOUSES !== 'undefined') {
@@ -1027,7 +1027,7 @@
 
   function submitQuickTransferStock() {
     const serial = document.getElementById('transfer-serial-input').value;
-    const targetKho = document.getElementById('transfer-target-kho').value;
+    const targetKho = document.getElementById('modal-quick-transfer-target-kho').value;
     const note = document.getElementById('transfer-note').value.trim();
 
     if (!targetKho) {

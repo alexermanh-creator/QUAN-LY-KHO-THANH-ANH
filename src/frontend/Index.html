@@ -977,8 +977,18 @@
       .sidebar.show { left: 0; box-shadow: 4px 0 20px rgba(0,0,0,0.3); }
       .topbar { margin-left: 0; width: 100%; }
       .mobile-bottom-nav { display: flex; }
-      .content-area { margin-left: 0; width: 100%; padding: 12px; margin-bottom: 65px; }
+      .content-area { margin-left: 0; width: 100%; padding: 12px; margin-bottom: 75px; padding-bottom: 35px; }
       .topbar-search-container { max-width: 260px; margin: 0 8px; }
+
+      /* CHỐNG KẸT LỚP PHỦ BACKDROP & NỔI PHẦN TỬ TRÊN MOBILE */
+      .modal-backdrop:not(.show) {
+        display: none !important;
+        pointer-events: none !important;
+      }
+      body:not(.modal-open) .modal-backdrop {
+        display: none !important;
+        pointer-events: none !important;
+      }
       
       .table-responsive-card thead { display: none; }
       .table-responsive-card tbody tr {
@@ -2826,18 +2836,25 @@
             </div>
           </div>
 
-          <!-- CHUYỂN KHO NỘI BỘ (CÓ CAMERA SCAN - YÊU CẦU 11) -->
+          <!-- CHUYỂN KHO NỘI BỘ (HỖ TRỢ NHIỀU MÁY CÙNG LÚC + QUÉT BÓC TÁCH ẢNH) -->
           <div class="col-12 col-md-4">
             <div class="app-card mb-0">
-              <div class="app-card-header">
-                <h6 class="app-card-title text-info"><i class="fa-solid fa-dolly"></i> Chuyển Kho Nội Bộ</h6>
+              <div class="app-card-header d-flex justify-content-between align-items-center">
+                <h6 class="app-card-title text-info mb-0"><i class="fa-solid fa-dolly"></i> Chuyển Kho Nội Bộ</h6>
+                <span id="transfer-serial-counter" class="badge bg-secondary">0 máy</span>
               </div>
               <div class="app-card-body p-3">
                 <div class="mb-2">
-                  <label class="form-label small fw-semibold text-muted mb-1">Serial máy chuyển (*)</label>
-                  <div class="input-group input-group-sm">
-                    <input type="text" id="transfer-serial" class="form-control" placeholder="Nhập hoặc quét Serial...">
-                    <button class="btn btn-cam" onclick="openScannerModal('TRANSFER_WAREHOUSE')">📷 Quét</button>
+                  <div class="d-flex justify-content-between align-items-center mb-1">
+                    <label class="form-label small fw-semibold text-muted mb-0">Serial máy chuyển (*)</label>
+                    <button type="button" class="btn btn-sm btn-outline-info py-0 px-2 fw-semibold" style="font-size:0.75rem;" onclick="openScannerModal('TRANSFER_WAREHOUSE')">
+                      📷 Quét / Bóc tách ảnh
+                    </button>
+                  </div>
+                  <textarea id="transfer-serial" class="form-control font-monospace text-uppercase" rows="3" placeholder="Nhập hoặc quét nhiều Serial (mỗi máy 1 dòng)..." oninput="updateTransferSerialCounter()"></textarea>
+                  <div class="d-flex justify-content-between align-items-center mt-1">
+                    <small class="text-muted" style="font-size: 0.72rem;">Hỗ trợ chuyển 1 hoặc nhiều máy đồng thời</small>
+                    <button type="button" class="btn btn-link text-danger p-0 text-decoration-none" style="font-size: 0.72rem;" onclick="clearTransferSerials()">Xóa trắng</button>
                   </div>
                 </div>
                 <div class="mb-2">
@@ -2846,7 +2863,11 @@
                     <option value="">-- Chọn kho chuyển đến --</option>
                   </select>
                 </div>
-                <button class="btn btn-info text-white btn-sm w-100 mt-3" onclick="submitTransferWarehouse()">
+                <div class="mb-2">
+                  <label class="form-label small fw-semibold text-muted mb-1">Ghi chú điều chuyển:</label>
+                  <input type="text" id="transfer-batch-note" class="form-control form-control-sm" placeholder="Ví dụ: Điều chuyển theo lệnh...">
+                </div>
+                <button class="btn btn-info text-white btn-sm w-100 mt-2 fw-bold shadow-sm" onclick="submitTransferWarehouse()">
                   <i class="fa-solid fa-check"></i> Xác nhận chuyển kho
                 </button>
               </div>
@@ -5140,7 +5161,7 @@
           </div>
           <div class="mb-3">
             <label class="form-label small fw-semibold text-muted mb-1">Chuyển sang kho đích: <span class="text-danger">*</span></label>
-            <select id="transfer-target-kho" class="form-select">
+            <select id="modal-quick-transfer-target-kho" class="form-select">
               <!-- Render động -->
             </select>
           </div>
@@ -16439,12 +16460,42 @@ CÁC QUY TẮC BẮT BUỘC:
   }
 
   /* ==================================================== */
+  /* HÀM ĐÓNG MODAL QUÉT AN TOÀN TUYỆT ĐỐI (TRÁNH KẸT LAYER) */
+  /* ==================================================== */
+  function closeScannerModalSafely() {
+    try {
+      const modalEl = document.getElementById('scannerModal');
+      if (modalEl && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+        const modal = bootstrap.Modal.getInstance(modalEl) || bootstrap.Modal.getOrCreateInstance(modalEl);
+        if (modal) modal.hide();
+      }
+      if (modalEl) {
+        modalEl.classList.remove('show');
+        modalEl.style.display = 'none';
+        modalEl.setAttribute('aria-hidden', 'true');
+      }
+    } catch (e) {}
+
+    // Dọn dẹp triệt để backdrop và class modal-open trên body
+    try {
+      document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
+      document.body.classList.remove('modal-open');
+      document.body.style.removeProperty('padding-right');
+      document.body.style.removeProperty('overflow');
+    } catch (e) {}
+  }
+
+  /* ==================================================== */
   /* ĐƯA TOÀN BỘ SERIAL VÀO PHIẾU THEO NGỮ CẢNH           */
   /* ==================================================== */
   function submitExtractedSerialsToContext() {
-    if (extractedSerialsList.length === 0) return;
+    const sourceList = (typeof window !== 'undefined' && Array.isArray(window.extractedSerialsList) && window.extractedSerialsList.length > 0)
+      ? window.extractedSerialsList
+      : extractedSerialsList;
 
-    const validSerials = extractedSerialsList
+    if (!sourceList || sourceList.length === 0) return;
+
+    const validSerials = sourceList
       .map(s => (s.serial || '').trim().toUpperCase())
       .filter(s => s.length >= 4);
 
@@ -16452,6 +16503,9 @@ CÁC QUY TẮC BẮT BUỘC:
       alert('Không có mã Serial nào hợp lệ để đưa vào phiếu!');
       return;
     }
+
+    // ĐÓNG MODAL NGAY LẬP TỨC để người dùng thấy giao diện form phía sau
+    closeScannerModalSafely();
 
     if (CURRENT_SCAN_CONTEXT === 'AUTO_UNIVERSAL') {
       // Phân loại toàn bộ danh sách tem quét được đối chiếu với SERIAL_DB
@@ -16656,17 +16710,18 @@ CÁC QUY TẮC BẮT BUỘC:
       const inp = document.getElementById('return-supp-serial');
       if (inp) inp.value = firstSn;
     } else if (CURRENT_SCAN_CONTEXT === 'TRANSFER_WAREHOUSE') {
-      const firstSn = validSerials[0];
       const inp = document.getElementById('transfer-serial');
-      if (inp) inp.value = firstSn;
+      if (inp) {
+        const curVal = inp.value.trim();
+        const addedText = validSerials.join('\n');
+        inp.value = curVal ? (curVal + '\n' + addedText) : addedText;
+        if (typeof updateTransferSerialCounter === 'function') updateTransferSerialCounter();
+      }
+      if (typeof switchTab === 'function') switchTab('NghiepVuKho');
     }
 
-    // Đóng Modal và thông báo thành công
-    const modalEl = document.getElementById('scannerModal');
-    if (modalEl && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-      const modal = bootstrap.Modal.getInstance(modalEl);
-      if (modal) modal.hide();
-    }
+    // Đảm bảo dọn dẹp modal và thông báo thành công
+    closeScannerModalSafely();
 
     showFloatingScannerToast(`✅ Đã nạp thành công <strong>${validSerials.length}</strong> số Serial vào phiếu!`);
   }
@@ -16781,7 +16836,11 @@ CÁC QUY TẮC BẮT BUỘC:
       if (inp) inp.value = code;
     } else if (CURRENT_SCAN_CONTEXT === 'TRANSFER_WAREHOUSE') {
       const inp = document.getElementById('transfer-serial');
-      if (inp) inp.value = code;
+      if (inp) {
+        const curVal = inp.value.trim();
+        inp.value = curVal ? (curVal + '\n' + code) : code;
+        if (typeof updateTransferSerialCounter === 'function') updateTransferSerialCounter();
+      }
     }
   }
 
@@ -16883,8 +16942,8 @@ CÁC QUY TẮC BẮT BUỘC:
       toast.id = 'scanner-floating-toast';
       toast.style.cssText = `
         position: fixed;
-        bottom: 24px;
-        right: 24px;
+        bottom: 70px;
+        right: 20px;
         background: #0f172a;
         color: #38bdf8;
         border: 1px solid #0284c7;
@@ -16897,18 +16956,27 @@ CÁC QUY TẮC BẮT BUỘC:
         display: flex;
         align-items: center;
         gap: 8px;
+        pointer-events: none;
       `;
       document.body.appendChild(toast);
     }
     toast.innerHTML = htmlMsg;
+    toast.style.display = 'flex';
     toast.style.opacity = '1';
     toast.style.transform = 'translateY(0)';
+    toast.style.pointerEvents = 'none';
 
     if (window._scannerToastTimeout) clearTimeout(window._scannerToastTimeout);
     window._scannerToastTimeout = setTimeout(() => {
       if (toast) {
         toast.style.opacity = '0';
         toast.style.transform = 'translateY(15px)';
+        toast.style.pointerEvents = 'none';
+        setTimeout(() => {
+          if (toast && toast.style.opacity === '0') {
+            toast.style.display = 'none';
+          }
+        }, 350);
       }
     }, 2800);
   }
@@ -21159,7 +21227,7 @@ CÁC QUY TẮC BẮT BUỘC:
     document.getElementById('transfer-current-kho').innerText = currentKho || item.kho;
     document.getElementById('transfer-note').value = '';
 
-    const selKho = document.getElementById('transfer-target-kho');
+    const selKho = document.getElementById('modal-quick-transfer-target-kho');
     if (selKho) {
       let html = '';
       if (typeof INITIAL_WAREHOUSES !== 'undefined') {
@@ -21176,7 +21244,7 @@ CÁC QUY TẮC BẮT BUỘC:
 
   function submitQuickTransferStock() {
     const serial = document.getElementById('transfer-serial-input').value;
-    const targetKho = document.getElementById('transfer-target-kho').value;
+    const targetKho = document.getElementById('modal-quick-transfer-target-kho').value;
     const note = document.getElementById('transfer-note').value.trim();
 
     if (!targetKho) {
@@ -24688,6 +24756,21 @@ CÁC QUY TẮC BẮT BUỘC:
 
   function renderNghiepVuKhoTables() {
     renderInventorySessionsList();
+    populateTransferWarehouseSelect();
+  }
+
+  function populateTransferWarehouseSelect() {
+    const sel = document.getElementById('transfer-target-kho');
+    if (!sel) return;
+    const curVal = sel.value;
+    let html = '<option value="">-- Chọn kho chuyển đến --</option>';
+    if (typeof INITIAL_WAREHOUSES !== 'undefined' && Array.isArray(INITIAL_WAREHOUSES)) {
+      INITIAL_WAREHOUSES.filter(w => w.active !== false).forEach(w => {
+        const val = w.tenKho || w.name || w.maKho;
+        html += `<option value="${escapeHtml(val)}"${val === curVal ? ' selected' : ''}>${escapeHtml(val)}</option>`;
+      });
+    }
+    sel.innerHTML = html;
   }
 
   // G1: ĐIỀU CHỈNH TỒN KHO (Chỉ Manager/Admin - Yêu cầu G1)
@@ -25060,46 +25143,141 @@ CÁC QUY TẮC BẮT BUỘC:
     });
   }
 
-  // Nghiệp vụ Chuyển kho nội bộ
+  function updateTransferSerialCounter() {
+    const textarea = document.getElementById('transfer-serial');
+    const badge = document.getElementById('transfer-serial-counter');
+    if (!textarea || !badge) return;
+    const rawVal = textarea.value;
+    const serials = rawVal.split(/[\r\n,;]+/).map(s => s.trim()).filter(Boolean);
+    badge.textContent = `${serials.length} máy`;
+    badge.className = serials.length > 0 ? 'badge bg-primary' : 'badge bg-secondary';
+  }
+
+  function clearTransferSerials() {
+    const textarea = document.getElementById('transfer-serial');
+    if (textarea) textarea.value = '';
+    updateTransferSerialCounter();
+  }
+
+  // Nghiệp vụ Chuyển kho nội bộ (Hỗ trợ 1 hoặc nhiều máy đồng thời)
   function submitTransferWarehouse() {
-    const sn = document.getElementById('transfer-serial').value.trim();
-    const targetKho = document.getElementById('transfer-target-kho').value;
+    const rawVal = (document.getElementById('transfer-serial') ? document.getElementById('transfer-serial').value : '').trim();
+    const targetKho = (document.getElementById('transfer-target-kho') ? document.getElementById('transfer-target-kho').value : '').trim();
+    const note = (document.getElementById('transfer-batch-note') ? document.getElementById('transfer-batch-note').value : '').trim() || 'Luân chuyển nội bộ';
 
-    if (!sn) {
-      Swal.fire('Thiếu Serial', 'Vui lòng nhập Serial máy chuyển kho!', 'warning');
+    if (!rawVal) {
+      if (typeof Swal !== 'undefined') {
+        Swal.fire('Thiếu Serial', 'Vui lòng nhập hoặc quét Serial máy chuyển kho!', 'warning');
+      } else {
+        alert('Vui lòng nhập Serial máy chuyển kho!');
+      }
       return;
     }
 
-    const s = SERIAL_DB.find(x => x.serial.toLowerCase() === sn.toLowerCase());
-    if (!s) {
-      Swal.fire('Không tìm thấy', `Serial "${sn}" không tồn tại!`, 'error');
+    if (!targetKho) {
+      if (typeof Swal !== 'undefined') {
+        Swal.fire('Thiếu Kho Đến', 'Vui lòng chọn Kho đến hợp lệ!', 'warning');
+      } else {
+        alert('Vui lòng chọn Kho đến hợp lệ!');
+      }
       return;
     }
 
-    const oldKho = s.kho;
-    if (oldKho === targetKho) {
-      Swal.fire('Trùng kho', `Máy hiện tại đã ở sẵn [${targetKho}] rồi!`, 'info');
+    const serials = rawVal.split(/[\r\n,;]+/).map(s => s.trim().toUpperCase()).filter(Boolean);
+    if (serials.length === 0) {
+      if (typeof Swal !== 'undefined') {
+        Swal.fire('Thiếu Serial', 'Không tìm thấy số Serial hợp lệ nào!', 'warning');
+      } else {
+        alert('Không tìm thấy số Serial hợp lệ nào!');
+      }
       return;
     }
 
-    s.kho = targetKho;
-    const nowStr = `${formatDateDisplay(getLocalDateStr())} ${new Date().toLocaleTimeString('vi-VN')}`;
+    const successItems = [];
+    const notFoundSerials = [];
+    const sameKhoSerials = [];
+    const nowStr = `${typeof formatDateDisplay === 'function' ? formatDateDisplay(getLocalDateStr()) : new Date().toLocaleDateString('vi-VN')} ${new Date().toLocaleTimeString('vi-VN')}`;
 
-    s.timeline.unshift({
-      date: nowStr,
-      user: CURRENT_USER_NAME,
-      action: 'Chuyển kho',
-      note: `Luân chuyển từ [${oldKho}] sang [${targetKho}]`
+    serials.forEach(sn => {
+      const s = (typeof SERIAL_DB !== 'undefined' && Array.isArray(SERIAL_DB))
+        ? SERIAL_DB.find(x => String(x.serial || '').trim().toUpperCase() === sn || String(x.internalId || '').trim().toUpperCase() === sn)
+        : null;
+
+      if (!s) {
+        notFoundSerials.push(sn);
+        return;
+      }
+
+      const oldKho = s.kho || 'Kho VP';
+      if (oldKho === targetKho) {
+        sameKhoSerials.push({ serial: sn, kho: oldKho });
+        return;
+      }
+
+      s.kho = targetKho;
+      if (!Array.isArray(s.timeline)) s.timeline = [];
+      s.timeline.unshift({
+        date: nowStr,
+        user: CURRENT_USER_NAME || 'Admin',
+        action: 'Chuyển kho',
+        note: `Luân chuyển từ [${oldKho}] sang [${targetKho}]. ${note}`
+      });
+
+      if (typeof recordAuditLog === 'function') {
+        recordAuditLog('CHUYỂN KHO', `${s.serial} (${s.model || ''})`, oldKho, targetKho, note);
+      }
+
+      successItems.push({ serial: s.serial, model: s.model || '', oldKho: oldKho });
     });
 
-    recordAuditLog('CHUYỂN KHO', `${s.serial} (${s.model})`, oldKho, targetKho, 'Luân chuyển nội bộ');
-    document.getElementById('transfer-serial').value = '';
+    // Đồng bộ LocalStorage & hệ thống
+    try {
+      if (typeof SERIAL_DB !== 'undefined') {
+        localStorage.setItem('THANH_AN_SERIAL_DB', JSON.stringify(SERIAL_DB));
+      }
+    } catch(e) {}
 
-    Swal.fire({
-      icon: 'success',
-      title: 'Chuyển kho thành công!',
-      text: `Máy ${s.serial} đã được chuyển từ [${oldKho}] sang [${targetKho}].`
-    });
+    if (typeof markModulesDirty === 'function') {
+      markModulesDirty(['TonKho', 'Serial360', 'LichSu', 'Dashboard', 'NghiepVuKho']);
+    }
+
+    // Reset form
+    if (document.getElementById('transfer-serial')) {
+      document.getElementById('transfer-serial').value = '';
+    }
+    if (document.getElementById('transfer-batch-note')) {
+      document.getElementById('transfer-batch-note').value = '';
+    }
+    updateTransferSerialCounter();
+
+    // Thông báo kết quả
+    if (typeof Swal !== 'undefined') {
+      if (successItems.length > 0 && notFoundSerials.length === 0 && sameKhoSerials.length === 0) {
+        Swal.fire({
+          icon: 'success',
+          title: `Chuyển kho thành công (${successItems.length} máy)!`,
+          html: `Đã chuyển toàn bộ <b>${successItems.length}</b> thiết bị sang [<strong>${targetKho}</strong>].`
+        });
+      } else {
+        let msgHtml = '';
+        if (successItems.length > 0) {
+          msgHtml += `<div class="text-success fw-bold mb-1">✅ Thành công (${successItems.length} máy): Đã chuyển sang [${targetKho}]</div>`;
+        }
+        if (sameKhoSerials.length > 0) {
+          msgHtml += `<div class="text-warning fw-semibold mb-1">⚠️ Trùng kho (${sameKhoSerials.length} máy): Đã ở sẵn [${targetKho}]</div>`;
+        }
+        if (notFoundSerials.length > 0) {
+          msgHtml += `<div class="text-danger fw-semibold mb-1">❌ Không tìm thấy trong kho (${notFoundSerials.length} máy): ${notFoundSerials.join(', ')}</div>`;
+        }
+        Swal.fire({
+          icon: successItems.length > 0 ? 'success' : 'error',
+          title: 'Kết quả chuyển kho',
+          html: `<div class="text-start small">${msgHtml}</div>`
+        });
+      }
+    } else {
+      alert(`Đã chuyển kho thành công ${successItems.length} máy sang [${targetKho}]!`);
+    }
   }
 
   /* ==================================================== */
@@ -29644,6 +29822,10 @@ CÁC QUY TẮC BẮT BUỘC:
     window.goToTonKhoByModel = goToTonKhoByModel;
     window.openStockAgingAction = openStockAgingAction;
     window.deleteCustomer = deleteCustomer;
+    window.submitTransferWarehouse = submitTransferWarehouse;
+    window.updateTransferSerialCounter = updateTransferSerialCounter;
+    window.clearTransferSerials = clearTransferSerials;
+    window.populateTransferWarehouseSelect = populateTransferWarehouseSelect;
   }
 
   window.addEventListener('DOMContentLoaded', () => {

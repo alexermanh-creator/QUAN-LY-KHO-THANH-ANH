@@ -919,12 +919,42 @@
   }
 
   /* ==================================================== */
+  /* HÀM ĐÓNG MODAL QUÉT AN TOÀN TUYỆT ĐỐI (TRÁNH KẸT LAYER) */
+  /* ==================================================== */
+  function closeScannerModalSafely() {
+    try {
+      const modalEl = document.getElementById('scannerModal');
+      if (modalEl && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+        const modal = bootstrap.Modal.getInstance(modalEl) || bootstrap.Modal.getOrCreateInstance(modalEl);
+        if (modal) modal.hide();
+      }
+      if (modalEl) {
+        modalEl.classList.remove('show');
+        modalEl.style.display = 'none';
+        modalEl.setAttribute('aria-hidden', 'true');
+      }
+    } catch (e) {}
+
+    // Dọn dẹp triệt để backdrop và class modal-open trên body
+    try {
+      document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
+      document.body.classList.remove('modal-open');
+      document.body.style.removeProperty('padding-right');
+      document.body.style.removeProperty('overflow');
+    } catch (e) {}
+  }
+
+  /* ==================================================== */
   /* ĐƯA TOÀN BỘ SERIAL VÀO PHIẾU THEO NGỮ CẢNH           */
   /* ==================================================== */
   function submitExtractedSerialsToContext() {
-    if (extractedSerialsList.length === 0) return;
+    const sourceList = (typeof window !== 'undefined' && Array.isArray(window.extractedSerialsList) && window.extractedSerialsList.length > 0)
+      ? window.extractedSerialsList
+      : extractedSerialsList;
 
-    const validSerials = extractedSerialsList
+    if (!sourceList || sourceList.length === 0) return;
+
+    const validSerials = sourceList
       .map(s => (s.serial || '').trim().toUpperCase())
       .filter(s => s.length >= 4);
 
@@ -932,6 +962,9 @@
       alert('Không có mã Serial nào hợp lệ để đưa vào phiếu!');
       return;
     }
+
+    // ĐÓNG MODAL NGAY LẬP TỨC để người dùng thấy giao diện form phía sau
+    closeScannerModalSafely();
 
     if (CURRENT_SCAN_CONTEXT === 'AUTO_UNIVERSAL') {
       // Phân loại toàn bộ danh sách tem quét được đối chiếu với SERIAL_DB
@@ -1136,17 +1169,18 @@
       const inp = document.getElementById('return-supp-serial');
       if (inp) inp.value = firstSn;
     } else if (CURRENT_SCAN_CONTEXT === 'TRANSFER_WAREHOUSE') {
-      const firstSn = validSerials[0];
       const inp = document.getElementById('transfer-serial');
-      if (inp) inp.value = firstSn;
+      if (inp) {
+        const curVal = inp.value.trim();
+        const addedText = validSerials.join('\n');
+        inp.value = curVal ? (curVal + '\n' + addedText) : addedText;
+        if (typeof updateTransferSerialCounter === 'function') updateTransferSerialCounter();
+      }
+      if (typeof switchTab === 'function') switchTab('NghiepVuKho');
     }
 
-    // Đóng Modal và thông báo thành công
-    const modalEl = document.getElementById('scannerModal');
-    if (modalEl && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-      const modal = bootstrap.Modal.getInstance(modalEl);
-      if (modal) modal.hide();
-    }
+    // Đảm bảo dọn dẹp modal và thông báo thành công
+    closeScannerModalSafely();
 
     showFloatingScannerToast(`✅ Đã nạp thành công <strong>${validSerials.length}</strong> số Serial vào phiếu!`);
   }
@@ -1261,7 +1295,11 @@
       if (inp) inp.value = code;
     } else if (CURRENT_SCAN_CONTEXT === 'TRANSFER_WAREHOUSE') {
       const inp = document.getElementById('transfer-serial');
-      if (inp) inp.value = code;
+      if (inp) {
+        const curVal = inp.value.trim();
+        inp.value = curVal ? (curVal + '\n' + code) : code;
+        if (typeof updateTransferSerialCounter === 'function') updateTransferSerialCounter();
+      }
     }
   }
 
@@ -1363,8 +1401,8 @@
       toast.id = 'scanner-floating-toast';
       toast.style.cssText = `
         position: fixed;
-        bottom: 24px;
-        right: 24px;
+        bottom: 70px;
+        right: 20px;
         background: #0f172a;
         color: #38bdf8;
         border: 1px solid #0284c7;
@@ -1377,18 +1415,27 @@
         display: flex;
         align-items: center;
         gap: 8px;
+        pointer-events: none;
       `;
       document.body.appendChild(toast);
     }
     toast.innerHTML = htmlMsg;
+    toast.style.display = 'flex';
     toast.style.opacity = '1';
     toast.style.transform = 'translateY(0)';
+    toast.style.pointerEvents = 'none';
 
     if (window._scannerToastTimeout) clearTimeout(window._scannerToastTimeout);
     window._scannerToastTimeout = setTimeout(() => {
       if (toast) {
         toast.style.opacity = '0';
         toast.style.transform = 'translateY(15px)';
+        toast.style.pointerEvents = 'none';
+        setTimeout(() => {
+          if (toast && toast.style.opacity === '0') {
+            toast.style.display = 'none';
+          }
+        }, 350);
       }
     }, 2800);
   }
