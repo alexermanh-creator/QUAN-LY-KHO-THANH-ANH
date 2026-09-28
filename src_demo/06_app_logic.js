@@ -3014,6 +3014,11 @@ CÁC QUY TẮC BẮT BUỘC:
     if (sidebar) sidebar.classList.toggle('show');
   }
 
+  function closeMobileSidebar() {
+    const sidebar = document.getElementById('app-sidebar');
+    if (sidebar) sidebar.classList.remove('show');
+  }
+
   document.addEventListener('click', function(e) {
     const container = document.querySelector('.topbar-search-container');
     if (container && !container.contains(e.target)) {
@@ -3027,6 +3032,7 @@ CÁC QUY TẮC BẮT BUỘC:
   /* ==================================================== */
   function focusGlobalSearch(event) {
     if (event && event.stopPropagation) event.stopPropagation();
+    closeMobileSidebar();
     const input = document.getElementById('global-search-input');
     if (input) {
       input.focus();
@@ -3418,9 +3424,17 @@ CÁC QUY TẮC BẮT BUỘC:
   }
 
   function openSerialFromSearch(serial) {
-    document.getElementById('global-search-dropdown').style.display = 'none';
+    const dropdown = document.getElementById('global-search-dropdown');
+    if (dropdown) dropdown.style.display = 'none';
+    closeMobileSidebar();
     switchTab('Serial360');
-    lookupSerial360(serial);
+    const targetMod = document.getElementById('module-Serial360');
+    if (targetMod) targetMod.style.display = 'block';
+    const input360 = document.getElementById('serial-360-search-input');
+    if (input360) input360.value = serial;
+    setTimeout(function() {
+      if (typeof lookupSerial360 === 'function') lookupSerial360(serial);
+    }, 50);
   }
 
   function openModelFromSearch(model) {

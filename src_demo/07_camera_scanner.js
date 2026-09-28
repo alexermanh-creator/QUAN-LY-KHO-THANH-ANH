@@ -103,7 +103,17 @@
     } else if (CURRENT_SCAN_CONTEXT === 'TRANSFER_WAREHOUSE') {
       text = count > 0 ? `Chuyển ${count} máy sang kho đích` : 'Chuyển kho';
     } else if (CURRENT_SCAN_CONTEXT === 'AUTO_UNIVERSAL') {
-      text = count > 0 ? `Xử lý ${count} SN đã quét` : 'Tự động đa năng';
+      if (count === 1) {
+        const singleSn = String((sourceList[0] && sourceList[0].serial) || '').trim().toUpperCase().replace(/[\s\r\n\t]/g, '');
+        const exists = (typeof SERIAL_DB !== 'undefined' && Array.isArray(SERIAL_DB))
+          ? SERIAL_DB.some(s => String(s.serial || '').trim().toUpperCase() === singleSn || String(s.internalId || '').trim().toUpperCase() === singleSn)
+          : false;
+        text = exists ? 'Xem hồ sơ Serial 360°' : 'Đưa vào phiếu nhập';
+      } else if (count > 1) {
+        text = `Xử lý ${count} SN đã quét`;
+      } else {
+        text = 'Tự động đa năng';
+      }
     }
 
     if (labelEl) {
@@ -1092,23 +1102,69 @@
 
     stopScannerCamera();
 
+    let hasExecuted = false;
+    let fallbackTimer = null;
+
+    function cleanupAndExecute() {
+      if (hasExecuted) return;
+      hasExecuted = true;
+      if (fallbackTimer) {
+        clearTimeout(fallbackTimer);
+        fallbackTimer = null;
+      }
+
+      // Gỡ listener sự kiện
+      modalEl.removeEventListener('hidden.bs.modal', onModalHidden);
+
+      // Cưỡng chế ẩn modal và dọn dẹp cặn Bootstrap
+      modalEl.classList.remove('show');
+      modalEl.style.display = 'none';
+      modalEl.setAttribute('aria-hidden', 'true');
+      modalEl.removeAttribute('aria-modal');
+
+      // Dọn dẹp triệt để backdrop nếu không còn modal nào khác đang mở
+      const otherOpenModals = document.querySelectorAll('.modal.show');
+      if (!otherOpenModals || otherOpenModals.length === 0) {
+        document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+        document.body.classList.remove('modal-open');
+        document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
+      }
+
+      if (typeof callback === 'function') {
+        try {
+          callback();
+        } catch (err) {
+          console.error('[closeScannerModalSafely] Lỗi thực thi callback:', err);
+        }
+      }
+    }
+
+    const onModalHidden = function() {
+      cleanupAndExecute();
+    };
+
     // Nếu modal đang không hiển thị hoặc không có Bootstrap
     if (!modalEl.classList.contains('show') || typeof bootstrap === 'undefined' || !bootstrap.Modal) {
-      modalEl.style.display = 'none';
-      if (typeof callback === 'function') callback();
+      cleanupAndExecute();
       return;
     }
 
-    const modal = bootstrap.Modal.getInstance(modalEl) || bootstrap.Modal.getOrCreateInstance(modalEl);
+    try {
+      const modal = bootstrap.Modal.getInstance(modalEl) || bootstrap.Modal.getOrCreateInstance(modalEl);
+      modalEl.addEventListener('hidden.bs.modal', onModalHidden);
+      
+      // Fallback Timeout 350ms: Nếu mobile nuốt chửng sự kiện transitionend/hidden.bs.modal
+      fallbackTimer = setTimeout(function() {
+        console.warn('[closeScannerModalSafely] Fallback timeout 350ms kích hoạt để bảo vệ vòng đời modal.');
+        cleanupAndExecute();
+      }, 350);
 
-    // Lắng nghe sự kiện hidden.bs.modal chuẩn của Bootstrap 5
-    const onModalHidden = function() {
-      modalEl.removeEventListener('hidden.bs.modal', onModalHidden);
-      if (typeof callback === 'function') callback();
-    };
-
-    modalEl.addEventListener('hidden.bs.modal', onModalHidden);
-    modal.hide();
+      modal.hide();
+    } catch (e) {
+      console.warn('[closeScannerModalSafely] modal.hide() gặp lỗi, cưỡng chế dọn dẹp:', e);
+      cleanupAndExecute();
+    }
   }
 
   /* ==================================================== */
@@ -1272,31 +1328,40 @@
     // XỬ LÝ THEO NGỮ CẢNH: 5. TỰ ĐỘNG ĐA NĂNG (GỢI Ý TẠI CHỖ)
     // ----------------------------------------------------
     if (CURRENT_SCAN_CONTEXT === 'AUTO_UNIVERSAL') {
-      const inStock = [];
-      const notInStock = [];
+      const existingSerials = [];
+      const newSerials = [];
 
       validSerials.forEach(sn => {
         const found = (typeof SERIAL_DB !== 'undefined' && Array.isArray(SERIAL_DB))
           ? SERIAL_DB.find(s => String(s.serial || '').trim().toUpperCase() === sn || String(s.internalId || '').trim().toUpperCase() === sn)
           : null;
-        if (found) inStock.push({ serial: sn, item: found });
-        else notInStock.push(sn);
+        if (found) existingSerials.push({ serial: sn, item: found });
+        else newSerials.push(sn);
       });
 
       if (validSerials.length === 1) {
         const sn = validSerials[0];
-        if (inStock.length === 1) {
+        if (existingSerials.length === 1) {
           window.CURRENT_SCAN_360_LIST = [sn];
           window.CURRENT_SCAN_360_INDEX = 0;
+          window._CURRENT_360_SEARCH_KEYWORD = '';
           closeScannerModalSafely(function() {
             if (typeof switchTab === 'function') switchTab('Serial360');
-            if (typeof lookupSerial360 === 'function') lookupSerial360(sn);
+            const targetMod = document.getElementById('module-Serial360');
+            if (targetMod) targetMod.style.display = 'block';
+            const input360 = document.getElementById('serial-360-search-input');
+            if (input360) input360.value = sn;
+            setTimeout(function() {
+              if (typeof lookupSerial360 === 'function') lookupSerial360(sn);
+            }, 50);
+            extractedSerialsList = [];
+            if (typeof window !== 'undefined') window.extractedSerialsList = [];
           });
         } else {
           setScanContext('NHAP_KHO');
           if (helper && helperBody) {
             helper.style.display = 'block';
-            helperBody.innerHTML = `Mã <strong>${sn}</strong> chưa có trong kho. Đã chuyển sang ngữ cảnh <strong>Quét Nhập Kho</strong>. Vui lòng chọn thông tin phiếu nhập rồi bấm thêm.`;
+            helperBody.innerHTML = `Mã <strong>${sn}</strong> chưa có trong hệ thống kho. Đã chuyển sang ngữ cảnh <strong>Quét Nhập Kho</strong>. Vui lòng chọn thông tin phiếu nhập rồi bấm thêm.`;
           }
         }
         return;
@@ -1307,13 +1372,13 @@
         helper.style.display = 'block';
         helperBody.innerHTML = `
           Phát hiện <strong>${validSerials.length}</strong> thiết bị: 
-          <strong>${inStock.length}</strong> máy đã có trong kho, <strong>${notInStock.length}</strong> máy mới.<br>
+          <strong>${existingSerials.length}</strong> máy đã có hồ sơ, <strong>${newSerials.length}</strong> máy mới.<br>
           <div class="mt-2 d-flex gap-2 flex-wrap">
             <button class="btn btn-sm btn-success fw-bold py-1 px-3" onclick="setScanContext('NHAP_KHO'); submitExtractedSerialsToContext();">
-              <i class="fa-solid fa-box-archive me-1"></i> Đưa vào Nhập Kho (${notInStock.length || validSerials.length})
+              <i class="fa-solid fa-box-archive me-1"></i> Đưa vào Nhập Kho (${newSerials.length || validSerials.length})
             </button>
             <button class="btn btn-sm btn-danger fw-bold py-1 px-3" onclick="setScanContext('XUAT_KHO'); submitExtractedSerialsToContext();">
-              <i class="fa-solid fa-dolly me-1"></i> Đưa vào Xuất Kho (${inStock.length || validSerials.length})
+              <i class="fa-solid fa-dolly me-1"></i> Đưa vào Xuất Kho (${existingSerials.length || validSerials.length})
             </button>
             <button class="btn btn-sm btn-primary fw-bold py-1 px-3" onclick="setScanContext('SERIAL_360'); submitExtractedSerialsToContext();">
               <i class="fa-solid fa-magnifying-glass me-1"></i> Xem hồ sơ 360
