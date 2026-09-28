@@ -1664,21 +1664,21 @@
           <!-- 5. TÓM TẮT & CẢNH BÁO NHANH -->
           <div class="kpi-card-v4">
             <div class="d-flex flex-column justify-content-between h-100 py-1">
-              <div class="d-flex align-items-center justify-content-between py-1 px-1 rounded hover-bg-light cursor-pointer" onclick="switchTab('BaoHanh')">
-                <span class="d-flex align-items-center gap-2 text-dark" style="font-size:0.78rem;">
-                  <i class="fa-solid fa-shield-halved text-primary" style="font-size:0.9rem;"></i> Bảo hành đang xử lý
-                </span>
-                <span class="d-flex align-items-center gap-2">
-                  <span class="fw-bold text-dark" style="font-size:0.85rem;" id="kpi-warranty-cases">0</span>
-                  <i class="fa-solid fa-chevron-right text-muted" style="font-size:0.68rem;"></i>
-                </span>
-              </div>
               <div class="d-flex align-items-center justify-content-between py-1 px-1 rounded hover-bg-light cursor-pointer" onclick="goToStockAgingWarning()">
                 <span class="d-flex align-items-center gap-2 text-dark" style="font-size:0.78rem;">
                   <i class="fa-solid fa-circle-exclamation text-warning" style="font-size:0.9rem;"></i> Cảnh báo tồn lâu
                 </span>
                 <span class="d-flex align-items-center gap-2">
                   <span class="fw-bold text-dark" style="font-size:0.85rem;" id="kpi-aging-warning">0</span>
+                  <i class="fa-solid fa-chevron-right text-muted" style="font-size:0.68rem;"></i>
+                </span>
+              </div>
+              <div class="d-flex align-items-center justify-content-between py-1 px-1 rounded hover-bg-light cursor-pointer" onclick="openPendingDraftsModal()" title="Nhấn để xem danh sách phiếu nháp chưa hoàn tất">
+                <span class="d-flex align-items-center gap-2 text-dark" style="font-size:0.78rem;">
+                  <i class="fa-solid fa-file-pen text-primary" style="font-size:0.9rem;"></i> Phiếu nháp
+                </span>
+                <span class="d-flex align-items-center gap-2">
+                  <span class="badge bg-secondary-subtle text-secondary fw-bold" style="font-size:0.78rem;" id="kpi-pending-drafts-count">0</span>
                   <i class="fa-solid fa-chevron-right text-muted" style="font-size:0.68rem;"></i>
                 </span>
               </div>
@@ -5295,6 +5295,51 @@
           <button type="button" class="btn btn-sm btn-primary fw-bold px-3" onclick="submitQuickTransferStock()">
             <i class="fa-solid fa-arrow-right-arrow-left me-1"></i> Xác Nhận Chuyển Kho
           </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- MODAL: DANH SÁCH PHIẾU NHÁP CHỜ HOÀN TẤT (DRAFT)     -->
+  <!-- ==================================================== -->
+  <div class="modal fade" id="pendingDraftsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header bg-primary text-white py-2">
+          <h6 class="modal-title d-flex align-items-center gap-2 mb-0">
+            <i class="fa-solid fa-file-pen"></i> Danh Sách Phiếu Nháp Chưa Hoàn Tất
+          </h6>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-3">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <span class="small text-muted">Các phiếu đang làm dở dang hoặc vừa quét từ Staging chưa xác nhận chính thức:</span>
+            <span id="pending-drafts-total-badge" class="badge bg-warning text-dark">0 phiếu nháp</span>
+          </div>
+          <div class="table-responsive" style="max-height: 420px; overflow-y: auto;">
+            <table class="table table-hover table-bordered align-middle small mb-0">
+              <thead class="table-light sticky-top">
+                <tr>
+                  <th style="width: 100px;" class="text-center">Loại phiếu</th>
+                  <th style="width: 170px;">Mã phiếu</th>
+                  <th>Đối tác / Thông tin</th>
+                  <th style="width: 85px;" class="text-center">Số lượng</th>
+                  <th style="width: 140px;">Thời gian</th>
+                  <th style="width: 150px;" class="text-center">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="pending-drafts-tbody">
+                <!-- Render động -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer py-2 bg-light d-flex justify-content-between">
+          <button type="button" class="btn btn-sm btn-outline-secondary" onclick="refreshPendingDraftsModal()">
+            <i class="fa-solid fa-rotate me-1"></i> Làm mới danh sách
+          </button>
+          <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Đóng</button>
         </div>
       </div>
     </div>
@@ -25035,6 +25080,8 @@ CÁC QUY TẮC BẮT BUỘC:
           recordAuditLog('XÓA PHIẾU NHÁP', `Phiếu xuất ${maPhieu}`, 'DRAFT', 'DELETED', 'Xóa phiếu xuất nháp trên server thành công', [], 'Lịch sử phiếu', '', maPhieu);
           if (typeof markModulesDirty === 'function') markModulesDirty(['Dashboard', 'LichSu']);
           renderHistoryXuatTable();
+          if (typeof renderPendingDraftsTable === 'function') renderPendingDraftsTable();
+          if (typeof updateDashboardKPIs === 'function') updateDashboardKPIs();
           Swal.fire('Đã xóa', `Đã xóa thành công phiếu nháp ${maPhieu} khỏi hệ thống.`, 'success');
         };
 
@@ -25111,6 +25158,8 @@ CÁC QUY TẮC BẮT BUỘC:
           recordAuditLog('XÓA PHIẾU NHÁP', `Phiếu nhập ${maPhieu}`, 'DRAFT', 'DELETED', 'Xóa phiếu nhập nháp trên server thành công', [], 'Lịch sử phiếu', '', maPhieu);
           if (typeof markModulesDirty === 'function') markModulesDirty(['Dashboard', 'LichSu']);
           renderHistoryNhapTable();
+          if (typeof renderPendingDraftsTable === 'function') renderPendingDraftsTable();
+          if (typeof updateDashboardKPIs === 'function') updateDashboardKPIs();
           Swal.fire('Đã xóa', `Đã xóa thành công phiếu nháp ${maPhieu} khỏi hệ thống.`, 'success');
         };
 
@@ -29331,6 +29380,7 @@ CÁC QUY TẮC BẮT BUỘC:
     const displayWarrantyCases = activeWarrantyCount;
     const displayAgingWarning = (agingCounts['61-90'] || 0) + (agingCounts['90plus'] || 0);
     const displayImportVouchers = (typeof VOUCHERS_DB !== 'undefined' && VOUCHERS_DB.nhap) ? VOUCHERS_DB.nhap.length : (draftImports.length);
+    const displayTotalDrafts = (draftImports ? draftImports.length : 0) + (draftExports ? draftExports.length : 0);
 
     // Cập nhật thẻ KPI 1 (Tổng tồn hiện tại & Model)
     if (document.getElementById('kpi-total-stock')) {
@@ -29363,6 +29413,15 @@ CÁC QUY TẮC BẮT BUỘC:
     }
 
     // Cập nhật thẻ KPI 5 (Danh sách tóm tắt nhanh)
+    if (document.getElementById('kpi-pending-drafts-count')) {
+      const draftBadge = document.getElementById('kpi-pending-drafts-count');
+      draftBadge.textContent = displayTotalDrafts;
+      if (displayTotalDrafts > 0) {
+        draftBadge.className = 'badge bg-warning text-dark fw-bold';
+      } else {
+        draftBadge.className = 'badge bg-secondary-subtle text-secondary fw-bold';
+      }
+    }
     if (document.getElementById('kpi-warranty-cases')) {
       document.getElementById('kpi-warranty-cases').textContent = displayWarrantyCases;
     }
@@ -30216,6 +30275,154 @@ CÁC QUY TẮC BẮT BUỘC:
     }
   }
 
+  // QUẢN LÝ POPUP PHIẾU NHÁP DỞ DANG (DRAFT VOUCHERS MODAL)
+  function openPendingDraftsModal() {
+    renderPendingDraftsTable();
+    const modalEl = document.getElementById('pendingDraftsModal');
+    if (modalEl) {
+      if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+        const modal = (typeof bootstrap.Modal.getOrCreateInstance === 'function')
+          ? bootstrap.Modal.getOrCreateInstance(modalEl)
+          : (bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl));
+        if (modal) modal.show();
+      }
+    }
+  }
+
+  function refreshPendingDraftsModal() {
+    if (typeof updateDashboardKPIs === 'function') updateDashboardKPIs();
+    renderPendingDraftsTable();
+    if (typeof showToast === 'function') {
+      showToast('Đã làm mới danh sách phiếu nháp dở dang', 'info');
+    }
+  }
+
+  function renderPendingDraftsTable() {
+    const tbody = document.getElementById('pending-drafts-tbody');
+    const badgeTotal = document.getElementById('pending-drafts-total-badge');
+    if (!tbody) return;
+
+    const drafts = [];
+    if (typeof VOUCHERS_DB !== 'undefined') {
+      if (Array.isArray(VOUCHERS_DB.nhap)) {
+        VOUCHERS_DB.nhap.forEach(v => {
+          if (v && v.status === 'DRAFT') {
+            drafts.push({ ...v, _type: 'NHAP' });
+          }
+        });
+      }
+      if (Array.isArray(VOUCHERS_DB.xuat)) {
+        VOUCHERS_DB.xuat.forEach(v => {
+          if (v && v.status === 'DRAFT') {
+            drafts.push({ ...v, _type: 'XUAT' });
+          }
+        });
+      }
+    }
+
+    // Sắp xếp từ mới nhất đến cũ nhất
+    drafts.sort((a, b) => {
+      const dateA = a.ngayTao || a.ngay || '';
+      const dateB = b.ngayTao || b.ngay || '';
+      return String(dateB).localeCompare(String(dateA));
+    });
+
+    if (badgeTotal) {
+      badgeTotal.textContent = `${drafts.length} phiếu nháp`;
+      badgeTotal.className = drafts.length > 0 ? 'badge bg-warning text-dark' : 'badge bg-secondary text-white';
+    }
+
+    if (drafts.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="6" class="text-center py-4 text-muted">
+            <i class="fa-regular fa-folder-open fs-4 d-block mb-2 text-secondary"></i>
+            <span>Hiện không có phiếu nháp nào dở dang trong hệ thống.</span>
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    tbody.innerHTML = drafts.map(v => {
+      const isNhap = v._type === 'NHAP';
+      const typeBadge = isNhap
+        ? '<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1"><i class="fa-solid fa-arrow-down me-1"></i>Nhập kho</span>'
+        : '<span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1"><i class="fa-solid fa-arrow-up me-1"></i>Xuất kho</span>';
+
+      const partnerText = isNhap
+        ? `<div><strong>NCC:</strong> ${v.ncc || '<span class="text-muted fst-italic">Chưa có</span>'}</div>`
+        : `<div><strong>Khách:</strong> ${v.khachHang || '<span class="text-muted fst-italic">Chưa có</span>'}</div>`;
+
+      const khoText = v.kho ? `<div class="text-muted small"><i class="fa-solid fa-warehouse me-1"></i>Kho: ${v.kho}</div>` : '';
+      const qty = (v.items && Array.isArray(v.items)) ? v.items.length : 0;
+      const timeText = v.ngayTao || v.ngay || '---';
+
+      return `
+        <tr>
+          <td class="text-center align-middle">${typeBadge}</td>
+          <td class="align-middle">
+            <div class="fw-bold font-monospace text-dark">${v.maPhieu}</div>
+            ${v.ghiChu ? `<div class="text-muted text-truncate small" style="max-width: 180px;" title="${v.ghiChu}">${v.ghiChu}</div>` : ''}
+          </td>
+          <td class="align-middle">
+            ${partnerText}
+            ${khoText}
+          </td>
+          <td class="text-center align-middle">
+            <span class="badge bg-light text-dark border px-2 py-1">${qty} máy</span>
+          </td>
+          <td class="small text-muted align-middle">${timeText}</td>
+          <td class="text-center align-middle">
+            <div class="btn-group btn-group-sm">
+              <button type="button" class="btn btn-primary" onclick="handleResumeDraftFromModal('${isNhap ? 'nhap' : 'xuat'}', '${v.maPhieu}')" title="Mở tiếp tục hoàn tất phiếu">
+                <i class="fa-solid fa-pen-to-square me-1"></i> Tiếp tục
+              </button>
+              <button type="button" class="btn btn-outline-danger" onclick="handleDeleteDraftFromModal('${isNhap ? 'nhap' : 'xuat'}', '${v.maPhieu}')" title="Xóa phiếu nháp này">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  function handleResumeDraftFromModal(type, maPhieu) {
+    const modalEl = document.getElementById('pendingDraftsModal');
+    if (modalEl && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+      const modal = (typeof bootstrap.Modal.getInstance === 'function')
+        ? bootstrap.Modal.getInstance(modalEl)
+        : null;
+      if (modal) modal.hide();
+    }
+    if (type === 'nhap') {
+      if (typeof resumeImportDraft === 'function') {
+        resumeImportDraft(maPhieu);
+      } else {
+        if (typeof Swal !== 'undefined') Swal.fire('Lỗi', 'Không tìm thấy hàm nạp phiếu nhập nháp!', 'error');
+      }
+    } else {
+      if (typeof resumeExportDraft === 'function') {
+        resumeExportDraft(maPhieu);
+      } else {
+        if (typeof Swal !== 'undefined') Swal.fire('Lỗi', 'Không tìm thấy hàm nạp phiếu xuất nháp!', 'error');
+      }
+    }
+  }
+
+  function handleDeleteDraftFromModal(type, maPhieu) {
+    if (type === 'nhap') {
+      if (typeof deleteDraftImportVoucher === 'function') {
+        deleteDraftImportVoucher(maPhieu);
+      }
+    } else {
+      if (typeof deleteDraftExportVoucher === 'function') {
+        deleteDraftExportVoucher(maPhieu);
+      }
+    }
+  }
+
   if (typeof window !== 'undefined') {
     window.goToHistoryVoucher = goToHistoryVoucher;
     window.goToSupplierHistory = goToSupplierHistory;
@@ -30237,6 +30444,11 @@ CÁC QUY TẮC BẮT BUỘC:
     window.updateTransferSerialCounter = updateTransferSerialCounter;
     window.clearTransferSerials = clearTransferSerials;
     window.populateTransferWarehouseSelect = populateTransferWarehouseSelect;
+    window.openPendingDraftsModal = openPendingDraftsModal;
+    window.refreshPendingDraftsModal = refreshPendingDraftsModal;
+    window.renderPendingDraftsTable = renderPendingDraftsTable;
+    window.handleResumeDraftFromModal = handleResumeDraftFromModal;
+    window.handleDeleteDraftFromModal = handleDeleteDraftFromModal;
   }
 
   window.addEventListener('DOMContentLoaded', () => {

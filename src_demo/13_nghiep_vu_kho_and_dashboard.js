@@ -4175,6 +4175,7 @@
     const displayWarrantyCases = activeWarrantyCount;
     const displayAgingWarning = (agingCounts['61-90'] || 0) + (agingCounts['90plus'] || 0);
     const displayImportVouchers = (typeof VOUCHERS_DB !== 'undefined' && VOUCHERS_DB.nhap) ? VOUCHERS_DB.nhap.length : (draftImports.length);
+    const displayTotalDrafts = (draftImports ? draftImports.length : 0) + (draftExports ? draftExports.length : 0);
 
     // Cập nhật thẻ KPI 1 (Tổng tồn hiện tại & Model)
     if (document.getElementById('kpi-total-stock')) {
@@ -4207,6 +4208,15 @@
     }
 
     // Cập nhật thẻ KPI 5 (Danh sách tóm tắt nhanh)
+    if (document.getElementById('kpi-pending-drafts-count')) {
+      const draftBadge = document.getElementById('kpi-pending-drafts-count');
+      draftBadge.textContent = displayTotalDrafts;
+      if (displayTotalDrafts > 0) {
+        draftBadge.className = 'badge bg-warning text-dark fw-bold';
+      } else {
+        draftBadge.className = 'badge bg-secondary-subtle text-secondary fw-bold';
+      }
+    }
     if (document.getElementById('kpi-warranty-cases')) {
       document.getElementById('kpi-warranty-cases').textContent = displayWarrantyCases;
     }
@@ -5060,6 +5070,154 @@
     }
   }
 
+  // QUẢN LÝ POPUP PHIẾU NHÁP DỞ DANG (DRAFT VOUCHERS MODAL)
+  function openPendingDraftsModal() {
+    renderPendingDraftsTable();
+    const modalEl = document.getElementById('pendingDraftsModal');
+    if (modalEl) {
+      if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+        const modal = (typeof bootstrap.Modal.getOrCreateInstance === 'function')
+          ? bootstrap.Modal.getOrCreateInstance(modalEl)
+          : (bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl));
+        if (modal) modal.show();
+      }
+    }
+  }
+
+  function refreshPendingDraftsModal() {
+    if (typeof updateDashboardKPIs === 'function') updateDashboardKPIs();
+    renderPendingDraftsTable();
+    if (typeof showToast === 'function') {
+      showToast('Đã làm mới danh sách phiếu nháp dở dang', 'info');
+    }
+  }
+
+  function renderPendingDraftsTable() {
+    const tbody = document.getElementById('pending-drafts-tbody');
+    const badgeTotal = document.getElementById('pending-drafts-total-badge');
+    if (!tbody) return;
+
+    const drafts = [];
+    if (typeof VOUCHERS_DB !== 'undefined') {
+      if (Array.isArray(VOUCHERS_DB.nhap)) {
+        VOUCHERS_DB.nhap.forEach(v => {
+          if (v && v.status === 'DRAFT') {
+            drafts.push({ ...v, _type: 'NHAP' });
+          }
+        });
+      }
+      if (Array.isArray(VOUCHERS_DB.xuat)) {
+        VOUCHERS_DB.xuat.forEach(v => {
+          if (v && v.status === 'DRAFT') {
+            drafts.push({ ...v, _type: 'XUAT' });
+          }
+        });
+      }
+    }
+
+    // Sắp xếp từ mới nhất đến cũ nhất
+    drafts.sort((a, b) => {
+      const dateA = a.ngayTao || a.ngay || '';
+      const dateB = b.ngayTao || b.ngay || '';
+      return String(dateB).localeCompare(String(dateA));
+    });
+
+    if (badgeTotal) {
+      badgeTotal.textContent = `${drafts.length} phiếu nháp`;
+      badgeTotal.className = drafts.length > 0 ? 'badge bg-warning text-dark' : 'badge bg-secondary text-white';
+    }
+
+    if (drafts.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="6" class="text-center py-4 text-muted">
+            <i class="fa-regular fa-folder-open fs-4 d-block mb-2 text-secondary"></i>
+            <span>Hiện không có phiếu nháp nào dở dang trong hệ thống.</span>
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    tbody.innerHTML = drafts.map(v => {
+      const isNhap = v._type === 'NHAP';
+      const typeBadge = isNhap
+        ? '<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1"><i class="fa-solid fa-arrow-down me-1"></i>Nhập kho</span>'
+        : '<span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1"><i class="fa-solid fa-arrow-up me-1"></i>Xuất kho</span>';
+
+      const partnerText = isNhap
+        ? `<div><strong>NCC:</strong> ${v.ncc || '<span class="text-muted fst-italic">Chưa có</span>'}</div>`
+        : `<div><strong>Khách:</strong> ${v.khachHang || '<span class="text-muted fst-italic">Chưa có</span>'}</div>`;
+
+      const khoText = v.kho ? `<div class="text-muted small"><i class="fa-solid fa-warehouse me-1"></i>Kho: ${v.kho}</div>` : '';
+      const qty = (v.items && Array.isArray(v.items)) ? v.items.length : 0;
+      const timeText = v.ngayTao || v.ngay || '---';
+
+      return `
+        <tr>
+          <td class="text-center align-middle">${typeBadge}</td>
+          <td class="align-middle">
+            <div class="fw-bold font-monospace text-dark">${v.maPhieu}</div>
+            ${v.ghiChu ? `<div class="text-muted text-truncate small" style="max-width: 180px;" title="${v.ghiChu}">${v.ghiChu}</div>` : ''}
+          </td>
+          <td class="align-middle">
+            ${partnerText}
+            ${khoText}
+          </td>
+          <td class="text-center align-middle">
+            <span class="badge bg-light text-dark border px-2 py-1">${qty} máy</span>
+          </td>
+          <td class="small text-muted align-middle">${timeText}</td>
+          <td class="text-center align-middle">
+            <div class="btn-group btn-group-sm">
+              <button type="button" class="btn btn-primary" onclick="handleResumeDraftFromModal('${isNhap ? 'nhap' : 'xuat'}', '${v.maPhieu}')" title="Mở tiếp tục hoàn tất phiếu">
+                <i class="fa-solid fa-pen-to-square me-1"></i> Tiếp tục
+              </button>
+              <button type="button" class="btn btn-outline-danger" onclick="handleDeleteDraftFromModal('${isNhap ? 'nhap' : 'xuat'}', '${v.maPhieu}')" title="Xóa phiếu nháp này">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  function handleResumeDraftFromModal(type, maPhieu) {
+    const modalEl = document.getElementById('pendingDraftsModal');
+    if (modalEl && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+      const modal = (typeof bootstrap.Modal.getInstance === 'function')
+        ? bootstrap.Modal.getInstance(modalEl)
+        : null;
+      if (modal) modal.hide();
+    }
+    if (type === 'nhap') {
+      if (typeof resumeImportDraft === 'function') {
+        resumeImportDraft(maPhieu);
+      } else {
+        if (typeof Swal !== 'undefined') Swal.fire('Lỗi', 'Không tìm thấy hàm nạp phiếu nhập nháp!', 'error');
+      }
+    } else {
+      if (typeof resumeExportDraft === 'function') {
+        resumeExportDraft(maPhieu);
+      } else {
+        if (typeof Swal !== 'undefined') Swal.fire('Lỗi', 'Không tìm thấy hàm nạp phiếu xuất nháp!', 'error');
+      }
+    }
+  }
+
+  function handleDeleteDraftFromModal(type, maPhieu) {
+    if (type === 'nhap') {
+      if (typeof deleteDraftImportVoucher === 'function') {
+        deleteDraftImportVoucher(maPhieu);
+      }
+    } else {
+      if (typeof deleteDraftExportVoucher === 'function') {
+        deleteDraftExportVoucher(maPhieu);
+      }
+    }
+  }
+
   if (typeof window !== 'undefined') {
     window.goToHistoryVoucher = goToHistoryVoucher;
     window.goToSupplierHistory = goToSupplierHistory;
@@ -5081,6 +5239,11 @@
     window.updateTransferSerialCounter = updateTransferSerialCounter;
     window.clearTransferSerials = clearTransferSerials;
     window.populateTransferWarehouseSelect = populateTransferWarehouseSelect;
+    window.openPendingDraftsModal = openPendingDraftsModal;
+    window.refreshPendingDraftsModal = refreshPendingDraftsModal;
+    window.renderPendingDraftsTable = renderPendingDraftsTable;
+    window.handleResumeDraftFromModal = handleResumeDraftFromModal;
+    window.handleDeleteDraftFromModal = handleDeleteDraftFromModal;
   }
 
   window.addEventListener('DOMContentLoaded', () => {

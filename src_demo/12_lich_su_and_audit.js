@@ -2138,6 +2138,8 @@
           recordAuditLog('XÓA PHIẾU NHÁP', `Phiếu xuất ${maPhieu}`, 'DRAFT', 'DELETED', 'Xóa phiếu xuất nháp trên server thành công', [], 'Lịch sử phiếu', '', maPhieu);
           if (typeof markModulesDirty === 'function') markModulesDirty(['Dashboard', 'LichSu']);
           renderHistoryXuatTable();
+          if (typeof renderPendingDraftsTable === 'function') renderPendingDraftsTable();
+          if (typeof updateDashboardKPIs === 'function') updateDashboardKPIs();
           Swal.fire('Đã xóa', `Đã xóa thành công phiếu nháp ${maPhieu} khỏi hệ thống.`, 'success');
         };
 
@@ -2214,6 +2216,8 @@
           recordAuditLog('XÓA PHIẾU NHÁP', `Phiếu nhập ${maPhieu}`, 'DRAFT', 'DELETED', 'Xóa phiếu nhập nháp trên server thành công', [], 'Lịch sử phiếu', '', maPhieu);
           if (typeof markModulesDirty === 'function') markModulesDirty(['Dashboard', 'LichSu']);
           renderHistoryNhapTable();
+          if (typeof renderPendingDraftsTable === 'function') renderPendingDraftsTable();
+          if (typeof updateDashboardKPIs === 'function') updateDashboardKPIs();
           Swal.fire('Đã xóa', `Đã xóa thành công phiếu nháp ${maPhieu} khỏi hệ thống.`, 'success');
         };
 

@@ -118,21 +118,21 @@
           <!-- 5. TÓM TẮT & CẢNH BÁO NHANH -->
           <div class="kpi-card-v4">
             <div class="d-flex flex-column justify-content-between h-100 py-1">
-              <div class="d-flex align-items-center justify-content-between py-1 px-1 rounded hover-bg-light cursor-pointer" onclick="switchTab('BaoHanh')">
-                <span class="d-flex align-items-center gap-2 text-dark" style="font-size:0.78rem;">
-                  <i class="fa-solid fa-shield-halved text-primary" style="font-size:0.9rem;"></i> Bảo hành đang xử lý
-                </span>
-                <span class="d-flex align-items-center gap-2">
-                  <span class="fw-bold text-dark" style="font-size:0.85rem;" id="kpi-warranty-cases">0</span>
-                  <i class="fa-solid fa-chevron-right text-muted" style="font-size:0.68rem;"></i>
-                </span>
-              </div>
               <div class="d-flex align-items-center justify-content-between py-1 px-1 rounded hover-bg-light cursor-pointer" onclick="switchTab('TonKho')">
                 <span class="d-flex align-items-center gap-2 text-dark" style="font-size:0.78rem;">
                   <i class="fa-solid fa-circle-exclamation text-warning" style="font-size:0.9rem;"></i> Cảnh báo tồn lâu
                 </span>
                 <span class="d-flex align-items-center gap-2">
                   <span class="fw-bold text-dark" style="font-size:0.85rem;" id="kpi-aging-warning">0</span>
+                  <i class="fa-solid fa-chevron-right text-muted" style="font-size:0.68rem;"></i>
+                </span>
+              </div>
+              <div class="d-flex align-items-center justify-content-between py-1 px-1 rounded hover-bg-light cursor-pointer" onclick="openPendingDraftsModal()" title="Nhấn để xem danh sách phiếu nháp chưa hoàn tất">
+                <span class="d-flex align-items-center gap-2 text-dark" style="font-size:0.78rem;">
+                  <i class="fa-solid fa-file-pen text-primary" style="font-size:0.9rem;"></i> Phiếu nháp
+                </span>
+                <span class="d-flex align-items-center gap-2">
+                  <span class="badge bg-secondary-subtle text-secondary fw-bold" style="font-size:0.78rem;" id="kpi-pending-drafts-count">0</span>
                   <i class="fa-solid fa-chevron-right text-muted" style="font-size:0.68rem;"></i>
                 </span>
               </div>
