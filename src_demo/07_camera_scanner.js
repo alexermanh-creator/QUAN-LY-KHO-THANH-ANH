@@ -86,31 +86,55 @@
   function updateScannerSubmitButtonLabel() {
     const submitBtn = document.getElementById('btn-submit-extracted-serials');
     const labelEl = document.getElementById('btn-submit-extracted-label');
+    const selectedCountEl = document.getElementById('scanner-selected-count');
+    const totalCountEl = document.getElementById('scanner-total-extracted');
+    const selectAllCheck = document.getElementById('scanner-select-all-check');
     if (!submitBtn) return;
 
     const sourceList = (typeof window !== 'undefined' && Array.isArray(window.extractedSerialsList) && window.extractedSerialsList.length > 0)
       ? window.extractedSerialsList
       : extractedSerialsList;
-    const count = sourceList ? sourceList.length : 0;
+    const totalCount = sourceList ? sourceList.length : 0;
+    const selectedList = sourceList ? sourceList.filter(s => s.selected !== false) : [];
+    const count = selectedList.length;
 
+    if (totalCountEl) totalCountEl.textContent = totalCount;
+    if (selectedCountEl) selectedCountEl.textContent = count;
+    if (selectAllCheck) {
+      selectAllCheck.checked = (count === totalCount && totalCount > 0);
+      selectAllCheck.indeterminate = (count > 0 && count < totalCount);
+    }
+
+    if (count === 0) {
+      submitBtn.disabled = true;
+      const emptyText = totalCount > 0 ? 'Vui lòng tick chọn máy' : 'Đưa Vào Form';
+      if (labelEl) {
+        labelEl.textContent = emptyText;
+      } else {
+        submitBtn.innerHTML = `<i class="fa-solid fa-circle-check fs-6"></i> <span>${emptyText}</span>`;
+      }
+      return;
+    }
+
+    submitBtn.disabled = false;
     let text = 'Đưa Vào Form';
     if (CURRENT_SCAN_CONTEXT === 'NHAP_KHO' || CURRENT_SCAN_CONTEXT === 'NHAP_KHO_SINGLE') {
-      text = count > 0 ? `Thêm ${count} SN vào phiếu nhập` : 'Thêm vào phiếu nhập';
+      text = count === 1 ? 'Thêm 1 máy vào phiếu nhập' : `Thêm ${count} máy vào phiếu nhập`;
     } else if (CURRENT_SCAN_CONTEXT === 'XUAT_KHO') {
-      text = count > 0 ? `Thêm ${count} SN vào phiếu xuất` : 'Thêm vào phiếu xuất';
+      text = count === 1 ? 'Thêm 1 máy vào phiếu xuất' : `Thêm ${count} máy vào phiếu xuất`;
     } else if (CURRENT_SCAN_CONTEXT === 'SERIAL_360') {
-      text = count > 0 ? `Xem hồ sơ ${count} SN` : 'Xem hồ sơ 360';
+      text = count === 1 ? 'Xem hồ sơ 1 Serial' : `Xem hồ sơ ${count} Serial`;
     } else if (CURRENT_SCAN_CONTEXT === 'TRANSFER_WAREHOUSE') {
-      text = count > 0 ? `Chuyển ${count} máy sang kho đích` : 'Chuyển kho';
+      text = count === 1 ? 'Chuyển 1 máy sang kho đích' : `Chuyển ${count} máy sang kho đích`;
     } else if (CURRENT_SCAN_CONTEXT === 'AUTO_UNIVERSAL') {
       if (count === 1) {
-        const singleSn = String((sourceList[0] && sourceList[0].serial) || '').trim().toUpperCase().replace(/[\s\r\n\t]/g, '');
+        const singleSn = String((selectedList[0] && selectedList[0].serial) || '').trim().toUpperCase().replace(/[\s\r\n\t]/g, '');
         const exists = (typeof SERIAL_DB !== 'undefined' && Array.isArray(SERIAL_DB))
           ? SERIAL_DB.some(s => String(s.serial || '').trim().toUpperCase() === singleSn || String(s.internalId || '').trim().toUpperCase() === singleSn)
           : false;
-        text = exists ? 'Xem hồ sơ Serial 360°' : 'Đưa vào phiếu nhập';
+        text = exists ? 'Xem hồ sơ Serial 360°' : 'Thêm 1 máy vào phiếu nhập';
       } else if (count > 1) {
-        text = `Xử lý ${count} SN đã quét`;
+        text = `Xử lý ${count} máy đã chọn`;
       } else {
         text = 'Tự động đa năng';
       }
@@ -701,6 +725,7 @@
               extractedSerialsList.push({
                 id: 'sn_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
                 serial: cleanSn,
+                selected: true,
                 method: item.method,
                 previewUrl: item.thumbnailDataUrl || thumbnailDataUrl,
                 modelName: item.modelName || '',
@@ -734,7 +759,7 @@
       triggerVibration();
       if (feedbackBox) {
         feedbackBox.className = 'p-2 rounded small text-center fw-semibold bg-success-subtle text-success mb-2';
-        feedbackBox.innerHTML = `<i class="fa-solid fa-circle-check me-1"></i> Bóc tách thành công <strong>${newSerialsFound}</strong> số Serial từ ${totalImages} ảnh! Vui lòng kiểm tra và bấm "Lưu Vào Phiếu Nháp Server" hoặc "Đưa Vào Form".`;
+        feedbackBox.innerHTML = `<i class="fa-solid fa-circle-check me-1"></i> Bóc tách thành công <strong>${newSerialsFound}</strong> số Serial! Vui lòng tick chọn máy và bấm nút bên dưới để đưa vào phiếu.`;
       }
     } else {
       if (feedbackBox) {
@@ -764,28 +789,32 @@
     const tbody = document.getElementById('scanner-extracted-tbody');
     const cardList = document.getElementById('scanner-extracted-list');
     const totalCountEl = document.getElementById('scanner-total-extracted');
+    const selectedCountEl = document.getElementById('scanner-selected-count');
     const submitBtn = document.getElementById('btn-submit-extracted-serials');
-    const saveDraftBtn = document.getElementById('btn-save-extracted-to-server-draft');
-
-    if (typeof window !== 'undefined') window.extractedSerialsList = extractedSerialsList;
+    if (typeof window !== 'undefined') {
+      if (Array.isArray(window.extractedSerialsList) && window.extractedSerialsList.length > 0 && extractedSerialsList.length === 0) {
+        extractedSerialsList = window.extractedSerialsList;
+      } else {
+        window.extractedSerialsList = extractedSerialsList;
+      }
+    }
 
     if (totalCountEl) totalCountEl.textContent = extractedSerialsList.length;
 
     if (extractedSerialsList.length === 0) {
       if (resultsContainer) resultsContainer.style.display = 'none';
       if (submitBtn) submitBtn.disabled = true;
-      if (saveDraftBtn) saveDraftBtn.disabled = true;
       if (tbody) tbody.innerHTML = '';
       if (cardList) cardList.innerHTML = '';
+      if (selectedCountEl) selectedCountEl.textContent = '0';
       updateScannerSubmitButtonLabel();
       return;
     }
 
     if (resultsContainer) resultsContainer.style.display = 'block';
     if (submitBtn) submitBtn.disabled = false;
-    if (saveDraftBtn) saveDraftBtn.disabled = false;
 
-    // 1. Render Card List cho Mobile (Chữ to, chỉ mở ô input và bàn phím khi bấm "Sửa")
+    // 1. Render Card List cho Mobile (Có checkbox tick chọn từng máy, chữ to rõ)
     if (cardList) {
       cardList.innerHTML = extractedSerialsList.map((item, idx) => {
         const isGemini = (item.method || '').includes('Gemini');
@@ -795,8 +824,13 @@
           : '';
 
         return `
-          <div class="scanner-serial-card shadow-sm" id="scanner-item-${item.id}">
+          <div class="scanner-serial-card shadow-sm ${item.selected === false ? 'opacity-50 bg-light' : ''}" id="scanner-item-${item.id}">
             <div class="d-flex align-items-center gap-2 flex-grow-1 overflow-hidden">
+              <div class="form-check m-0 d-flex align-items-center flex-shrink-0">
+                <input type="checkbox" class="form-check-input m-0" style="width: 22px; height: 22px; cursor: pointer;" 
+                       ${item.selected !== false ? 'checked' : ''} 
+                       onchange="toggleSelectExtractedSerial('${item.id}', this.checked)">
+              </div>
               <span class="badge bg-secondary-subtle text-dark border px-2 py-1">${idx + 1}</span>
               ${thumbHtml}
               <div class="flex-grow-1 overflow-hidden" id="scanner-view-sn-${item.id}">
@@ -836,7 +870,12 @@
           : `<span class="badge bg-light text-muted border">No img</span>`;
 
         return `
-          <tr>
+          <tr class="${item.selected === false ? 'opacity-50 bg-light' : ''}">
+            <td class="text-center" style="width: 36px;">
+              <input type="checkbox" class="form-check-input m-0" style="width: 18px; height: 18px; cursor: pointer;" 
+                     ${item.selected !== false ? 'checked' : ''} 
+                     onchange="toggleSelectExtractedSerial('${item.id}', this.checked)">
+            </td>
             <td class="text-center fw-bold text-muted">${idx + 1}</td>
             <td class="text-center">${thumbHtml}</td>
             <td>
@@ -858,6 +897,34 @@
     }
 
     updateScannerSubmitButtonLabel();
+  }
+
+  function toggleSelectExtractedSerial(id, isChecked) {
+    const list = (typeof window !== 'undefined' && Array.isArray(window.extractedSerialsList) && window.extractedSerialsList.length > 0)
+      ? window.extractedSerialsList
+      : extractedSerialsList;
+    const item = list.find(x => x.id === id);
+    if (item) {
+      item.selected = isChecked;
+      if (typeof window !== 'undefined') window.extractedSerialsList = list;
+      updateScannerSubmitButtonLabel();
+      const cardEl = document.getElementById(`scanner-item-${id}`);
+      if (cardEl) {
+        if (isChecked) cardEl.classList.remove('opacity-50', 'bg-light');
+        else cardEl.classList.add('opacity-50', 'bg-light');
+      }
+    }
+  }
+
+  function toggleSelectAllExtractedSerials(isChecked) {
+    const list = (typeof window !== 'undefined' && Array.isArray(window.extractedSerialsList) && window.extractedSerialsList.length > 0)
+      ? window.extractedSerialsList
+      : extractedSerialsList;
+    list.forEach(item => {
+      item.selected = isChecked;
+    });
+    if (typeof window !== 'undefined') window.extractedSerialsList = list;
+    renderExtractedSerialsTable();
   }
 
   function toggleSerialEdit(id) {
@@ -1178,11 +1245,12 @@
     if (!sourceList || sourceList.length === 0) return;
 
     const validSerials = sourceList
+      .filter(s => s.selected !== false)
       .map(s => (s.serial || '').trim().toUpperCase().replace(/[\s\r\n\t]/g, ''))
       .filter(s => s.length >= 3);
 
     if (validSerials.length === 0) {
-      alert('Không có mã Serial nào hợp lệ để xử lý!');
+      alert('Vui lòng tick chọn ít nhất một mã Serial hợp lệ để xử lý!');
       return;
     }
 
@@ -1234,9 +1302,10 @@
         if (typeof addModelToDraftList === 'function') {
           addModelToDraftList();
         }
-        // Xóa các serial đã đưa thành công vào nháp
-        extractedSerialsList = [];
-        if (typeof window !== 'undefined') window.extractedSerialsList = [];
+        // Chỉ loại bỏ các serial đã được đưa vào phiếu, giữ lại các serial chưa chọn
+        const submittedSet = new Set(validSerials);
+        extractedSerialsList = extractedSerialsList.filter(s => !submittedSet.has(s.serial));
+        if (typeof window !== 'undefined') window.extractedSerialsList = extractedSerialsList;
         if (typeof showFloatingScannerToast === 'function') {
           showFloatingScannerToast(`✨ Đã thêm <b>${validSerials.length}</b> Serial vào phiếu nhập!`);
         }
@@ -1278,8 +1347,10 @@
         if (typeof addSerialToXuatDraft === 'function') {
           addSerialToXuatDraft(validSerials.join('\n'));
         }
-        extractedSerialsList = [];
-        if (typeof window !== 'undefined') window.extractedSerialsList = [];
+        // Chỉ loại bỏ các serial đã được đưa vào phiếu, giữ lại các serial chưa chọn
+        const submittedSet = new Set(validSerials);
+        extractedSerialsList = extractedSerialsList.filter(s => !submittedSet.has(s.serial));
+        if (typeof window !== 'undefined') window.extractedSerialsList = extractedSerialsList;
         if (typeof showFloatingScannerToast === 'function') {
           showFloatingScannerToast(`✨ Đã thêm <b>${validSerials.length}</b> Serial vào phiếu xuất!`);
         }
@@ -1317,6 +1388,9 @@
 
       closeScannerModalSafely(function() {
         if (typeof switchTab === 'function') switchTab('NghiepVuKho');
+        const submittedSet = new Set(validSerials);
+        extractedSerialsList = extractedSerialsList.filter(s => !submittedSet.has(s.serial));
+        if (typeof window !== 'undefined') window.extractedSerialsList = extractedSerialsList;
         if (typeof showFloatingScannerToast === 'function') {
           showFloatingScannerToast(`✨ Đã nạp <b>${validSerials.length}</b> Serial vào form Chuyển Kho!`);
         }
@@ -1705,6 +1779,8 @@
     window.toggleSerialEdit = toggleSerialEdit;
     window.cancelSerialEdit = cancelSerialEdit;
     window.saveSerialEdit = saveSerialEdit;
+    window.toggleSelectExtractedSerial = toggleSelectExtractedSerial;
+    window.toggleSelectAllExtractedSerials = toggleSelectAllExtractedSerials;
     window.closeScannerModalSafely = closeScannerModalSafely;
     window.updateScannerSubmitButtonLabel = updateScannerSubmitButtonLabel;
   }

@@ -107,8 +107,15 @@
           <!-- BẢNG ĐỐI SOÁT VÀ XEM TRƯỚC CÁC SERIAL BÓC TÁCH ĐƯỢC (RESPONSIVE CARD CHO MOBILE) -->
           <div id="scanner-results-container" style="display: none;">
             <div class="d-flex justify-content-between align-items-center mb-2">
-              <span class="small fw-bold text-dark"><i class="fa-solid fa-list-check me-1 text-success"></i> Danh sách Serial (<span id="scanner-total-extracted" class="text-success fw-bold">0</span>):</span>
-              <button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="clearExtractedSerials()"><i class="fa-solid fa-trash me-1"></i> Xóa danh sách</button>
+              <div class="d-flex align-items-center gap-2">
+                <div class="form-check form-check-inline m-0 d-flex align-items-center gap-1">
+                  <input class="form-check-input mt-0" type="checkbox" id="scanner-select-all-check" checked onchange="toggleSelectAllExtractedSerials(this.checked)" style="cursor: pointer; width: 18px; height: 18px;">
+                  <label class="form-check-label small fw-bold text-dark user-select-none" for="scanner-select-all-check" style="cursor: pointer;">
+                    Chọn tất cả (<span id="scanner-selected-count" class="text-primary fw-bold">0</span>/<span id="scanner-total-extracted" class="text-success fw-bold">0</span>)
+                  </label>
+                </div>
+              </div>
+              <button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="clearExtractedSerials()"><i class="fa-solid fa-trash me-1"></i> Xóa tất cả</button>
             </div>
             <div class="border rounded bg-white shadow-sm p-2" style="max-height: 320px; overflow-y: auto;">
               <!-- Container thẻ danh sách Responsive (Hiển thị trọn vẹn số Serial trên Mobile) -->
@@ -131,12 +138,7 @@
           </div>
           
           <div class="d-flex gap-2 flex-grow-1 justify-content-end">
-            <!-- Nút Lưu Thẳng Vào Phiếu Nháp Server (Chỉ hiện khi trên desktop/máy tính hoặc ngữ cảnh hợp lệ) -->
-            <button type="button" id="btn-save-extracted-to-server-draft" class="btn btn-outline-warning text-dark fw-bold py-2 px-2 d-none d-lg-inline-block" onclick="saveExtractedSerialsToServerDraft()" disabled style="min-height: 48px;">
-              <i class="fa-solid fa-cloud-arrow-up me-1"></i> Lưu Nháp Server
-            </button>
-
-            <!-- Nút Xử Lý Chính Theo Ngữ Cảnh Có Số Lượng Rõ Ràng -->
+            <!-- Nút Xử Lý Chính Duy Nhất Theo Ngữ Cảnh Có Số Lượng Rõ Ràng -->
             <button type="button" id="btn-submit-extracted-serials" class="btn btn-success fw-bold py-2 px-3 shadow flex-grow-1 flex-md-grow-0 d-flex align-items-center justify-content-center gap-2" onclick="submitExtractedSerialsToContext()" disabled style="min-height: 48px; font-size: 0.95rem;">
               <i class="fa-solid fa-circle-check fs-6"></i>
               <span id="btn-submit-extracted-label">Đưa Vào Form</span>

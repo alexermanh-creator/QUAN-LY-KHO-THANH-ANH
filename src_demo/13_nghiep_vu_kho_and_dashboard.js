@@ -4846,7 +4846,95 @@
     }).join('');
   }
 
-  // --- RENDER HOẠT ĐỘNG GẦN ĐÂY THỰC TẾ (KHÔNG DÙNG DỮ LIỆU MOCK) ---
+  // --- RENDER HOẠT ĐỘNG GẦN ĐÂY THỰC TẾ (SẮP XẾP MỚI NHẤT LÊN ĐẦU, ĐỦ CẢ NHẬP LẪN XUẤT) ---
+  function parseVoucherTimestamp(v) {
+    if (!v) return 0;
+    // 1. Nếu có createdAt đầy đủ ("28/09/2026 09:03:43" hoặc ISO)
+    if (v.createdAt) {
+      const s = String(v.createdAt).trim();
+      if (s.includes('/') && s.includes(':')) {
+        const parts = s.split(' ');
+        const dParts = parts[0].split('/');
+        const tParts = (parts[1] || '00:00:00').split(':');
+        if (dParts.length === 3) {
+          const t = new Date(
+            parseInt(dParts[2], 10),
+            parseInt(dParts[1], 10) - 1,
+            parseInt(dParts[0], 10),
+            parseInt(tParts[0] || 0, 10),
+            parseInt(tParts[1] || 0, 10),
+            parseInt(tParts[2] || 0, 10)
+          ).getTime();
+          if (!isNaN(t)) return t;
+        }
+      }
+      const parsedIso = Date.parse(s);
+      if (!isNaN(parsedIso)) return parsedIso;
+    }
+
+    // 2. Parse từ v.ngay / v.ngayXuat / v.ngayNhap ("DD/MM/YYYY")
+    const dateStr = v.ngayXuat || v.ngayNhap || v.ngay || '';
+    let baseTime = 0;
+    if (dateStr && String(dateStr).includes('/')) {
+      const dParts = String(dateStr).split('/');
+      if (dParts.length === 3) {
+        baseTime = new Date(parseInt(dParts[2], 10), parseInt(dParts[1], 10) - 1, parseInt(dParts[0], 10)).getTime();
+      }
+    }
+
+    // 3. Khớp thêm từ mã phiếu (VD: PX-260928-01 -> năm 26, tháng 09, ngày 28, số thứ tự 01)
+    const mp = String(v.maPhieu || v.code || '').trim();
+    const matchMp = mp.match(/(?:PX|NK|XK|DRAFT)-(\d{2})(\d{2})(\d{2})-(\d+)/i);
+    if (matchMp) {
+      const yy = 2000 + parseInt(matchMp[1], 10);
+      const mm = parseInt(matchMp[2], 10) - 1;
+      const dd = parseInt(matchMp[3], 10);
+      const seq = parseInt(matchMp[4], 10) || 0;
+      const codeTime = new Date(yy, mm, dd).getTime() + (seq * 60000);
+      return Math.max(baseTime, codeTime);
+    }
+
+    return baseTime || 0;
+  }
+
+  function formatActivityTimeDisplay(v) {
+    const now = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    const todayStr = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()}`;
+    const yesterday = new Date(now.getTime() - 86400000);
+    const yesterdayStr = `${pad(yesterday.getDate())}/${pad(yesterday.getMonth() + 1)}/${yesterday.getFullYear()}`;
+
+    let timePart = '';
+    if (v.createdAt && String(v.createdAt).includes(':')) {
+      const parts = String(v.createdAt).split(' ');
+      if (parts.length > 1 && parts[1].includes(':')) {
+        const tp = parts[1].split(':');
+        timePart = `${tp[0]}:${tp[1]}`;
+      }
+    }
+
+    const vDate = v.ngayXuat || v.ngayNhap || v.ngay || (v.createdAt ? String(v.createdAt).split(' ')[0] : '');
+
+    if (vDate === todayStr) {
+      return timePart
+        ? `<span class="badge bg-success-subtle text-success border border-success-subtle fw-bold">Hôm nay ${timePart}</span>`
+        : `<span class="badge bg-success-subtle text-success border border-success-subtle fw-bold">Hôm nay</span>`;
+    }
+    if (vDate === yesterdayStr) {
+      return timePart
+        ? `<span class="text-secondary small fw-semibold">Hôm qua ${timePart}</span>`
+        : `<span class="text-secondary small fw-semibold">Hôm qua</span>`;
+    }
+    if (vDate && String(vDate).includes('/')) {
+      const p = String(vDate).split('/');
+      const shortDate = `${p[0]}/${p[1]}`;
+      return timePart
+        ? `<span class="text-secondary small">${shortDate} ${timePart}</span>`
+        : `<span class="text-secondary small">${vDate}</span>`;
+    }
+    return `<span class="text-secondary small">${vDate || 'Gần đây'}</span>`;
+  }
+
   function renderRecentActivities() {
     const tbody = document.getElementById('recent-activities-tbody');
     if (!tbody) return;
@@ -4856,15 +4944,29 @@
     // 1. Lấy từ phiếu xuất thực tế
     if (VOUCHERS_DB && Array.isArray(VOUCHERS_DB.xuat)) {
       VOUCHERS_DB.xuat.forEach(v => {
-        const itemDesc = v.items && v.items.length > 0 ? `${v.items[0].model || ''} / SN: ${v.items[0].serial || 'N/A'}` : 'Thiết bị';
+        const items = v.items || [];
+        const count = items.length || v.soLuong || 1;
+        let itemDesc = 'Thiết bị';
+        if (items.length > 0) {
+          const first = items[0];
+          const m = first.model || '';
+          const s = first.serial || '';
+          itemDesc = items.length === 1 
+            ? `${m} / SN: ${s || 'N/A'}`
+            : `${m} / SN: ${s || ''} (+${items.length - 1} máy)`;
+        } else if (v.serials) {
+          const firstSn = String(v.serials).split(',')[0].trim();
+          itemDesc = `SN: ${firstSn} (${count} máy)`;
+        }
         const vCode = v.maPhieu || v.code || '';
         realActivities.push({
-          time: v.createdAt ? (v.createdAt.split(' ')[1] || v.createdAt) : (v.ngay || 'Hôm nay'),
+          timestamp: parseVoucherTimestamp(v),
+          time: formatActivityTimeDisplay(v),
           type: 'Xuất kho',
           typeIcon: 'fa-solid fa-truck text-warning',
           desc: `Xuất cho KH ${v.khachHang || 'Khách hàng'} (${vCode})`,
           modelSerial: itemDesc,
-          qty: v.items ? v.items.length : 1,
+          qty: count,
           user: v.nguoiTao || v.creator || 'Thủ kho',
           actionTab: 'LichSu',
           voucherType: 'XUAT',
@@ -4876,15 +4978,29 @@
     // 2. Lấy từ phiếu nhập thực tế
     if (VOUCHERS_DB && Array.isArray(VOUCHERS_DB.nhap)) {
       VOUCHERS_DB.nhap.forEach(v => {
-        const itemDesc = v.items && v.items.length > 0 ? `${v.items[0].model || ''} / SN: ${v.items[0].serial || 'N/A'}` : 'Thiết bị';
+        const items = v.items || [];
+        const count = items.length || v.soLuong || 1;
+        let itemDesc = v.modelSummary || 'Thiết bị';
+        if (items.length > 0) {
+          const first = items[0];
+          const m = first.model || '';
+          const s = first.serial || '';
+          itemDesc = items.length === 1 
+            ? `${m} / SN: ${s || 'N/A'}`
+            : `${m} / SN: ${s || ''} (+${items.length - 1} máy)`;
+        } else if (v.serials) {
+          const firstSn = String(v.serials).split(',')[0].trim();
+          itemDesc = `${v.modelSummary || 'Thiết bị'} / SN: ${firstSn}`;
+        }
         const vCode = v.maPhieu || v.code || '';
         realActivities.push({
-          time: v.createdAt ? (v.createdAt.split(' ')[1] || v.createdAt) : (v.ngay || 'Hôm nay'),
+          timestamp: parseVoucherTimestamp(v),
+          time: formatActivityTimeDisplay(v),
           type: 'Nhập kho',
-          typeIcon: 'fa-solid fa-truck text-success',
+          typeIcon: 'fa-solid fa-box-archive text-success',
           desc: `Nhập từ NCC ${v.ncc || 'NCC'} (${vCode})`,
           modelSerial: itemDesc,
-          qty: v.items ? v.items.length : 1,
+          qty: count,
           user: v.nguoiTao || v.creator || 'Thủ kho',
           actionTab: 'LichSu',
           voucherType: 'NHAP',
@@ -4893,9 +5009,12 @@
       });
     }
 
-    // 3. Lấy từ nhật ký kiểm toán thực tế nếu chưa có phiếu
+    // 3. Sắp xếp giảm dần theo thời gian (Mới nhất luôn ở trên cùng)
+    realActivities.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+    // 4. Lấy từ nhật ký kiểm toán thực tế nếu chưa có phiếu
     if (realActivities.length === 0 && Array.isArray(AUDIT_LOG_DB) && AUDIT_LOG_DB.length > 0) {
-      AUDIT_LOG_DB.slice(0, 5).forEach(log => {
+      AUDIT_LOG_DB.slice(0, 8).forEach(log => {
         realActivities.push({
           time: log.time ? (log.time.split(' ')[1] || log.time) : (log.timestamp || '08:00'),
           type: log.module || 'Hệ thống',
@@ -4911,14 +5030,14 @@
       });
     }
 
-    // 4. Lấy từ thiết bị thực tế trong SERIAL_DB nếu chưa kịp đồng bộ phiếu
+    // 5. Lấy từ thiết bị thực tế trong SERIAL_DB nếu chưa kịp đồng bộ phiếu
     if (realActivities.length === 0 && Array.isArray(SERIAL_DB) && SERIAL_DB.length > 0) {
-      SERIAL_DB.slice(0, 5).forEach(s => {
+      SERIAL_DB.slice(0, 8).forEach(s => {
         const vCode = s.maPhieu || s.maPhieuNhap || '';
         realActivities.push({
           time: s.ngayNhap || 'Gần đây',
           type: 'Nhập kho',
-          typeIcon: 'fa-solid fa-truck text-success',
+          typeIcon: 'fa-solid fa-box-archive text-success',
           desc: `Nhập từ ${s.ncc || 'NCC'} (${vCode || 'Nhập kho'})`,
           modelSerial: `${s.model || ''} / SN: ${s.serial || ''}`,
           qty: 1,
@@ -4942,9 +5061,10 @@
       return;
     }
 
-    tbody.innerHTML = realActivities.slice(0, 5).map(act => `
+    // Hiển thị 8 giao dịch gần đây nhất
+    tbody.innerHTML = realActivities.slice(0, 8).map(act => `
       <tr class="cursor-pointer" onclick="goToHistoryVoucher('${act.voucherType || ''}', '${act.voucherCode || ''}')" title="Bấm để mở xem chi tiết trong Lịch Sử & Audit">
-        <td class="text-secondary" style="font-size:0.78rem; padding: 5px 10px;">${act.time}</td>
+        <td style="font-size:0.78rem; padding: 5px 10px;">${act.time}</td>
         <td style="padding: 5px 8px;">
           <span class="d-inline-flex align-items-center gap-1 fw-semibold text-dark" style="font-size:0.78rem;">
             <i class="${act.typeIcon}"></i> ${act.type}
