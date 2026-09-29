@@ -30337,15 +30337,27 @@ CÁC QUY TẮC BẮT BUỘC:
       }
     }
 
-    // 3. Khớp thêm từ mã phiếu (VD: PX-260928-01 -> năm 26, tháng 09, ngày 28, số thứ tự 01)
+    // 3. Khớp thêm từ mã phiếu (VD: PX-260912-214430 -> 21:44:30 hoặc PN-260929-01 -> số thứ tự 01)
     const mp = String(v.maPhieu || v.code || '').trim();
-    const matchMp = mp.match(/(?:PX|NK|XK|DRAFT)-(\d{2})(\d{2})(\d{2})-(\d+)/i);
+    const matchMp = mp.match(/(?:PX|PN|NK|XK|DRAFT)-(\d{2})(\d{2})(\d{2})-(\d+)/i);
     if (matchMp) {
       const yy = 2000 + parseInt(matchMp[1], 10);
       const mm = parseInt(matchMp[2], 10) - 1;
       const dd = parseInt(matchMp[3], 10);
-      const seq = parseInt(matchMp[4], 10) || 0;
-      const codeTime = new Date(yy, mm, dd).getTime() + (seq * 60000);
+      const suffix = String(matchMp[4] || '');
+
+      let codeTime = 0;
+      if (suffix.length === 6) {
+        // Hậu tố là Giờ-Phút-Giây (HHMMSS)
+        const hh = Math.min(23, parseInt(suffix.slice(0, 2), 10) || 0);
+        const mi = Math.min(59, parseInt(suffix.slice(2, 4), 10) || 0);
+        const ss = Math.min(59, parseInt(suffix.slice(4, 6), 10) || 0);
+        codeTime = new Date(yy, mm, dd, hh, mi, ss).getTime();
+      } else {
+        // Hậu tố là số thứ tự phiếu trong ngày (01, 02...)
+        const seq = parseInt(suffix, 10) || 0;
+        codeTime = new Date(yy, mm, dd, 0, 0, 0).getTime() + (seq * 1000);
+      }
       return Math.max(baseTime, codeTime);
     }
 
@@ -30516,8 +30528,8 @@ CÁC QUY TẮC BẮT BUỘC:
       return;
     }
 
-    // Hiển thị 8 giao dịch gần đây nhất
-    tbody.innerHTML = realActivities.slice(0, 8).map(act => `
+    // Hiển thị 7 giao dịch gần đây nhất (tối ưu 5-7 giao dịch gọn gàng)
+    tbody.innerHTML = realActivities.slice(0, 7).map(act => `
       <tr class="cursor-pointer" onclick="goToHistoryVoucher('${act.voucherType || ''}', '${act.voucherCode || ''}')" title="Bấm để mở xem chi tiết trong Lịch Sử & Audit">
         <td style="font-size:0.78rem; padding: 5px 10px;">${act.time}</td>
         <td style="padding: 5px 8px;">
