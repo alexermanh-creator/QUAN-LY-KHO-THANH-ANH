@@ -1498,8 +1498,8 @@
 
       <!-- 4 NÚT THAO TÁC TOPBAR: ĐỒNG BỘ DỮ LIỆU, QUẢN LÝ, QUÉT SN, KHO MOBILE -->
       <div class="d-flex align-items-center gap-2">
-        <!-- 0. NÚT ĐỒNG BỘ THỦ CÔNG (KHÔNG RELOAD TRANG) -->
-        <button id="btn-manual-sync" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 rounded-pill px-2 py-1 shadow-sm" onclick="handleManualSyncClick()" title="Cập nhật dữ liệu tức thì từ Google Sheets (không reload trang)">
+        <!-- 0. NÚT ĐỒNG BỘ THỦ CÔNG (KHÔNG RELOAD TRANG - FORCE SYNC) -->
+        <button id="btn-manual-sync" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 rounded-pill px-2 py-1 shadow-sm" onclick="handleManualSyncClick(true)" title="Cập nhật dữ liệu tức thì từ Google Sheets (không reload trang)">
           <i class="fa-solid fa-arrows-rotate" id="icon-manual-sync"></i>
           <span class="d-none d-md-inline" style="font-size: 0.8rem; font-weight: 500;">Cập nhật</span>
         </button>
@@ -13128,6 +13128,27 @@ CÁC QUY TẮC BẮT BUỘC:
         });
       }
 
+      // Sắp xếp lại danh sách phiếu theo thời gian từ mới nhất đến cũ nhất
+      const sortVouchersDescSync = (a, b) => {
+        const parseT = (v) => {
+          if (!v) return 0;
+          if (v.createdAt) {
+            const m = String(v.createdAt).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
+            if (m) return new Date(parseInt(m[3], 10), parseInt(m[2], 10) - 1, parseInt(m[1], 10), parseInt(m[4] || 0, 10), parseInt(m[5] || 0, 10), parseInt(m[6] || 0, 10)).getTime();
+          }
+          const ds = v.ngayXuat || v.ngayNhap || v.ngay || '';
+          const p = String(ds).split('/');
+          if (p.length === 3) return new Date(parseInt(p[2], 10), parseInt(p[1], 10) - 1, parseInt(p[0], 10)).getTime();
+          return 0;
+        };
+        const tA = parseT(a);
+        const tB = parseT(b);
+        if (tB !== tA) return tB - tA;
+        return String(b.maPhieu || '').localeCompare(String(a.maPhieu || ''));
+      };
+      if (Array.isArray(VOUCHERS_DB.nhap)) VOUCHERS_DB.nhap.sort(sortVouchersDescSync);
+      if (Array.isArray(VOUCHERS_DB.xuat)) VOUCHERS_DB.xuat.sort(sortVouchersDescSync);
+
       // 3. Đồng bộ trạng thái SERIAL_DB theo các phiếu vừa nhận (khắc phục độ trễ tồn kho giữa các máy)
       let serialsUpdated = false;
       if (typeof SERIAL_DB !== 'undefined' && Array.isArray(SERIAL_DB)) {
@@ -13297,8 +13318,8 @@ CÁC QUY TẮC BẮT BUỘC:
   }
   if (typeof window !== 'undefined') window.syncVouchersFromServer = syncVouchersFromServer;
 
-  // Xử lý nút bấm thủ công cập nhật dữ liệu trên Topbar (SMART REFRESH: chỉ full sync khi version đổi)
-  function handleManualSyncClick() {
+  // Xử lý nút bấm thủ công cập nhật dữ liệu trên Topbar (SMART REFRESH & FORCE SYNC)
+  function handleManualSyncClick(force) {
     const btn = document.getElementById('btn-manual-sync');
     const icon = document.getElementById('icon-manual-sync');
     if (btn) btn.disabled = true;
@@ -13315,7 +13336,7 @@ CÁC QUY TẮC BẮT BUỘC:
       WarehouseAPI.checkDataVersion(verRes => {
         const curVer = verRes && (verRes.version || verRes.timestamp);
         const lastVer = window.LAST_DATA_VERSION || window.LAST_DATA_SYNC_TS;
-        if (verRes && verRes.success && curVer && lastVer && String(curVer) === String(lastVer)) {
+        if (!force && verRes && verRes.success && curVer && lastVer && String(curVer) === String(lastVer)) {
           // Phiên bản giống nhau -> Không cần full load dữ liệu lớn
           finish();
           if (typeof Swal !== 'undefined') {
@@ -13330,7 +13351,7 @@ CÁC QUY TẮC BẮT BUỘC:
           }
           return;
         }
-        // Có phiên bản mới hơn -> Kéo dữ liệu
+        // Có phiên bản mới hơn hoặc force = true -> Kéo dữ liệu
         syncVouchersFromServer(false, (res) => {
           finish();
         });
@@ -13343,29 +13364,39 @@ CÁC QUY TẮC BẮT BUỘC:
   }
   if (typeof window !== 'undefined') window.handleManualSyncClick = handleManualSyncClick;
 
-  // Heartbeat Auto-Sync: 10s kiểm tra 1 lần siêu nhẹ (<0.1s)
+  // Heartbeat Auto-Sync: 8s kiểm tra 1 lần siêu nhẹ (<0.1s)
   let _AUTO_SYNC_HEARTBEAT_INTERVAL = null;
   function startAutoSyncHeartbeat() {
     if (_AUTO_SYNC_HEARTBEAT_INTERVAL) return;
     _AUTO_SYNC_HEARTBEAT_INTERVAL = setInterval(() => {
       if (typeof WarehouseAPI !== 'undefined' && WarehouseAPI.isAppsScriptEnvironment()) {
         WarehouseAPI.checkDataVersion(res => {
-          if (res && res.success && res.timestamp) {
-            if (window.LAST_DATA_SYNC_TS && res.timestamp !== window.LAST_DATA_SYNC_TS) {
-              console.log('[AutoSync Heartbeat] Phát hiện thay đổi dữ liệu từ máy khác (Minh Quân / Kho), tự động đồng bộ...');
+          if (res && res.success) {
+            const serverVer = res.version ? String(res.version) : null;
+            const serverTs = res.timestamp ? String(res.timestamp) : null;
+            const localVer = window.LAST_DATA_VERSION ? String(window.LAST_DATA_VERSION) : null;
+            const localTs = window.LAST_DATA_SYNC_TS ? String(window.LAST_DATA_SYNC_TS) : null;
+
+            // Nếu server có version mới hơn hoặc timestamp khác -> tự động đồng bộ ngầm
+            const hasNewVersion = (serverVer && localVer && serverVer !== localVer);
+            const hasNewTimestamp = (serverTs && localTs && serverTs !== localTs);
+            const neverSynced = (!localVer && !localTs);
+
+            if (hasNewVersion || hasNewTimestamp || neverSynced) {
+              console.log('[AutoSync Heartbeat] Phát hiện thay đổi dữ liệu từ máy khác trên hệ thống, tự động đồng bộ...');
               syncVouchersFromServer(true);
             }
           }
         });
       }
-    }, 10000);
+    }, 8000);
   }
   if (typeof window !== 'undefined') {
     window.startAutoSyncHeartbeat = startAutoSyncHeartbeat;
-    // Tự động khởi động heartbeat
-    setTimeout(startAutoSyncHeartbeat, 3000);
+    // Tự động khởi động heartbeat sau 2s
+    setTimeout(startAutoSyncHeartbeat, 2000);
     // Tự động kéo dữ liệu từ server ngay khi mở web app
-    setTimeout(() => { syncVouchersFromServer(true); }, 1000);
+    setTimeout(() => { syncVouchersFromServer(true); }, 800);
   }
 
   let LAST_SYNCED_TIMESTAMP = "";
@@ -17167,8 +17198,8 @@ CÁC QUY TẮC BẮT BUỘC:
       if (textarea) {
         textarea.value = validSerials.join('\n');
       }
-      if (typeof updateTransferCounter === 'function') {
-        updateTransferCounter();
+      if (typeof updateTransferSerialCounter === 'function') {
+        updateTransferSerialCounter();
       }
 
       closeScannerModalSafely(function() {

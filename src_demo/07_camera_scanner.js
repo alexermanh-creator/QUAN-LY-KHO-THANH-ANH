@@ -1447,8 +1447,8 @@
       if (textarea) {
         textarea.value = validSerials.join('\n');
       }
-      if (typeof updateTransferCounter === 'function') {
-        updateTransferCounter();
+      if (typeof updateTransferSerialCounter === 'function') {
+        updateTransferSerialCounter();
       }
 
       closeScannerModalSafely(function() {
