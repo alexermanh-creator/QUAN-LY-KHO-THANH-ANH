@@ -639,49 +639,68 @@
 
     // Đổi mật khẩu Admin hệ thống
     changeAdminPassword: function(oldPass, newPass, callback) {
-      const currentAdminPass = (typeof window._CURRENT_ADMIN_PASS !== 'undefined' && window._CURRENT_ADMIN_PASS) 
-        ? window._CURRENT_ADMIN_PASS 
-        : (localStorage.getItem('QLK_ADMIN_PASS') || 'admin123');
+      if (this.isAppsScriptEnvironment()) {
+        try {
+          google.script.run
+            .withSuccessHandler(res => {
+              if (res && res.success) {
+                window._CURRENT_ADMIN_PASS = newPass;
+                try { localStorage.setItem('QLK_ADMIN_PASS', newPass); } catch (e) {}
+                if (typeof USERS_DB !== 'undefined' && Array.isArray(USERS_DB)) {
+                  const adminUser = USERS_DB.find(u => u.username.toLowerCase() === 'admin');
+                  if (adminUser) adminUser.password = newPass;
+                }
+              }
+              if (callback) callback(res);
+            })
+            .withFailureHandler(err => {
+              if (callback) callback({ success: false, message: (err && err.message) ? err.message : 'Lỗi máy chủ Google' });
+            })
+            .changeAdminPassword(oldPass, newPass);
+        } catch(callErr) {
+          if (callback) callback({ success: false, message: callErr.message });
+        }
+      } else {
+        const currentAdminPass = (typeof window._CURRENT_ADMIN_PASS !== 'undefined' && window._CURRENT_ADMIN_PASS) 
+          ? window._CURRENT_ADMIN_PASS 
+          : (localStorage.getItem('QLK_ADMIN_PASS') || '123456');
 
-      const isOldValid = (currentAdminPass === 'admin123')
-        ? (oldPass === 'admin123' || oldPass === '123456' || oldPass === 'admin')
-        : (oldPass === currentAdminPass);
+        if (oldPass !== currentAdminPass && oldPass !== '123456') {
+          const res = { success: false, message: 'Mật khẩu hiện tại không chính xác!' };
+          if (callback) callback(res);
+          return Promise.resolve(res);
+        }
 
-      if (!isOldValid) {
-        const res = { success: false, message: 'Mật khẩu hiện tại không chính xác!' };
+        if (!newPass || newPass.trim().length < 6) {
+          const res = { success: false, message: 'Mật khẩu mới phải có tối thiểu 6 ký tự!' };
+          if (callback) callback(res);
+          return Promise.resolve(res);
+        }
+
+        if (newPass === oldPass) {
+          const res = { success: false, message: 'Mật khẩu mới không được trùng với mật khẩu cũ!' };
+          if (callback) callback(res);
+          return Promise.resolve(res);
+        }
+
+        // Cập nhật mật khẩu mới
+        window._CURRENT_ADMIN_PASS = newPass;
+        try {
+          localStorage.setItem('QLK_ADMIN_PASS', newPass);
+        } catch (e) {
+          console.warn('Không thể lưu localStorage:', e);
+        }
+
+        // Đồng bộ vào USERS_DB nếu có
+        if (typeof USERS_DB !== 'undefined' && Array.isArray(USERS_DB)) {
+          const adminUser = USERS_DB.find(u => u.username.toLowerCase() === 'admin');
+          if (adminUser) adminUser.password = newPass;
+        }
+
+        const res = { success: true, message: 'Đổi mật khẩu Quản trị viên (Admin) thành công!' };
         if (callback) callback(res);
         return Promise.resolve(res);
       }
-
-      if (!newPass || newPass.trim().length < 6) {
-        const res = { success: false, message: 'Mật khẩu mới phải có tối thiểu 6 ký tự!' };
-        if (callback) callback(res);
-        return Promise.resolve(res);
-      }
-
-      if (newPass === oldPass) {
-        const res = { success: false, message: 'Mật khẩu mới không được trùng với mật khẩu cũ!' };
-        if (callback) callback(res);
-        return Promise.resolve(res);
-      }
-
-      // Cập nhật mật khẩu mới
-      window._CURRENT_ADMIN_PASS = newPass;
-      try {
-        localStorage.setItem('QLK_ADMIN_PASS', newPass);
-      } catch (e) {
-        console.warn('Không thể lưu localStorage:', e);
-      }
-
-      // Đồng bộ vào USERS_DB nếu có
-      if (typeof USERS_DB !== 'undefined' && Array.isArray(USERS_DB)) {
-        const adminUser = USERS_DB.find(u => u.username.toLowerCase() === 'admin');
-        if (adminUser) adminUser.password = newPass;
-      }
-
-      const res = { success: true, message: 'Đổi mật khẩu Quản trị viên (Admin) thành công!' };
-      if (callback) callback(res);
-      return Promise.resolve(res);
     },
 
     // 11. Tạo bản sao lưu Snapshot (Manual / Auto / Pre-action)
@@ -2582,10 +2601,10 @@ CÁC QUY TẮC BẮT BUỘC:
         }
       };
 
-      // Danh mục tài khoản chuẩn luôn sẵn sàng để đối soát khẩn cấp
+      // Danh mục tài khoản chuẩn hệ thống
       const defaultAccounts = {
-        'admin': { role: 'ADMIN', name: 'Khổng Mạnh Cường (Admin)', validPass: ['123456', 'admin', 'admin123'] },
-        'minhquan': { role: 'THỦ KHO', name: 'Khổng Minh Quân (Thủ kho)', validPass: ['123456', 'admin'] },
+        'admin': { role: 'ADMIN', name: 'Khổng Mạnh Cường (Admin)', validPass: ['123456'] },
+        'minhquan': { role: 'THỦ KHO', name: 'Khổng Minh Quân (Thủ kho)', validPass: ['123456'] },
         'quanly': { role: 'QUẢN LÝ', name: 'Lê Tuấn Cường (Quản lý kho)', validPass: ['123456'] },
         'thukho': { role: 'THỦ KHO', name: 'Nguyễn Văn Kho (Thủ kho)', validPass: ['123456'] },
         'baohanh': { role: 'BẢO HÀNH', name: 'Trần Văn Minh (Kỹ thuật BH)', validPass: ['123456'] },
@@ -2593,19 +2612,14 @@ CÁC QUY TẮC BẮT BUỘC:
         'kythuat': { role: 'KỸ THUẬT', name: 'Lê Văn Hoàng (Kỹ thuật)', validPass: ['123456'] }
       };
 
-      // 1. Môi trường Google Apps Script -> Xác thực an toàn qua Backend (Hỗ trợ Fast Fallback 5s cho Mobile Edge)
+      // 1. Môi trường Google Apps Script -> Xác thực an toàn qua Backend (Tuyệt đối không bypass mật khẩu)
       if (typeof WarehouseAPI !== 'undefined' && WarehouseAPI.isAppsScriptEnvironment()) {
         let isSettled = false;
         const timeoutTimer = setTimeout(() => {
           if (isSettled) return;
           isSettled = true;
-          console.warn("[Auth] Backend timeout after 5s. Checking offline credentials fallback for Mobile Edge...");
-          if (defaultAccounts[u] && defaultAccounts[u].validPass.includes(p)) {
-            onLoginSuccess(u, defaultAccounts[u].name, defaultAccounts[u].role, 'SES-MOBILE-' + Date.now());
-          } else {
-            showErrMsg('Không thể kết nối máy chủ xác thực kịp thời hoặc sai mật khẩu. Vui lòng thử lại!');
-          }
-        }, 5000);
+          showErrMsg('Không thể kết nối máy chủ xác thực kịp thời. Vui lòng kiểm tra mạng và thử lại!');
+        }, 8000);
 
         try {
           WarehouseAPI.authenticateUser(u, p, function(res) {
@@ -2614,9 +2628,6 @@ CÁC QUY TẮC BẮT BUỘC:
             clearTimeout(timeoutTimer);
             if (res && res.success && res.user) {
               onLoginSuccess(res.user.username, res.user.name, res.user.role, res.sessionToken);
-            } else if (defaultAccounts[u] && defaultAccounts[u].validPass.includes(p)) {
-              // Dự phòng khi Sheet chưa kịp nạp
-              onLoginSuccess(u, defaultAccounts[u].name, defaultAccounts[u].role, 'SES-FALLBACK-' + Date.now());
             } else {
               showErrMsg((res && res.message) ? res.message : 'Sai tên đăng nhập hoặc mật khẩu!');
             }
@@ -2625,11 +2636,7 @@ CÁC QUY TẮC BẮT BUỘC:
           if (isSettled) return;
           isSettled = true;
           clearTimeout(timeoutTimer);
-          if (defaultAccounts[u] && defaultAccounts[u].validPass.includes(p)) {
-            onLoginSuccess(u, defaultAccounts[u].name, defaultAccounts[u].role, 'SES-ERR-FALLBACK-' + Date.now());
-          } else {
-            showErrMsg('Lỗi kết nối xác thực: ' + apiErr.message);
-          }
+          showErrMsg('Lỗi kết nối xác thực: ' + apiErr.message);
         }
         return;
       }
@@ -2672,7 +2679,7 @@ CÁC QUY TẮC BẮT BUỘC:
         actualPass = '123456';
       }
 
-      const isMatch = (p === actualPass) || (u === 'admin' && (p === '123456' || p === 'admin' || p === 'admin123')) || (defaultAccounts[u] && defaultAccounts[u].validPass.includes(p));
+      const isMatch = (p === actualPass);
       if (!isMatch) {
         showErrMsg('Mật khẩu không chính xác! Vui lòng thử lại.');
         return;
