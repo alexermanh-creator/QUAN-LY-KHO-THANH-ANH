@@ -69,9 +69,23 @@
       list = list.filter(s => s.kho === filterKho);
     }
 
-    // 3. Lọc theo nhóm
+    // Helper Dynamic Lookup Master Data sản phẩm
+    const getMasterProductInfo = (modelName) => {
+      if (!modelName) return null;
+      if (typeof INITIAL_PRODUCTS !== 'undefined' && Array.isArray(INITIAL_PRODUCTS)) {
+        const cleanMod = modelName.trim().toUpperCase();
+        return INITIAL_PRODUCTS.find(p => (p.model || '').trim().toUpperCase() === cleanMod);
+      }
+      return null;
+    };
+
+    // 3. Lọc theo nhóm (Ưu tiên tra cứu trực tiếp từ Master Data INITIAL_PRODUCTS)
     if (filterNhom) {
-      list = list.filter(s => (s.nhomHang === filterNhom) || (s.nhom === filterNhom));
+      list = list.filter(s => {
+        const mInfo = getMasterProductInfo(s.model);
+        const nhom = (mInfo && mInfo.nhom) || s.nhomHang || s.nhom || 'Khác';
+        return nhom === filterNhom;
+      });
     }
 
     // 4. Lọc theo tuổi tồn kho (Aging)
@@ -117,15 +131,16 @@
       );
     }
 
-    // 6. Gom nhóm theo Model
+    // 6. Gom nhóm theo Model (Dynamic Lookup Master Data đảm bảo Single Source of Truth)
     let modelMap = {};
     list.forEach(s => {
       const mKey = s.model || 'Chưa rõ Model';
       if (!modelMap[mKey]) {
+        const mInfo = getMasterProductInfo(mKey);
         modelMap[mKey] = {
           model: mKey,
-          tenHang: s.tenHang || s.name || mKey,
-          nhomHang: s.nhomHang || s.nhom || 'Khác',
+          tenHang: (mInfo && mInfo.ten) || s.tenHang || s.name || mKey,
+          nhomHang: (mInfo && mInfo.nhom) || s.nhomHang || s.nhom || 'Khác',
           warehouses: {},
           serials: [],
           freshCount: 0,

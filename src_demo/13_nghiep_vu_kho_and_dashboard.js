@@ -1037,22 +1037,52 @@
     CATALOG_SUBTAB_STATE.suppliers.rendered = true;
     CATALOG_SUBTAB_STATE.suppliers.dirty = false;
 
-    // Tự động gộp và làm sạch trùng lặp Nhà Cung Cấp theo tenTat
-    const seenSupp = new Map();
+    // Tự động gộp và làm sạch trùng lặp Nhà Cung Cấp đa chiều (MST, Tên tắt, Tên đầy đủ)
+    const cleanList = [];
     INITIAL_SUPPLIERS.forEach(s => {
-      const k = (s.tenTat || s.code || '').trim().toLowerCase();
-      if (!k) return;
-      if (!seenSupp.has(k)) {
-        seenSupp.set(k, s);
+      const cleanTax = (s.mst || '').replace(/[^0-9A-Za-z]/g, '');
+      const cleanTat = (s.tenTat || s.code || '').trim().toLowerCase();
+      const cleanDayDu = (s.tenDayDu || s.name || '').trim().toLowerCase();
+      if (!cleanTat && !cleanDayDu) return;
+
+      const existing = cleanList.find(x => {
+        const xTax = (x.mst || '').replace(/[^0-9A-Za-z]/g, '');
+        const xTat = (x.tenTat || x.code || '').trim().toLowerCase();
+        const xDayDu = (x.tenDayDu || x.name || '').trim().toLowerCase();
+
+        // 1. Cùng MST (>= 8 ký tự số)
+        if (cleanTax && xTax && cleanTax.length >= 8 && cleanTax === xTax) return true;
+        // 2. Trùng tên tắt
+        if (cleanTat && cleanTat === xTat) return true;
+        // 3. Tên tắt trùng tên đầy đủ (hoán đổi tên)
+        if (cleanTat && (cleanTat === xDayDu || cleanDayDu === xTat)) return true;
+        return false;
+      });
+
+      if (!existing) {
+        cleanList.push(s);
       } else {
-        const existing = seenSupp.get(k);
         if (!existing.sdt && s.sdt) existing.sdt = s.sdt;
         if (!existing.diaChi && s.diaChi) existing.diaChi = s.diaChi;
         if (!existing.email && s.email) existing.email = s.email;
-        if (existing.tenDayDu === existing.tenTat && s.tenDayDu !== s.tenTat) existing.tenDayDu = s.tenDayDu;
+        if (!existing.mst && s.mst) existing.mst = s.mst;
+        if (!existing.nguoiLienHe && s.nguoiLienHe) existing.nguoiLienHe = s.nguoiLienHe;
+        
+        // Chuẩn hóa tên tắt ngắn gọn, tên đầy đủ doanh nghiệp
+        const curTat = existing.tenTat || '';
+        const newTat = s.tenTat || '';
+        if (newTat.length < curTat.length && !newTat.toUpperCase().includes('CÔNG TY')) {
+          existing.tenDayDu = curTat.length > (s.tenDayDu || '').length ? curTat : s.tenDayDu;
+          existing.tenTat = newTat;
+        } else if ((s.tenDayDu || '').length > (existing.tenDayDu || '').length) {
+          existing.tenDayDu = s.tenDayDu;
+        }
       }
     });
-    INITIAL_SUPPLIERS = Array.from(seenSupp.values());
+    INITIAL_SUPPLIERS = cleanList;
+    try {
+      localStorage.setItem('THANH_AN_SUPPLIERS', JSON.stringify(INITIAL_SUPPLIERS));
+    } catch(e){}
 
     const sQ = (document.getElementById('filter-cat-supp-search')?.value || '').toLowerCase().trim();
     let list = INITIAL_SUPPLIERS.filter(s => {

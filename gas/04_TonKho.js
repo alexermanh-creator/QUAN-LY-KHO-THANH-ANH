@@ -42,6 +42,23 @@ function getTonKhoList(filters) {
     toDate.setHours(23,59,59,999);
   }
 
+  // 0. Nạp Danh mục sản phẩm (DM_SAN_PHAM) làm nguồn chân lý duy nhất (Single Source of Truth)
+  const prodSheet = ss.getSheetByName("DM_SAN_PHAM");
+  const prodMap = new Map();
+  if (prodSheet && prodSheet.getLastRow() > 1) {
+    const pData = prodSheet.getRange(2, 1, prodSheet.getLastRow() - 1, Math.min(5, prodSheet.getLastColumn())).getValues();
+    pData.forEach(pr => {
+      const pMod = String(pr[0] || '').trim().toUpperCase();
+      if (pMod) {
+        prodMap.set(pMod, {
+          ten: String(pr[1] || '').trim(),
+          nhom: String(pr[2] || '').trim(),
+          hang: String(pr[4] || '').trim()
+        });
+      }
+    });
+  }
+
   const tonKho = [];
   data.forEach((r, index) => {
     const status = String(r[9] || '').trim();
@@ -78,16 +95,21 @@ function getTonKhoList(filters) {
       if (filters.minDays && soNgayLuuKho < Number(filters.minDays)) return;
       if (filters.maxDays && soNgayLuuKho > Number(filters.maxDays)) return;
 
-      // Kiểm tra kho và nhóm hàng
+      const curModel = String(r[1] || '').trim();
+      const masterProd = prodMap.get(curModel.toUpperCase());
+      const finalTen = (masterProd && masterProd.ten) ? masterProd.ten : String(r[2] || '').trim();
+      const finalNhom = (masterProd && masterProd.nhom) ? masterProd.nhom : String(r[3] || '').trim();
+
+      // Kiểm tra kho và nhóm hàng chuẩn theo Master Data
       if (filters.kho && String(r[5]).trim() !== filters.kho) return;
-      if (filters.nhom && String(r[3]).trim() !== filters.nhom) return;
+      if (filters.nhom && finalNhom !== filters.nhom) return;
 
       tonKho.push({
         rowId: index + 2,
         serial: String(r[0] || '').trim(),
-        model: String(r[1] || '').trim(),
-        tenHang: String(r[2] || '').trim(),
-        nhomHang: String(r[3] || '').trim(),
+        model: curModel,
+        tenHang: finalTen || curModel,
+        nhomHang: finalNhom || 'Khác',
         loaiHang: String(r[4] || '').trim(),
         kho: String(r[5] || '').trim(),
         ncc: String(r[6] || '').trim(),

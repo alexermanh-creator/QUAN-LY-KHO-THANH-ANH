@@ -107,22 +107,49 @@ function getMasterData() {
     ghiChu: String(r[7] || '').trim()
   })).filter(n => n.tenTat);
 
-  const nccMap = new Map();
+  const nccList = [];
   rawNcc.forEach(n => {
-    const key = n.tenTat.toLowerCase();
-    if (!nccMap.has(key)) {
-      nccMap.set(key, n);
+    const cleanTax = (n.mst || '').replace(/[^0-9A-Za-z]/g, '');
+    const cleanTat = (n.tenTat || '').toLowerCase();
+    const cleanDayDu = (n.tenDayDu || '').toLowerCase();
+
+    // Tim xem da co NCC nao trung voi n theo da chieu khong
+    const existing = nccList.find(x => {
+      const xTax = (x.mst || '').replace(/[^0-9A-Za-z]/g, '');
+      const xTat = (x.tenTat || '').toLowerCase();
+      const xDayDu = (x.tenDayDu || '').toLowerCase();
+
+      // 1. Cung MST hop le (>= 8 ky tu)
+      if (cleanTax && xTax && cleanTax.length >= 8 && cleanTax === xTax) return true;
+      // 2. Trung ten tat
+      if (cleanTat && cleanTat === xTat) return true;
+      // 3. Ten tat trung ten day du (nhap dao nguoc)
+      if (cleanTat && (cleanTat === xDayDu || cleanDayDu === xTat)) return true;
+      return false;
+    });
+
+    if (!existing) {
+      nccList.push(n);
     } else {
-      const existing = nccMap.get(key);
       if (!existing.sdt && n.sdt) existing.sdt = n.sdt;
       if (!existing.diaChi && n.diaChi) existing.diaChi = n.diaChi;
       if (!existing.email && n.email) existing.email = n.email;
       if (!existing.nguoiLienHe && n.nguoiLienHe) existing.nguoiLienHe = n.nguoiLienHe;
       if (!existing.mst && n.mst) existing.mst = n.mst;
-      if (existing.tenDayDu === existing.tenTat && n.tenDayDu !== n.tenTat) existing.tenDayDu = n.tenDayDu;
+      if (!existing.ghiChu && n.ghiChu) existing.ghiChu = n.ghiChu;
+      
+      const currentTat = existing.tenTat;
+      const otherTat = n.tenTat;
+      const isOtherShort = otherTat.length < currentTat.length && !otherTat.toUpperCase().includes('CÔNG TY');
+      if (isOtherShort) {
+        existing.tenDayDu = currentTat.length > n.tenDayDu.length ? currentTat : n.tenDayDu;
+        existing.tenTat = otherTat;
+      } else if (n.tenDayDu.length > existing.tenDayDu.length) {
+        existing.tenDayDu = n.tenDayDu;
+      }
     }
   });
-  const ncc = Array.from(nccMap.values());
+  const ncc = nccList;
 
   // 3. Khách Hàng: Đọc đầy đủ 9 trường
   const khachHang = getSheetData("DM_KHACH_HANG", 9).map((r, i) => ({
@@ -225,23 +252,50 @@ function saveProduct(model, ten, nhom, dvt, hang, defaultBh, manageSerial, ghiCh
     }
   }
 
-  // CASCADE: Nếu tên model bị đổi hoặc chỉnh sửa, cập nhật đồng bộ toàn bộ các máy trong SERIAL_MASTER
-  if (oldModelName && oldModelName !== model) {
+  // CASCADE TOÀN DIỆN: Bất cứ khi nào lưu / sửa thông tin Model, tự động cascade toàn bộ sang SERIAL_MASTER
+  const targetModelLookup = (oldModelName || model).toUpperCase();
+  try {
+    const tbSheet = ss.getSheetByName("SERIAL_MASTER") || ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
+    if (tbSheet && tbSheet.getLastRow() > 1) {
+      const totalRows = tbSheet.getLastRow() - 1;
+      const numCols = Math.min(18, tbSheet.getLastColumn());
+      const fullRange = tbSheet.getRange(2, 1, totalRows, numCols);
+      const tbValues = fullRange.getValues();
+      let hasChange = false;
+
+      for (let i = 0; i < totalRows; i++) {
+        const curModel = String(tbValues[i][1] || '').trim().toUpperCase();
+        if (curModel === targetModelLookup || curModel === model.toUpperCase()) {
+          tbValues[i][1] = model;
+          if (ten) tbValues[i][2] = ten;
+          if (nhom) tbValues[i][3] = nhom;
+          if (hang && tbValues[i].length >= 13) tbValues[i][12] = hang;
+          hasChange = true;
+        }
+      }
+      if (hasChange) {
+        fullRange.setValues(tbValues);
+      }
+    }
+  } catch(errCascade) {
+    Logger.log("Cascade model error: " + errCascade.message);
+  }
+
+  // Đồng thời cascade sang chứng từ gốc nếu tên model bị đổi
+  if (oldModelName && oldModelName.toUpperCase() !== model.toUpperCase()) {
     try {
-      const tbSheet = ss.getSheetByName("SERIAL_MASTER") || ss.getSheetByName("V4_SERIAL_MASTER") || ss.getSheetByName("DATA_THIET_BI");
-      if (tbSheet && tbSheet.getLastRow() > 1) {
-        const totalRows = tbSheet.getLastRow() - 1;
-        const modelCol = tbSheet.getRange(2, 2, totalRows, 1).getValues();
-        for (let i = 0; i < totalRows; i++) {
-          if (String(modelCol[i][0] || '').trim().toUpperCase() === oldModelName.toUpperCase()) {
-            tbSheet.getRange(i + 2, 2).setValue(model);
-            if (ten) tbSheet.getRange(i + 2, 3).setValue(ten);
-            if (nhom) tbSheet.getRange(i + 2, 4).setValue(nhom);
+      const lsNhapSheet = ss.getSheetByName("LICH_SU_NHAP");
+      if (lsNhapSheet && lsNhapSheet.getLastRow() > 1) {
+        const totalLs = lsNhapSheet.getLastRow() - 1;
+        const colModelLs = lsNhapSheet.getRange(2, 4, totalLs, 1).getValues();
+        for (let i = 0; i < totalLs; i++) {
+          if (String(colModelLs[i][0] || '').trim().toUpperCase() === oldModelName.toUpperCase()) {
+            lsNhapSheet.getRange(i + 2, 4).setValue(model);
           }
         }
       }
-    } catch(errCascade) {
-      Logger.log("Cascade model error: " + errCascade.message);
+    } catch(eLs) {
+      Logger.log("Cascade LICH_SU_NHAP error: " + eLs.message);
     }
   }
 

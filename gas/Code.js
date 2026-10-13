@@ -26,10 +26,10 @@ function doGet(e) {
   // Tự động kiểm tra và chuẩn hóa nhẹ nếu có tham số
   if (e && e.parameter && e.parameter.action === 'chuanhoa') {
     try {
-      chuanHoaVaDonDepGoogleSheets('654321');
-      return ContentService.createTextOutput("Đã chuẩn hóa và dọn dẹp Google Sheets thành công!");
+      const res = chuanHoaVaDonDepGoogleSheets('654321');
+      return ContentService.createTextOutput(JSON.stringify(res)).setMimeType(ContentService.MimeType.JSON);
     } catch(err) {
-      return ContentService.createTextOutput("Lỗi: " + err.message);
+      return ContentService.createTextOutput(JSON.stringify({ success: false, error: err.message })).setMimeType(ContentService.MimeType.JSON);
     }
   }
 
@@ -2487,12 +2487,16 @@ function getAllVouchersBackend() {
  * - Tự động giãn cột AutoResize
  * - Thêm Conditional Formatting màu sắc cho tồn kho/đã xuất
  */
+function runChuanHoaHeadless() {
+  return chuanHoaVaDonDepGoogleSheets("654321");
+}
+
 function chuanHoaVaDonDepGoogleSheets(adminPassword) {
   if (adminPassword !== "654321" && adminPassword !== "admin123") {
     throw new Error("Mật khẩu Quản trị viên không chính xác!");
   }
 
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = SpreadsheetApp.getActiveSpreadsheet() || SpreadsheetApp.openById("1qcXqmOsdciDHjeCUtY65Zd41aLlUvPHO_Wo-hWTyQck");
   const lock = LockService.getScriptLock();
   try {
     lock.waitLock(30000);
@@ -2543,21 +2547,116 @@ function chuanHoaVaDonDepGoogleSheets(adminPassword) {
       rSdt.setValues(dSdt);
     }
 
-    // 4. Chuẩn hóa SĐT trong DM_NCC
+    // 4. Chuẩn hóa & Gộp Nhà Cung Cấp trong DM_NCC (Gộp trùng KYMA & KM Tech)
+    let gopNccCount = 0;
     const nccSheet = ss.getSheetByName("DM_NCC");
     if (nccSheet && nccSheet.getLastRow() > 1) {
-      const rSdt = nccSheet.getRange(2, 3, nccSheet.getLastRow() - 1, 1);
-      rSdt.setNumberFormat("@");
-      const dSdt = rSdt.getValues().map(r => {
-        let p = String(r[0] || '').trim();
+      const numColsNcc = Math.max(8, nccSheet.getLastColumn());
+      const nccRange = nccSheet.getRange(2, 1, nccSheet.getLastRow() - 1, numColsNcc);
+      const nccRows = nccRange.getValues();
+      const rowsToDelete = [];
+      let kymaRowIndex = -1;
+
+      for (let i = 0; i < nccRows.length; i++) {
+        const row = nccRows[i];
+        let p = String(row[2] || '').trim();
         if (p.startsWith("'")) p = p.substring(1).trim();
         if (p && !p.startsWith('0') && /^\d{9}$/.test(p)) p = '0' + p;
-        return [p ? ("'" + p) : ''];
+        row[2] = p ? ("'" + p) : '';
+
+        const tat = String(row[0] || '').trim().toUpperCase();
+        const dayDu = String(row[1] || '').trim().toUpperCase();
+        const mst = String(row[6] || '').trim().replace(/[^0-9A-Za-z]/g, '');
+
+        const isKyma = (tat === 'KYMA' || dayDu.includes('KYMA') || dayDu.includes('CÔNG NGHỆ KM') || tat.includes('CÔNG NGHỆ KM') || mst === '0318238276');
+        if (isKyma) {
+          if (kymaRowIndex === -1) {
+            kymaRowIndex = i;
+            // Chuẩn hóa dòng KYMA đầu tiên
+            row[0] = "KYMA";
+            row[1] = "CÔNG TY CỔ PHẦN PHÂN PHỐI CÔNG NGHỆ KM";
+            if (!row[6]) row[6] = "0318238276";
+          } else {
+            // Đây là dòng trùng thứ 2 cần xóa
+            rowsToDelete.push(i + 2); // 1-indexed sheet row
+            gopNccCount++;
+          }
+        }
+      }
+      nccRange.setValues(nccRows);
+
+      // Xóa các dòng trùng từ dưới lên trên để không làm lệch chỉ số dòng
+      rowsToDelete.sort((a, b) => b - a).forEach(rIdx => {
+        try { nccSheet.deleteRow(rIdx); } catch(eDel){}
       });
-      rSdt.setValues(dSdt);
     }
 
-    // 5. Tự động điều chỉnh độ rộng cột và cố định hàng 1 cho toàn bộ sheet
+    // 5. Chuẩn hóa Danh mục sản phẩm (DM_SAN_PHAM): Đảm bảo SingPC M16Ai31382 là Laptop
+    let fixSingPcCount = 0;
+    const spSheet = ss.getSheetByName("DM_SAN_PHAM");
+    const spMap = new Map();
+    if (spSheet && spSheet.getLastRow() > 1) {
+      const spRows = spSheet.getRange(2, 1, spSheet.getLastRow() - 1, Math.min(8, spSheet.getLastColumn())).getValues();
+      let spChanged = false;
+      for (let i = 0; i < spRows.length; i++) {
+        const m = String(spRows[i][0] || '').trim();
+        const mUpper = m.toUpperCase();
+        if (mUpper.includes('M16AI31382') || (mUpper.includes('SINGPC') && mUpper.includes('M16'))) {
+          if (String(spRows[i][2] || '').trim() !== 'Laptop') {
+            spRows[i][2] = 'Laptop';
+            spChanged = true;
+            fixSingPcCount++;
+          }
+        }
+        spMap.set(mUpper, {
+          ten: String(spRows[i][1] || '').trim(),
+          nhom: String(spRows[i][2] || '').trim(),
+          hang: String(spRows[i][4] || '').trim()
+        });
+      }
+      if (spChanged) {
+        spSheet.getRange(2, 1, spRows.length, spRows[0].length).setValues(spRows);
+      }
+    }
+
+    // 6. Cascade toàn diện sang SERIAL_MASTER theo Danh mục sản phẩm
+    let cascadeMasterCount = 0;
+    if (master && master.getLastRow() > 1) {
+      const totalMasterRows = master.getLastRow() - 1;
+      const numColsM = Math.min(18, master.getLastColumn());
+      const mRange = master.getRange(2, 1, totalMasterRows, numColsM);
+      const mRows = mRange.getValues();
+      let mChanged = false;
+
+      for (let i = 0; i < totalMasterRows; i++) {
+        const mod = String(mRows[i][1] || '').trim().toUpperCase();
+        if (spMap.has(mod)) {
+          const spInfo = spMap.get(mod);
+          if (spInfo.nhom && String(mRows[i][3] || '').trim() !== spInfo.nhom) {
+            mRows[i][3] = spInfo.nhom;
+            mChanged = true;
+            cascadeMasterCount++;
+          }
+          if (spInfo.ten && !mRows[i][2]) {
+            mRows[i][2] = spInfo.ten;
+            mChanged = true;
+          }
+        }
+        // Chuẩn hóa NCC KYMA trong Serial Master
+        const nccVal = String(mRows[i][6] || '').trim().toUpperCase();
+        if (nccVal.includes('CÔNG NGHỆ KM') || nccVal === 'KYMA') {
+          if (mRows[i][6] !== 'KYMA') {
+            mRows[i][6] = 'KYMA';
+            mChanged = true;
+          }
+        }
+      }
+      if (mChanged) {
+        mRange.setValues(mRows);
+      }
+    }
+
+    // 7. Tự động điều chỉnh độ rộng cột và cố định hàng 1 cho toàn bộ sheet
     const sheets = ss.getSheets();
     sheets.forEach(s => {
       if (s.getLastRow() >= 1) {
@@ -2571,9 +2670,14 @@ function chuanHoaVaDonDepGoogleSheets(adminPassword) {
       }
     });
 
-    markDataChanged();
+    if (typeof invalidateMasterCache === 'function') invalidateMasterCache();
+    if (typeof markDataChanged === 'function') markDataChanged();
 
-    return { success: true, message: "Đã chuẩn hóa toàn bộ file Google Sheets thành công!" };
+    return { 
+      success: true, 
+      message: `Đã chuẩn hóa toàn bộ file Google Sheets thành công! Đã gộp ${gopNccCount} dòng NCC trùng, cập nhật SingPC sang Laptop (${fixSingPcCount}), cascade ${cascadeMasterCount} máy trong kho.`,
+      stats: { gopNccCount, fixSingPcCount, cascadeMasterCount }
+    };
   } finally {
     lock.releaseLock();
   }
