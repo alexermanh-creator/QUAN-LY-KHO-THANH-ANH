@@ -543,7 +543,7 @@ function authenticateUser(username, password) {
 
     // Tài khoản mặc định hệ thống luôn sẵn sàng làm dự phòng khẩn cấp
     const defaultAccounts = {
-      'admin': { role: 'ADMIN', name: 'Khổng Mạnh Cường (Admin)', validPass: ['123456', 'admin', 'admin123'] },
+      'admin': { role: 'ADMIN', name: 'Khổng Mạnh Cường (Admin)', validPass: ['123456'] },
       'minhquan': { role: 'THỦ KHO', name: 'Khổng Minh Quân (Thủ kho)', validPass: ['123456', 'admin'] },
       'quanly': { role: 'QUẢN LÝ', name: 'Lê Tuấn Cường (Quản lý kho)', validPass: ['123456'] },
       'thukho': { role: 'THỦ KHO', name: 'Nguyễn Văn Kho (Thủ kho)', validPass: ['123456'] },
@@ -563,6 +563,13 @@ function authenticateUser(username, password) {
       try { userSheet = ss.getSheetByName("USERS") || ss.getSheetByName("DM_NGUOI_DUNG"); } catch(e){}
     }
 
+    // Lấy mật khẩu admin chính thức từ ScriptProperties nếu đã đổi
+    let savedAdminPass = null;
+    try {
+      const props = PropertiesService.getScriptProperties();
+      savedAdminPass = props ? props.getProperty('ADMIN_PASSWORD') : null;
+    } catch(e) {}
+
     let foundUser = null;
 
     // 1. Kiểm tra tài khoản từ Sheet USERS nếu có
@@ -578,32 +585,19 @@ function authenticateUser(username, password) {
           const status = String(r[4] || 'Hoạt động').trim();
 
           if (u === user) {
-            let isPassMatch = (p === pass);
+            let isPassMatch = false;
 
-            // Nếu mật khẩu trong sheet bị lưu là '***' hoặc rỗng hoặc là tài khoản mặc định
-            if (!isPassMatch && (p === '***' || !p)) {
-              if (defaultAccounts[u] && defaultAccounts[u].validPass.includes(pass)) {
-                isPassMatch = true;
-              } else if (pass === '123456') {
-                isPassMatch = true;
+            if (role === 'ADMIN' || role === 'QUẢN TRỊ VIÊN' || u === 'admin') {
+              // Mật khẩu Admin: Ưu tiên ScriptProperties -> sau đó Sheet USERS -> mặc định 123456 (chỉ khi chưa từng đổi)
+              const adminEffectivePass = savedAdminPass || (p && p !== '***' ? p : '123456');
+              isPassMatch = (pass === adminEffectivePass);
+            } else {
+              // Tài khoản nhân viên thông thường
+              if (p && p !== '***') {
+                isPassMatch = (pass === p);
+              } else {
+                isPassMatch = (pass === '123456');
               }
-            }
-
-            // Nếu là admin, luôn cho phép đăng nhập bằng các mật khẩu quản trị chuẩn
-            if (!isPassMatch && (role === 'ADMIN' || role === 'QUẢN TRỊ VIÊN' || u === 'admin')) {
-              if (pass === '123456' || pass === 'admin' || pass === 'admin123') {
-                isPassMatch = true;
-              }
-              try {
-                const props = PropertiesService.getScriptProperties();
-                const savedAdminPass = props ? props.getProperty('ADMIN_PASSWORD') : null;
-                if (savedAdminPass && pass === savedAdminPass) isPassMatch = true;
-              } catch(e) {}
-            }
-
-            // Nếu khớp mật khẩu với tài khoản mặc định
-            if (!isPassMatch && defaultAccounts[u] && defaultAccounts[u].validPass.includes(pass)) {
-              isPassMatch = true;
             }
 
             if (isPassMatch) {
@@ -618,9 +612,14 @@ function authenticateUser(username, password) {
     }
 
     // 2. Dự phòng tài khoản mặc định nếu sheet không có hoặc lỗi kết nối sheet
-    if (!foundUser && defaultAccounts[user]) {
-      const def = defaultAccounts[user];
-      if (def.validPass.includes(pass)) {
+    if (!foundUser) {
+      if (user === 'admin') {
+        const adminEffectivePass = savedAdminPass || '123456';
+        if (pass === adminEffectivePass) {
+          foundUser = { username: 'admin', name: 'Khổng Mạnh Cường (Admin)', role: 'ADMIN', status: 'Hoạt động' };
+        }
+      } else if (defaultAccounts[user] && pass === '123456') {
+        const def = defaultAccounts[user];
         foundUser = { username: user, name: def.name, role: def.role, status: 'Hoạt động' };
       }
     }
@@ -670,16 +669,6 @@ function authenticateUser(username, password) {
     };
   } catch(fatalErr) {
     Logger.log("FATAL authenticateUser error: " + fatalErr.message);
-    // Trường hợp xấu nhất: Nếu là admin đăng nhập với mật khẩu đúng thì vẫn cho vào để quản trị
-    const u = String(username || '').trim().toLowerCase();
-    const p = String(password || '').trim();
-    if (u === 'admin' && (p === '123456' || p === 'admin' || p === 'admin123')) {
-      return {
-        success: true,
-        user: { username: 'admin', name: 'Khổng Mạnh Cường (Admin)', role: 'ADMIN', status: 'Hoạt động', permissions: ['ALL'] },
-        sessionToken: `SES-FALLBACK-${Date.now()}`
-      };
-    }
     return { success: false, message: "Lỗi hệ thống khi xác thực: " + fatalErr.message };
   }
 }
@@ -722,34 +711,27 @@ function verifyAdminPassword(arg1, arg2) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const userSheet = ss.getSheetByName("USERS") || ss.getSheetByName("DM_NGUOI_DUNG");
 
-  // Kiểm tra mật khẩu đúng từ Sheet USERS
+  // Kiểm tra mật khẩu đúng từ ScriptProperties và Sheet USERS
   let isMatch = false;
-  let adminFoundInSheet = false;
+  let adminSheetPass = '';
   if (userSheet && userSheet.getLastRow() > 1) {
     const rows = userSheet.getRange(2, 1, userSheet.getLastRow() - 1, 4).getValues();
     for (let r of rows) {
       if (String(r[0] || '').trim().toLowerCase() === u) {
-        adminFoundInSheet = true;
-        const role = String(r[3] || '').trim().toUpperCase();
-        if (role === 'ADMIN' || role === 'QUẢN TRỊ VIÊN' || u === 'admin') {
-          const p = String(r[1] || '').trim();
-          if (p === pass || ((p === '***' || !p || p === 'admin' || p === '123456') && (pass === 'admin' || pass === '123456'))) {
-            isMatch = true;
-          }
-        }
+        adminSheetPass = String(r[1] || '').trim();
         break;
       }
     }
   }
 
-  // Lấy mật khẩu admin từ PropertiesService nếu có (đã đổi qua changeAdminPassword)
-  if (!isMatch && (u === 'admin' || u.includes('admin'))) {
-    const savedAdminPass = props ? props.getProperty('ADMIN_PASSWORD') : null;
-    if (savedAdminPass) {
-      isMatch = (pass === savedAdminPass);
-    } else if (!adminFoundInSheet) {
-      isMatch = (pass === 'admin' || pass === '123456');
-    }
+  // Lấy mật khẩu admin chính thức từ ScriptProperties nếu đã đổi
+  const savedAdminPass = props ? props.getProperty('ADMIN_PASSWORD') : null;
+  if (savedAdminPass) {
+    isMatch = (pass === savedAdminPass);
+  } else if (adminSheetPass && adminSheetPass !== '***') {
+    isMatch = (pass === adminSheetPass);
+  } else {
+    isMatch = (pass === '123456');
   }
 
   if (isMatch) {

@@ -12342,7 +12342,7 @@
         // Lấy mật khẩu admin hiện tại (ưu tiên từ localStorage/biến động)
         const currentAdminPass = (typeof window._CURRENT_ADMIN_PASS !== 'undefined' && window._CURRENT_ADMIN_PASS) 
           ? window._CURRENT_ADMIN_PASS 
-          : (localStorage.getItem('QLK_ADMIN_PASS') || 'admin123');
+          : (localStorage.getItem('QLK_ADMIN_PASS') || '123456');
         window._CURRENT_ADMIN_PASS = currentAdminPass;
 
         const isMatch = (p === currentAdminPass);
@@ -13478,7 +13478,7 @@ CÁC QUY TẮC BẮT BUỘC:
 
     const curPass = (typeof window._CURRENT_ADMIN_PASS !== 'undefined' && window._CURRENT_ADMIN_PASS) 
       ? window._CURRENT_ADMIN_PASS 
-      : (localStorage.getItem('QLK_ADMIN_PASS') || 'admin123');
+      : (localStorage.getItem('QLK_ADMIN_PASS') || '123456');
     if (descEl) descEl.innerText = (actionDesc ? actionDesc + ' ' : '') + `Nhập mật khẩu Admin để xác nhận:`;
     if (passInput) passInput.value = '';
     if (errBox) { errBox.classList.add('d-none'); errBox.innerText = ''; }

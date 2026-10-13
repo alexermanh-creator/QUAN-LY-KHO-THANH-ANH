@@ -543,7 +543,7 @@ function authenticateUser(username, password) {
 
     // Tài khoản mặc định hệ thống luôn sẵn sàng làm dự phòng khẩn cấp
     const defaultAccounts = {
-      'admin': { role: 'ADMIN', name: 'Khổng Mạnh Cường (Admin)', validPass: ['123456', 'admin', 'admin123'] },
+      'admin': { role: 'ADMIN', name: 'Khổng Mạnh Cường (Admin)', validPass: ['123456'] },
       'minhquan': { role: 'THỦ KHO', name: 'Khổng Minh Quân (Thủ kho)', validPass: ['123456', 'admin'] },
       'quanly': { role: 'QUẢN LÝ', name: 'Lê Tuấn Cường (Quản lý kho)', validPass: ['123456'] },
       'thukho': { role: 'THỦ KHO', name: 'Nguyễn Văn Kho (Thủ kho)', validPass: ['123456'] },
@@ -669,16 +669,6 @@ function authenticateUser(username, password) {
     };
   } catch(fatalErr) {
     Logger.log("FATAL authenticateUser error: " + fatalErr.message);
-    // Trường hợp xấu nhất: Nếu là admin đăng nhập với mật khẩu đúng thì vẫn cho vào để quản trị
-    const u = String(username || '').trim().toLowerCase();
-    const p = String(password || '').trim();
-    if (u === 'admin' && (p === '123456' || p === 'admin' || p === 'admin123')) {
-      return {
-        success: true,
-        user: { username: 'admin', name: 'Khổng Mạnh Cường (Admin)', role: 'ADMIN', status: 'Hoạt động', permissions: ['ALL'] },
-        sessionToken: `SES-FALLBACK-${Date.now()}`
-      };
-    }
     return { success: false, message: "Lỗi hệ thống khi xác thực: " + fatalErr.message };
   }
 }
