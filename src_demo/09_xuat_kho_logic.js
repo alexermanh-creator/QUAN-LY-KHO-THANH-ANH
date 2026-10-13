@@ -78,13 +78,13 @@
     }
 
     dropdown.innerHTML = matched.slice(0, 10).map((c, idx) => `
-      <div class="suggest-item ${idx === 0 ? 'active' : ''}" onclick="selectKhachXuat('${c.ten.replace(/'/g, "\\'")}', '${(c.sdt || '').replace(/'/g, "\\'")}', '${(c.diaChi || '').replace(/'/g, "\\'")}')">
+      <div class="suggest-item ${idx === 0 ? 'active' : ''}" data-ten="${escapeHtml(c.ten)}" data-sdt="${escapeHtml(c.sdt || '')}" data-diachi="${escapeHtml(c.diaChi || '')}" onclick="selectKhachXuat(this.getAttribute('data-ten'), this.getAttribute('data-sdt'), this.getAttribute('data-diachi'))">
         <div>
-          <div class="fw-bold text-dark" style="font-size: 0.85rem;">${c.ten}</div>
-          <div class="suggest-sub-text text-truncate" style="max-width: 250px;"><i class="fa-solid fa-location-dot me-1 text-secondary"></i>${c.diaChi || 'Chưa có địa chỉ'}</div>
+          <div class="fw-bold text-dark" style="font-size: 0.85rem;">${escapeHtml(c.ten)}</div>
+          <div class="suggest-sub-text text-truncate" style="max-width: 250px;"><i class="fa-solid fa-location-dot me-1 text-secondary"></i>${escapeHtml(c.diaChi || 'Chưa có địa chỉ')}</div>
         </div>
         <div class="text-end">
-          <span class="text-primary font-monospace fw-semibold small"><i class="fa-solid fa-phone me-1"></i>${c.sdt || '--'}</span>
+          <span class="text-primary font-monospace fw-semibold small"><i class="fa-solid fa-phone me-1"></i>${escapeHtml(c.sdt || '--')}</span>
         </div>
       </div>
     `).join('');
@@ -272,18 +272,18 @@
     }
 
     dropdown.innerHTML = matched.slice(0, 15).map((s, idx) => `
-      <div class="suggest-item ${idx === 0 ? 'active' : ''}" onclick="addSerialFromSuggest('${s.serial.replace(/'/g, "\\'")}')">
+      <div class="suggest-item ${idx === 0 ? 'active' : ''}" data-serial="${escapeHtml(s.serial)}" onclick="addSerialFromSuggest(this.getAttribute('data-serial'))">
         <div>
           <div class="d-flex align-items-center gap-2">
-            <span class="suggest-badge-serial">${s.serial}</span>
-            ${s.internalId && s.internalId !== s.serial ? `<span class="badge bg-light text-dark border p-1" style="font-size: 0.68rem;">${s.internalId}</span>` : ''}
+            <span class="suggest-badge-serial">${escapeHtml(s.serial)}</span>
+            ${s.internalId && s.internalId !== s.serial ? `<span class="badge bg-light text-dark border p-1" style="font-size: 0.68rem;">${escapeHtml(s.internalId)}</span>` : ''}
           </div>
           <div class="suggest-sub-text text-truncate" style="max-width: 320px;">
-            <strong class="text-dark">${s.model}</strong> • ${s.tenHang || s.name || ''}
+            <strong class="text-dark">${escapeHtml(s.model)}</strong> • ${escapeHtml(s.tenHang || s.name || '')}
           </div>
         </div>
         <div class="text-end">
-          <span class="badge bg-primary-subtle text-primary border border-primary-subtle" style="font-size: 0.7rem;">${s.kho || 'Kho VP'}</span>
+          <span class="badge bg-primary-subtle text-primary border border-primary-subtle" style="font-size: 0.7rem;">${escapeHtml(s.kho || 'Kho VP')}</span>
           <div class="suggest-sub-text mt-1">Lưu: ${s.daysInStock || s.soNgayLuuKho || 0} ngày</div>
         </div>
       </div>

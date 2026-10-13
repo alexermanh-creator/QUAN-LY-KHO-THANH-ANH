@@ -100,13 +100,13 @@
 
     // Hiển thị toàn bộ danh sách kèm thanh cuộn để thấy mọi NCC (kể cả Trí Việt)
     dropdown.innerHTML = matched.map((s, idx) => `
-      <div class="suggest-item ${idx === 0 ? 'active' : ''}" onclick="selectNccNhap('${s.tenTat.replace(/'/g, "\\'")}', '${(s.tenDayDu || '').replace(/'/g, "\\'")}')">
+      <div class="suggest-item ${idx === 0 ? 'active' : ''}" data-tentat="${escapeHtml(s.tenTat)}" data-tendaydu="${escapeHtml(s.tenDayDu || '')}" onclick="selectNccNhap(this.getAttribute('data-tentat'), this.getAttribute('data-tendaydu'))">
         <div>
-          <div class="fw-bold text-primary" style="font-size: 0.85rem;">${s.tenTat}</div>
-          <div class="suggest-sub-text text-truncate" style="max-width: 250px;">${s.tenDayDu || ''}</div>
+          <div class="fw-bold text-primary" style="font-size: 0.85rem;">${escapeHtml(s.tenTat)}</div>
+          <div class="suggest-sub-text text-truncate" style="max-width: 250px;">${escapeHtml(s.tenDayDu || '')}</div>
         </div>
         <div class="text-end">
-          <small class="text-muted font-monospace">${s.sdt || ''}</small>
+          <small class="text-muted font-monospace">${escapeHtml(s.sdt || '')}</small>
         </div>
       </div>
     `).join('');
@@ -191,13 +191,13 @@
     }
 
     dropdown.innerHTML = matched.slice(0, 12).map((p, idx) => `
-      <div class="suggest-item ${idx === 0 ? 'active' : ''}" onclick="selectModelNhap('${p.model.replace(/'/g, "\\'")}')">
+      <div class="suggest-item ${idx === 0 ? 'active' : ''}" data-model="${escapeHtml(p.model)}" onclick="selectModelNhap(this.getAttribute('data-model'))">
         <div>
-          <div class="suggest-badge-model text-primary">${p.model}</div>
-          <div class="suggest-sub-text text-truncate" style="max-width: 260px;">${p.ten}</div>
+          <div class="suggest-badge-model text-primary">${escapeHtml(p.model)}</div>
+          <div class="suggest-sub-text text-truncate" style="max-width: 260px;">${escapeHtml(p.ten)}</div>
         </div>
         <div class="text-end">
-          <span class="badge bg-light text-dark border p-1" style="font-size: 0.68rem;">${p.hang || '--'}</span>
+          <span class="badge bg-light text-dark border p-1" style="font-size: 0.68rem;">${escapeHtml(p.hang || '--')}</span>
           <div class="suggest-sub-text mt-1">BH: ${p.defaultBh || 12}th</div>
         </div>
       </div>
